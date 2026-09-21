@@ -1,0 +1,321 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deephealing.local/schemas/capability.schema.json",
+  "title": "DeepHealing Atomic Capability Descriptor",
+  "description": "D-0.6 核心契约：原子能力的机器可读声明（capabilities/**/*.capability.json）。字段表照 01 设计 §7.2 冻结。一个能力 = 一个契约 + 一组 provider 实现；注册表按 id@version 锁定，新增能力不得要求改内核源码。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "version",
+    "slot",
+    "input_schema",
+    "output_schema",
+    "providers",
+    "cost",
+    "latency_ms_budget",
+    "timeout_ms",
+    "fallback",
+    "determinism",
+    "safety",
+    "calibration",
+    "rule_layer_adoption"
+  ],
+  "x-time-budget-semantics": {
+    "clause_1": "远端模型 provider 是**能力补充，不是硬依赖**；默认路径**允许降级**（不得把远端写成「主 provider / 硬依赖」）。",
+    "clause_2": "**超时即确定性降级**（fallback → `deterministic_rule`），降级必须**可审计**（落 `capability.fallback{capability, from_provider, to_provider, reason}`）且**可回放**（cassette）。",
+    "clause_3": "能力结果**跨 tick 边界丢弃、绝不回填**（迟到结果只记 metric，绝不写回历史 tick）。",
+    "clause_4": "每个能力的 `timeout_ms` / `latency_ms_budget` 是**该能力自己的、由实测标定的声明值**；REQ 不固定任何毫秒数，也**不得**由全局常量代替。声明值必须附 `calibration` 块的实测依据。",
+    "forbidden_override_evidence": "--timeout-ms-override 不得用于取得等价性 / 降级证据；证据必须在能力清单声明的值下取得。常驻门禁见 spikes/tools/check_no_override_evidence.sh。",
+    "synthetic_negative_exception": "**唯一例外**：强制触发超时以验证「超时 → 确定性降级 + 可审计」机制的**合成负例**允许使用 override，但脚本里必须在紧邻行以显式标记 `# DH-SYNTHETIC-NEGATIVE:` 标注，且该次运行**不得**计入等价性 / 降级率证据。"
+  },
+  "x-provider-class-binding": {
+    "world_model_backend_requires_class": "remote_api",
+    "world_model_whitelist": ["NVIDIA Cosmos", "Cosmos", "HunyuanWorld-1.0", "Tencent HunyuanWorld-1.0", "Genie 3", "Decart Oasis", "Mirage", "Odyssey-1", "Odyssey-2", "Marble", "Atlas", "dreamerv3", "gsplat", "gaussian-splatting"],
+    "default_deny": "以世界模型为后端（`world_model_backend=true`）或 `source_model` 命中 `world_model_whitelist` 的 provider，其 `class` **必须**是 `remote_api`；声明为 `local_model` / `deterministic_rule` / `cassette_replay` ⇒ **校验期拒收**。校验器：v0_skeleton/tools/verify_capability_binding.py。",
+    "rationale": "provider 类别是 manifest 里的自声明字段；若不绑定，AC-14 的「世界模型不得写世界状态」会在换一个枚举值后自动失效。"
+  },
+  "x-determinism-gate": {
+    "forbidden": "**非 `deterministic` 类 provider 的输出不得被规则层采纳为事件输入**（禁止面，不是提示面）。",
+    "enforcement": "validation_time",
+    "consistency_check_runs": 3,
+    "consistency_check_meaning": "校验期必须**必跑**一致性检查（同输入重复 ≥3 次 → 输出摘要一致），未通过即拒收；不得留到 V1 事后测量。",
+    "negative_example": "把一个带采样的 provider 声明为 `deterministic` → 必须被检出。",
+    "negative_example_schema_legal": "round 3 · 修复迭代 2（G3 / Raven N-3）：`providers[].sampling`（及顶层同名旋钮 temperature/top_p/top_k/min_p/penalty*）已写入本 schema 的 provider 属性白名单，因此「带采样却声明 `deterministic`」的负例现在是**schema 合法**的 manifest —— 判据可达，不再依赖「写成 schema 非法而没人发现」。schema 校验执行体：v0_skeleton/tools/validate_capability_schema.py（门禁链步骤见 verify_specs.sh §9b）。",
+    "determinism_field_required": "round 3 · 修复迭代 2（G2 / Raven N-2）：`providers[].determinism` 已列入 provider 的 `required`；缺失/非法 ⇒ 视为 `non_deterministic`（fail-closed）且**不得进规则层**（校验期 reason code `B2_DETERMINISM_FIELD_MISSING`）。"
+  },
+  "x-tick-decoupling": {
+    "tick_number_and_content_must_not_derive_from_wall_clock": true,
+    "note": "tick 的**编号**与**事件内容**不得由实测耗时派生；`wall_clock` 严禁参与任何 hash 或 tick 内决策（沿用 snapshot.schema.json 既有条文）。G2 的「tick 抖动」只是**调度**指标，不得进入任何哈希。"
+  },
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$",
+      "description": "能力标识：点分槽位名 + 变体。必须与文件名 <id>@<version>.capability.json 的 id 部分一致。"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "语义化版本。注册表按 id@version 锁定；cassette key 含该字段，升级即失效旧 cassette（fail-closed）。"
+    },
+    "slot": {
+      "type": "string",
+      "enum": [
+        "intent.plan",
+        "emotion.appraise",
+        "memory.reflect",
+        "narrative.generate",
+        "action.select",
+        "relation.infer",
+        "vision.understand",
+        "embed.text",
+        "imagine.predict",
+        "imagine.rollout"
+      ],
+      "description": "能力槽位（冻结枚举）。新增槽位需 ADR —— 槽位是规则层的调用面，属契约变更。`imagine.predict` / `imagine.rollout` 由 **ADR-010（世界模型接入）** 在本轮新增：世界模型只作为 `imagine.*` 的 provider 出现，输出结构化结果且**不直接**写世界状态。"
+    },
+    "input_schema": {
+      "type": "object",
+      "description": "入参 JSON Schema（draft 2020-12 子集）。canonical_input_hash 按此 schema 声明的字段取规范化 JSON 后哈希。",
+      "required": ["type", "properties"],
+      "properties": {
+        "type": { "type": "string", "const": "object" },
+        "properties": { "type": "object" },
+        "required": { "type": "array", "items": { "type": "string" } },
+        "additionalProperties": { "type": "boolean" }
+      }
+    },
+    "output_schema": {
+      "type": "object",
+      "description": "出参 JSON Schema。**强制校验**：任一 provider 产出都必须通过本 schema，失败即 invalid_schema → fallback，不得进入世界状态。",
+      "required": ["type", "properties"],
+      "properties": {
+        "type": { "type": "string", "const": "object" },
+        "properties": { "type": "object" },
+        "required": { "type": "array", "items": { "type": "string" } },
+        "additionalProperties": { "type": "boolean" }
+      }
+    },
+    "providers": {
+      "type": "array",
+      "minItems": 1,
+      "description": "provider 声明列表。同一槽位可由四类 provider 之一填充；按 priority 升序尝试（数字小者优先）。",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["class", "impl", "priority", "determinism_note", "determinism"],
+        "properties": {
+          "class": {
+            "type": "string",
+            "enum": ["remote_api", "local_model", "deterministic_rule", "cassette_replay"]
+          },
+          "impl": {
+            "type": "string",
+            "pattern": "^(builtin:[a-z0-9_]+|module:[A-Za-z0-9_.]+:[A-Za-z0-9_]+)$",
+            "description": "实现指向：builtin:<name> 或 module:<python.module>:<attr>。数据引用，非内核硬编码。"
+          },
+          "priority": { "type": "integer", "minimum": 0 },
+          "weight": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "灰度抽样权重（同 priority 多 provider 时按权重路由）；缺省视为 1。"
+          },
+          "model": { "type": ["string", "null"], "description": "remote_api / local_model 的模型名；不得写入任何凭据。" },
+          "source_model": { "type": ["string", "null"], "description": "后端模型 id（用于 `x-provider-class-binding` 的白名单比对）。命中世界模型白名单 ⇒ class **必须**是 remote_api。" },
+          "world_model_backend": { "type": "boolean", "default": false, "description": "该 provider 是否以**世界模型**为后端。true ⇒ class 必须为 remote_api（default-deny 校验）。" },
+          "determinism": { "type": "string", "enum": ["deterministic", "non_deterministic"], "description": "provider 级确定性标注（`determinism.mode` 的细化）。**必填**（round 3 · 修复迭代 2 / G2 / Raven N-2：缺失即视为 `non_deterministic` 且不得进规则层）。`non_deterministic` **只允许出现在呈现层**，其结果不得进入任何哈希、不得用于回放判定。" },
+          "sampling": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "**采样旋钮族**（round 3 · 修复迭代 2 / G3 / Raven N-3）：把随机性来源写进 provider 的属性白名单，使「带采样却声明 `deterministic`」的负例可以**在 schema 合法**的前提下表达（此前只能写成 schema 非法 ⇒ 判据不可达）。校验器同时扫描 `sampling.*` 与顶层同名键；带非中性取值的 provider **不得**声明 `determinism=deterministic`（reason code `B5_DETERMINISM_WITH_SAMPLING`）。",
+            "properties": {
+              "temperature": { "type": "number", "minimum": 0, "maximum": 2 },
+              "top_p": { "type": "number", "minimum": 0, "maximum": 1 },
+              "top_k": { "type": "integer", "minimum": 0 },
+              "min_p": { "type": "number", "minimum": 0, "maximum": 1 },
+              "presence_penalty": { "type": "number", "minimum": -2, "maximum": 2 },
+              "frequency_penalty": { "type": "number", "minimum": -2, "maximum": 2 },
+              "repetition_penalty": { "type": "number", "minimum": 0, "maximum": 4 }
+            }
+          },
+          "temperature": { "type": "number", "minimum": 0, "maximum": 2, "description": "顶层等价写法（与 `sampling.temperature` 同义；校验器两处都扫）。" },
+          "top_p": { "type": "number", "minimum": 0, "maximum": 1, "description": "顶层等价写法（与 `sampling.top_p` 同义）。" },
+          "top_k": { "type": "integer", "minimum": 0, "description": "顶层等价写法（与 `sampling.top_k` 同义）。" },
+          "min_p": { "type": "number", "minimum": 0, "maximum": 1, "description": "顶层等价写法（与 `sampling.min_p` 同义）。" },
+          "presence_penalty": { "type": "number", "minimum": -2, "maximum": 2, "description": "顶层等价写法（与 `sampling.presence_penalty` 同义）。" },
+          "frequency_penalty": { "type": "number", "minimum": -2, "maximum": 2, "description": "顶层等价写法（与 `sampling.frequency_penalty` 同义）。" },
+          "repetition_penalty": { "type": "number", "minimum": 0, "maximum": 4, "description": "顶层等价写法（与 `sampling.repetition_penalty` 同义）。" },
+          "allowed_in_rule_layer": { "type": "boolean", "default": false, "description": "该 provider 的输出是否允许被规则层采纳为**事件输入**。**禁止面**：`determinism=non_deterministic` 时不得为 true（校验期拒收，见 `x-determinism-gate`）。" },
+          "determinism_note": { "type": "string", "description": "该 provider 的确定性说明（必须明确 replayable / best_effort / pure 中的哪一种）。" },
+          "requires_secrets": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "所需凭据的环境变量名（只写变量名，**不得**写值）；值只从环境读取且永不进入日志/上下文。"
+          }
+        }
+      }
+    },
+    "cost": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["usd_per_1k_in", "usd_per_1k_out", "est_tokens_in", "est_tokens_out", "currency"],
+      "properties": {
+        "usd_per_1k_in": { "type": "number", "minimum": 0 },
+        "usd_per_1k_out": { "type": "number", "minimum": 0 },
+        "est_tokens_in": { "type": "integer", "minimum": 0 },
+        "est_tokens_out": { "type": "integer", "minimum": 0 },
+        "currency": { "type": "string", "const": "USD" }
+      }
+    },
+    "latency_ms_budget": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "期望延迟预算（**该能力自己的、由实测标定的声明值**；不得由全局常量代替）。超出记 metric 并触发降级评估（不强制中断）。必须 ≥ `calibration.p90_ms`（软预算；硬超时另见 `timeout_ms`）。"
+    },
+    "timeout_ms": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "硬超时（**该能力自己的、由实测标定的声明值**，REQ 不固定毫秒数）。超时 → 立即 fallback.on_timeout，不阻塞 tick；迟到结果丢弃并记 metric，绝不回填历史 tick。**防自证约束**（见 `calibration`）：`timeout_ms ≥ calibration.p95_ms`（向上取整）且 `timeout_ms ≠ calibration.max_ms`。取证不得用 `--timeout-ms-override`（见 `x-time-budget-semantics`）。"
+    },
+    "calibration": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "**实测标定块**（D-0.9 / `capability.time-budget.spec.md`）：声明值必须附实测依据，且推导规则必须先冻结（规则文件 mtime 早于分布日志）。",
+      "required": ["sample_count", "p50_ms", "p90_ms", "p95_ms", "p99_ms", "max_ms", "derivation_rule", "derivation_rule_sha256", "candidate_strict_ms", "candidate_loose_ms", "accepted_degradation_range", "command", "workdir", "exit", "log_path"],
+      "properties": {
+        "sample_count": { "type": "integer", "minimum": 1, "description": "实测样本数（D15 要求 ≥20）。" },
+        "p50_ms": { "type": "number" },
+        "p90_ms": { "type": "number" },
+        "p95_ms": { "type": "number" },
+        "p99_ms": { "type": "number" },
+        "max_ms": { "type": "number" },
+        "derivation_rule": { "type": "string", "description": "推导规则文本（必须先冻结；必须是分布的**单调函数**且带下界 `声明值 ≥ p95`）。" },
+        "derivation_rule_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$", "description": "规则文本的 sha256（登记进 03，mtime 早于分布日志）。" },
+        "candidate_strict_ms": { "type": "integer", "description": "更严的候选声明值。" },
+        "candidate_loose_ms": { "type": "integer", "description": "更松的候选声明值（= 盘上采用值）。" },
+        "accepted_degradation_range": { "type": "string", "description": "**测量前**声明的降级率可接受区间（如 `0.00-0.30`）。" },
+        "command": { "type": "string" },
+        "workdir": { "type": "string" },
+        "exit": { "type": "integer" },
+        "log_path": { "type": "string", "description": "分布日志的绝对路径。" },
+        "degradation_log_path": { "type": "string", "description": "在声明值下测得的降级率日志绝对路径。" },
+        "gap_note": { "type": "string", "description": "未能实测的部分（如远端不可用）如实记 GAP。" }
+      }
+    },
+    "rule_layer_adoption": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "规则层采纳面（`x-determinism-gate` 的机器可读落地）。",
+      "required": ["allowed", "provider_classes_allowed", "consistency_check"],
+      "properties": {
+        "allowed": { "type": "boolean" },
+        "provider_classes_allowed": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["remote_api", "local_model", "deterministic_rule", "cassette_replay"] },
+          "description": "允许被规则层采纳为事件输入的 provider 类别。**禁止**把 `non_deterministic` 的 provider 类别写进来。"
+        },
+        "consistency_check": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["required", "runs"],
+          "properties": {
+            "required": { "type": "boolean", "const": true },
+            "runs": { "type": "integer", "minimum": 3, "description": "校验期必跑的一致性检查次数（同输入重复 N 次 → 输出摘要必须一致）。" }
+          }
+        }
+      }
+    },
+    "fallback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["on_timeout", "on_error", "on_invalid_schema", "on_budget_exhausted"],
+      "properties": {
+        "on_timeout": { "$ref": "#/$defs/fallbackTarget" },
+        "on_error": { "$ref": "#/$defs/fallbackTarget" },
+        "on_invalid_schema": { "$ref": "#/$defs/fallbackTarget" },
+        "on_budget_exhausted": { "$ref": "#/$defs/fallbackTarget" },
+        "on_cassette_miss": {
+          "$ref": "#/$defs/fallbackTarget",
+          "description": "回放模式下 cassette miss 的策略目标；策略本身由 cassette.format.md 的 miss_policy 决定（默认 fail_closed）。"
+        }
+      },
+      "description": "每条出口都必须有终态兜底；链路最终必须能落到 deterministic_rule 或 deterministic_stub，保证世界不断线。"
+    },
+    "determinism": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "cassette_key_fields", "seed_policy"],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["replayable", "best_effort", "pure"],
+          "description": "replayable 必须可 cassette 重放；pure 为确定性纯函数；best_effort 允许 provider 间差异（仅限风格/排序，不得影响 schema 合法性）。"
+        },
+        "cassette_key_fields": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" },
+          "description": "参与 cassette key 的字段名；必须至少含 capability_id、capability_version、canonical_input_hash、provider。"
+        },
+        "seed_policy": {
+          "type": "string",
+          "enum": ["world_seed_stream", "no_randomness", "provider_side_ignored"],
+          "description": "随机源策略：world_seed_stream = 由 WorldRng 的子系统 stream 派生；no_randomness = 纯函数；provider_side_ignored = 远端随机性被忽略（best_effort）。"
+        }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["secrets_in_context", "redact_fields", "max_output_bytes", "schema_strict"],
+      "properties": {
+        "secrets_in_context": {
+          "type": "boolean",
+          "const": false,
+          "description": "硬约束：必须为 false。任何凭据不得进入能力上下文。"
+        },
+        "redact_fields": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "日志/cassette 落盘前必须脱敏的字段路径（如 payload.raw_headers.Authorization）。"
+        },
+        "max_output_bytes": { "type": "integer", "minimum": 1, "default": 65536 },
+        "schema_strict": { "type": "boolean", "const": true },
+        "prompt_injection_guard": {
+          "type": "string",
+          "enum": ["none", "delimit_and_ignore_instructions", "allowlist_fields"],
+          "description": "玩家可控文本进入能力上下文时的防护级别（Raven 对抗面）。"
+        }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "description": "三级预算记账声明（BudgetLedger）。",
+      "additionalProperties": false,
+      "properties": {
+        "per_tick_calls": { "type": "integer", "minimum": 0 },
+        "per_npc_daily_tokens": { "type": "integer", "minimum": 0 },
+        "per_session_impact": { "type": "number", "minimum": 0 }
+      }
+    },
+    "tags": { "type": "array", "items": { "type": "string" } }
+  },
+  "$defs": {
+    "fallbackTarget": {
+      "oneOf": [
+        { "type": "string", "enum": ["deterministic_stub"] },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["provider"],
+          "properties": {
+            "provider": { "type": "string", "enum": ["remote_api", "local_model", "deterministic_rule", "cassette_replay"] },
+            "impl": { "type": "string" }
+          }
+        }
+      ]
+    }
+  }
+}

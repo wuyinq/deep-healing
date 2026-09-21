@@ -1,0 +1,280 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deephealing.local/schemas/events.schema.json",
+  "title": "DeepHealing Event Log Line",
+  "description": "冻结的事件日志契约（events.jsonl，每行一个 JSON 对象，UTF-8、无 BOM、以 \\n 结尾）。哈希链：hash = sha256(prev_hash || canonical_json({seq,tick,type,actor,payload}))，genesis 的 prev_hash 为 64 个 0。canonical_json = 键按字典序、无空格分隔符、整数不带小数点、浮点 6 位小数。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["seq", "tick", "type", "actor", "payload", "prev_hash", "hash"],
+  "properties": {
+    "seq": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "全局单调递增序号，从 0 开始，无空洞；回放时用于检测日志缺失。"
+    },
+    "tick": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "事件所属 tick；同一 tick 内事件按 seq 排序（阶段顺序即 §3.2 的 [1]→[6]）。"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "world.init",
+        "intent.applied",
+        "intent.rejected",
+        "npc.action",
+        "capability.invoked",
+        "capability.fallback",
+        "task.state_changed",
+        "memory.written",
+        "snapshot.taken"
+      ],
+      "description": "事件类型枚举（冻结）。新增类型 = 契约变更，需 ADR 并递增 schema_version。"
+    },
+    "actor": {
+      "type": "string",
+      "pattern": "^(world|system|kernel|session:[A-Za-z0-9_-]+|[a-z][a-z0-9_.-]{1,63})$",
+      "description": "事件发起者：内核/世界伪实体，或会话标识（玩家介入），或实体 id（NPC）。"
+    },
+    "payload": { "$ref": "#/$defs/payload" },
+    "prev_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "前一事件的 hash；genesis 为 64 个 0。"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "本条事件 hash（sha256 十六进制小写）。"
+    }
+  },
+  "allOf": [
+    { "$ref": "#/$defs/payloadByType" }
+  ],
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "description": "事件载荷。字段集由 type 决定，见 payloadByType。"
+    },
+    "hex64": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "capabilityRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "type": "string" },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" }
+      }
+    },
+    "providerClass": {
+      "type": "string",
+      "enum": ["remote_api", "local_model", "deterministic_rule", "cassette_replay"]
+    },
+    "payloadByType": {
+      "description": "各 type 的必填 payload 字段（附加字段允许，用于向前兼容；必填字段缺失即校验失败）。",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string" },
+        "payload": { "type": "object" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "world.init" } }, "required": ["type"] },
+          "then": {
+            "properties": {
+              "payload": {
+                "type": "object",
+                "required": ["pack_id", "pack_version", "seed", "entity_count", "constants_digest"],
+                "properties": {
+                  "pack_id": { "type": "string" },
+                  "pack_version": { "type": "string" },
+                  "seed": { "type": "integer" },
+                  "entity_count": { "type": "integer", "minimum": 0 },
+                  "constants_digest": { "$ref": "#/$defs/hex64" }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "intent.applied" } }, "required": ["type"] },
+          "then": {
+            "properties": {
+              "payload": {
+                "type": "object",
+                "required": ["intent_id", "session_id", "kind", "target", "applied_tick", "impact_cost"],
+                "properties": {
+                  "intent_id": { "type": "string" },
+                  "session_id": { "type": "string" },
+                  "kind": {
+                    "type": "string",
+                    "enum": ["delegate_instruction", "ghost_hand", "avatar"]
+                  },
+                  "target": { "type": "string" },
+                  "applied_tick": { "type": "integer", "minimum": 0 },
+                  "impact_cost": { "type": "number", "minimum": 0 },
+                  "instruction_digest": { "$ref": "#/$defs/hex64" }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "intent.rejected" } }, "required": ["type"] },
+          "then": {
+            "properties": {
+              "payload": {
+                "type": "object",
+                "required": ["intent_id", "session_id", "reason_code"],
+                "properties": {
+                  "intent_id": { "type": "string" },
+                  "session_id": { "type": "string" },
+                  "reason_code": {
+                    "type": "string",
+                    "enum": [
+                      "E_MODE_READONLY",
+                      "E_FORBIDDEN_ACTION",
+                      "E_RATE_LIMITED",
+                      "E_COOLDOWN",
+                      "E_BUDGET_EXHAUSTED",
+                      "E_TARGET_UNKNOWN",
+                      "E_SCHEMA_INVALID"
+                    ]
+                  },
+                  "detail": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "npc.action" } }, "required": ["type"] },
+          "then": {
+            "properties": {
+              "payload": {
+                "type": "object",
+                "required": ["npc_id", "action", "decision_source"],
+                "properties": {
+                  "npc_id": { "type": "string" },
+                  "action": { "type": "string" },
+                  "decision_source": {
+                    "type": "string",
+                    "enum": ["utility", "behaviour_tree", "capability", "deterministic_stub"]
+                  },
+                  "target_entity": { "type": ["string", "null"] },
+                  "duration_ticks": { "type": "integer", "minimum": 0 }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "capability.invoked" } }, "required": ["type"] },
+          "then": {
+            "properties": {
+              "payload": {
+                "type": "object",
+                "required": ["capability", "provider", "ms", "ok", "input_hash"],
+                "properties": {
+                  "capability": { "$ref": "#/$defs/capabilityRef" },
+                  "provider": { "$ref": "#/$defs/providerClass" },
+                  "ms": { "type": "number", "minimum": 0 },
+                  "ok": { "type": "boolean" },
+                  "input_hash": { "$ref": "#/$defs/hex64" },
+                  "output_hash": { "$ref": "#/$defs/hex64" },
+                  "tokens_est": { "type": "integer", "minimum": 0 },
+                  "cassette_key": { "type": ["string", "null"] },
+                  "npc_id": { "type": ["string", "null"] },
+                  "slot": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "capability.fallback" } }, "required": ["type"] },
+          "then": {
+            "properties": {
+              "payload": {
+                "type": "object",
+                "required": ["capability", "from_provider", "to_provider", "reason"],
+                "properties": {
+                  "capability": { "$ref": "#/$defs/capabilityRef" },
+                  "from_provider": { "$ref": "#/$defs/providerClass" },
+                  "to_provider": {
+                    "oneOf": [
+                      { "$ref": "#/$defs/providerClass" },
+                      { "type": "string", "const": "deterministic_stub" }
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "enum": ["on_timeout", "on_error", "on_invalid_schema", "on_budget_exhausted", "on_cassette_miss"]
+                  },
+                  "detail": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "task.state_changed" } }, "required": ["type"] },
+          "then": {
+            "properties": {
+              "payload": {
+                "type": "object",
+                "required": ["task_id", "from_state", "to_state", "reason", "caused_by"],
+                "properties": {
+                  "task_id": { "type": "string" },
+                  "from_state": { "type": "string" },
+                  "to_state": { "type": "string" },
+                  "reason": { "type": "string" },
+                  "caused_by": { "type": "string" },
+                  "rule_id": { "type": "string" },
+                  "shift_index": { "type": "integer", "minimum": 0 }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "memory.written" } }, "required": ["type"] },
+          "then": {
+            "properties": {
+              "payload": {
+                "type": "object",
+                "required": ["npc_id", "layer", "ref"],
+                "properties": {
+                  "npc_id": { "type": "string" },
+                  "layer": { "type": "string", "enum": ["working", "episodic", "semantic"] },
+                  "ref": { "type": "string" },
+                  "importance": { "type": "number", "minimum": 0, "maximum": 1 },
+                  "superseded_by": { "type": ["string", "null"] }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "snapshot.taken" } }, "required": ["type"] },
+          "then": {
+            "properties": {
+              "payload": {
+                "type": "object",
+                "required": ["snapshot_tick", "state_hash", "event_chain_hash", "rng_state_digest"],
+                "properties": {
+                  "snapshot_tick": { "type": "integer", "minimum": 0 },
+                  "state_hash": { "$ref": "#/$defs/hex64" },
+                  "event_chain_hash": { "$ref": "#/$defs/hex64" },
+                  "rng_state_digest": { "$ref": "#/$defs/hex64" },
+                  "checkpoint_path": { "type": ["string", "null"] }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

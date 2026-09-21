@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deephealing.local/schemas/snapshot.schema.json",
+  "title": "DeepHealing Snapshot / Checkpoint",
+  "description": "冻结的快照与检查点契约。state_hash = sha256(canonical_json(state))；event_chain_hash = 日志末条事件 hash；rng_state_digest = sha256(canonical_json(rng_state))。规范化规则见 normalization 字段（机器可读，供 verify 工具与 Sentinel 复跑时按同一实现比对）。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["tick", "state", "state_hash", "event_chain_hash", "rng_state_digest"],
+  "properties": {
+    "tick": { "type": "integer", "minimum": 0 },
+    "state": {
+      "type": "object",
+      "description": "世界状态，必须通过 world.schema.json。序列化前按规范化规则排序与取整。"
+    },
+    "state_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "sha256(canonical_json(state))，小写十六进制。AC-2 判据比对字段之一（**不是唯一**：见根级 `x-ac2-criterion`，必须与 rng_state_digest、event_chain_hash 一并比对，且两侧检查点 tick 集合必须完全相同）。"
+    },
+    "event_chain_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "**检查点字段**的 event_chain_hash = 截至本快照 tick 的事件日志**末条 hash**（无事件时为 64 个 0）。因快照事件的 `tick` 就等于该 tick，「末条」**包含快照事件自身** ⇒ `checkpoint.event_chain_hash == hash(snapshot.taken 事件, tick == checkpoint.tick)`（不变量 **INVARIANT-ECH-1**）。**同名两处必须分别读**：`events.schema.json` 里**事件 payload** 的 `event_chain_hash` = 该事件**之前**的链尾（= 该事件 `prev_hash`，不变量 **INVARIANT-ECH-2**）—— 名字相同、含义不同，禁止靠 grep 名字判断。写入顺序**冻结**：快照事件**先追加** → 检查点**后取链尾**（「先构造事件再取其 hash」是 `hash = f(hash)` 不动点，sha256 下不可实现，已作废）。链拓扑 = **全局单链**（同一 `seq` 序列）；若将来按 NPC 分片，则该字段为**分片相对量**并**禁止跨分片比对**。**崩溃恢复语义**：事件先落盘、检查点后落盘，若在两者之间被 kill，恢复必须以「**锚点 hash 反查事件**」为准；反查失败即回退到**上一检查点**，不得接受悬空锚点。"
+    },
+    "rng_state_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "sha256(canonical_json(rng_state))；rng_state = 各 stream 的 (name, counter, key) 列表，按 name 排序。用于证明两次回放的随机流轨迹一致。**两条路径（simulate / fold）必须由同一函数产出**（不变量 **INVARIANT-ECH-3**）：`payload.rng_digests` 是 `state_digest()` 的**规范序列化**（`{name: stream.digest()} | name 升序`），故 `hash_object(payload.rng_digests) == state_digest()`；两者相等必须是**不变量**，不得只靠当前 RNG 设计的经验巧合。"
+    },
+    "normalization": { "$ref": "#/$defs/normalization" },
+    "meta": { "$ref": "#/$defs/meta" }
+  },
+  "x-ac2-criterion": { "$ref": "#/$defs/ac2_criterion" },
+  "$defs": {
+    "ac2_criterion": {
+      "type": "object",
+      "title": "AC-2 回放一致性判据（冻结）",
+      "description": "AC-2 的机器可读判据。比对两侧检查点目录时必须同时满足 (1)~(6)，任一不满足即判失败（非 0 退出）。禁止用 zip/逐对索引比较：检查点少的一侧会被静默截断，产生假绿（RA-3）。",
+      "additionalProperties": false,
+      "required": ["tick_set_must_match", "compare_fields", "on_missing_ticks", "on_field_diff", "forbidden_comparison", "checkpoint_set_must_be_canonical", "null_or_missing_field_is_divergence", "run_vs_replay_must_be_compared", "on_checkpoint_set_violation", "ech_invariants", "chain_topology"],
+      "properties": {
+        "checkpoint_set_must_be_canonical": {
+          "type": "boolean",
+          "const": true,
+          "description": "(3) 检查点集合本身必须合法：文件名必须恰好是 `{tick:06d}.json`，且同一 tick **不得**出现多个文件。旧实现用 `{int(stem): path}` 建字典，非规范名（如 `25.json` 与 `000025.json`）会**静默遮蔽**前一个 → 假绿（RM-5①）。"
+        },
+        "null_or_missing_field_is_divergence": {
+          "type": "boolean",
+          "const": true,
+          "description": "(4) 比对字段「缺失」或「为 null」**一律算 divergent**（记 reason: missing_field / null_field）。旧实现用 `.get()`，两侧都缺或都 null 会判「一致」→ 假绿（RM-5②）。"
+        },
+        "run_vs_replay_must_be_compared": {
+          "type": "boolean",
+          "const": true,
+          "description": "(5) 必须**强制**做 `run ↔ replay` 三字段逐点比对（8/8 一致）。PM 独立发现：修复前 `event_chain_hash` 在两条路径下 off-by-one，0/8 相同；只比 `run↔run` / `replay↔replay` 覆盖不到该组合。"
+        },
+        "on_checkpoint_set_violation": {
+          "type": "string",
+          "const": "fail_nonzero_exit",
+          "description": "(3) 的处置：直接判失败并非 0 退出，输出 checkpoint_set_error。"
+        },
+        "ech_invariants": {
+          "type": "array",
+          "description": "必须校验的 event_chain_hash 不变量（同名两处语义分别写清）。",
+          "items": { "type": "string", "enum": ["INVARIANT-ECH-1", "INVARIANT-ECH-2", "INVARIANT-ECH-3"] },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "chain_topology": {
+          "type": "string",
+          "const": "global_single_chain",
+          "description": "(6) 链拓扑写死为**全局单链**（同一 seq 序列）；若改为按 NPC 分片，则该字段变分片相对量并禁止跨分片比对 —— 二者必须二选一写清，不得含糊。"
+        },
+        "tick_set_must_match": {
+          "type": "boolean",
+          "const": true,
+          "description": "(1) 两侧检查点 tick 集合必须完全相同（不做截断、不取交集当通过）。"
+        },
+        "compare_fields": {
+          "type": "array",
+          "description": "(2) 逐检查点必须比对的字段；任一不同即 divergent。",
+          "items": { "type": "string", "enum": ["state_hash", "rng_state_digest", "event_chain_hash"] },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "on_missing_ticks": {
+          "type": "string",
+          "const": "fail_and_list_missing_ticks",
+          "description": "缺失 tick 的处理：判失败并逐个列出缺失 tick（missing_in_left / missing_in_right）。"
+        },
+        "on_field_diff": {
+          "type": "string",
+          "const": "divergent_and_nonzero_exit",
+          "description": "任一字段不同：记入 divergent（含 tick 与逐字段 left/right）并以非 0 退出。"
+        },
+        "forbidden_comparison": {
+          "type": "string",
+          "const": "zip_or_index_pairing",
+          "description": "禁止按索引/zip 逐对比较（静默截断短侧 → 假绿）。"
+        }
+      }
+    },
+    "normalization": {
+      "type": "object",
+      "description": "canonical_json 冻结规则（所有 hash 一律按此实现，跨语言必须逐位一致）。",
+      "additionalProperties": false,
+      "required": ["key_order", "separators", "ensure_ascii", "encoding", "float_digits", "int_form", "null_handling", "sort_arrays"],
+      "properties": {
+        "key_order": { "type": "string", "const": "lexicographic_unicode_codepoint" },
+        "separators": { "type": "string", "const": ",:" },
+        "ensure_ascii": { "type": "boolean", "const": false },
+        "encoding": { "type": "string", "const": "utf-8" },
+        "float_digits": {
+          "type": "integer",
+          "const": 6,
+          "description": "浮点统一四舍五入到 6 位小数后序列化；整数不带小数点。"
+        },
+        "int_form": { "type": "string", "const": "no_decimal_point" },
+        "null_handling": { "type": "string", "const": "keep_as_null" },
+        "sort_arrays": {
+          "type": "array",
+          "description": "必须显式排序的数组字段路径（避免依赖插入/迭代顺序）。",
+          "items": { "type": "string" },
+          "default": ["entities", "trauma_flags", "tags", "memory_ref.fact_keys"]
+        }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "description": "可选元信息（不参与 hash）。",
+      "additionalProperties": false,
+      "properties": {
+        "pack_id": { "type": "string" },
+        "pack_version": { "type": "string" },
+        "seed": { "type": "integer" },
+        "produced_by": { "type": "string", "enum": ["kernel.run", "kernel.replay", "kernel.verify"] },
+        "wall_clock": {
+          "type": ["string", "null"],
+          "description": "仅供人读的诊断时间戳；严禁参与任何 hash 或 tick 内决策。"
+        }
+      }
+    }
+  }
+}
