@@ -1,0 +1,268 @@
+{
+  "api_base": "https://api.tokenfab.cn/v1",
+  "command": "python3 tools/calibrate_latency.py dist --samples 24 --timeout-ms 60000",
+  "credential_redaction": "Authorization: Bearer ***REDACTED***",
+  "credential_source": "HERMES_CUSTOM_TOKENFAB_API_KEY",
+  "environment_class": "usable",
+  "environment_class_reasons": [],
+  "errors": [],
+  "kind": "latency.distribution",
+  "log_path": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-003-deephealing-v0-m1/spikes/s5-latency-calibration/logs/calibrate_latency.console.log",
+  "max_ms": 1273.766,
+  "min_ms": 799.131,
+  "model": "deepseek-v4.1-flash",
+  "note": "逐次真实远端调用；失败样本单独列在 errors，不静默丢弃。本工具不写 HTTP transcript。",
+  "p50_ms": 1040.442,
+  "p90_ms": 1194.759,
+  "p95_ms": 1253.699,
+  "p99_ms": 1273.766,
+  "request_timeout_ms": 60000,
+  "sample_count_failed": 0,
+  "sample_count_ok": 24,
+  "sample_count_requested": 24,
+  "samples": [
+    {
+      "http_status": 200,
+      "i": 0,
+      "latency_ms": 1066.898,
+      "ok": true,
+      "tokens": {
+        "in": 37,
+        "out": 19
+      }
+    },
+    {
+      "http_status": 200,
+      "i": 1,
+      "latency_ms": 1253.699,
+      "ok": true,
+      "tokens": {
+        "in": 37,
+        "out": 32
+      }
+    },
+    {
+      "http_status": 200,
+      "i": 2,
+      "latency_ms": 799.131,
+      "ok": true,
+      "tokens": {
+        "in": 37,
+        "out": 13
+      }
+    },
+    {
+      "http_status": 200,
+      "i": 3,
+      "latency_ms": 998.286,
+      "ok": true,
+      "tokens": {
+        "in": 37,
+        "out": 17
+      }
+    },
+    {
+      "http_status": 200,
+      "i": 4,
+      "latency_ms": 1187.561,
+      "ok": true,
+      "tokens": {
+        "in": 37,
+        "out": 16
+      }
+    },
+    {
+      "http_status": 200,
+      "i": 5,
+      "latency_ms": 1132.786,
+      "ok": true,
+      "tokens": {
+        "in": 37,
+        "out": 32
+      }
+    },
+    {
+      "http_status": 200,
+      "i": 6,
+      "latency_ms": 1077.828,
+      "ok": true,
+      "tokens": {
+        "in": 37,
+        "out": 28
+      }
+    },
+    {
+      "http_status": 200,
+      "i": 7,
+      "latency_ms": 1153.058,
+      "ok": true,
+      "tokens": {
+        "in": 37,
+        "out": 32
+      }
+    },
+    {
+      "http_status": 200,
+      "i": 8,
+      "latency_ms": 1033.652,
+      "ok": true,
+      "tokens": {
+        "in": 37,
+        "out": 23
+      }
+    },
+    {
+      "http_status": 200,
+      "i": 9,
+      "latency_ms": 891.278,
+      "ok": true,
+      "tokens": {
+        "in": 37,
+        "out": 22
+      }
+    },
+    {
+      "http_status": 200,
+      "i": 10,
+      "latency_ms": 1019.672,
+      "ok": true,
+      "tokens": {
+        "in": 37,
+        "out": 21
+      }
+    },
+    {
+      "http_status": 200,
+      "i": 11,
+      "latency_ms": 923.146,
+      "ok": true,
+      "tokens": {
+        "in": 37,
+        "out": 32
+      }
+    },
+    {
+      "http_status": 200,
+      "i": 12,
+      "latency_ms": 1120.018,
+      "ok": true,
+      "tokens": {
+        "in": 37,
+        "out": 17
+      }
+    },
+    {
+      "http_status": 200,
+      "i": 13,
+      "latency_ms": 1076.084,
+      "ok": true,
+      "tokens": {
+        "in": 37,
+        "out": 32
+      }
+    },
+    {
+      "http_status": 200,
+      "i": 14,
+      "latency_ms": 1040.442,
+      "ok": true,
+      "tokens": {
+        "in": 37,
+        "out": 32
+      }
+    },
+    {
+      "http_status": 200,
+      "i": 15,
+      "latency_ms": 807.684,
+      "ok": true,
+      "tokens": {
+        "in": 37,
+        "out": 17
+      }
+    },
+    {
+      "http_status": 200,
+      "i": 16,
+      "latency_ms": 847.842,
+      "ok": true,
+      "tokens": {
+        "in": 37,
+        "out": 32
+      }
+    },
+    {
+      "http_status": 200,
+      "i": 17,
+      "latency_ms": 1194.759,
+      "ok": true,
+      "tokens": {
+        "in": 37,
+        "out": 32
+      }
+    },
+    {
+      "http_status": 200,
+      "i": 18,
+      "latency_ms": 915.793,
+      "ok": true,
+      "tokens": {
+        "in": 37,
+        "out": 14
+      }
+    },
+    {
+      "http_status": 200,
+      "i": 19,
+      "latency_ms": 1015.955,
+      "ok": true,
+      "tokens": {
+        "in": 37,
+        "out": 32
+      }
+    },
+    {
+      "http_status": 200,
+      "i": 20,
+      "latency_ms": 1077.729,
+      "ok": true,
+      "tokens": {
+        "in": 37,
+        "out": 28
+      }
+    },
+    {
+      "http_status": 200,
+      "i": 21,
+      "latency_ms": 1273.766,
+      "ok": true,
+      "tokens": {
+        "in": 37,
+        "out": 13
+      }
+    },
+    {
+      "http_status": 200,
+      "i": 22,
+      "latency_ms": 1149.795,
+      "ok": true,
+      "tokens": {
+        "in": 37,
+        "out": 32
+      }
+    },
+    {
+      "http_status": 200,
+      "i": 23,
+      "latency_ms": 839.995,
+      "ok": true,
+      "tokens": {
+        "in": 37,
+        "out": 12
+      }
+    }
+  ],
+  "synthetic": null,
+  "transcript_written": false,
+  "workdir": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-003-deephealing-v0-m1/02_source/v0_skeleton/kernel"
+}

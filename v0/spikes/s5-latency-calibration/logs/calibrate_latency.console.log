@@ -1,0 +1,25 @@
+sample 1/24: latency_ms=1066.898
+sample 2/24: latency_ms=1253.699
+sample 3/24: latency_ms=799.131
+sample 4/24: latency_ms=998.286
+sample 5/24: latency_ms=1187.561
+sample 6/24: latency_ms=1132.786
+sample 7/24: latency_ms=1077.828
+sample 8/24: latency_ms=1153.058
+sample 9/24: latency_ms=1033.652
+sample 10/24: latency_ms=891.278
+sample 11/24: latency_ms=1019.672
+sample 12/24: latency_ms=923.146
+sample 13/24: latency_ms=1120.018
+sample 14/24: latency_ms=1076.084
+sample 15/24: latency_ms=1040.442
+sample 16/24: latency_ms=807.684
+sample 17/24: latency_ms=847.842
+sample 18/24: latency_ms=1194.759
+sample 19/24: latency_ms=915.793
+sample 20/24: latency_ms=1015.955
+sample 21/24: latency_ms=1077.729
+sample 22/24: latency_ms=1273.766
+sample 23/24: latency_ms=1149.795
+sample 24/24: latency_ms=839.995
+{"environment_class": "usable", "max_ms": 1273.766, "p50_ms": 1040.442, "p90_ms": 1194.759, "p95_ms": 1253.699, "p99_ms": 1273.766, "sample_count_failed": 0, "sample_count_ok": 24}

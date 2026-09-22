@@ -1,0 +1,110 @@
+world.schema.json | 世界状态/实体/组件契约（transform/needs/emotion/schedule/relations/memory_ref/trauma_flags/constants） | 手工编写（architect 01 设计 §5 字段表）
+events.schema.json | JSONL 事件契约（seq/tick/type/actor/payload/prev_hash/hash）+ type 枚举 + 各 type 必填 payload | 手工编写（01 §4.3 / §5）
+snapshot.schema.json | 快照契约（tick/state/state_hash/event_chain_hash/rng_state_digest）+ 规范化规则 + round 3：`event_chain_hash` 检查点字段唯一定义（= 截至本 tick 日志末条，含快照事件自身）、`INVARIANT-ECH-1/2/3`、崩溃恢复语义、链拓扑=全局单链、`ac2_criterion` 扩展（规范文件名 / null 即分歧 / 强制 run↔replay 比对） | 手工编写（01 §4.3 / §5 / §16.4.4）
+capability.schema.json | D-0.6 原子能力契约（id/version/slot/input_schema/output_schema/providers/cost/latency_ms_budget/timeout_ms/fallback/determinism/safety）+ round 3 新增：`x-time-budget-semantics` 四条冻结语义 / `x-provider-class-binding`（世界模型后端必须 remote_api，default-deny）/ `x-determinism-gate`（非确定性输出禁止入规则层，校验期必跑 ≥3 次）/ `x-tick-decoupling` / `calibration` 块 / `rule_layer_adoption`；槽位枚举新增 `imagine.predict` / `imagine.rollout`（ADR-010）+ round 3 · 修复迭代 2 新增：provider `sampling` 旋钮族与顶层同名键写入属性白名单（G3，使「带采样却声明 deterministic」的负例 schema 合法）/ `providers[].determinism` 列入 `required`（G2） | 手工编写（01 §7.2 字段表逐条落地 + 01 §16.1/§16.3）
+capability.registry.sample.json | 样例注册表：intent.plan / emotion.appraise / memory.reflect，各含四类 provider + round 3 的标定声明值（timeout_ms / latency_ms_budget）与 calibration 块 | 手工编写（01 §7.1/§7.2 + D-0.9）
+cassette.schema.json | cassette 记录契约（key/capability_id/version/provider/canonical_input_hash/output/meta/prev_hash/hash）+ round 3：`hash`/`prev_hash` 描述指回冻结条文 `FROZEN-CASSETTE-INTEGRITY-1`（无密钥链只检损坏/篡改，不是真实性保证） | 手工编写（01 §5 / §16.4.1）
+cassette.format.md | cassette 录制/回放格式、key 构成、miss 策略（默认 fail_closed）+ round 3 冻结条文 `FROZEN-CASSETTE-INTEGRITY-1`（强度边界与外部锚定） | 手工编写（01 §5 / §7.3 / §16.4.1）
+session.protocol.schema.json | 双模式会话消息 + 错误码枚举（含 E_MODE_READONLY） | 手工编写（01 §4.2 / §6.2）
+district.pack.schema.json | 内容包契约（packManifest/packSig/worldSeed 三个 $defs） | 手工编写（01 §4.6 / §5）
+district.pack.spec.md | 内容包目录规范 + 「新增第二街区不改内核代码」迁移路径与校验方式 | 手工编写（01 §4.6）
+intervention.policy.schema.json | 介入策略契约（scope/rate_limit/cooldown_ms/impact_budget/forbidden_actions/audit） | 手工编写（01 §6.3）
+verify_specs.sh | 真跑校验脚本：jq 逐文件解析 + 能力/注册表结构断言（含标定断言）+ manifest 覆盖检查（排除规则精确，只排生成残渣）+ pack.sig 逐文件比对 + 骨架完整性 + round 3 新增（能力绑定校验 / 资产包校验 / 运行时零生成扫描 / 许可枚举一致性），失败非 0 退出 | 手工编写
+v0_skeleton/README.md | V0 骨架说明（目录↔分层映射、三条硬边界、自检命令、RED 用例清单） | 手工编写
+v0_skeleton/capabilities/intent.plan@1.0.0.capability.json | 能力：意图规划（四类 provider 声明） | 手工编写（符合 capability.schema.json）
+v0_skeleton/capabilities/emotion.appraise@1.0.0.capability.json | 能力：情绪评估（四类 provider 声明） | 手工编写（符合 capability.schema.json）
+v0_skeleton/capabilities/memory.reflect@1.0.0.capability.json | 能力：记忆反思（四类 provider 声明） | 手工编写（符合 capability.schema.json）
+v0_skeleton/capabilities/embed.text@1.0.0.capability.json | 能力：文本嵌入（记忆检索用，四类 provider 声明） | 手工编写（符合 capability.schema.json）
+v0_skeleton/capabilities/pins.json | 版本钉住表 + 回放/离线 provider 覆盖（回滚只改数据） | 手工编写（01 §7.5）
+v0_skeleton/districts/xingfu-xiaoqu/pack.json | 样例内容包清单（id/version/engine_range/bounds/license/entrypoints/portals） | 手工编写（符合 district.pack.schema.json）
+v0_skeleton/districts/xingfu-xiaoqu/world.seed.json | 样例初始世界（seed/constants/weather + 12 个实体） | 手工编写（符合 world.schema.json）
+v0_skeleton/districts/xingfu-xiaoqu/buildings/b1-building.json | 1 号楼数据（楼层/房间/路点图/可交互物） | 手工编写（内容层数据）
+v0_skeleton/districts/xingfu-xiaoqu/buildings/courtyard-01.json | 中庭数据（氛围/光照/调色数值/活动时段） | 手工编写（内容层数据）
+v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-001.json | 住户档案（夜班/静默活跃度样本：需求权重、日程引用、创伤标记、认知与记忆策略） | 手工编写（内容层数据）
+v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-002.json | 住户档案（通勤/常规活跃度样本） | 手工编写（内容层数据）
+v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-003.json | 住户档案（退休/常规活跃度样本，社会接触压力源） | 手工编写（内容层数据）
+v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-004.json | 住户档案（照护者/深度活跃度样本，token 预算边界用例） | 手工编写（内容层数据）
+v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-005.json | 住户档案（备考住户，relation.infer 用例相关） | 手工编写（内容层数据）
+v0_skeleton/districts/xingfu-xiaoqu/tasks/task-001.json | C 级任务状态机 + adaptation_rules（参与模式最小用例） | 手工编写（内容层数据）
+v0_skeleton/districts/xingfu-xiaoqu/tasks/task-002.json | B 级任务状态机（观察模式下 NPC 自主推进） | 手工编写（内容层数据）
+v0_skeleton/districts/xingfu-xiaoqu/schedules/weekday.json | 工作日日程表（5 住户 × 分块日程，纯数据、无代码分支） | 手工编写（内容层数据）
+v0_skeleton/districts/xingfu-xiaoqu/assets/manifest.json | 资产位清单 + 治愈系美学数值约束 + 许可白名单 | 手工编写（01 §10）
+v0_skeleton/districts/xingfu-xiaoqu/pack.sig | 内容包完整性清单（13 个文件的 sha256） | 由 v0_skeleton/tools/pack_sign.py 生成（可复跑）
+v0_skeleton/kernel/pyproject.toml | 内核包元数据与依赖（py_trees/jsonschema/numpy/instructor；禁 HTTP 客户端直连） | 手工编写（07_adr.md ADR-001/008）
+v0_skeleton/kernel/deephealing_kernel/__init__.py | 内核包入口 + 分层不变量 + KERNEL_CONTRACT_VERSION | 手工编写（接口骨架）
+v0_skeleton/kernel/deephealing_kernel/cli.py | 内核 CLI 命令面（run/replay/verify/validate/pack sign）与退出码约定 | 手工编写（接口骨架）
+v0_skeleton/kernel/deephealing_kernel/tick.py | 固定步长 tick 循环与阶段顺序契约（PHASES 即契约） | 手工编写（接口骨架）
+v0_skeleton/kernel/deephealing_kernel/rng.py | WorldRng + 子系统分流（新增子系统不扰动既有 stream） | 手工编写（接口骨架）
+v0_skeleton/kernel/deephealing_kernel/ecs.py | 薄 ECS（组件数组/实体索引/固定系统顺序/按 id 排序导出） | 手工编写（接口骨架）
+v0_skeleton/kernel/deephealing_kernel/events.py | 事件日志与哈希链（append-only、脱敏、链校验） | 手工编写（接口骨架）
+v0_skeleton/kernel/deephealing_kernel/snapshot.py | 快照与 state_hash/检查点比对/分歧 dump | 手工编写（接口骨架）
+v0_skeleton/kernel/deephealing_kernel/pack.py | 内容包加载与校验（E_PACK_INVALID、engine_range、portals 建边） | 手工编写（接口骨架）
+v0_skeleton/kernel/deephealing_kernel/registry.py | 原子能力注册表（数据 glob 发现/provider 路由/fallback 链/回放强制） | 手工编写（接口骨架）
+v0_skeleton/kernel/deephealing_kernel/budget.py | 三级预算记账（tick/NPC 日/会话影响） | 手工编写（接口骨架）
+v0_skeleton/kernel/deephealing_kernel/bus.py | 只读事件总线（L7/L2 只订阅，订阅者异常隔离） | 手工编写（接口骨架）
+v0_skeleton/kernel/deephealing_kernel/rules/__init__.py | 规则层包入口（禁止在规则层直接 HTTP/SDK） | 手工编写（接口骨架）
+v0_skeleton/kernel/deephealing_kernel/rules/utility.py | 效用打分器（纯函数，显式排序） | 手工编写（接口骨架）
+v0_skeleton/kernel/deephealing_kernel/rules/behaviour_tree.py | 行为树组装 + call_capability 叶子（唯一模型调用接缝） | 手工编写（接口骨架）
+v0_skeleton/kernel/deephealing_kernel/providers/__init__.py | provider 包入口（模型/HTTP 调用唯一允许位置） | 手工编写（接口骨架）
+v0_skeleton/kernel/deephealing_kernel/providers/remote_api.py | remote_api provider（凭据只从环境变量取，Authorization 脱敏） | 手工编写（接口骨架）
+v0_skeleton/kernel/deephealing_kernel/providers/local_model.py | local_model provider（本机无 NVIDIA GPU 的降级路径） | 手工编写（接口骨架）
+v0_skeleton/kernel/deephealing_kernel/providers/deterministic_rule.py | deterministic_rule provider（四个纯函数兜底实现） | 手工编写（接口骨架）
+v0_skeleton/kernel/deephealing_kernel/providers/cassette.py | cassette 录制/回放 provider（key 构成 + miss fail-closed） | 手工编写（接口骨架）
+v0_skeleton/kernel/deephealing_kernel/adapters/__init__.py | provider 适配器包入口（**round 3 · 修复迭代 2 新增文件**；既有内核源码零改动） | 手工编写（G1 impl 白名单：正例 impl 必须落在 kernel 根之内）
+v0_skeleton/kernel/deephealing_kernel/adapters/determinism_probe.py | 确定性探针参考适配器（纯函数 `pure_rule`；run_s7 F2③ 正例用） | 手工编写（G1，可执行，已真跑）
+v0_skeleton/kernel/deephealing_kernel/memory/__init__.py | 记忆层包入口（三层：working/episodic/semantic） | 手工编写（接口骨架）
+v0_skeleton/kernel/deephealing_kernel/memory/store.py | 记忆存储（sqlite 表结构、裁剪与可回滚 superseded_by） | 手工编写（接口骨架）
+v0_skeleton/kernel/deephealing_kernel/memory/retrieve.py | 记忆检索（余弦 + 显式 tie-break）与反思触发 | 手工编写（接口骨架）
+v0_skeleton/kernel/tests/test_determinism_replay.py | RED 用例：AC-2 双跑哈希一致 + 两个非确定性负例 | 手工编写（RED 先行）
+v0_skeleton/kernel/tests/test_capability_registry.py | RED 用例：AC-13 数据驱动发现/provider 切换/cassette fail-closed/非法能力被拒 | 手工编写（RED 先行）
+v0_skeleton/kernel/tests/test_pack_validate.py | RED 用例：AC-6 内容包校验与第二街区零内核改动 | 手工编写（RED 先行）
+v0_skeleton/kernel/tests/test_observe_mode_readonly.py | RED 用例：AC-4 observe 上行被拒 + 介入护栏 | 手工编写（RED 先行）
+v0_skeleton/session/package.json | L2 会话层包元数据（Node ESM，ws 依赖） | 手工编写（接口骨架）
+v0_skeleton/session/src/server.js | 会话服务（建会话/上行入口/广播；非权威） | 手工编写（接口骨架）
+v0_skeleton/session/src/mode.js | 双模式权限判定（observe 上行即 E_MODE_READONLY，已可执行） | 手工编写（接口骨架，部分可跑）
+v0_skeleton/session/src/upstream.js | 内核桥（只搬运，不缓存世界状态真值） | 手工编写（接口骨架）
+v0_skeleton/session/src/policy.js | 介入策略运行时（forbidden→rate_limit→cooldown→budget→入队） | 手工编写（接口骨架）
+v0_skeleton/session/test/session.test.js | 会话层 RED 用例（node --test，权限判定部分已可执行） | 手工编写（RED 先行）
+v0_skeleton/tools/canonical_json.py | 规范化 JSON 与哈希链工具（内核与离线工具共用同一实现） | 手工编写（可执行）
+v0_skeleton/tools/pack_sign.py | 生成 pack.sig（拒绝内容包内可执行文件） | 手工编写（可执行，已真跑）
+v0_skeleton/tools/verify_pack.py | pack.sig 逐文件比对（缺/多/哈希不符即非 0 退出） | 手工编写（可执行，已真跑）
+v0_skeleton/tools/aesthetic_check.py | 治愈系美学数值校验（饱和/色相/粗糙度/音频/许可） | 手工编写（可执行，已真跑）
+v0_skeleton/tools/duckdb_queries.sql | 观测层示例查询（事件分布/成本与降级/介入审计/时间轴/哈希链自检） | 手工编写（本机未装 duckdb，未真跑）
+v0_skeleton/web/package.json | L1 渲染层包元数据（three + vite + ts） | 手工编写（接口骨架）
+v0_skeleton/web/index.html | 渲染层 HTML 壳（canvas + HUD，治愈系低饱和基调） | 手工编写（接口骨架）
+v0_skeleton/web/vite.config.ts | vite 构建配置（/ws 与 /sessions 代理到 L2） | 手工编写（接口骨架）
+v0_skeleton/web/tsconfig.json | TS 严格模式配置 | 手工编写（接口骨架）
+v0_skeleton/web/src/main.ts | 渲染层入口（装配场景/客户端/双模式 UI） | 手工编写（接口骨架）
+v0_skeleton/web/src/net/client.ts | 会话客户端（按 tick/seq 去重丢过期；observe 本地拒绝 intent） | 手工编写（接口骨架）
+v0_skeleton/web/src/scene/world.ts | 场景装配（消费 snapshot/delta，零业务逻辑） | 手工编写（接口骨架）
+v0_skeleton/web/src/scene/lighting.ts | 治愈系光照与材质数值（与 assets/manifest.json 约束对齐） | 手工编写（接口骨架）
+v0_skeleton/web/src/ui/observe/panel.ts | 观察模式 UI（事件流/时间轴/指标/NPC 档案脱敏，无写入口） | 手工编写（接口骨架）
+v0_skeleton/web/src/ui/participate/intervention.ts | 参与模式 UI（介入通道/预算/冷却/被拒原因/任务演进视图） | 手工编写（接口骨架）
+worldmodel.adapter.spec.md | AC-14 世界模型适配器契约（七项必答 + 权威归属 + provider 类别绑定 + 确定性闸门 + V1 门禁脚本形态） | 手工编写（01 §16.1 逐条落地）
+asset.manifest.schema.json | AC-15 资产清单契约（必填字段 + license 白名单枚举 + content_hash 口径 + derived_from 闭包 + provenance + 工作流受管登记 + meta 元数据剥离） | 手工编写（01 §16.2.6 逐条落地）
+asset.license.table.json | 许可白名单数据表**契约**（default-deny 策略 + license_enum + 行结构 + ComfyUI 工作流策略） | 手工编写（01 §16.2.6）
+asset.license.table.data.json | 许可白名单**数据**（逐模型：license / commercial_use / kind / URL / 裁决；FLUX.1-dev 与 MusicGen 权重判 reject） | 手工编写 + 上游二次核对（spikes/facts-license/probe_facts_r3.sh）
+art-bible.md | AC-15 美术圣经（配色/光照/材质/镜头/音频/UI 可执行约束 + 风格锁定 + 角色一致性可检查项） | 手工编写（01 §16.2.8）
+content-pipeline.spec.md | AC-15 离线内容管线规范（唯一一条管线 + 每步可执行校验命令 + 运行时零生成强制约束 + 工作流受管登记） | 手工编写（01 §16.2.7）
+capability.time-budget.spec.md | D-0.9 时间预算语义人读版（四条冻结语义 + 标定依据 + 禁止 override 取证 + 合成负例例外规则）+ round 3 · 修复迭代 3 新增 §7 **H3 边界声明**（派生计算上界数值 / `verified_impl` 确切语义 / 未关闭 R3F2 条目逐条触发条件） | 手工编写（01 §16.3）
+v0_skeleton/capabilities/imagine.predict@1.0.0.capability.json | 能力：世界模型想象预测（`imagine.*` 槽位；世界模型后端强制 remote_api；V0 只有接口桩 + 确定性占位） | 手工编写（符合 capability.schema.json；ADR-010 引入槽位）
+v0_skeleton/assets-sample/placeholder-001.png | V0 唯一占位资产（64×64 程序化 PNG，无 tEXt/iTXt 元数据） | 由 v0_skeleton/tools/make_placeholder_asset.py 生成（确定性，可复跑）
+v0_skeleton/assets-sample/asset.manifest.sample.json | 资产清单示例（过 asset.manifest.schema.json；license 与 source_model 查表一致；adopted + 人工过审痕迹） | 手工编写（字段值取自真实文件 sha256）
+v0_skeleton/assets-sample/workflows/procedural-placeholder.json | 受管工作流登记（sha256 入 manifest；referenced_models 必须过许可表） | 手工编写（程序化占位资产的工作流描述）
+v0_skeleton/tools/verify_asset_pack.py | **资产包校验执行体**（A1~A9：无主资产/悬空条目/许可查表/content_hash/过审/来源闭包/元数据/工作流/运行时零生成） | 手工编写（可执行，已真跑：正例 exit 0 + 10 类负例非 0）
+v0_skeleton/tools/verify_capability_binding.py | **能力契约校验器**（provider 类别绑定 default-deny + 确定性闸门禁止面 + 一致性检查 runs≥3 + 标定防自证断言）+ round 3 · 修复迭代 2：**执行体加固**（impl 白名单/锚定 + 子进程硬超时与资源上限 + BaseException 兜底 + 输出 JSON/`output_schema` 合规 + `verified_impl` 语义收窄）与 provider `determinism` 必填 + round 3 · 修复迭代 3：**派生计算加固**（内嵌 schema 健全性检查 + 深度/节点/minItems/`enum` 上界 + 派生实例节点预算 + 逐能力兜底 + 人类可读 stdout 控制字符转义）与 **H2 语义钉死**（一次 spawn 内 3 次调用） | 手工编写（可执行，已真跑：正例 exit 0 + 自造 13 类负例非 0）
+v0_skeleton/tools/schema_validate.py | JSON-Schema（draft 2020-12）校验薄封装（门禁链与校验器共用；引擎 = jsonschema 库，不可用即 fail-closed）+ 修复迭代 3 新增 `check_schema`（**内嵌 schema 自身**合法性，H1 用前检查） | 手工编写（可执行，已真跑）
+v0_skeleton/tools/validate_capability_schema.py | **能力清单真 JSON-Schema 校验步骤**（G3；含 6 条自证：合法基线绿 + 4 类非法红 + 带采样合法绿） | 手工编写（可执行，已真跑：正例 exit 0 + 自证 exit 0）
+v0_skeleton/tools/determinism_probe_worker.py | 确定性探针的**隔离子进程执行体**（G1 缓解 ②：资源上限 + 文件通道回传，stdout 不回显）+ 修复迭代 3：**一次 spawn 内执行 `runs` 次调用并逐次回传 `outputs`**（H2：进程内可变状态可见；`runs` 上界 32） | 手工编写（可执行，由校验器按需拉起）
+v0_skeleton/tools/make_placeholder_asset.py | 占位资产生成命令（纯 stdlib 确定性 PNG，离线管线第 1 步；运行时零生成的对照物） | 手工编写（可执行，已真跑）
+v0_skeleton/kernel/conftest.py | 把 `kernel/` 根插入 `sys.path`，使**裸 `pytest`** 与 `python3 -m pytest` 两种形态都能 import `deephealing_kernel`（预审 C2 关闭项；不改任何冻结文件） | 手工编写（M1 新增；`pytest tests/test_pack_validate.py -q` 与 `python3 -m pytest …` 两种形态均已真跑 exit 0）
+v0_skeleton/kernel/deephealing_kernel/__main__.py | `python3 -m deephealing_kernel` 包入口（冻结命令面全部以 `-m` 形式调用，包内必须有此文件） | 手工编写（M1 新增；AC-M1-3 端到端真跑）
+v0_skeleton/kernel/tools/kernel_digest.py | W0b 内核源码指纹：`kernel_digest(root) -> {files, digest}` + 差集判据（`changed == []` 且 `added ⊆ adapter 目录并集`）+ `--selftest` 自证；不得 `import deephealing_kernel`（`sys.path[0]` = `tools/`） | 手工编写（M1 新增；口径 = `08` §2 W0b 排除表；已真跑：基线锚点 `files=24`/`digest=058e9a54…` 复现 + 两条负例非 0）
+v0_skeleton/kernel/tools/calibrate_latency.py | W0e 延迟标定工具链 `dist → derive → degrade → check`（+ `registry`）：最近秩分位 + `ceil_to` 推导规则；环境降级时 `derive` fail-closed 拒绝产出声明值；**不写** HTTP transcript、**不改** `02_source` 声明值 | 手工编写（M1 新增；口径与 `spikes/s5-latency-calibration/calibrate.py` 一致；已真跑：合成样本自证 + 24 次真实远端采样）
+v0_skeleton/kernel/tests/test_kernel_digest.py | AC-M1-5 用例：基线锚点（`files=24`/`058e9a54…`）+ before/after 差集判据 + **两条强制负例**（改 `tick.py` 一字节 ⇒ `changed` 非空；包根新增 `.py` ⇒ `added` 越界）+ `providers/adapters/` 并集正例 + CLI 独立跑 | 手工编写（M1 新增；裸 `pytest` 与 `python3 -m pytest` 两种形态均真跑绿）
+v0_skeleton/kernel/tests/test_e2e_run_verify.py | AC-M1-3 用例：`run → verify → replay` 三字段逐点一致 + 朴素整行截断负例 + 篡改 payload 负例 + **C1 伪造日志（截断+改 `plan_ticks`+重算整条链+删多余检查点）** 锚点三态断言；**修复轮 A1/A2/C6/C7**：5 类**完全自洽**伪造的矩阵（4 类必须由事件流比对判红 + 1 类如实记为「只能由链外锚点关闭」）、`claim_boundary` 强度断言、`--pack` 回退 note、`run` 对「删日志留检查点」fail-closed | 手工编写（M1 新增 + 修复轮扩充；已真跑绿，含伪造矩阵自证）
+v0_skeleton/kernel/tests/test_bus_and_ecs_invariants.py | 内核正确性支撑（R13~R16）：`state` 过 `world.schema.json` 且不含 `weather`、`tags` 存活、canonical 单一来源（含 fork 反向对照）、bus 订阅者异常隔离（含未隔离实现对照）、ECS `query()` 按 id 升序（含逆序对照）、`apply_delta` | 手工编写（M1 新增；已真跑绿）
+v0_skeleton/kernel/tests/test_events_snapshot_invariants.py | R17/R18/R24/R25：`INVARIANT-ECH-1/2/3` 逐条断言（含两条反向对照）、检查点集合规范性与 `checkpoint_set_error`、`redact()` 点分路径 + glob（含硬编码键名表反向对照）、检查点 `state_hash` 独立复算（含手改一字符必红）；**修复轮 B1/B2/C9**：`trauma_flags` 全序键（输入顺序无关，含旧键反向对照）、补充脱敏判据改为键名整词等价族（合法键名不得误脱敏）、`checkpoint_path` 指向真实文件（run 与 replay 双侧） | 手工编写（M1 新增 + 修复轮扩充；已真跑绿）
+v0_skeleton/kernel/tests/test_calibrate_latency.py | AC-M1-6 用例：冻结物 sha256 与 round-3 逐字节一致、offset/区间表漂移守卫、干净合成链全绿、污染样本 `derive` fail-closed、陈旧声明值使区间闸变红、分布早于规则时拒绝推导、`registry` 三份冻结物登记；**修复轮 C4/C5**：`check` 独立重算 p50/p90/p95/p99/max 五个量（逐个篡改必红）+ `adopted == strict` 结构塌缩与区间越界分开报告（含反向对照） | 手工编写（M1 新增 + 修复轮扩充；已真跑绿）
+v0_skeleton/kernel/tests/test_canonical_contract.py | **修复轮 C10**：canonical JSON 契约的**独立序列化**对照（测试内手写编码器，不 import 被测实现）+ 子进程注入「分隔符带空格」变体实现的反向对照（判据必须非 0） | 手工编写（修复轮新增；已真跑绿 + 反向对照非 0）
+v0_skeleton/kernel/tests/test_evidence_scan.py | **修复轮 C1**：AC-M1-7(b) 请求体面扫描器的**反向对照**（探针文件必须命中 ⇒ 移除后 0 命中 ⇒ 真实扫描面 0 命中）+ 标定产物自报 `transcript_written: false` 且真实调用数 = 24 + 3×10 = 54 | 手工编写（修复轮新增；已真跑绿）

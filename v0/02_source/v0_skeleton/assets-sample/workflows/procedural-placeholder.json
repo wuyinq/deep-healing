@@ -1,0 +1,9 @@
+{
+  "workflow_id": "procedural-placeholder@1.0.0",
+  "engine": "none",
+  "note": "V0 占位资产是**程序化**生成的（tools/make_placeholder_asset.py），本文件是它的受管工作流登记：不引用任何生成式 checkpoint。若将来改用 ComfyUI，则 referenced_models 里的每个名字都必须过 asset.license.table.data.json。",
+  "nodes": [
+    { "id": 1, "type": "ProceduralGradient", "params": { "size": [64, 64], "saturation_max": 22 } }
+  ],
+  "referenced_models": ["programmatic-placeholder"]
+}

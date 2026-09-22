@@ -1,4 +1,17 @@
-# PM 逐 AC 终验（REQ-20260921-002 · 架构冻结轮）
+# PM 逐 AC 终验记录
+
+> 本文件按轮次累积：**§1~§6 = REQ-20260921-002（架构冻结轮）**，**§7 = REQ-20260921-003（V0 垂直切片 · M1）**。
+
+## §0 轮次索引
+
+| 轮次 | 需求 | 结论 | 交付物落点 |
+|---|---|---|---|
+| 架构冻结 | `REQ-20260921-002` | 有条件通过（CRITICAL 0；AC-11 / AC-13 为 GAP） | `docs/`（commit `b421cb0`） |
+| V0 · M1 | `REQ-20260921-003` | 有条件通过（CRITICAL 0；6 PASS / 1 GAP / 1 分列均 PASS） | `v0/` |
+
+---
+
+# 第一部分 · REQ-20260921-002（架构冻结轮）
 
 - 验收人：lanova（PM）　时间：2026-09-21 19:2x（Asia/Shanghai）
 - 被测：`dev_team_workspace/REQ-20260921-002-deephealing-architecture-freeze/`（01~09 + 02_source 83 文件 + spikes 5 组）
@@ -126,3 +139,66 @@
 - **R3F3-1**（内嵌 `output_schema` 的 `$ref` 悬挂/成环 ⇒ 父进程崩溃被压成不透明 `B5_CHECK_CRASH_GUARDED`）：**MEDIUM 携带**，非「已关闭」。
 - 「治愈系氛围达成」**未证实**（AC-11 GAP）。
 - 冻结快照**只提供事后发现漂移**，不提供防止；本轮以「隔离复跑」机制消除该矛盾。
+
+
+---
+
+# 第二部分 · REQ-20260921-003（V0 垂直切片 · 里程碑 M1：确定性内核）
+
+- 验收人：lanova（PM）　时间：2026-09-22（Asia/Shanghai）
+- 被测：`dev_team_workspace/REQ-20260921-003-deephealing-v0-m1/`（`02_source` 111 文件 + `spikes/**` + `06_v0_m1_self_test.md`）
+- 交付落点：`v0/`（本仓库）
+- 结论：**有条件通过**。8 条 AC 中 **6 PASS / 1 GAP / 1 分列两判据均 PASS**；**CRITICAL 全程为 0**；无 FAIL。
+
+## 7. 逐 AC 判定（PM 亲自读盘 + 亲自复跑，不采信自述）
+
+| AC | PM 判定 | PM 的独立依据（命令 + 实测） |
+|---|---|---|
+| AC-M1-1 契约仍全绿 | **PASS** | `bash verify_specs.sh --quiet` → `OK (95 checks passed, 0 skipped)`；asset pack `assets=1 files=2 rejects=0`；zero-generation `hits=0` |
+| AC-M1-2 确定性 tick 与回放 | **PASS** | `pytest tests/test_determinism_replay.py` → **6 passed**（非 skipped） |
+| AC-M1-3 端到端 run→verify→replay | **PASS + 已声明边界** | PM 自跑：925 事件 / 6 检查点 / 链尾 `baecca92…` / `verify` exit 0；对抗负例 7/7（见下） |
+| AC-M1-4 内容包加载 | **PASS** | `validate` exit 0（npcs=5 / entities=12 / buildings=2）；`pytest tests/test_pack_validate.py` → 12 passed |
+| AC-M1-5 内核源码指纹 | **PASS** | `pytest tests/test_kernel_digest.py` → 4 passed；PM 自造差集负例（改 `tick.py` → `changed=['tick.py']`）；`--selftest` → OK（1 正例 + 2 强制负例 + 1 并集正例） |
+| AC-M1-6 时间预算标定（D-0.9） | **GAP**（① ② PASS / ③ ④ GAP） | 判据③**不可重复**：同数据同声明值同为 `--runs 10`，三次测得 adopted 降级率 `0.50`（越界）/ `0.20` / `0.10`；根因 = 抖动 **叠加** 区间口径塌缩（`adopted == strict == 1300`，7/7 全塌缩）。**未重采样、未调参、未改声明值** |
+| AC-M1-7 凭据与请求体面 | **PASS**（两判据均 PASS） | PM 严格密钥形状扫描（`sk-[A-Za-z0-9]{20,}`）**0 命中**；54 次真实调用、无落盘请求体 |
+| AC-M1-8 仓库零改动 + 起点溯源 | **PASS** | 验收时仓库 `develop` @ `b421cb0`、`dirty=0`；SEED 聚合 `34fa7f6d…` 未变；`V0_M1.sha256` 276/276 OK |
+
+## 8. AC-M1-3 对抗负例（PM 自写，不复用小队夹具）
+
+PM 自写 `pm_adversarial_ac3.py`，导入**冻结的** `tools/canonical_json.py`（契约要求单一来源），先自证公式正确（重算 **925/925** 逐条复现原哈希），再上四类攻击：
+
+| 用例 | 期望 | 实测 |
+|---|---|---|
+| N1 朴素截断（尾部删 120 条） | 红 | exit 1 ✓ |
+| N2 中段篡改 payload + 重算整链 | 红 | exit 1 ✓ |
+| N3 自洽前缀伪造（截断 + 改 `plan_ticks` + 重算链）· **无锚点** | — | **exit 0** ← 独立复现 GAP-7 |
+| N3 同上 · **带原始锚点** | 红 | exit 1 ✓ |
+| N4 干净日志 + 正确锚点 / 错误锚点 | 绿 / 红 | exit 0 / exit 1 ✓ |
+
+**PM 的构造过程本身是证据**：前两次构造**被实现检出**（中途截断 → `missing_in_log`；陈旧快照 → `INVARIANT-ECH-2`），第三次才成功
+（须同时满足：正确链公式 + 截断落 **tick 边界** + 同步维护 `INVARIANT-ECH-2`）。
+⇒ 该伪造**比看起来难但确实可行**；实现的**多层探测器有效，但无法覆盖无锚点场景**。
+
+## 9. GAP-7（自洽前缀截断）—— PM 裁决：接受为**已声明的强度边界**
+
+无密钥哈希链本不提供真实性保证（`cassette.format.md` 的 `FROZEN-CASSETTE-INTEGRITY-1` 已如实声明）。
+**硬性要求**：验收与任何抗改写场景**必须显式传 `--expected-hash`**（链外锚点；`run` 输出的 `chain_tail` 可直接取用）。
+**禁止**把「`verify` exit 0」读成「日志未被篡改」。
+
+## 10. 未关闭项（如实登记，不阻断）
+
+- **GAP-7** 如上；**AC-M1-6** 判据③④不可重复
+- **U11**：`verify_pack.py` 对「符号链接逃逸 pack」仍判绿 ⇒「AC-M1-1 绿」≠「pack 无越界读取」
+- **8 条 MEDIUM**（architect `non_block_issues`）：replay 侧 fail-closed 不对称、checkpoints 只读目录/symlink 形态、畸形日志裸 traceback 等
+- **交付面依赖**：AC-M1-5/6/7 的判据依赖**工作区级产物**（`spikes/kernel-baseline/**`、`spikes/s5-latency-calibration/**`、`06_v0_m1_self_test.md`）。
+  只取 `02_source` 会看到 12 条红（**全部归因产物缺失，非代码回归**）⇒ 交付包必须一并提供它们（`v0/` 已按此落盘）
+- **标定缓存与位置耦合**：`calibration.registry.json` 存绝对路径 + mtime ⇒ 复制/克隆到新路径后
+  `test_registry_is_idempotent` 首跑失败；补救 = 原地跑一次 `tools/calibrate_latency.py registry`。**待修**
+- **LOW**：`spikes/red/**`（负控沙箱）含字面串 `Bearer sk-liv...oken`——**非真密钥**（严格扫描 0 命中），仅为截断仿冒串；未随 `v0/` 提供
+
+## 11. 范围与诚实边界
+
+- 本轮交付 = **M1 确定性内核可运行**（`run` → 事件日志 → `replay` → `verify` → `validate` → `pack sign`），
+  **不是**完整 V0 垂直切片：能力注册表运行时（W3）、规则层与预算（W4）、记忆层（W5）、
+  双模式会话（W7）、渲染层（W8）、观测层（W9）属后续里程碑。
+- `local_model` provider **未真跑**（本机无本地模型服务），只有槽位设计，不冒充已跑。

@@ -1,0 +1,31 @@
+[project]
+name = "deephealing-kernel"
+version = "0.0.0"
+description = "DeepHealing 世界内核（L3）：确定性 tick / ECS / 事件哈希链 / 快照 / 能力注册表调度。V0 骨架：接口已冻结，实现未开始。"
+requires-python = ">=3.13"
+dependencies = [
+  "py_trees>=2.2",
+  "jsonschema>=4.23",
+  "numpy>=2.0",
+  "instructor>=1.5",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.6"]
+analytics = ["duckdb>=1.1"]
+
+[project.scripts]
+deephealing-kernel = "deephealing_kernel.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 110
+target-version = "py313"
+
+# 说明（V0 骨架）：
+# - 内核语言与依赖裁决见 07_adr.md ADR-001 / ADR-008。
+# - 依赖安装成本：本机 Rust 未装、pnpm/yarn 未装；Python 3.13.13 + uv 0.12.1 可用。
+# - 内核**不得**直接依赖任何 HTTP/SDK 客户端库：模型通道一律经 providers/ 适配器（契约级禁令，见 01 设计 §7.1）。

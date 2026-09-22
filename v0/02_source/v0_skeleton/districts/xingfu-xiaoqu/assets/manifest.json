@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0.0",
+  "pack_id": "xingfu-xiaoqu",
+  "aesthetic_constraints": {
+    "palette": { "saturation_max_pct": 45, "warm_hue_range_deg": [20, 60], "cool_complement_hue_range_deg": [180, 210], "night_high_saturation_accents_max": 2 },
+    "lighting": { "shadow_softness_min": 0.5, "ambient_ratio_min": 0.35 },
+    "material": { "roughness_min": 0.6 },
+    "audio": { "allowed_beds": ["ambient_lowfreq", "none"], "sharp_high_freq_sfx": false },
+    "validation": "数值超界即校验失败（tools/aesthetic_check.py）；不依赖主观评价"
+  },
+  "assets": [
+    {
+      "id": "mat-wall-plaster",
+      "kind": "material",
+      "source": "procedural",
+      "palette": { "hue_deg": 34, "saturation_pct": 22, "lightness_pct": 76 },
+      "roughness_range": [0.72, 0.88],
+      "audio_bed": "none",
+      "license": "proprietary-self-authored",
+      "note": "旧墙漆：默认带轻微生活痕迹（磨损贴图不是例外）"
+    },
+    {
+      "id": "mat-floor-wood",
+      "kind": "material",
+      "source": "procedural",
+      "palette": { "hue_deg": 42, "saturation_pct": 38, "lightness_pct": 58 },
+      "roughness_range": [0.65, 0.8],
+      "audio_bed": "none",
+      "license": "proprietary-self-authored"
+    },
+    {
+      "id": "prop-bench-wood",
+      "kind": "prop",
+      "source": "placeholder",
+      "palette": { "hue_deg": 28, "saturation_pct": 41, "lightness_pct": 52 },
+      "roughness_range": [0.7, 0.9],
+      "audio_bed": "none",
+      "license": "proprietary-self-authored",
+      "replaceable_by": "authored"
+    },
+    {
+      "id": "fx-night-window-glow",
+      "kind": "texture",
+      "source": "procedural",
+      "palette": { "hue_deg": 45, "saturation_pct": 44, "lightness_pct": 70 },
+      "roughness_range": [0.9, 1.0],
+      "audio_bed": "none",
+      "license": "proprietary-self-authored",
+      "note": "夜间唯一的高饱和点缀（数量 1 ≤ 上限 2）"
+    },
+    {
+      "id": "audio-courtyard-bed",
+      "kind": "audio",
+      "source": "placeholder",
+      "palette": { "hue_deg": 190, "saturation_pct": 12, "lightness_pct": 40 },
+      "roughness_range": [1.0, 1.0],
+      "audio_bed": "ambient_lowfreq",
+      "license": "proprietary-self-authored",
+      "note": "环境音铺底 + 低频温暖垫音；惊悚段落用留白+低频，不用尖叫"
+    }
+  ],
+  "licence_policy": {
+    "runtime_allowed": ["proprietary-self-authored", "CC0-1.0", "CC-BY-4.0", "MIT", "Apache-2.0"],
+    "offline_pipeline_only": ["GPL-3.0"],
+    "note": "GPL 系（如 BlenderGIS 产出）只允许留在离线美术管线，不得进入运行时与交付产物。"
+  }
+}

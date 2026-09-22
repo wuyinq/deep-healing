@@ -1,0 +1,28 @@
+{
+  "id": "task-002",
+  "display_name": "长椅上多出来的一个位置",
+  "level": "B",
+  "initial_state": "dormant",
+  "states": ["dormant", "observed", "invited", "shared", "ritual"],
+  "transitions": [
+    { "from": "dormant", "to": "observed", "trigger": "npc.action#npc-003", "condition": "action==sit" },
+    { "from": "observed", "to": "invited", "trigger": "npc.action#npc-005", "condition": "action==approach" },
+    { "from": "invited", "to": "shared", "trigger": "npc.action#npc-003", "condition": "action==talk" },
+    { "from": "shared", "to": "ritual", "trigger": "npc.action#npc-005", "condition": "action==sit_regularly" }
+  ],
+  "adaptation_rules": [
+    {
+      "id": "rule-002-pace",
+      "match": { "event_type": "intent.applied", "kind": "delegate_instruction", "target": "npc-005" },
+      "effect": { "shift_to": "invited", "reason": "玩家鼓励跨代接触" },
+      "max_shifts": 1,
+      "impact_cost": 5.0
+    }
+  ],
+  "rewards": { "healing_delta": 0.12, "relation_delta": { "npc-005": 0.15, "npc-003": 0.1 } },
+  "hard_constraints": [
+    "不得强制 npc-005 参与社交（extraversion=0.35，需要渐进）",
+    "不得跳过 observed 直接进入 shared"
+  ],
+  "v0_role": "观察模式（无玩家介入）也能靠 NPC 自主行为推进的任务；用于验证「世界自身在演」"
+}

@@ -1,0 +1,207 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deephealing.local/schemas/world.schema.json",
+  "title": "DeepHealing World State",
+  "description": "冻结的世界状态契约（L3 世界内核唯一权威状态）。快照 state 字段与内容包 world.seed.json 均须通过本 schema。数值纪律：位置用整数毫米，旋转用整数毫度，浮点仅用于派生量且快照时按 6 位小数规范化，禁 NaN/Inf。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "seed", "tick", "constants", "entities"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0",
+      "description": "世界状态契约版本；不兼容变更必须递增主版本。"
+    },
+    "seed": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "唯一随机源种子。整局世界由该种子派生，禁止 tick 内重新播种。"
+    },
+    "tick": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "当前 tick 序号；dt=100ms 固定，tick 0 为 genesis。"
+    },
+    "constants": { "$ref": "#/$defs/constants" },
+    "entities": {
+      "type": "array",
+      "description": "实体列表。序列化前必须按 id 升序显式排序（禁止依赖插入顺序或 dict/set 迭代顺序）。",
+      "items": { "$ref": "#/$defs/entity" }
+    }
+  },
+  "$defs": {
+    "constants": {
+      "type": "object",
+      "description": "世界常量（内容包提供，内核只读消费）。",
+      "additionalProperties": false,
+      "required": ["dt_ms", "tick_rate_hz", "snapshot_every_ticks", "day_ticks", "world_bounds_mm"],
+      "properties": {
+        "dt_ms": { "type": "integer", "const": 100, "description": "固定步长，单位毫秒。" },
+        "tick_rate_hz": { "type": "integer", "const": 10 },
+        "snapshot_every_ticks": { "type": "integer", "minimum": 1, "default": 50 },
+        "day_ticks": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "一「世界日」包含的 tick 数；日程与日预算按此换算。"
+        },
+        "world_bounds_mm": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["x", "y", "z"],
+          "properties": {
+            "x": { "type": "integer" },
+            "y": { "type": "integer" },
+            "z": { "type": "integer" }
+          },
+          "description": "街区包围盒，单位毫米。"
+        },
+        "max_entities": { "type": "integer", "minimum": 1, "default": 4096 }
+      }
+    },
+    "entity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "transform"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.-]{1,63}$",
+          "description": "实体稳定标识，内容包内唯一；运行时不得重命名。"
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["npc", "player_proxy", "prop", "room", "portal", "zone", "system"],
+          "description": "实体种类。新增种类需 ADR（属内核契约变更）。"
+        },
+        "transform": { "$ref": "#/$defs/transform" },
+        "needs": { "$ref": "#/$defs/needs" },
+        "emotion": { "$ref": "#/$defs/emotion" },
+        "schedule": { "$ref": "#/$defs/schedule" },
+        "relations": { "$ref": "#/$defs/relations" },
+        "memory_ref": { "$ref": "#/$defs/memory_ref" },
+        "trauma_flags": { "$ref": "#/$defs/trauma_flags" },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "自由标签（内容包用），内核不做语义解释。序列化前按字典序排序。"
+        }
+      }
+    },
+    "transform": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pos_mm"],
+      "properties": {
+        "pos_mm": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["x", "y", "z"],
+          "properties": {
+            "x": { "type": "integer" },
+            "y": { "type": "integer" },
+            "z": { "type": "integer" }
+          }
+        },
+        "rot_mdeg": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["x", "y", "z"],
+          "properties": {
+            "x": { "type": "integer" },
+            "y": { "type": "integer" },
+            "z": { "type": "integer" }
+          },
+          "description": "欧拉角，毫度（0.001 度）。"
+        },
+        "room_id": { "type": ["string", "null"] },
+        "nav_node_id": { "type": ["string", "null"] }
+      }
+    },
+    "needs": {
+      "type": "object",
+      "description": "需求标量（0.0~1.0，越大越紧迫）。规则层效用打分的输入，只由内核执行阶段写入。",
+      "additionalProperties": false,
+      "required": ["physiology", "safety", "belonging", "esteem", "self_actualization"],
+      "properties": {
+        "physiology": { "$ref": "#/$defs/unit_scalar" },
+        "safety": { "$ref": "#/$defs/unit_scalar" },
+        "belonging": { "$ref": "#/$defs/unit_scalar" },
+        "esteem": { "$ref": "#/$defs/unit_scalar" },
+        "self_actualization": { "$ref": "#/$defs/unit_scalar" }
+      }
+    },
+    "emotion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["valence", "arousal"],
+      "properties": {
+        "valence": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "效价（-1 消极 ~ +1 积极）。"
+        },
+        "arousal": { "$ref": "#/$defs/unit_scalar" },
+        "mood_label": {
+          "type": "string",
+          "enum": ["calm", "content", "tired", "anxious", "sad", "irritated", "hopeful", "numb"],
+          "description": "由 emotion.appraise 能力产出（best_effort，允许 provider 间文本差异）。"
+        },
+        "updated_tick": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "schedule": {
+      "type": "object",
+      "description": "当前日程条目（数据驱动，来自内容包 schedules/*.json）。",
+      "additionalProperties": false,
+      "required": ["entry_id", "state"],
+      "properties": {
+        "entry_id": { "type": "string" },
+        "state": { "type": "string", "enum": ["idle", "moving", "working", "socializing", "resting", "interrupted"] },
+        "until_tick": { "type": "integer", "minimum": 0 },
+        "target_entity": { "type": ["string", "null"] }
+      }
+    },
+    "relations": {
+      "type": "object",
+      "description": "关系强度表：键为对端实体 id，值为 [-1,1] 的亲密/疏离标量。键必须按字典序排序后序列化。",
+      "additionalProperties": { "type": "number", "minimum": -1, "maximum": 1 }
+    },
+    "memory_ref": {
+      "type": "object",
+      "description": "记忆层引用（不内联记忆内容，避免世界状态被记忆体量污染）。",
+      "additionalProperties": false,
+      "required": ["episode_table", "working_buffer_id"],
+      "properties": {
+        "episode_table": { "type": "string", "const": "episodes" },
+        "working_buffer_id": { "type": "string" },
+        "last_reflect_tick": { "type": ["integer", "null"], "minimum": 0 },
+        "fact_keys": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "语义事实键（内容在记忆库，世界状态只留键以便 hash 稳定）。序列化前排序。"
+        }
+      }
+    },
+    "trauma_flags": {
+      "type": "array",
+      "description": "创伤/暗面标记（治愈向主线的关键状态）。只能由内容包初始声明与内核白名单事件改写；玩家介入不可直接写（见 intervention.policy.forbidden_actions）。",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "severity", "since_tick"],
+        "properties": {
+          "id": { "type": "string" },
+          "severity": { "type": "integer", "minimum": 0, "maximum": 5 },
+          "since_tick": { "type": "integer", "minimum": 0 },
+          "healed_tick": { "type": ["integer", "null"], "minimum": 0 }
+        }
+      }
+    },
+    "unit_scalar": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0.0",
+  "note": "版本钉住表：注册表按 id@version 锁定能力；回滚只需改本文件（数据），不改内核代码。",
+  "pins": {
+    "intent.plan": "1.0.0",
+    "emotion.appraise": "1.0.0",
+    "memory.reflect": "1.0.0",
+    "embed.text": "1.0.0"
+  },
+  "provider_overrides": {
+    "note": "会话/回放模式下的 provider 强制覆盖（数据驱动）。",
+    "replay": {
+      "intent.plan": "cassette_replay",
+      "emotion.appraise": "cassette_replay",
+      "memory.reflect": "cassette_replay",
+      "embed.text": "cassette_replay"
+    },
+    "offline": {
+      "intent.plan": "deterministic_rule",
+      "emotion.appraise": "deterministic_rule",
+      "memory.reflect": "deterministic_rule",
+      "embed.text": "deterministic_rule"
+    }
+  }
+}

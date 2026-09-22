@@ -1,0 +1,31 @@
+{
+  "id": "b1-building",
+  "display_name": "1 号楼",
+  "floors": 2,
+  "footprint_mm": { "x": 18000, "y": 12000 },
+  "origin_mm": { "x": 0, "y": 0, "z": 0 },
+  "floor_height_mm": 3000,
+  "rooms": ["room-101", "room-102", "room-201"],
+  "shared_zones": ["laundry-01"],
+  "nav_nodes": [
+    { "id": "nav-room-101", "pos_mm": { "x": 6000, "y": 0, "z": 3000 }, "neighbors": ["nav-hall-f1", "nav-room-101-inner"] },
+    { "id": "nav-room-101-inner", "pos_mm": { "x": 7500, "y": 0, "z": 4500 }, "neighbors": ["nav-room-101"] },
+    { "id": "nav-room-102", "pos_mm": { "x": 12000, "y": 0, "z": 3000 }, "neighbors": ["nav-hall-f1", "nav-laundry"] },
+    { "id": "nav-room-201", "pos_mm": { "x": 6000, "y": 0, "z": 6000 }, "neighbors": ["nav-stair-f2"] },
+    { "id": "nav-laundry", "pos_mm": { "x": 18000, "y": 0, "z": 3000 }, "neighbors": ["nav-room-102", "nav-hall-f1"] },
+    { "id": "nav-hall-f1", "pos_mm": { "x": 9000, "y": 0, "z": 1500 }, "neighbors": ["nav-room-101", "nav-room-102", "nav-stair-f1", "nav-courtyard"] },
+    { "id": "nav-stair-f1", "pos_mm": { "x": 9000, "y": 0, "z": 0 }, "neighbors": ["nav-hall-f1", "nav-stair-f2"] },
+    { "id": "nav-stair-f2", "pos_mm": { "x": 9000, "y": 0, "z": 3000 }, "neighbors": ["nav-stair-f1", "nav-room-201"] },
+    { "id": "nav-courtyard", "pos_mm": { "x": 30000, "y": 0, "z": 12000 }, "neighbors": ["nav-hall-f1", "nav-bench", "nav-gate-north"] },
+    { "id": "nav-bench", "pos_mm": { "x": 33000, "y": 0, "z": 12000 }, "neighbors": ["nav-courtyard"] },
+    { "id": "nav-gate-north", "pos_mm": { "x": 30000, "y": 0, "z": 24000 }, "neighbors": ["nav-courtyard"] }
+  ],
+  "interactive_props": [
+    { "id": "bench-01", "kind": "rest", "affordances": ["sit", "observe"], "need_effects": { "physiology": -0.02, "belonging": -0.01 } },
+    { "id": "laundry-machine-01", "kind": "chore", "affordances": ["wash"], "need_effects": { "physiology": -0.03 } }
+  ],
+  "navigation": {
+    "mode": "waypoint_graph",
+    "note": "V0 只做路点图（数据驱动）；完整导航网格（recast-navigation-js）列 V1，见 07_adr.md ADR-003。"
+  }
+}

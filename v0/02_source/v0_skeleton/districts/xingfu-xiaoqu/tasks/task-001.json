@@ -1,0 +1,38 @@
+{
+  "id": "task-001",
+  "display_name": "把晚饭送到 1-101 门口",
+  "level": "C",
+  "initial_state": "dormant",
+  "states": ["dormant", "noticed", "offered", "accepted", "warmed", "settled"],
+  "transitions": [
+    { "from": "dormant", "to": "noticed", "trigger": "npc.action#npc-003", "condition": "target_entity==room-101" },
+    { "from": "noticed", "to": "offered", "trigger": "intent.applied", "condition": "kind==delegate_instruction" },
+    { "from": "offered", "to": "accepted", "trigger": "npc.action#npc-001", "condition": "action==accept_help" },
+    { "from": "offered", "to": "warmed", "trigger": "npc.action#npc-001", "condition": "action==silent_acknowledge" },
+    { "from": "accepted", "to": "settled", "trigger": "npc.action#npc-001", "condition": "action==share_meal" },
+    { "from": "warmed", "to": "settled", "trigger": "npc.action#npc-001", "condition": "action==share_meal" }
+  ],
+  "adaptation_rules": [
+    {
+      "id": "rule-001-warmth",
+      "match": { "event_type": "intent.applied", "kind": "delegate_instruction", "target": "npc-001" },
+      "effect": { "shift_to": "offered", "reason": "玩家委托把关心送达" },
+      "max_shifts": 2,
+      "impact_cost": 3.0
+    },
+    {
+      "id": "rule-001-repetition-guard",
+      "match": { "event_type": "intent.applied", "kind": "delegate_instruction", "target": "npc-001", "repeat_within_ticks": 300 },
+      "effect": { "no_op": true, "reason": "同目标重复介入不推进状态（防刷）" },
+      "max_shifts": 0,
+      "impact_cost": 0.0
+    }
+  ],
+  "rewards": { "healing_delta": 0.08, "relation_delta": { "npc-001": 0.1, "npc-003": 0.05 } },
+  "hard_constraints": [
+    "不得直接改写 npc-001 的 trauma_flags",
+    "不得跳过 offered 直接进入 settled",
+    "不得产出伤害/猎奇向内容"
+  ],
+  "v0_role": "AC-4 参与模式 + AC-6 内容驱动演进的最小用例（唯一一个玩家可介入的 C 级任务）"
+}

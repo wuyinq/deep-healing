@@ -1,0 +1,7 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# 运行产物（内核 run/verify 的输出目录）
+v0/out/

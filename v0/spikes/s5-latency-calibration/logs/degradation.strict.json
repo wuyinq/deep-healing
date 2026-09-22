@@ -1,0 +1,91 @@
+{
+  "accepted_range": [
+    0.0,
+    0.4
+  ],
+  "command": "python3 tools/calibrate_latency.py degrade --formula strict --runs 10",
+  "credential_source": "HERMES_CUSTOM_TOKENFAB_API_KEY",
+  "declared_timeout_ms": 1300,
+  "declared_value_key": "strict_candidate_ms",
+  "declared_values": {
+    "embed.text": 1550,
+    "emotion.appraise": 1300,
+    "imagine.predict": 1800,
+    "imagine.rollout": 2050,
+    "intent.plan": 1800,
+    "memory.reflect": 2300,
+    "relation.infer": 1300
+  },
+  "degradation_rate": 0.2,
+  "degraded_count": 2,
+  "formula": "strict",
+  "kind": "degradation.rate",
+  "log_path": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-003-deephealing-v0-m1/spikes/s5-latency-calibration/logs/calibrate_latency.console.log",
+  "runs": [
+    {
+      "degraded": false,
+      "i": 0,
+      "latency_ms": 1166.011,
+      "timeout_ms": 1300
+    },
+    {
+      "degraded": true,
+      "i": 1,
+      "latency_ms": 1303.055,
+      "timeout_ms": 1300
+    },
+    {
+      "degraded": false,
+      "i": 2,
+      "latency_ms": 1082.072,
+      "timeout_ms": 1300
+    },
+    {
+      "degraded": true,
+      "i": 3,
+      "latency_ms": 1334.023,
+      "timeout_ms": 1300
+    },
+    {
+      "degraded": false,
+      "i": 4,
+      "latency_ms": 1003.05,
+      "timeout_ms": 1300
+    },
+    {
+      "degraded": false,
+      "i": 5,
+      "latency_ms": 968.511,
+      "timeout_ms": 1300
+    },
+    {
+      "degraded": false,
+      "i": 6,
+      "latency_ms": 1131.184,
+      "timeout_ms": 1300
+    },
+    {
+      "degraded": false,
+      "i": 7,
+      "latency_ms": 1155.102,
+      "timeout_ms": 1300
+    },
+    {
+      "degraded": false,
+      "i": 8,
+      "latency_ms": 1034.236,
+      "timeout_ms": 1300
+    },
+    {
+      "degraded": false,
+      "i": 9,
+      "latency_ms": 1009.91,
+      "timeout_ms": 1300
+    }
+  ],
+  "runs_count": 10,
+  "synthetic": null,
+  "transcript_written": false,
+  "within_accepted_range": true,
+  "workdir": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-003-deephealing-v0-m1/02_source/v0_skeleton/kernel"
+}

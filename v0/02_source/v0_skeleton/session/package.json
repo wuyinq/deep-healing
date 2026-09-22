@@ -1,0 +1,19 @@
+{
+  "name": "deephealing-session",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "DeepHealing L2 会话传输层（非权威）：会话建立/双模式鉴权/增量同步/意图上行。V0 骨架。",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/session.test.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "comment": "V0 自建最小权威 WS 传输（内核即权威）。colyseus 的集成成本评估见 06_open_source_matrix.md / 07_adr.md ADR-003。"
+}

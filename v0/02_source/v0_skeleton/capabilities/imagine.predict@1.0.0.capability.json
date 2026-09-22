@@ -1,0 +1,184 @@
+{
+  "id": "imagine.predict",
+  "version": "1.0.0",
+  "slot": "imagine.predict",
+  "input_schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["npc_id", "tick", "situation_digest", "observation_refs", "memory_summary", "horizon_ticks"],
+    "properties": {
+      "npc_id": { "type": "string" },
+      "tick": { "type": "integer" },
+      "situation_digest": { "type": "string", "maxLength": 200 },
+      "observation_refs": { "type": "array", "items": { "type": "string" }, "maxItems": 32 },
+      "memory_summary": { "type": "string", "maxLength": 2000 },
+      "horizon_ticks": { "type": "integer", "minimum": 1, "maximum": 240 }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["predictions", "rationale_code", "horizon_ticks"],
+    "properties": {
+      "predictions": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 8,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["entity_id", "action_guess", "confidence"],
+          "properties": {
+            "entity_id": { "type": "string" },
+            "action_guess": { "type": "string", "enum": ["rest", "eat", "socialize", "work", "stroll"] },
+            "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        }
+      },
+      "rationale_code": { "type": "string", "enum": ["habit", "need_pressure", "social_contact", "schedule", "unknown"] },
+      "horizon_ticks": { "type": "integer", "minimum": 1, "maximum": 240 }
+    }
+  },
+  "providers": [
+    {
+      "class": "remote_api",
+      "source_model": null, "world_model_backend": false, "determinism": "non_deterministic", "allowed_in_rule_layer": false,
+      "source_model": null, "world_model_backend": false, "determinism": "non_deterministic", "allowed_in_rule_layer": false,
+      "source_model": null, "world_model_backend": false, "determinism": "non_deterministic", "allowed_in_rule_layer": false,
+      "impl": "module:deephealing_kernel.providers.worldmodel_placeholder:predict_remote",
+      "priority": 0,
+      "model": "world-model-api",
+      "source_model": "NVIDIA Cosmos",
+      "world_model_backend": true,
+      "determinism": "non_deterministic",
+      "allowed_in_rule_layer": false,
+      "determinism_note": "世界模型后端**必须**声明为 remote_api（x-provider-class-binding，default-deny）；V0 只有接口桩（E_NOT_IMPLEMENTED），不产生任何真实调用",
+      "requires_secrets": []
+    }
+  ],
+  "cost": {
+    "usd_per_1k_in": 0.0,
+    "usd_per_1k_out": 0.0,
+    "est_tokens_in": 900,
+    "est_tokens_out": 300,
+    "currency": "USD"
+  },
+  "latency_ms_budget": 42650,
+  "timeout_ms": 43900,
+  "calibration": {
+    "sample_count": 24,
+    "p50_ms": 7443.408,
+    "p90_ms": 42110.951,
+    "p95_ms": 43358.907,
+    "p99_ms": 54031.089,
+    "max_ms": 54031.089,
+    "derivation_rule": "声明值 = ceil_to(100, p95) + offset_ms(imagine.predict=500)；latency_ms_budget = ceil_to(50, p90) + offset_ms",
+    "derivation_rule_sha256": "7590eab4b765671860eaa50b68de807606581bfdd439cb3aa6fe2d953edb0feb",
+    "candidate_strict_ms": 43900,
+    "candidate_loose_ms": 56000,
+    "accepted_degradation_range": "0.00-0.30",
+    "command": "python3 calibrate.py degrade --formula adopted --runs 10 --out logs/degradation.adopted.json",
+    "workdir": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-002-deephealing-architecture-freeze/spikes/s5-latency-calibration",
+    "exit": 0,
+    "log_path": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-002-deephealing-architecture-freeze/spikes/s5-latency-calibration/logs/latency.distribution.json",
+    "degradation_log_path": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-002-deephealing-architecture-freeze/spikes/s5-latency-calibration/logs/degradation.adopted.json",
+    "gap_note": "分布取自同一 API 通道的 24 次真实调用（round 3）；本能力的真实调用条件与分布测量**同条件**（同并发/同网络/同冷热）；远端不可用时不得用未标定的数"
+  },
+  "rule_layer_adoption": {
+    "allowed": true,
+    "provider_classes_allowed": ["deterministic_rule", "cassette_replay"],
+    "consistency_check": { "required": true, "runs": 3 }
+  },
+  "calibration": {
+    "sample_count": 24,
+    "p50_ms": 7443.408,
+    "p90_ms": 42110.951,
+    "p95_ms": 43358.907,
+    "p99_ms": 54031.089,
+    "max_ms": 54031.089,
+    "derivation_rule": "声明值 = ceil_to(100, p95) + offset_ms(imagine.predict=500)；latency_ms_budget = ceil_to(50, p90) + offset_ms",
+    "derivation_rule_sha256": "7590eab4b765671860eaa50b68de807606581bfdd439cb3aa6fe2d953edb0feb",
+    "candidate_strict_ms": 43900,
+    "candidate_loose_ms": 56000,
+    "accepted_degradation_range": "0.00-0.30",
+    "command": "python3 calibrate.py degrade --formula adopted --runs 10 --out logs/degradation.adopted.json",
+    "workdir": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-002-deephealing-architecture-freeze/spikes/s5-latency-calibration",
+    "exit": 0,
+    "log_path": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-002-deephealing-architecture-freeze/spikes/s5-latency-calibration/logs/latency.distribution.json",
+    "degradation_log_path": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-002-deephealing-architecture-freeze/spikes/s5-latency-calibration/logs/degradation.adopted.json",
+    "gap_note": "分布取自同一 API 通道的 24 次真实调用（round 3）；本能力的真实调用条件与分布测量**同条件**（同并发/同网络/同冷热）；远端不可用时不得用未标定的数"
+  },
+  "rule_layer_adoption": {
+    "allowed": true,
+    "provider_classes_allowed": ["deterministic_rule", "cassette_replay"],
+    "consistency_check": { "required": true, "runs": 3 }
+  },
+  "calibration": {
+    "sample_count": 24,
+    "p50_ms": 7443.408,
+    "p90_ms": 42110.951,
+    "p95_ms": 43358.907,
+    "p99_ms": 54031.089,
+    "max_ms": 54031.089,
+    "derivation_rule": "声明值 = ceil_to(100, p95) + offset_ms(imagine.predict=500)；latency_ms_budget = ceil_to(50, p90) + offset_ms",
+    "derivation_rule_sha256": "7590eab4b765671860eaa50b68de807606581bfdd439cb3aa6fe2d953edb0feb",
+    "candidate_strict_ms": 43900,
+    "candidate_loose_ms": 56000,
+    "accepted_degradation_range": "0.00-0.30",
+    "command": "python3 calibrate.py degrade --formula adopted --runs 10 --out logs/degradation.adopted.json",
+    "workdir": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-002-deephealing-architecture-freeze/spikes/s5-latency-calibration",
+    "exit": 0,
+    "log_path": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-002-deephealing-architecture-freeze/spikes/s5-latency-calibration/logs/latency.distribution.json",
+    "degradation_log_path": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-002-deephealing-architecture-freeze/spikes/s5-latency-calibration/logs/degradation.adopted.json",
+    "gap_note": "分布取自同一 API 通道的 24 次真实调用（round 3）；本能力的真实调用条件与分布测量**同条件**（同并发/同网络/同冷热）；远端不可用时不得用未标定的数"
+  },
+  "rule_layer_adoption": {
+    "allowed": true,
+    "provider_classes_allowed": ["deterministic_rule", "cassette_replay"],
+    "consistency_check": { "required": true, "runs": 3 }
+  },
+  "calibration": {
+    "sample_count": 24,
+    "p50_ms": 7443.408,
+    "p90_ms": 42110.951,
+    "p95_ms": 43358.907,
+    "p99_ms": 54031.089,
+    "max_ms": 54031.089,
+    "derivation_rule": "声明值 = ceil_to(100, p95) + offset_ms(imagine.predict=500)；latency_ms_budget = ceil_to(50, p90) + offset_ms",
+    "derivation_rule_sha256": "7590eab4b765671860eaa50b68de807606581bfdd439cb3aa6fe2d953edb0feb",
+    "candidate_strict_ms": 43900,
+    "candidate_loose_ms": 56000,
+    "accepted_degradation_range": "0.00-0.30",
+    "command": "python3 calibrate.py degrade --formula adopted --runs 10 --out logs/degradation.adopted.json",
+    "workdir": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-002-deephealing-architecture-freeze/spikes/s5-latency-calibration",
+    "exit": 0,
+    "log_path": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-002-deephealing-architecture-freeze/spikes/s5-latency-calibration/logs/latency.distribution.json",
+    "degradation_log_path": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-002-deephealing-architecture-freeze/spikes/s5-latency-calibration/logs/degradation.adopted.json",
+    "gap_note": "分布取自同一 API 通道的 24 次真实调用（round 3，2026-09-21T12:04Z）；imagine.* 的真实世界模型调用**未实测**（本机无 GPU / 无世界模型端点）→ 该能力的声明值按同一 API 通道的分布 + 冻结 offset 推导，属**代理标定**，标 GAP"
+  },
+  "rule_layer_adoption": {
+    "allowed": true,
+    "provider_classes_allowed": ["deterministic_rule", "cassette_replay"],
+    "consistency_check": { "required": true, "runs": 3 }
+  },
+  "fallback": {
+    "on_timeout": { "provider": "deterministic_rule" },
+    "on_error": { "provider": "deterministic_rule" },
+    "on_invalid_schema": { "provider": "deterministic_rule" },
+    "on_budget_exhausted": { "provider": "deterministic_rule" },
+    "on_cassette_miss": { "provider": "deterministic_rule" }
+  },
+  "determinism": {
+    "mode": "replayable",
+    "cassette_key_fields": ["capability_id", "capability_version", "canonical_input_hash", "provider"],
+    "seed_policy": "world_seed_stream"
+  },
+  "safety": {
+    "secrets_in_context": false,
+    "redact_fields": ["payload.raw_headers.Authorization"],
+    "max_output_bytes": 65536,
+    "schema_strict": true,
+    "prompt_injection_guard": "allowlist_fields"
+  },
+  "tags": ["world-model", "v0-placeholder", "not-authoritative"]
+}

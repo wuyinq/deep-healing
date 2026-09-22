@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_kind": "asset.manifest.sample",
+  "note": "V0 示例清单（D-0.8 / AC-15）：1 张**程序化**占位资产 + 其受管工作流登记。校验器：02_source/v0_skeleton/tools/verify_asset_pack.py（真跑，exit 0）。本文件本身必须 `jq .` 通过，且每个条目必须过 asset.manifest.schema.json。",
+  "assets": [
+    {
+      "asset_id": "placeholder-courtyard-001",
+      "file": "placeholder-001.png",
+      "content_hash": "sha256:5899ec8ef300acee0f226313e0e8134f67605d012a5fbaf4cf8aff512b163bc7",
+      "content_hash_basis": "file_bytes",
+      "type": "procedural",
+      "license": "cc0-1.0",
+      "source_model": "programmatic-placeholder",
+      "model_version": "1.0.0",
+      "prompt_digest": "procedural:none",
+      "seed": null,
+      "generated_at": "2026-09-21T19:48:00+08:00",
+      "review_status": "adopted",
+      "review": {
+        "reviewer": "artisan",
+        "reviewed_at": "2026-09-21T19:49:00+08:00",
+        "note": "程序化占位资产，无生成式来源；许可 cc0-1.0 且与许可表 programmatic-placeholder 行一致"
+      },
+      "replacement_of": null,
+      "derived_from": [],
+      "provenance": {
+        "origin": "procedural",
+        "self_reported": false,
+        "verification_status": "not_claimed",
+        "note": "本机确定性程序化生成（可复算），非云产出，故不涉及 self_reported 边界"
+      },
+      "workflow": {
+        "path": "workflows/procedural-placeholder.json",
+        "sha256": "1a5a1efe67b86c1e98ed2a582d71275304d2881bbe86e36ddccd86fb381c8722",
+        "referenced_models": ["programmatic-placeholder"]
+      },
+      "meta": {
+        "generator_metadata_stripped": true,
+        "kept_chunks": ["IHDR", "IDAT", "IEND"],
+        "note": "content_hash_basis=file_bytes：V0 未实现「解码后像素 + 规范化规则」口径的解码器 → 该口径记 GAP（见 03 日志 round 3 / 09 未决问题）"
+      }
+    }
+  ]
+}

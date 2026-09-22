@@ -1,0 +1,180 @@
+{
+  "id": "emotion.appraise",
+  "version": "1.0.0",
+  "slot": "emotion.appraise",
+  "input_schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["npc_id", "tick", "event_summary", "current_emotion"],
+    "properties": {
+      "npc_id": { "type": "string" },
+      "tick": { "type": "integer" },
+      "event_summary": { "type": "string", "maxLength": 2000 },
+      "current_emotion": {
+        "type": "object",
+        "required": ["valence", "arousal"],
+        "properties": {
+          "valence": { "type": "number" },
+          "arousal": { "type": "number" }
+        }
+      }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["valence", "arousal", "mood_label", "importance"],
+    "properties": {
+      "valence": { "type": "number", "minimum": -1, "maximum": 1 },
+      "arousal": { "type": "number", "minimum": 0, "maximum": 1 },
+      "mood_label": {
+        "type": "string",
+        "enum": ["calm", "content", "tired", "anxious", "sad", "irritated", "hopeful", "numb"]
+      },
+      "importance": { "type": "number", "minimum": 0, "maximum": 1 }
+    }
+  },
+  "providers": [
+    {
+      "class": "remote_api",
+      "source_model": null, "world_model_backend": false, "determinism": "non_deterministic", "allowed_in_rule_layer": false,
+      "source_model": null, "world_model_backend": false, "determinism": "non_deterministic", "allowed_in_rule_layer": false,
+      "source_model": null, "world_model_backend": false, "determinism": "non_deterministic", "allowed_in_rule_layer": false,
+      "impl": "builtin:openai_compatible_chat",
+      "priority": 10,
+      "model": "deepseek-v4.1-flash",
+      "determinism_note": "best_effort：远端采样随机；回放必须走 cassette_replay。",
+      "requires_secrets": ["HERMES_CUSTOM_TOKENFAB_API_KEY"]
+    },
+    {
+      "class": "cassette_replay",
+      "source_model": null, "world_model_backend": false, "determinism": "deterministic", "allowed_in_rule_layer": true,
+      "source_model": null, "world_model_backend": false, "determinism": "deterministic", "allowed_in_rule_layer": true,
+      "source_model": null, "world_model_backend": false, "determinism": "deterministic", "allowed_in_rule_layer": true,
+      "impl": "builtin:cassette_replay",
+      "priority": 20,
+      "determinism_note": "replayable：逐字节等价。"
+    },
+    {
+      "class": "local_model",
+      "source_model": null, "world_model_backend": false, "determinism": "non_deterministic", "allowed_in_rule_layer": false,
+      "source_model": null, "world_model_backend": false, "determinism": "non_deterministic", "allowed_in_rule_layer": false,
+      "source_model": null, "world_model_backend": false, "determinism": "non_deterministic", "allowed_in_rule_layer": false,
+      "impl": "builtin:ollama_chat",
+      "priority": 30,
+      "model": "qwen3:4b-instruct",
+      "determinism_note": "best_effort：降级用。"
+    },
+    {
+      "class": "deterministic_rule",
+      "source_model": null, "world_model_backend": false, "determinism": "deterministic", "allowed_in_rule_layer": true,
+      "source_model": null, "world_model_backend": false, "determinism": "deterministic", "allowed_in_rule_layer": true,
+      "source_model": null, "world_model_backend": false, "determinism": "deterministic", "allowed_in_rule_layer": true,
+      "impl": "module:deephealing_kernel.providers.deterministic_rule:emotion_appraise_rule",
+      "priority": 40,
+      "determinism_note": "pure：情感词典 + 阈值映射，同输入同输出。"
+    }
+  ],
+  "cost": {
+    "usd_per_1k_in": 0.00014,
+    "usd_per_1k_out": 0.00028,
+    "est_tokens_in": 420,
+    "est_tokens_out": 60,
+    "currency": "USD"
+  },
+  "latency_ms_budget": 42150,
+  "timeout_ms": 43400,
+  "calibration": {
+    "sample_count": 24,
+    "p50_ms": 7443.408,
+    "p90_ms": 42110.951,
+    "p95_ms": 43358.907,
+    "p99_ms": 54031.089,
+    "max_ms": 54031.089,
+    "derivation_rule": "声明值 = ceil_to(100, p95) + offset_ms(emotion.appraise=0)；latency_ms_budget = ceil_to(50, p90) + offset_ms",
+    "derivation_rule_sha256": "7590eab4b765671860eaa50b68de807606581bfdd439cb3aa6fe2d953edb0feb",
+    "candidate_strict_ms": 43400,
+    "candidate_loose_ms": 55500,
+    "accepted_degradation_range": "0.00-0.30",
+    "command": "python3 calibrate.py degrade --formula adopted --runs 10 --out logs/degradation.adopted.json",
+    "workdir": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-002-deephealing-architecture-freeze/spikes/s5-latency-calibration",
+    "exit": 0,
+    "log_path": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-002-deephealing-architecture-freeze/spikes/s5-latency-calibration/logs/latency.distribution.json",
+    "degradation_log_path": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-002-deephealing-architecture-freeze/spikes/s5-latency-calibration/logs/degradation.adopted.json",
+    "gap_note": "分布取自同一 API 通道的 24 次真实调用（round 3）；本能力的真实调用条件与分布测量**同条件**（同并发/同网络/同冷热）；远端不可用时不得用未标定的数"
+  },
+  "rule_layer_adoption": {
+    "allowed": true,
+    "provider_classes_allowed": ["deterministic_rule", "cassette_replay"],
+    "consistency_check": { "required": true, "runs": 3 }
+  },
+  "calibration": {
+    "sample_count": 24,
+    "p50_ms": 7443.408,
+    "p90_ms": 42110.951,
+    "p95_ms": 43358.907,
+    "p99_ms": 54031.089,
+    "max_ms": 54031.089,
+    "derivation_rule": "声明值 = ceil_to(100, p95) + offset_ms(emotion.appraise=0)；latency_ms_budget = ceil_to(50, p90) + offset_ms",
+    "derivation_rule_sha256": "7590eab4b765671860eaa50b68de807606581bfdd439cb3aa6fe2d953edb0feb",
+    "candidate_strict_ms": 43400,
+    "candidate_loose_ms": 55500,
+    "accepted_degradation_range": "0.00-0.30",
+    "command": "python3 calibrate.py degrade --formula adopted --runs 10 --out logs/degradation.adopted.json",
+    "workdir": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-002-deephealing-architecture-freeze/spikes/s5-latency-calibration",
+    "exit": 0,
+    "log_path": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-002-deephealing-architecture-freeze/spikes/s5-latency-calibration/logs/latency.distribution.json",
+    "degradation_log_path": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-002-deephealing-architecture-freeze/spikes/s5-latency-calibration/logs/degradation.adopted.json",
+    "gap_note": "分布取自同一 API 通道的 24 次真实调用（round 3）；本能力的真实调用条件与分布测量**同条件**（同并发/同网络/同冷热）；远端不可用时不得用未标定的数"
+  },
+  "rule_layer_adoption": {
+    "allowed": true,
+    "provider_classes_allowed": ["deterministic_rule", "cassette_replay"],
+    "consistency_check": { "required": true, "runs": 3 }
+  },
+  "calibration": {
+    "sample_count": 24,
+    "p50_ms": 7443.408,
+    "p90_ms": 42110.951,
+    "p95_ms": 43358.907,
+    "p99_ms": 54031.089,
+    "max_ms": 54031.089,
+    "derivation_rule": "声明值 = ceil_to(100, p95) + offset_ms(emotion.appraise=0)；latency_ms_budget = ceil_to(50, p90) + offset_ms",
+    "derivation_rule_sha256": "7590eab4b765671860eaa50b68de807606581bfdd439cb3aa6fe2d953edb0feb",
+    "candidate_strict_ms": 43400,
+    "candidate_loose_ms": 55500,
+    "accepted_degradation_range": "0.00-0.30",
+    "command": "python3 calibrate.py degrade --formula adopted --runs 10 --out logs/degradation.adopted.json",
+    "workdir": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-002-deephealing-architecture-freeze/spikes/s5-latency-calibration",
+    "exit": 0,
+    "log_path": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-002-deephealing-architecture-freeze/spikes/s5-latency-calibration/logs/latency.distribution.json",
+    "degradation_log_path": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-002-deephealing-architecture-freeze/spikes/s5-latency-calibration/logs/degradation.adopted.json",
+    "gap_note": "分布取自同一 API 通道的 24 次真实调用（round 3）；本能力的真实调用条件与分布测量**同条件**（同并发/同网络/同冷热）；远端不可用时不得用未标定的数"
+  },
+  "rule_layer_adoption": {
+    "allowed": true,
+    "provider_classes_allowed": ["deterministic_rule", "cassette_replay"],
+    "consistency_check": { "required": true, "runs": 3 }
+  },
+  "fallback": {
+    "on_timeout": { "provider": "deterministic_rule", "impl": "module:deephealing_kernel.providers.deterministic_rule:emotion_appraise_rule" },
+    "on_error": { "provider": "deterministic_rule", "impl": "module:deephealing_kernel.providers.deterministic_rule:emotion_appraise_rule" },
+    "on_invalid_schema": { "provider": "deterministic_rule", "impl": "module:deephealing_kernel.providers.deterministic_rule:emotion_appraise_rule" },
+    "on_budget_exhausted": { "provider": "deterministic_rule", "impl": "module:deephealing_kernel.providers.deterministic_rule:emotion_appraise_rule" },
+    "on_cassette_miss": "deterministic_stub"
+  },
+  "determinism": {
+    "mode": "replayable",
+    "cassette_key_fields": ["capability_id", "capability_version", "canonical_input_hash", "provider"],
+    "seed_policy": "no_randomness"
+  },
+  "safety": {
+    "secrets_in_context": false,
+    "redact_fields": ["headers.Authorization", "env.*_API_KEY"],
+    "max_output_bytes": 8192,
+    "schema_strict": true,
+    "prompt_injection_guard": "delimit_and_ignore_instructions"
+  },
+  "budget": { "per_tick_calls": 2, "per_npc_daily_tokens": 65000 },
+  "tags": ["cognition", "affect", "v0"]
+}

@@ -1,0 +1,83 @@
+{
+  "accepted_degradation_range": {
+    "adopted": "0.00-0.30",
+    "loose": "0.00-0.10",
+    "strict": "0.00-0.40"
+  },
+  "adopted_differs_from_max": true,
+  "command": "python3 tools/calibrate_latency.py derive --dist /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-003-deephealing-v0-m1/spikes/s5-latency-calibration/logs/latency.distribution.json",
+  "derivation_rule_mtime": "2026-09-22T08:38:54+0800",
+  "derivation_rule_sha256": "7590eab4b765671860eaa50b68de807606581bfdd439cb3aa6fe2d953edb0feb",
+  "distribution_log": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-003-deephealing-v0-m1/spikes/s5-latency-calibration/logs/latency.distribution.json",
+  "distribution_log_mtime": "2026-09-22T08:44:11+0800",
+  "environment_class": "usable",
+  "environment_class_reasons": [],
+  "four_value_table": {
+    "adopted_ms": 1300,
+    "loose_candidate_ms": 2500,
+    "max_ms": 1273.766,
+    "p50_ms": 1040.442,
+    "p90_ms": 1194.759,
+    "p95_ms": 1253.699,
+    "p99_ms": 1273.766,
+    "strict_candidate_ms": 1300
+  },
+  "kind": "latency.calibration",
+  "log_path": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-003-deephealing-v0-m1/spikes/s5-latency-calibration/logs/calibrate_latency.console.log",
+  "per_capability": {
+    "embed.text": {
+      "adopted_ms": 1550,
+      "latency_ms_budget_ms": 1450,
+      "loose_candidate_ms": 2750,
+      "offset_ms": 250,
+      "strict_candidate_ms": 1550
+    },
+    "emotion.appraise": {
+      "adopted_ms": 1300,
+      "latency_ms_budget_ms": 1200,
+      "loose_candidate_ms": 2500,
+      "offset_ms": 0,
+      "strict_candidate_ms": 1300
+    },
+    "imagine.predict": {
+      "adopted_ms": 1800,
+      "latency_ms_budget_ms": 1700,
+      "loose_candidate_ms": 3000,
+      "offset_ms": 500,
+      "strict_candidate_ms": 1800
+    },
+    "imagine.rollout": {
+      "adopted_ms": 2050,
+      "latency_ms_budget_ms": 1950,
+      "loose_candidate_ms": 3250,
+      "offset_ms": 750,
+      "strict_candidate_ms": 2050
+    },
+    "intent.plan": {
+      "adopted_ms": 1800,
+      "latency_ms_budget_ms": 1700,
+      "loose_candidate_ms": 3000,
+      "offset_ms": 500,
+      "strict_candidate_ms": 1800
+    },
+    "memory.reflect": {
+      "adopted_ms": 2300,
+      "latency_ms_budget_ms": 2200,
+      "loose_candidate_ms": 3500,
+      "offset_ms": 1000,
+      "strict_candidate_ms": 2300
+    },
+    "relation.infer": {
+      "adopted_ms": 1300,
+      "latency_ms_budget_ms": 1200,
+      "loose_candidate_ms": 2500,
+      "offset_ms": 0,
+      "strict_candidate_ms": 1300
+    }
+  },
+  "refuses_to_declare": false,
+  "rule_frozen_before_measurement": true,
+  "sample_count": 24,
+  "timeout_ge_p95": true,
+  "workdir": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-003-deephealing-v0-m1/02_source/v0_skeleton/kernel"
+}

@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deephealing.local/schemas/session.protocol.schema.json",
+  "title": "DeepHealing Session Protocol (dual-mode)",
+  "description": "双模式会话协议（HTTP 建会话 + WS 消息）。L2 传输层**非权威**：只搬运与鉴权，不持世界状态真值、不做规则计算、不做模型调用。本 schema 用 oneOf 区分 client→server 与 server→client 两类消息；错误码为冻结枚举。",
+  "oneOf": [
+    { "$ref": "#/$defs/clientMessage" },
+    { "$ref": "#/$defs/serverMessage" }
+  ],
+  "$defs": {
+    "mode": { "type": "string", "enum": ["observe", "participate"] },
+    "errorCode": {
+      "type": "string",
+      "enum": [
+        "E_MODE_READONLY",
+        "E_FORBIDDEN_ACTION",
+        "E_RATE_LIMITED",
+        "E_COOLDOWN",
+        "E_BUDGET_EXHAUSTED",
+        "E_TARGET_UNKNOWN",
+        "E_SCHEMA_INVALID",
+        "E_SESSION_UNKNOWN",
+        "E_SESSION_EXPIRED",
+        "E_KERNEL_UNAVAILABLE",
+        "E_PACK_INVALID",
+        "E_CASSETTE_MISS"
+      ],
+      "description": "冻结错误码。E_MODE_READONLY = observe 会话尝试上行 intent；E_CASSETTE_MISS = 回放模式 cassette miss（fail-closed）。"
+    },
+    "createSessionRequest": {
+      "type": "object",
+      "description": "POST /sessions 请求体。",
+      "additionalProperties": false,
+      "required": ["mode", "district_pack_id", "client_version"],
+      "properties": {
+        "mode": { "$ref": "#/$defs/mode" },
+        "district_pack_id": { "type": "string" },
+        "client_version": { "type": "string" },
+        "record": {
+          "type": "boolean",
+          "default": false,
+          "description": "观察模式可选录像（只读路径，落 L7 事件日志）。"
+        }
+      }
+    },
+    "createSessionResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["session_id", "token", "tick_rate", "schema_version"],
+      "properties": {
+        "session_id": { "type": "string" },
+        "token": {
+          "type": "string",
+          "description": "会话票据（短期）。**不得**写入日志/产物；日志中一律脱敏为 ***REDACTED***。"
+        },
+        "tick_rate": { "type": "integer", "const": 10 },
+        "schema_version": { "type": "string" },
+        "snapshot_every_ticks": { "type": "integer", "minimum": 1 },
+        "impact_budget_remaining": {
+          "type": "number",
+          "minimum": 0,
+          "description": "仅 participate 会话返回（介入影响预算余额）。"
+        }
+      }
+    },
+    "clientMessage": {
+      "type": "object",
+      "description": "client→server（WS 上行）。V0 只有 intent 一种。",
+      "additionalProperties": false,
+      "required": ["t", "id"],
+      "properties": {
+        "t": { "type": "string", "const": "intent" },
+        "id": { "type": "string", "description": "客户端意图 id（幂等去重用）。" },
+        "kind": {
+          "type": "string",
+          "enum": ["delegate_instruction", "ghost_hand", "avatar"],
+          "description": "介入通道类型；V0 只实现 delegate_instruction，其余返回 E_SCHEMA_INVALID。"
+        },
+        "target": { "type": "string" },
+        "payload": {
+          "type": "object",
+          "description": "通道相关载荷；delegate_instruction 为 {instruction_text, urgency}。文本属玩家可控输入，进入能力上下文前必须按 safety.prompt_injection_guard 处理。",
+          "properties": {
+            "instruction_text": { "type": "string", "maxLength": 1000 },
+            "urgency": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        },
+        "client_tick": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "serverMessage": {
+      "description": "server→client（WS 下行）。按 t 判别；tick 单调，客户端按 seq 去重、按 tick 丢弃过期。",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["t", "tick", "seq"],
+      "properties": {
+        "t": { "type": "string", "enum": ["snapshot", "delta", "event", "tick_meta", "intent_ack", "error"] },
+        "tick": { "type": "integer", "minimum": 0 },
+        "seq": { "type": "integer", "minimum": 0 },
+        "state": { "type": "object", "description": "t=snapshot：完整世界状态（须过 world.schema.json）。" },
+        "state_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "ops": {
+          "type": "array",
+          "description": "t=delta：增量操作。",
+          "items": { "$ref": "#/$defs/deltaOp" }
+        },
+        "event": { "type": "object", "description": "t=event：单条事件（须过 events.schema.json）。" },
+        "ms": { "type": "number", "description": "t=tick_meta：本 tick 内核耗时（诊断用，不参与 hash）。" },
+        "id": { "type": "string", "description": "t=intent_ack：对应意图 id。" },
+        "status": { "type": "string", "enum": ["queued", "rejected", "applied"] },
+        "reason": { "$ref": "#/$defs/errorCode" },
+        "detail": { "type": "string" },
+        "impact_budget_remaining": { "type": "number", "minimum": 0 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "t": { "const": "snapshot" } }, "required": ["t"] },
+          "then": { "required": ["state", "state_hash"] }
+        },
+        {
+          "if": { "properties": { "t": { "const": "delta" } }, "required": ["t"] },
+          "then": { "required": ["ops"] }
+        },
+        {
+          "if": { "properties": { "t": { "const": "event" } }, "required": ["t"] },
+          "then": { "required": ["event"] }
+        },
+        {
+          "if": { "properties": { "t": { "const": "tick_meta" } }, "required": ["t"] },
+          "then": { "required": ["ms"] }
+        },
+        {
+          "if": { "properties": { "t": { "const": "intent_ack" } }, "required": ["t"] },
+          "then": { "required": ["id", "status"] }
+        },
+        {
+          "if": { "properties": { "t": { "const": "error" } }, "required": ["t"] },
+          "then": { "required": ["reason"] }
+        }
+      ]
+    },
+    "deltaOp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["op", "entity", "component"],
+      "properties": {
+        "op": { "type": "string", "enum": ["set", "add", "del"] },
+        "entity": { "type": "string" },
+        "component": { "type": "string" },
+        "value": { "description": "op=del 时可省略；其余必须提供。" }
+      }
+    }
+  },
+  "$comment": "权限规则（契约级）：observe 会话上行 intent → intent_ack{status:rejected, reason:E_MODE_READONLY}，且必须落 intent.rejected 事件。participate 会话按 intervention.policy.schema.json 校验后入队，仅在 tick 边界应用。冲突解决 authority wins；V0 关闭客户端预测。"
+}

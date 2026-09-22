@@ -1,0 +1,17 @@
+{
+  "id": "courtyard-01",
+  "display_name": "小区中庭",
+  "kind": "outdoor_zone",
+  "area_mm2": 240000000,
+  "nav_nodes": ["nav-courtyard", "nav-bench", "nav-gate-north"],
+  "ambience": {
+    "audio_bed": "ambient_lowfreq",
+    "lighting": { "ambient_ratio": 0.42, "shadow_softness": 0.62, "key_light_temp_k": 4200 },
+    "palette": { "hue_deg": 35, "saturation_pct": 28, "lightness_pct": 68 }
+  },
+  "props": ["bench-01"],
+  "activity_slots": [
+    { "slot": "morning", "suitable_actions": ["socialize", "sit", "stroll"] },
+    { "slot": "evening", "suitable_actions": ["sit", "stroll"] }
+  ]
+}
