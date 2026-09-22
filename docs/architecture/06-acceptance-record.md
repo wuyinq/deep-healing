@@ -192,8 +192,10 @@ PM 自写 `pm_adversarial_ac3.py`，导入**冻结的** `tools/canonical_json.py
 - **8 条 MEDIUM**（architect `non_block_issues`）：replay 侧 fail-closed 不对称、checkpoints 只读目录/symlink 形态、畸形日志裸 traceback 等
 - **交付面依赖**：AC-M1-5/6/7 的判据依赖**工作区级产物**（`spikes/kernel-baseline/**`、`spikes/s5-latency-calibration/**`、`06_v0_m1_self_test.md`）。
   只取 `02_source` 会看到 12 条红（**全部归因产物缺失，非代码回归**）⇒ 交付包必须一并提供它们（`v0/` 已按此落盘）
-- **标定缓存与位置耦合**：`calibration.registry.json` 存绝对路径 + mtime ⇒ 复制/克隆到新路径后
-  `test_registry_is_idempotent` 首跑失败；补救 = 原地跑一次 `tools/calibrate_latency.py registry`。**待修**
+- **标定缓存与位置耦合**（**M1 后置修复，已关闭**）：`calibration.registry.json` 原把绝对路径 + mtime 纳入
+  「是否重写」的判定 ⇒ 复制/克隆到新路径后 `test_registry_is_idempotent` 首跑失败（已在**全新克隆**中实测复现）。
+  已改为**内容锚定**（只比对冻结物 sha256；内容未变则不写盘），双向验证通过（内容变 ⇒ 仍重写；仅漂移 ⇒ 不写盘）；
+  修复后全新克隆 **71 passed / 10 skipped**。增量：`tools/calibrate_latency.py` `e30be65b…` → `23fed40d…`
 - **LOW**：`spikes/red/**`（负控沙箱）含字面串 `Bearer sk-liv...oken`——**非真密钥**（严格扫描 0 命中），仅为截断仿冒串；未随 `v0/` 提供
 
 ## 11. 范围与诚实边界

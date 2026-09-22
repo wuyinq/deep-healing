@@ -169,6 +169,16 @@ def _http_chat(prompt: str, timeout_ms: int, model: str) -> dict:
 
 
 # --------------------------------------------------------------------------- registry
+def _content_anchors(document: dict) -> dict:
+    """取文档里的**内容锚**：所有形如 `{<name>: {"sha256": ...}}` 的子块。
+
+    只比对内容哈希，**不比对 `path` / `mtime`** —— 后两者随位置与检出时间漂移，
+    不构成完整性判据（见 `cmd_registry` 的幂等口径）。
+    """
+    return {k: v["sha256"] for k, v in document.items()
+            if isinstance(v, dict) and isinstance(v.get("sha256"), str)}
+
+
 def cmd_registry(_args) -> int:
     """登记三份冻结物的 sha256/mtime（**幂等**）。
 
@@ -198,19 +208,29 @@ def cmd_registry(_args) -> int:
     }
 
     written_at = time.strftime("%Y-%m-%dT%H:%M:%S%z")
+    content_unchanged = False
     if REGISTRY.is_file():
         try:
             existing = json.loads(REGISTRY.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
             existing = {}
-        if {k: v for k, v in existing.items() if k != "registry_written_at"} == document:
+        content_unchanged = _content_anchors(existing) == _content_anchors(document)
+        if content_unchanged and existing.get("registry_written_at"):
             written_at = existing["registry_written_at"]        # 沿用首次写入时刻 ⇒ 内容稳定
     document["registry_written_at"] = written_at
 
-    rendered = json.dumps(document, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-    unchanged = REGISTRY.is_file() and REGISTRY.read_text(encoding="utf-8") == rendered
-    if not unchanged:
-        _write_json(REGISTRY, document)
+    if content_unchanged:
+        # 内容锚（各冻结物 sha256）一致 ⇒ **不写盘**，逐字节保留既有文件。
+        # 理由：`path` / `mtime` 是随位置与检出时间漂移的**说明性**字段，不是完整性判据。
+        # 若把它们纳入「是否重写」的判定，则任何复制 / 克隆到新路径都会改写本文件 ——
+        # 使 `test_registry_is_idempotent` 在**克隆里首跑即红**（已实测）。完整性由 sha256 锚定：
+        # 冻结物内容真的变了才重写。
+        unchanged = True
+    else:
+        rendered = json.dumps(document, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+        unchanged = REGISTRY.is_file() and REGISTRY.read_text(encoding="utf-8") == rendered
+        if not unchanged:
+            _write_json(REGISTRY, document)
     print(json.dumps({"registry": str(REGISTRY), "unchanged": unchanged,
                       "registry_written_at": written_at, "sha256": sha256_file(REGISTRY)},
                      ensure_ascii=False, sort_keys=True))

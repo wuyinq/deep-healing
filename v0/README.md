@@ -57,16 +57,21 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m deephealing_kernel verify \
 
 ## 已知限制（如实记录，未粉饰）
 
-1. **标定缓存与位置耦合**：`spikes/s5-latency-calibration/calibration.registry.json` 是**派生缓存**，
-   记录了三个冻结文件的**绝对路径 + mtime**。因此把它复制/克隆到新路径后，
-   `tests/test_calibrate_latency.py::test_registry_is_idempotent` **首次运行会失败**（缓存过期，首跑重写）。
-   **补救**：在该位置跑一次 `python3 tools/calibrate_latency.py registry` 重新同步，套件即恢复 71 passed。
-   内容锚（三个冻结文件的 sha256）不随位置变化，完整性未受影响（工具会与硬编码常量比对，不一致即 `exit 1`）。
-   *已登记为待修缺陷：把缓存改为位置/时间无关（只存内容哈希）——需要连同 `V0_M1.sha256` 一起重新快照。*
+1. **标定缓存与位置耦合 —— 已修（M1 后置修复）**：
+   `spikes/s5-latency-calibration/calibration.registry.json` 是**派生缓存**，记录三个冻结文件的路径/mtime/sha256。
+   原实现把「路径 + mtime」也纳入**是否重写**的判定 ⇒ 复制或克隆到新路径后首跑必改写该文件，
+   `tests/test_calibrate_latency.py::test_registry_is_idempotent` **在克隆里首跑即红**（已在全新克隆中实测复现）。
+   **修法**：幂等判定改为**内容锚定** —— 只比对各冻结物的 `sha256`；内容未变则**不写盘、逐字节保留**既有文件
+   （`path`/`mtime` 降级为说明性字段）。**双向验证**：内容锚变化 ⇒ 仍重写（守卫未丢）；仅位置/mtime 漂移 ⇒ 不写盘。
+   修复后全新克隆 **71 passed / 10 skipped**，无需任何人工补救。
+   *冻结清单增量（如实记录，便于审计）*：`02_source/v0_skeleton/kernel/tools/calibrate_latency.py`
+   `e30be65b…` → `23fed40d…`（本修复）；`calibration.registry.json` 为派生缓存、已按新位置重同步。
 
-2. **`V0_M1.sha256` 是冻结时刻的证据，不是本仓库内的完整性检查**。它覆盖当时工作区里的**全部**交付面
-   （276 条），包含仅用于 A/B 证据、**未随本目录提供**的沙箱（`spikes/red/**` 等 87 条）。
-   故在本仓库里对它跑 `shasum -c` 会报缺失；这是预期行为。本目录内的完整性检查是第 1 条里的 `verify_specs.sh` 与内核测试套件。
+2. **`V0_M1.sha256` 是冻结时刻的证据，不是本仓库内的完整性检查**。它覆盖当时工作区里的**全部**交付面（276 条）：
+   本目录内 **146 条逐字节一致**、**128 条未随本目录提供**（其中 87 条是仅用于 A/B 证据的负控沙箱 `spikes/red/**`）、
+   **2 条存在但已变**（上面第 1 条：一个后置修复 + 一个派生缓存重同步）。
+   故在本仓库里对它跑 `shasum -c` 会报缺失/不一致——**这是预期行为**。
+   本目录内的完整性检查是第 1 条里的 `verify_specs.sh` 与内核测试套件。
 
 3. **时间预算标定判据 ③ 不可重复**（AC-M1-6 记为 GAP）：同一份数据、同一批声明值、同为 `--runs 10`，
    相邻三次测量给出 adopted 降级率 `0.50`（越界）/ `0.20` / `0.10`；根因是环境抖动 **叠加** 冻结区间的口径塌缩
