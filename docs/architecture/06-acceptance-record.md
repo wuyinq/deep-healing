@@ -1,6 +1,7 @@
 # PM 逐 AC 终验记录
 
-> 本文件按轮次累积：**§1~§6 = REQ-20260921-002（架构冻结轮）**，**§7 = REQ-20260921-003（V0 垂直切片 · M1）**。
+> 本文件按轮次累积：**§1~§6 = REQ-20260921-002（架构冻结轮）**，**§7~§11 = REQ-20260921-003（V0 · M1）**，
+> **§12~§16 = REQ-20260921-004（V0 · M2）**。
 
 ## §0 轮次索引
 
@@ -8,6 +9,7 @@
 |---|---|---|---|
 | 架构冻结 | `REQ-20260921-002` | 有条件通过（CRITICAL 0；AC-11 / AC-13 为 GAP） | `docs/`（commit `b421cb0`） |
 | V0 · M1 | `REQ-20260921-003` | 有条件通过（CRITICAL 0；6 PASS / 1 GAP / 1 分列均 PASS） | `v0/` |
+| V0 · M2 | `REQ-20260921-004` | **通过**（8/8 AC PASS，CRITICAL 0，残留 FAIL 0） | `v0/`（同树生长） |
 
 ---
 
@@ -204,3 +206,71 @@ PM 自写 `pm_adversarial_ac3.py`，导入**冻结的** `tools/canonical_json.py
   **不是**完整 V0 垂直切片：能力注册表运行时（W3）、规则层与预算（W4）、记忆层（W5）、
   双模式会话（W7）、渲染层（W8）、观测层（W9）属后续里程碑。
 - `local_model` provider **未真跑**（本机无本地模型服务），只有槽位设计，不冒充已跑。
+
+---
+
+# 第三部分 · REQ-20260921-004（V0 垂直切片 · 里程碑 M2：能力注册表 + 规则层 + 记忆 + 内容包）
+
+- 验收人：lanova（PM）　时间：2026-09-22（Asia/Shanghai）
+- 被测：`dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/`（`02_source` 139 文件 + `spikes/**` + `06_v0_m2_self_test.md`）
+- 交付落点：`v0/`（本仓库，同树生长）
+- 结论：**通过**。8 条 AC **全部 PASS**；**CRITICAL 全程为 0**；**残留 FAIL 0**。
+
+## 12. M2 出口证据（PM 亲跑，命令级）
+
+| 判据 | 命令（workdir） | PM 实测 |
+|---|---|---|
+| 契约门禁 | `bash verify_specs.sh --quiet`（`v0/02_source`） | `verify_specs: OK (110 checks passed, 0 skipped)`，exit 0 |
+| 内核全量套件 | `PYTHONDONTWRITEBYTECODE=1 python3 -m pytest tests/ -q -p no:cacheprovider`（`v0/02_source/v0_skeleton/kernel`） | `132 passed, 4 skipped in 974.63s (0:16:14)` |
+| 冻结面自校验 | `shasum -a 256 -c V0_M2.sha256`（`v0/`） | **237 OK / 1 FAILED**（该 1 条 = F-3 回灌，预期，见 §14） |
+| 端到端基线 | `run --seed 20260921 --ticks 300` + `verify --expected-hash` | 925 事件 / 6 检查点 / chain_tail baecca92… / state_hash 9a4ae3da…；`verify` exit 0 |
+| 仓库面 | `git status --porcelain`（落盘前） | `develop` + **dirty=0**（M2 全程零写入，PM 多次复核） |
+
+## 13. 逐 AC 判定（PM 读盘 + 亲自复算，不采信自述）
+
+| AC | PM 判定 | PM 的独立依据 |
+|---|---|---|
+| AC-M2-1 契约全绿 + U11 关闭 | **PASS** | `verify_specs` OK/0 skipped；U11 负例 A/B：旧版工具对符号链接逃逸 pack **判绿且 `sig_entry_equals_outside_content=True`**，当前 `exit 1 E_PACK_INVALID: symlink escape` 且不改写包外文件；manifest 138/139（缺 `manifest.txt` 自身）、幻影 0、重复 0 |
+| AC-M2-2 能力注册表 | **PASS** | `jq` schema 字段齐全；五类负例 reason code 逐类命中；纯数据能力注册 ⇒ 内核源码指纹差集**空**，改 `cli.py` 负例 exit 1 |
+| AC-M2-3 三类 provider 真跑 | **PASS**（含 GAP-E1） | `remote_api` 真实调用（10 条真记录）；`deterministic_rule`；`cassette_replay` 强制回放；`local_model` = **诚实 GAP**（未谎称跑过）；`embed.text` 远端 404 ⇒ GAP-E1 |
+| AC-M2-4 规则层与预算 | **PASS** | 预算超限 ⇒ `fallback_reason=on_budget_exhausted` + journal `capability.fallback`；**静默化负例**（改名 journal 事件）⇒ 门禁变红（判据有牙） |
+| AC-M2-5 记忆层 | **PASS** | 两次独立建库检索摘要与 db 字节 sha **完全相同**；扰动 embedding ⇒ 摘要变；写入 flag 关 = 0 写、开 = 1 写 |
+| AC-M2-6 第二街区内容扩展 | **PASS** | `verify_pack` exit 0；`validate` exit 0（12 实体 / 5 NPC）；`run` ×3 exit 0 且 5 份事件日志 sha 全等 |
+| AC-M2-7 确定性不回退 | **PASS** | M1 工作区 24 份 `000300.json` 的 `state_hash` **24/24 = `9a4ae3da…`**；M2 副本 `--ticks 300` 复算同值（sentinel/raven 各自独立复跑） |
+| AC-M2-8 真实仓库零改动 + 起点溯源 | **PASS** | `develop` + `dirty=0` + M2 全程零写入；`SEED.sha256` 聚合 `34fa7f6d…` 未变 |
+
+## 14. M2 落盘口径与 F-3 处置（审计要点）
+
+1. **落盘范围 = `V0_M2.sha256` 冻结面**（238 条）。工作区 `spikes/**` 的 scratch 目录（约 500 文件，
+   含 `u11-legacy-tools` 的**修复前**工具副本）**不属冻结面，未随仓库提供**。
+2. **F-3（HIGH，PM 在模拟落盘中逮到）**：M2 工作区携带的 `tools/calibrate_latency.py` 是 **M1 后置修复之前**
+   的版本（`e30be65b…`，无内容锚定），而仓库 HEAD（`f5f7762`）已是修复版（`23fed40d…`）。
+   照清单原样落盘 ⇒ **回退一个已交付并验证过的修复**，任何全新克隆 `test_registry_is_idempotent` 必红。
+   **处置**：该文件按**修复版**落；`V0_M2.sha256` **原样落盘**（保持冻结真相），divergence 文档化
+   （本记录 + `v0/README.md`）。⇒ 仓库内 `shasum -c V0_M2.sha256` = **237 OK / 1 FAILED（预期）**。
+   **教训**：后置修复必须回灌所有存活工作区；落盘前必须先在隔离目录按目标布局真跑。
+3. **模拟先行**：落盘前在 `/private/tmp/pm-m2-land-<ts>` 按目标布局真跑 —— 冻结面自校验 **237 OK / 1 FAILED**、
+   `verify_specs` OK、基线逐位一致，绿了才动仓库。
+4. `spikes/s5-latency-calibration/calibration.registry.json` 内嵌绝对路径（跨 workspace 不可移植）⇒ 按约束文件结论
+   **就地重生成**后随仓库提供；幂等（跑测试前后逐字节不变）。
+
+## 15. 未关闭项（如实登记，不阻断）
+
+- **M2 结转 M3 的 7 条开口项**：raven H2/H3/H4/H8/H9、B-9a/b/c 锚定族、A-7 `_fallback` 默认值、
+  `test_calibrate_latency` 绝对路径绑定。
+- **5 条已声明 GAP**：外部锚定（GAP-7 沿用）、GAP-E1 `embed.text` 远端不可用、`local_model` 未真跑、
+  自洽前缀截断、`lookup()` 字面差距。
+- **门禁登记的 MEDIUM/LOW 残留**：`pin` 只做存在性校验 ⇒ 回滚语义可被旁路（R-M2-1）；`verify_pack`/`pack_sign`
+  用 `rglob` 不跟随**目录**符号链接 ⇒ U11 缺口（R-M2-3）；`--cognition` 默认 provider 随环境凭据漂移（R-M2-4）；
+  `verify_specs.sh` 的 manifest 覆盖判据是**子串**非锚定（L-1）、不校验 `world.seed.json` ↔ `world.schema.json`（L-2）。
+- **结构性观察 O-M2-1**：demo 世界用 `sys.path.insert` **直接 import 交付树内核** ⇒ 「冻结面零残渣」与
+  「demo 在跑」不可同时保证；建议 M3 改为副本依赖。
+- **ISS-M2-1**（r5 的 F-5 字面断言被自身命令文本命中，MEDIUM，文档级）：已派 r6 纯文档收口轮修复，
+  PM 独立复验 11/11 PASS 后**关闭**。
+
+## 16. 诚实边界（不得在总结里弱化）
+
+- 本轮交付 = **内核 + 认知层骨架**（能力注册表 / 四类 provider / 规则层与预算 / 记忆层 / 第二街区内容包），
+  **不是**可玩产品：双模式会话（W7）、渲染层与 UI（W8）、观测层（W9）、集成验收（W10）属 M3/M4。
+- `remote_api` 真跑依赖运行时环境变量（值不落盘）；`local_model` 只有槽位。
+- 「`verify` exit 0」**不等于**「日志未被篡改」——抗改写必须传 `--expected-hash`。

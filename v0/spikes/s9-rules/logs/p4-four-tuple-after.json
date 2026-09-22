@@ -1,0 +1,52 @@
+{
+  "mode": "after",
+  "problems": [],
+  "provenance": {
+    "cli_sha256": "d5cc28929a946b7929436d0932630fe3d52b45ef9aee5bc3b129bbadf3ab033c",
+    "cli_source": "本轮实现（02_source）",
+    "skeleton": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/02_source/v0_skeleton"
+  },
+  "records": [
+    {
+      "case": "M-1 replay/checkpoints is a regular file",
+      "exit": 1,
+      "head": [
+        "note: --pack resolved via fallback to /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/02_source/v0_skeleton/districts/xingfu-xiaoqu",
+        "E_EVENTS_EXISTS: refusing to replay: /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s9-rules/p4-scratch/after/m1-out/checkpoints exists but is not a directory — BOTH the replay log and the checkpoint directory must be explicitly cleared"
+      ],
+      "log_absent_or_empty": true,
+      "log_bytes": 0,
+      "no_traceback": true,
+      "nonzero_exit": true,
+      "structured_E_line": true
+    },
+    {
+      "case": "M-2 run/checkpoints is read-only (chmod 500)",
+      "exit": 1,
+      "head": [
+        "note: --pack resolved via fallback to /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/02_source/v0_skeleton/districts/xingfu-xiaoqu",
+        "E_OUTPUT_NOT_WRITABLE: refusing to run: run checkpoints path is not writable: /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s9-rules/p4-scratch/after/m2-out/checkpoints is not writable (os.access(W_OK) is false) — the run-artifact directory must be a writable real directory inside the output tree"
+      ],
+      "log_absent_or_empty": true,
+      "log_bytes": 0,
+      "no_traceback": true,
+      "nonzero_exit": true,
+      "structured_E_line": true
+    },
+    {
+      "case": "M-3 run/checkpoints is a symlink escaping out/**",
+      "exit": 1,
+      "head": [
+        "note: --pack resolved via fallback to /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/02_source/v0_skeleton/districts/xingfu-xiaoqu",
+        "E_OUTPUT_SYMLINK_ESCAPE: refusing to run: run checkpoints path /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s9-rules/p4-scratch/after/m3-out/checkpoints is a symlink escaping the run-artifact directory: resolves to /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s9-rules/p4-scratch/after/Z-outside which is outside /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s9-rules/p4-scratch/after/m3-out — the run-artifact directory must be a writable real directory inside the output tree"
+      ],
+      "log_absent_or_empty": true,
+      "log_bytes": 0,
+      "no_outside_writes": true,
+      "no_traceback": true,
+      "nonzero_exit": true,
+      "outside_new_files": [],
+      "structured_E_line": true
+    }
+  ]
+}

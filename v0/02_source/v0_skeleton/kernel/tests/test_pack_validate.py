@@ -147,8 +147,14 @@ def test_second_district_requires_no_kernel_change(tmp_path):
 def test_executable_file_in_pack_is_rejected(tmp_path):
     """内容包里出现 `.py`（含改名后内容魔数）必须被拒绝（内容层只有数据）。
 
-    同时固定 L3 的已知缺陷边界：`pack sign` **只按后缀名**判可执行文件，
-    因此「改名后的 shebang 内容」会被签名成功、再由 `validate`（后缀 + 魔数双判据）拒收。
+    **T-2 判据口径改写（ADR-13 同批；M2 / P-5）**：
+      改前断言：`_sign(by_magic).returncode == 0`（编码的是 docstring 自称的「L3 已知缺陷：
+      写侧只按后缀名」）。改后断言：**必须非 0** —— P-5 正是来关掉该缺陷。
+      为什么不是放松判据：不是把负例改正例。改名 shebang 内容仍然**必须被拒**，
+      只是拒的位置从「只读侧」变成「读写两侧」；判据由 1 处变 2 处，强度只增不减。
+      自证反例：把 `pack_sign.py` 退回「只按后缀名」⇒ 本用例第一段（`returncode != 0`）必红；
+      独立反例脚本 `.squad_tools/artisan-p5-revert-negative-control.py` 用仓库 HEAD 的
+      修复前工具实测 exit 0（判据确实有牙齿）。
     """
     # ① 后缀名判据：pack_sign 与 validate 都必须拒绝
     by_suffix = _copy_pack(tmp_path / "evil_suffix")
@@ -156,11 +162,18 @@ def test_executable_file_in_pack_is_rejected(tmp_path):
     assert _sign(by_suffix).returncode != 0, "pack sign 必须拒绝含 .py 的内容包"
     assert _validate(by_suffix).returncode != 0, "含 .py 的 pack 必须被拒收"
 
-    # ② 内容魔数判据（改名绕过后缀名）：pack sign 会放行（L3 已知），validate 必须拒收
+    # ② 内容魔数判据（改名绕过后缀名）：**写侧与读侧都必须拒收**（P-5 关闭 L3 已知缺陷）
     by_magic = _copy_pack(tmp_path / "evil_magic")
     (by_magic / "assets" / "notes.txt").write_bytes(b"#!/bin/sh\necho nope\n")
-    assert _sign(by_magic).returncode == 0, "pack sign 只按后缀名（L3 已知缺陷，非本轮 AC）"
+    signed = _sign(by_magic)
+    assert signed.returncode != 0, "P-5 之后 pack sign 必须按内容魔数拒收改名后的 shebang 内容"
+    assert "E_PACK_INVALID" in (signed.stdout + signed.stderr), signed.stdout + signed.stderr
     assert _validate(by_magic).returncode != 0, "改名后的 shebang 内容必须被魔数判据拒收"
+
+    # 判据归因（证明拒收来自**内容魔数**而不是后缀名，即 P-5 的加固面真的可达）
+    sign_tool = _load_module("pack_sign_reference", WS_ROOT / "02_source" / "v0_skeleton" / "tools" / "pack_sign.py")
+    assert Path("notes.txt").suffix not in sign_tool.FORBIDDEN_SUFFIXES
+    assert sign_tool.executable_kind(by_magic / "assets" / "notes.txt") == "shebang 脚本"
 
     # 反向对照：干净 pack 必须 exit 0
     assert _validate(PACK_DIR).returncode == 0
@@ -168,7 +181,17 @@ def test_executable_file_in_pack_is_rejected(tmp_path):
 
 # --------------------------------------------------------------------------- R23
 def test_seed_projection_passes_world_schema(tmp_path):
-    """预审 M1 强口径：去 `weather` 后的 seed 投影必须**全量**过 `world.schema.json`。
+    """**T-1 判据口径改写（ADR-13）**：`world.seed.json` **原样**必须过 `world.schema.json`（单口径）。
+
+    改前断言：`projection`（去 weather）过 schema，且**原样（含 weather）必红** ——
+      那是契约矛盾（K1）的机器可读证据，前提是「矛盾存在」。
+    改后断言：**原样**过 schema（`world.schema.json` 顶层已补 `weather`，ADR-13），
+      双口径消失；并补 `additionalProperties:false` 的牙齿（未声明字段 `humidity` ⇒ 必红）。
+    为什么不是放松判据：判据没有变空 —— 它从「schema 拒收 weather」换成
+      「schema **接受** weather（与 `$defs/worldSeed` 同构）但**仍然拒收未声明字段**」，
+      牙齿由 `humidity` 负例承担；原样的两条结构负例（缺 `transform` / `kind` 非法）**逐字保留**。
+    自证反例：把 `world.schema.json` 顶层的 `weather` 去掉（= 退回改前形态）⇒
+      本用例的「原样过 schema」必红（脚本内即时构造该退化 schema 验证，见下 `degraded`）。
 
     负例自证：缺 `transform` / `kind` 非法的 seed 副本 **重签之后** 仍必须被 `validate` 拒收
     （证明拦截来自 schema 强口径，而不是签名失配）；同时断言弱口径 `$defs/worldSeed`
@@ -182,14 +205,32 @@ def test_seed_projection_passes_world_schema(tmp_path):
                       "$defs": pack_schema["$defs"]}
 
     raw_seed = json.loads((PACK_DIR / "world.seed.json").read_text(encoding="utf-8"))
+    assert "weather" in raw_seed
+    # 单口径：**原样**即通过 world.schema.json（改后断言）
+    jsonschema.validate(raw_seed, world_schema)
+    # 投影退化为恒等（pack.py 的补偿路径保留调用、语义已是恒等）
     projection = {k: v for k, v in raw_seed.items() if k != "weather"}
     assert set(projection) == {"schema_version", "seed", "tick", "constants", "entities"}
     jsonschema.validate(projection, world_schema)
-    # 原样（含 weather）对 world.schema.json 必红 —— 契约矛盾（K1）的机器可读证据
-    with pytest.raises(jsonschema.ValidationError):
-        jsonschema.validate(raw_seed, world_schema)
-    # 但原样对 $defs/worldSeed 是绿的（weather 声明合法）
+    # 原样对 $defs/worldSeed 仍然绿（weather 声明合法）
     jsonschema.validate(raw_seed, world_seed_def)
+
+    # ---- 负例 0（自证反例）：退回「schema 无 weather」形态 ⇒ 上面那条正向断言必红 ----
+    degraded = json.loads(json.dumps(world_schema))
+    del degraded["properties"]["weather"]
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(raw_seed, degraded)
+
+    # ---- 负例 1：`additionalProperties:false` 未被放松（未声明字段 humidity ⇒ 必红）----
+    with_humidity = json.loads(json.dumps(raw_seed))
+    with_humidity["humidity"] = 0.5
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(with_humidity, world_schema)
+    # 顶层 weather 自身也是 additionalProperties:false（未声明的子字段 ⇒ 必红）
+    bad_weather = json.loads(json.dumps(raw_seed))
+    bad_weather["weather"]["pressure_hpa"] = 1013
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(bad_weather, world_schema)
 
     # ---- 负例 A：缺 transform ----
     broken = _copy_pack(tmp_path / "broken_transform")
@@ -361,14 +402,30 @@ def test_pack_docstring_matches_implementation():
 
 
 def test_pack_sign_and_verify_use_same_executable_criteria(tmp_path):
-    """漂移守卫：`pack.py` 的可执行判据常量必须与冻结的 `tools/verify_pack.py` 逐条一致。"""
+    """漂移守卫：三处可执行判据常量必须逐条一致 —— `pack.py` / `tools/verify_pack.py` /
+    `tools/pack_sign.py`（**M2 / P-5 扩展**：写侧原先只按后缀名，判据漂移面从 2 处变 3 处）。
+
+    自证反例：把 `pack_sign.py` 的 `EXECUTABLE_MAGICS` 去掉一条（或退回只按后缀名）⇒
+    本用例第一条 `tuple(...) == tuple(...)` 必红。
+    """
     from deephealing_kernel import pack as pack_mod
 
     reference = _load_module("verify_pack_reference", WS_ROOT / "02_source" / "v0_skeleton" / "tools" / "verify_pack.py")
+    sign_tool = _load_module("pack_sign_reference", WS_ROOT / "02_source" / "v0_skeleton" / "tools" / "pack_sign.py")
     assert pack_mod.FORBIDDEN_SUFFIXES == reference.FORBIDDEN_SUFFIXES
     assert tuple(pack_mod.EXECUTABLE_MAGICS) == tuple(reference.EXECUTABLE_MAGICS)
+    # P-5 扩展：写侧（pack_sign.py）必须与读侧逐条同判据（后缀 + 内容魔数）
+    assert sign_tool.FORBIDDEN_SUFFIXES == reference.FORBIDDEN_SUFFIXES
+    assert tuple(sign_tool.EXECUTABLE_MAGICS) == tuple(reference.EXECUTABLE_MAGICS)
     # 判据本身必须真的能命中（不是空表）
     probe = tmp_path / "probe.bin"
     probe.write_bytes(b"\x7fELF\x02\x01\x01\x00")
     assert reference.executable_kind(probe) is not None
     assert pack_mod.executable_kind(probe) is not None
+    assert sign_tool.executable_kind(probe) is not None
+    # 写侧判据的**独立**负例：shebang 内容 + 合法后缀名 ⇒ 只有魔数判据能拦下
+    shebang = tmp_path / "notes.txt"
+    shebang.write_bytes(b"#!/bin/sh\necho nope\n")
+    assert shebang.suffix not in sign_tool.FORBIDDEN_SUFFIXES
+    assert sign_tool.executable_kind(shebang) == "shebang 脚本"
+    assert reference.executable_kind(shebang) == "shebang 脚本"

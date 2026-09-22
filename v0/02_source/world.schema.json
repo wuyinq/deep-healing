@@ -27,6 +27,22 @@
       "type": "array",
       "description": "实体列表。序列化前必须按 id 升序显式排序（禁止依赖插入顺序或 dict/set 迭代顺序）。",
       "items": { "$ref": "#/$defs/entity" }
+    },
+    "weather": {
+      "type": "object",
+      "description": "**内容包天气元数据**（ADR-13，2026-09-22）：结构镜像 `district.pack.schema.json` 的 `$defs/worldSeed.weather`，使 `world.seed.json` **原样**即通过本 schema（消除「同一份文件两把尺子」的契约矛盾）。**内核状态边界不变**：`snapshot.state` 仍**不得**含 `weather`（内容包元数据不进内核状态），该断言由领域断言 + 哈希差异守（`tests/test_bus_and_ecs_invariants.py::test_state_passes_world_schema`），不再依赖本 schema 的拒收。`additionalProperties:false` 未被放松。",
+      "additionalProperties": false,
+      "properties": {
+        "condition": {
+          "type": "string",
+          "enum": ["clear", "overcast", "rain", "wind"]
+        },
+        "temperature_c": { "type": "number" },
+        "time_of_day": {
+          "type": "string",
+          "pattern": "^[0-2][0-9]:[0-5][0-9]$"
+        }
+      }
     }
   },
   "$defs": {

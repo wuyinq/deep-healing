@@ -14,6 +14,13 @@
 **可执行文件判据（RM-13 收口：只按后缀名拦可被改名绕过）**：**后缀名** 与 **内容魔数** 双判据，
 任一命中即拒收（ELF / PE / Mach-O / shebang 脚本 / Python 字节码）。
 
+**符号链接守卫（M2 / P-1 / P-5；只加强，不改语义）**：`rglob` 与 `is_file()` 都**跟随符号链接**
+⇒ pack 内一个指向 pack 外文件的符号链接会让本脚本把**包外内容**当成包内文件核对，从而对
+「逃逸 pack」判绿（U11）。现在：pack 内任一文件解析后越出 pack 根 ⇒ `E_PACK_INVALID` + exit 1；
+`pack.sig` 自身是越界符号链接 ⇒ 同样拒收（它原先是唯一未被守卫的读取点）。
+包**内**目标的符号链接仍然合法（与 `deephealing_kernel/pack.py` 同一口径）。
+退出码约定与输出格式**逐字不变**。
+
 对应设计：district.pack.spec.md §2 第 5 步；`kernel validate --pack <dir>` 的签名校验部分。
 """
 
@@ -53,6 +60,18 @@ def executable_kind(path: Path) -> str | None:
     return None
 
 
+def symlink_escape(path: Path, root: Path) -> str | None:
+    """**符号链接守卫**：解析真实路径后越出 pack 根 ⇒ 返回诊断，否则 None。
+
+    与 `deephealing_kernel/pack.py::_assert_within_root` 同一口径（包内目标合法、越界拒收）。
+    """
+    resolved = path.resolve()
+    root_resolved = root.resolve()
+    if not resolved.is_relative_to(root_resolved):
+        return f"{path} resolves to {resolved} which is outside pack root {root_resolved}"
+    return None
+
+
 def sha256_of(path: Path) -> tuple[str, int]:
     digest = hashlib.sha256()
     size = 0
@@ -72,6 +91,11 @@ def main(argv: list[str]) -> int:
     if not sig_path.is_file():
         print(f"E_PACK_INVALID: missing pack.sig in {pack_dir}", file=sys.stderr)
         return 2
+    # `pack.sig` 自身也过符号链接守卫（P-1）：它原先是唯一未被守卫的读取点
+    escaped_sig = symlink_escape(sig_path, pack_dir)
+    if escaped_sig:
+        print(f"E_PACK_INVALID: symlink escape: {escaped_sig}", file=sys.stderr)
+        return 1
 
     signature = json.loads(sig_path.read_text(encoding="utf-8"))
     declared = {entry["path"]: entry for entry in signature["entries"]}
@@ -80,6 +104,12 @@ def main(argv: list[str]) -> int:
     for path in sorted(pack_dir.rglob("*")):
         if not path.is_file() or path.name == "pack.sig":
             continue
+        # 符号链接守卫（P-1）：`rglob`/`is_file` 跟随链接 ⇒ 必须解析真实路径再判越界，
+        # 否则包外内容会被当成包内文件核对，逃逸 pack 被判绿（U11）。
+        escaped = symlink_escape(path, pack_dir)
+        if escaped:
+            print(f"E_PACK_INVALID: symlink escape: {escaped}", file=sys.stderr)
+            return 1
         suffix_hit = path.suffix in FORBIDDEN_SUFFIXES
         magic_hit = executable_kind(path)
         if suffix_hit or magic_hit:

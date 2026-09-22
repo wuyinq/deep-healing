@@ -1,0 +1,10 @@
+{
+  "active": [
+    "安心"
+  ],
+  "declaration": "旧事实保留 superseded_by 指向新 ref（不物理删除）",
+  "history_len": 2,
+  "new_ref": 3,
+  "old_ref": 2,
+  "old_superseded_by": 3
+}

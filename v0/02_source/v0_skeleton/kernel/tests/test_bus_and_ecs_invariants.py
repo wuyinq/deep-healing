@@ -56,11 +56,35 @@ def test_state_passes_world_schema():
     assert by_id["room-101"]["tags"] == ["floor-1", "residential"]  # 显式排序
     assert by_id["npc-001"]["tags"] == ["night-shift", "resident"]
 
-    # 反向对照：把 weather 塞进 state ⇒ 校验必红（证明「不含 weather」这条断言有牙齿）
+    # ---- T-3 判据口径改写（ADR-13）：牙齿从「schema 拒收 weather」换成「领域断言 + 哈希差异」----
+    # 改前断言：`jsonschema.validate(state + weather)` **必须抛**（牙齿 = schema 拒收 weather）。
+    # 改后断言（三段，缺一不可）：
+    #   ② 反向对照（必须有牙齿）：把 weather 注入 state 副本 ⇒ canonical_json / state_hash
+    #      **必须与真实值不同**（证明 ①「state 不含 weather」不是空转断言）；
+    #   ③ schema 牙齿保留：注入**未声明**字段 `humidity` ⇒ jsonschema.validate **必须抛**
+    #      （证明 `additionalProperties:false` 未被放松）。
+    # 为什么不是放松判据：ADR-13 给 schema 补 weather 是为了消除「同一份文件两把尺子」的契约矛盾；
+    #   「state 不得含 weather」这条**领域约束一字未改**，只是它的牙齿从「借 schema 的拒收」
+    #   换成「哈希差异 + 领域断言」—— 强度不减：前者只证明 schema 形状，后者证明真实哈希受影响。
+    # 自证反例：把 `world.schema.json` 顶层的 `additionalProperties:false` 去掉 ⇒ ③ 必红；
+    #   把 `state` 换成含 weather 的副本 ⇒ ① 的 `"weather" not in state` 必红（② 已量化该差异）。
     tainted = dict(state)
     tainted["weather"] = {"condition": "clear", "temperature_c": 21.5, "time_of_day": "07:30"}
+    real_state_hash = snapshot_mod.hash_object(state)
+    assert snapshot_mod.canonical_json(tainted) != snapshot_mod.canonical_json(state)
+    assert snapshot_mod.hash_object(tainted) != real_state_hash
+    # ADR-13 之后：含 weather 的 state 副本**形状合法**（单口径），但世界状态里它**不出现**
+    jsonschema.validate(tainted, _world_schema())
+
+    # ③ schema 牙齿保留：未声明字段必须仍被拒（`additionalProperties:false` 未被放松）
+    with_humidity = dict(state)
+    with_humidity["humidity"] = 0.5
     with pytest.raises(jsonschema.ValidationError):
-        jsonschema.validate(tainted, _world_schema())
+        jsonschema.validate(with_humidity, _world_schema())
+    # 自证反例：把 `additionalProperties:false` 拿掉 ⇒ 上面这条必红（判据确实有牙齿）
+    relaxed = json.loads(json.dumps(_world_schema()))
+    relaxed.pop("additionalProperties", None)
+    jsonschema.validate(with_humidity, relaxed)
 
     # 反向对照：entities 逆序 ⇒ 排序断言必红
     reversed_ids = [entity["id"] for entity in reversed(state["entities"])]

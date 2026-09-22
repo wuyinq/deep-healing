@@ -1,0 +1,55 @@
+{
+  "mode": "revert",
+  "problems": [],
+  "provenance": {
+    "cli_sha256": "69aeebdb91f80463d64ff03ac48c98a2f4b57b74020a7da4941cd7b188a72058",
+    "cli_source": "git show HEAD:v0/02_source/v0_skeleton/kernel/deephealing_kernel/cli.py",
+    "skeleton": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s9-rules/p4-scratch/revert-02_source/v0_skeleton"
+  },
+  "records": [
+    {
+      "case": "M-1 replay/checkpoints is a regular file",
+      "exit": 1,
+      "head": [
+        "note: --pack resolved via fallback to /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s9-rules/p4-scratch/revert-02_source/v0_skeleton/districts/xingfu-xiaoqu",
+        "Traceback (most recent call last):"
+      ],
+      "log_absent_or_empty": false,
+      "log_bytes": 56610,
+      "no_traceback": false,
+      "nonzero_exit": true,
+      "structured_E_line": false
+    },
+    {
+      "case": "M-2 run/checkpoints is read-only (chmod 500)",
+      "exit": 1,
+      "head": [
+        "note: --pack resolved via fallback to /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s9-rules/p4-scratch/revert-02_source/v0_skeleton/districts/xingfu-xiaoqu",
+        "Traceback (most recent call last):"
+      ],
+      "log_absent_or_empty": false,
+      "log_bytes": 56610,
+      "no_traceback": false,
+      "nonzero_exit": true,
+      "structured_E_line": false
+    },
+    {
+      "case": "M-3 run/checkpoints is a symlink escaping out/**",
+      "exit": 0,
+      "head": [
+        "note: --pack resolved via fallback to /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s9-rules/p4-scratch/revert-02_source/v0_skeleton/districts/xingfu-xiaoqu",
+        "note: --ws-port 8787 accepted but NOT listened on (serving is W8)"
+      ],
+      "log_absent_or_empty": false,
+      "log_bytes": 112946,
+      "no_outside_writes": false,
+      "no_traceback": true,
+      "nonzero_exit": false,
+      "outside_new_files": [
+        "000030.json",
+        "000060.json"
+      ],
+      "structured_E_line": false
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "byte_identical": true,
+  "comparator_verdict": "CONSISTENT",
+  "digest_a": "1ec6512aa00f03cc7f775d1c0e30a311d2d8c72122586d06654d7b8f8f6f37cf",
+  "digest_b": "1ec6512aa00f03cc7f775d1c0e30a311d2d8c72122586d06654d7b8f8f6f37cf",
+  "query_vector": [
+    1.0,
+    0.0,
+    2.0
+  ],
+  "records": [
+    {
+      "importance": 0.9,
+      "kind": "talk",
+      "layer": "episodes",
+      "ref": 3,
+      "similarity": 1.0,
+      "text_summary": "聊了很久",
+      "tick": 12
+    },
+    {
+      "importance": 0.5,
+      "kind": "meal",
+      "layer": "episodes",
+      "ref": 2,
+      "similarity": 0.948683,
+      "text_summary": "一起吃饭",
+      "tick": 12
+    },
+    {
+      "importance": 0.8,
+      "kind": "visit",
+      "layer": "episodes",
+      "ref": 1,
+      "similarity": 0.447214,
+      "text_summary": "去看了老张",
+      "tick": 10
+    }
+  ],
+  "sort_key": "similarity desc → tick desc → ref asc",
+  "top_k": 8
+}

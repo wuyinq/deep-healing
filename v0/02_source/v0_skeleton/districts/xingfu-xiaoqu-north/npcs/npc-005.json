@@ -1,0 +1,21 @@
+{
+  "id": "npc-005",
+  "display_name": "备考住户（2-201）",
+  "home_entity": "room-201",
+  "need_weights": { "physiology": 0.7, "safety": 0.8, "belonging": 0.9, "esteem": 1.2, "self_actualization": 1.6 },
+  "schedule_ref": "schedules/weekday.json#student",
+  "relations_seed": { "npc-003": 0.55, "npc-004": 0.2 },
+  "trauma_flags": [],
+  "personality": { "openness": 0.75, "conscientiousness": 0.85, "extraversion": 0.35, "agreeableness": 0.6, "neuroticism": 0.55 },
+  "cognition_policy": {
+    "capability_slots": ["intent.plan", "emotion.appraise", "memory.reflect", "relation.infer"],
+    "daily_token_budget": 65000,
+    "reflect_trigger": { "min_ticks_between": 480, "importance_threshold": 0.5 }
+  },
+  "memory_policy": { "working_capacity": 64, "episodic_keep_top": 450, "decay_half_life_ticks": 21600 },
+  "narrative_hooks": [
+    "把窗户开一条缝，让楼下的说话声飘上来",
+    "第一次主动跟邻居打招呼时，声音比自己想象的小"
+  ],
+  "v0_role": "「常规」活跃度样本 + 跨代关系的观察点（与 npc-003 的 relation.infer 用例相关）"
+}

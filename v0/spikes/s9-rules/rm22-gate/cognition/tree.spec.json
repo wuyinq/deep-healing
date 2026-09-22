@@ -1,0 +1,61 @@
+{
+  "children": [
+    {
+      "children": [
+        {
+          "key": "needs_pressure",
+          "op": ">=",
+          "type": "condition",
+          "value": 0.3
+        },
+        {
+          "payload": {
+            "candidate_actions": "$candidate_actions",
+            "needs": "$needs",
+            "npc_id": "$npc_id",
+            "schedule_state": "$schedule_state",
+            "tick": "$tick"
+          },
+          "slot": "intent.plan",
+          "store_as": "plan",
+          "type": "action"
+        },
+        {
+          "payload": {
+            "current_emotion": "$current_emotion",
+            "event_summary": "$event_summary",
+            "npc_id": "$npc_id",
+            "tick": "$tick"
+          },
+          "slot": "emotion.appraise",
+          "store_as": "emotion",
+          "type": "action"
+        },
+        {
+          "payload": {
+            "existing_relations": "$existing_relations",
+            "npc_id": "$npc_id",
+            "observations": "$observations",
+            "tick": "$tick"
+          },
+          "slot": "relation.infer",
+          "store_as": "relations",
+          "type": "action"
+        }
+      ],
+      "type": "sequence"
+    },
+    {
+      "payload": {
+        "current_emotion": "$current_emotion",
+        "event_summary": "$event_summary",
+        "npc_id": "$npc_id",
+        "tick": "$tick"
+      },
+      "slot": "emotion.appraise",
+      "store_as": "emotion",
+      "type": "action"
+    }
+  ],
+  "type": "selector"
+}

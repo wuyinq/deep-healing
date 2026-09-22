@@ -1,0 +1,68 @@
+{
+  "ac_m2_2": {
+    "after_digest": "44570f5437a778d259534af6c199ddaf2ceb172ff159eb0a99699e522311a06a",
+    "before_digest": "4f22e6cbd71d014998b76acdf170ca425402c86dd0ca13a1a4b2276e0b1dc1d2",
+    "before_reconstruction": {
+      "declaration": "before 为**重建**快照（本轮 adapter 与代码在同一会话写完）；见 06 显式声明节",
+      "method": "隔离副本 = 当前内核去掉 deephealing_kernel/providers/adapters/**",
+      "removed_files": [
+        {
+          "path": "__init__.py",
+          "sha256": "c5655d874392a3444583a7c1ff7297c8bc82af7da411fcf9c4728da34eff61a1"
+        },
+        {
+          "path": "relation_infer.py",
+          "sha256": "d7894a464f61cfe8e0b96c289092505dd54ed32087d00a37365abbce60fc9055"
+        }
+      ]
+    },
+    "before_snapshot": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s8-registry/baseline-after-m2-code",
+    "criterion_ok": true,
+    "diff": {
+      "added": [
+        "providers/adapters/__init__.py",
+        "providers/adapters/relation_infer.py"
+      ],
+      "changed": [],
+      "digest_after": "44570f5437a778d259534af6c199ddaf2ceb172ff159eb0a99699e522311a06a",
+      "digest_before": "4f22e6cbd71d014998b76acdf170ca425402c86dd0ca13a1a4b2276e0b1dc1d2",
+      "removed": []
+    },
+    "reasons": []
+  },
+  "ac_m2_6": {
+    "after_digest": "44570f5437a778d259534af6c199ddaf2ceb172ff159eb0a99699e522311a06a",
+    "before_digest": "44570f5437a778d259534af6c199ddaf2ceb172ff159eb0a99699e522311a06a",
+    "criterion_ok": true,
+    "diff": {
+      "added": [],
+      "changed": [],
+      "digest_after": "44570f5437a778d259534af6c199ddaf2ceb172ff159eb0a99699e522311a06a",
+      "digest_before": "44570f5437a778d259534af6c199ddaf2ceb172ff159eb0a99699e522311a06a",
+      "removed": []
+    },
+    "reasons": [],
+    "second_district_exit": 0,
+    "second_district_output": "{\"entries\": 13, \"pack_dir\": \"/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/02_source/v0_skeleton/districts/xingfu-xiaoqu-north\", \"pack_id\": \"xingfu-xiaoqu-north\", \"pack_sig\": \"/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/02_source/v0_skeleton/districts/xingfu-xiaoqu-north/pack.sig\", \"version\": \"0.2.0\"}"
+  },
+  "criterion_self_proof": {
+    "kernel_digest_selftest_exit": 0,
+    "kernel_digest_selftest_output": [
+      "[① 正例 adapter 新增] ok=True reasons=[]",
+      "[② 负例 改 tick.py 一字节] changed=['tick.py'] ok=False reasons=[\"changed is not empty: ['tick.py']\"]",
+      "[③ 负例 包根新增 .py] added=['extra_module.py'] ok=False reasons=[\"added outside adapter dirs ('adapters/', 'providers/adapters/'): ['extra_module.py']\"]",
+      "[④ 正例 providers/adapters/ 并集] added=['providers/adapters/x.py'] ok=True reasons=[]",
+      "selftest: OK (1 positive + 2 mandatory negatives + 1 union positive)"
+    ],
+    "self_made_negative": {
+      "changed": [
+        "tick.py"
+      ],
+      "criterion_ok": false,
+      "reasons": [
+        "changed is not empty: ['tick.py']"
+      ]
+    }
+  },
+  "problems": []
+}

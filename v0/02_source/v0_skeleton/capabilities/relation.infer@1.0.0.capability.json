@@ -1,0 +1,141 @@
+{
+  "id": "relation.infer",
+  "version": "1.0.0",
+  "slot": "relation.infer",
+  "input_schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["npc_id", "tick", "observations", "existing_relations"],
+    "properties": {
+      "npc_id": { "type": "string" },
+      "tick": { "type": "integer", "minimum": 0 },
+      "observations": {
+        "type": "array",
+        "maxItems": 32,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["subject", "object", "kind", "weight"],
+          "properties": {
+            "subject": { "type": "string" },
+            "object": { "type": "string" },
+            "kind": { "type": "string", "enum": ["help", "conflict", "talk", "gift", "avoid"] },
+            "weight": { "type": "number", "minimum": -1, "maximum": 1 }
+          }
+        }
+      },
+      "existing_relations": { "type": "object" }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["relations", "top_partner", "confidence"],
+    "properties": {
+      "relations": {
+        "type": "array",
+        "maxItems": 32,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["entity_id", "affinity", "evidence_count"],
+          "properties": {
+            "entity_id": { "type": "string" },
+            "affinity": { "type": "number", "minimum": -1, "maximum": 1 },
+            "evidence_count": { "type": "integer", "minimum": 0 }
+          }
+        }
+      },
+      "top_partner": { "type": ["string", "null"] },
+      "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+    }
+  },
+  "providers": [
+    {
+      "class": "remote_api",
+      "source_model": null, "world_model_backend": false, "determinism": "non_deterministic", "allowed_in_rule_layer": false,
+      "impl": "builtin:openai_compatible_chat",
+      "priority": 10,
+      "model": "deepseek-v4.1-flash",
+      "determinism_note": "best_effort：远端关系推断会随模型版本变化；回放必须走 cassette_replay。",
+      "requires_secrets": ["HERMES_CUSTOM_TOKENFAB_API_KEY"]
+    },
+    {
+      "class": "cassette_replay",
+      "source_model": null, "world_model_backend": false, "determinism": "deterministic", "allowed_in_rule_layer": true,
+      "impl": "builtin:cassette_replay",
+      "priority": 20,
+      "determinism_note": "replayable：逐字节等价。**等价性判据（由数据声明，不写进内核代码）**：与 `deterministic_rule` 的等价面 = 整份 output 对象（relations / top_partner / confidence）逐字节相同；`remote_api` 与二者的等价面**只到契约形状**（字段集/类型/范围/过 output_schema），允许数值差异。"
+    },
+    {
+      "class": "local_model",
+      "source_model": null, "world_model_backend": false, "determinism": "non_deterministic", "allowed_in_rule_layer": false,
+      "impl": "builtin:ollama_chat",
+      "priority": 30,
+      "model": null,
+      "determinism_note": "best_effort：本机无本地模型服务 ⇒ available() 恒 False，只交槽位设计 + 诚实 GAP。"
+    },
+    {
+      "class": "deterministic_rule",
+      "source_model": null, "world_model_backend": false, "determinism": "deterministic", "allowed_in_rule_layer": true,
+      "impl": "module:deephealing_kernel.providers.adapters.relation_infer:relation_infer_rule",
+      "priority": 40,
+      "determinism_note": "pure：观察序列聚合 + 显式 tie-break（affinity 降序 → entity_id 升序），无随机、无时钟、无网络；**等价性判据由数据声明**：与 cassette_replay 逐字节等价（cassette 由本规则录制）。"
+    }
+  ],
+  "cost": {
+    "usd_per_1k_in": 0.00014,
+    "usd_per_1k_out": 0.00028,
+    "est_tokens_in": 700,
+    "est_tokens_out": 200,
+    "currency": "USD"
+  },
+  "latency_ms_budget": 42150,
+  "timeout_ms": 43400,
+  "calibration": {
+    "sample_count": 24,
+    "p50_ms": 7443.408,
+    "p90_ms": 42110.951,
+    "p95_ms": 43358.907,
+    "p99_ms": 54031.089,
+    "max_ms": 54031.089,
+    "derivation_rule": "声明值 = ceil_to(100, p95) + offset_ms(relation.infer=0)；latency_ms_budget = ceil_to(50, p90) + offset_ms",
+    "derivation_rule_sha256": "7590eab4b765671860eaa50b68de807606581bfdd439cb3aa6fe2d953edb0feb",
+    "candidate_strict_ms": 43400,
+    "candidate_loose_ms": 55500,
+    "accepted_degradation_range": "0.00-0.30",
+    "command": "python3 calibrate.py degrade --formula adopted --runs 10 --out logs/degradation.adopted.json",
+    "workdir": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s5-latency-calibration",
+    "exit": 0,
+    "log_path": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s5-latency-calibration/logs/latency.distribution.json",
+    "degradation_log_path": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s5-latency-calibration/logs/degradation.adopted.json",
+    "gap_note": "**诚实 GAP**：本能力未单独重采样；声明值由**同一 API 通道**的冻结分布（round 3 · 24 次真实调用）按冻结推导规则派生，`offset_ms(relation.infer)=0`（DERIVATION-RULE.frozen.md 明列：本地确定性规则不调远端，offset 仅用于对称）。因此 `timeout_ms` 是**同条件继承值**，不是本能力独立实测值；若日后本能力真的走 remote_api，必须重采样。"
+  },
+  "rule_layer_adoption": {
+    "allowed": true,
+    "provider_classes_allowed": ["deterministic_rule", "cassette_replay"],
+    "consistency_check": { "required": true, "runs": 3 }
+  },
+  "fallback": {
+    "on_timeout": { "provider": "deterministic_rule", "impl": "module:deephealing_kernel.providers.adapters.relation_infer:relation_infer_rule" },
+    "on_error": { "provider": "deterministic_rule", "impl": "module:deephealing_kernel.providers.adapters.relation_infer:relation_infer_rule" },
+    "on_invalid_schema": { "provider": "deterministic_rule", "impl": "module:deephealing_kernel.providers.adapters.relation_infer:relation_infer_rule" },
+    "on_budget_exhausted": { "provider": "deterministic_rule", "impl": "module:deephealing_kernel.providers.adapters.relation_infer:relation_infer_rule" },
+    "on_cassette_miss": "deterministic_stub"
+  },
+  "determinism": {
+    "mode": "pure",
+    "cassette_key_fields": ["capability_id", "capability_version", "canonical_input_hash", "provider"],
+    "seed_policy": "no_randomness",
+    "anchor_policy": "no anchor == proves determinism, NOT authenticity（见 capability.schema.json 的 x-anchor-policy）"
+  },
+  "safety": {
+    "secrets_in_context": false,
+    "redact_fields": ["headers.Authorization", "env.*_API_KEY"],
+    "max_output_bytes": 262144,
+    "schema_strict": true,
+    "prompt_injection_guard": "none"
+  },
+  "budget": { "per_tick_calls": 1, "per_npc_daily_tokens": 20000 },
+  "tags": ["cognition", "relations", "v0", "m2"]
+}

@@ -14,7 +14,7 @@ v0_skeleton/README.md | V0 骨架说明（目录↔分层映射、三条硬边�
 v0_skeleton/capabilities/intent.plan@1.0.0.capability.json | 能力：意图规划（四类 provider 声明） | 手工编写（符合 capability.schema.json）
 v0_skeleton/capabilities/emotion.appraise@1.0.0.capability.json | 能力：情绪评估（四类 provider 声明） | 手工编写（符合 capability.schema.json）
 v0_skeleton/capabilities/memory.reflect@1.0.0.capability.json | 能力：记忆反思（四类 provider 声明） | 手工编写（符合 capability.schema.json）
-v0_skeleton/capabilities/embed.text@1.0.0.capability.json | 能力：文本嵌入（记忆检索用，四类 provider 声明） | 手工编写（符合 capability.schema.json）
+v0_skeleton/capabilities/embed.text@1.0.0.capability.json | 能力：文本嵌入（记忆检索用，四类 provider 声明）；**r3 变更单**：`remote_api` 标为不可用并从默认优先级摘掉（priority 10→90），并同步把 `cassette_replay` 20→50（否则非回放路由落到 cassette_replay ⇒ 录制态 miss ⇒ E_CAP_FALLBACK_UNRESOLVED；负例自证见 06 §GAP-E1）；通道无嵌入模型；见 ADR-014 | 手工编写（符合 capability.schema.json）
 v0_skeleton/capabilities/pins.json | 版本钉住表 + 回放/离线 provider 覆盖（回滚只改数据） | 手工编写（01 §7.5）
 v0_skeleton/districts/xingfu-xiaoqu/pack.json | 样例内容包清单（id/version/engine_range/bounds/license/entrypoints/portals） | 手工编写（符合 district.pack.schema.json）
 v0_skeleton/districts/xingfu-xiaoqu/world.seed.json | 样例初始世界（seed/constants/weather + 12 个实体） | 手工编写（符合 world.schema.json）
@@ -39,7 +39,7 @@ v0_skeleton/kernel/deephealing_kernel/ecs.py | 薄 ECS（组件数组/实体索�
 v0_skeleton/kernel/deephealing_kernel/events.py | 事件日志与哈希链（append-only、脱敏、链校验） | 手工编写（接口骨架）
 v0_skeleton/kernel/deephealing_kernel/snapshot.py | 快照与 state_hash/检查点比对/分歧 dump | 手工编写（接口骨架）
 v0_skeleton/kernel/deephealing_kernel/pack.py | 内容包加载与校验（E_PACK_INVALID、engine_range、portals 建边） | 手工编写（接口骨架）
-v0_skeleton/kernel/deephealing_kernel/registry.py | 原子能力注册表（数据 glob 发现/provider 路由/fallback 链/回放强制） | 手工编写（接口骨架）
+v0_skeleton/kernel/deephealing_kernel/registry.py | 原子能力注册表（数据 glob 发现/provider 路由/fallback 链/回放强制） | 手工编写（接口骨架）；修复轮 5 / R4-C1：`_fallback()` 新增生效 `replay_mode` 显式入参、`_fallback()` 与 `invoke()` 主路径两处 `record()` 加回放态守卫（零回填）、被抑制的回填落 `cassette.record_suppressed` journal 留痕
 v0_skeleton/kernel/deephealing_kernel/budget.py | 三级预算记账（tick/NPC 日/会话影响） | 手工编写（接口骨架）
 v0_skeleton/kernel/deephealing_kernel/bus.py | 只读事件总线（L7/L2 只订阅，订阅者异常隔离） | 手工编写（接口骨架）
 v0_skeleton/kernel/deephealing_kernel/rules/__init__.py | 规则层包入口（禁止在规则层直接 HTTP/SDK） | 手工编写（接口骨架）
@@ -49,7 +49,7 @@ v0_skeleton/kernel/deephealing_kernel/providers/__init__.py | provider 包入口
 v0_skeleton/kernel/deephealing_kernel/providers/remote_api.py | remote_api provider（凭据只从环境变量取，Authorization 脱敏） | 手工编写（接口骨架）
 v0_skeleton/kernel/deephealing_kernel/providers/local_model.py | local_model provider（本机无 NVIDIA GPU 的降级路径） | 手工编写（接口骨架）
 v0_skeleton/kernel/deephealing_kernel/providers/deterministic_rule.py | deterministic_rule provider（四个纯函数兜底实现） | 手工编写（接口骨架）
-v0_skeleton/kernel/deephealing_kernel/providers/cassette.py | cassette 录制/回放 provider（key 构成 + miss fail-closed） | 手工编写（接口骨架）
+v0_skeleton/kernel/deephealing_kernel/providers/cassette.py | cassette 录制/回放 provider（key 构成 + miss fail-closed） | 手工编写（接口骨架）；修复轮 5 / R4-C1：`verify_chain()` 增「同一文件内同一 key 重复出现 ⇒ 文件损坏」判据（冻结条文 §4.1.2 / §6 / §5.1），回填签名不再零告警
 v0_skeleton/kernel/deephealing_kernel/adapters/__init__.py | provider 适配器包入口（**round 3 · 修复迭代 2 新增文件**；既有内核源码零改动） | 手工编写（G1 impl 白名单：正例 impl 必须落在 kernel 根之内）
 v0_skeleton/kernel/deephealing_kernel/adapters/determinism_probe.py | 确定性探针参考适配器（纯函数 `pure_rule`；run_s7 F2③ 正例用） | 手工编写（G1，可执行，已真跑）
 v0_skeleton/kernel/deephealing_kernel/memory/__init__.py | 记忆层包入口（三层：working/episodic/semantic） | 手工编写（接口骨架）
@@ -108,3 +108,31 @@ v0_skeleton/kernel/tests/test_events_snapshot_invariants.py | R17/R18/R24/R25：
 v0_skeleton/kernel/tests/test_calibrate_latency.py | AC-M1-6 用例：冻结物 sha256 与 round-3 逐字节一致、offset/区间表漂移守卫、干净合成链全绿、污染样本 `derive` fail-closed、陈旧声明值使区间闸变红、分布早于规则时拒绝推导、`registry` 三份冻结物登记；**修复轮 C4/C5**：`check` 独立重算 p50/p90/p95/p99/max 五个量（逐个篡改必红）+ `adopted == strict` 结构塌缩与区间越界分开报告（含反向对照） | 手工编写（M1 新增 + 修复轮扩充；已真跑绿）
 v0_skeleton/kernel/tests/test_canonical_contract.py | **修复轮 C10**：canonical JSON 契约的**独立序列化**对照（测试内手写编码器，不 import 被测实现）+ 子进程注入「分隔符带空格」变体实现的反向对照（判据必须非 0） | 手工编写（修复轮新增；已真跑绿 + 反向对照非 0）
 v0_skeleton/kernel/tests/test_evidence_scan.py | **修复轮 C1**：AC-M1-7(b) 请求体面扫描器的**反向对照**（探针文件必须命中 ⇒ 移除后 0 命中 ⇒ 真实扫描面 0 命中）+ 标定产物自报 `transcript_written: false` 且真实调用数 = 24 + 3×10 = 54 | 手工编写（修复轮新增；已真跑绿）
+07_adr.md | 架构决策记录：冻结 12 条 ADR **逐字** + 追加 ADR-13（world.schema.json 补 weather 的单口径裁决，含背景/选项/决定/后果/迁移 + T-1/T-2/T-3/T-4 判据口径改写逐条登记） | 复制 refs/07_adr.frozen.md（逐字）+ 手工编写 ADR-13（M2 新增）
+v0_skeleton/capabilities/relation.infer@1.0.0.capability.json | 新增纯数据能力（AC-13 样本）：四类 provider / 四键 cassette / 标定声明（offset_ms(relation.infer)=0）/ fallback 链 / 确定性策略（mode=pure）；等价性判据由数据声明（determinism_note + calibration.gap_note） | 手工编写（M2 新增；schema 由 capability.schema.json 真跑校验）
+v0_skeleton/districts/xingfu-xiaoqu-north/assets/manifest.json | 第二街区（纯数据新增，零内核改动）：第二街区资产清单（与第一街区同结构） | 复制第一街区 → 改 id/version/display_name/bounds → tools/pack_sign.py 重签（.squad_tools/artisan-make-second-district.py）
+v0_skeleton/districts/xingfu-xiaoqu-north/buildings/b1-building.json | 第二街区（纯数据新增，零内核改动）：第二街区楼栋数据 | 复制第一街区 → 改 id/version/display_name/bounds → tools/pack_sign.py 重签（.squad_tools/artisan-make-second-district.py）
+v0_skeleton/districts/xingfu-xiaoqu-north/buildings/courtyard-01.json | 第二街区（纯数据新增，零内核改动）：第二街区院落数据 | 复制第一街区 → 改 id/version/display_name/bounds → tools/pack_sign.py 重签（.squad_tools/artisan-make-second-district.py）
+v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-001.json | 第二街区（纯数据新增，零内核改动）：第二街区住户 1 | 复制第一街区 → 改 id/version/display_name/bounds → tools/pack_sign.py 重签（.squad_tools/artisan-make-second-district.py）
+v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-002.json | 第二街区（纯数据新增，零内核改动）：第二街区住户 2 | 复制第一街区 → 改 id/version/display_name/bounds → tools/pack_sign.py 重签（.squad_tools/artisan-make-second-district.py）
+v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-003.json | 第二街区（纯数据新增，零内核改动）：第二街区住户 3 | 复制第一街区 → 改 id/version/display_name/bounds → tools/pack_sign.py 重签（.squad_tools/artisan-make-second-district.py）
+v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-004.json | 第二街区（纯数据新增，零内核改动）：第二街区住户 4 | 复制第一街区 → 改 id/version/display_name/bounds → tools/pack_sign.py 重签（.squad_tools/artisan-make-second-district.py）
+v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-005.json | 第二街区（纯数据新增，零内核改动）：第二街区住户 5 | 复制第一街区 → 改 id/version/display_name/bounds → tools/pack_sign.py 重签（.squad_tools/artisan-make-second-district.py）
+v0_skeleton/districts/xingfu-xiaoqu-north/pack.json | 第二街区（纯数据新增，零内核改动）：第二街区 pack 清单（id=xingfu-xiaoqu-north / version=0.2.0 / bounds / portal 指回第一街区） | 复制第一街区 → 改 id/version/display_name/bounds → tools/pack_sign.py 重签（.squad_tools/artisan-make-second-district.py）
+v0_skeleton/districts/xingfu-xiaoqu-north/pack.sig | 第二街区（纯数据新增，零内核改动）：第二街区 pack.sig（由 tools/pack_sign.py 重签，13 条） | 复制第一街区 → 改 id/version/display_name/bounds → tools/pack_sign.py 重签（.squad_tools/artisan-make-second-district.py）
+v0_skeleton/districts/xingfu-xiaoqu-north/schedules/weekday.json | 第二街区（纯数据新增，零内核改动）：第二街区日程表 | 复制第一街区 → 改 id/version/display_name/bounds → tools/pack_sign.py 重签（.squad_tools/artisan-make-second-district.py）
+v0_skeleton/districts/xingfu-xiaoqu-north/tasks/task-001.json | 第二街区（纯数据新增，零内核改动）：第二街区任务 1 | 复制第一街区 → 改 id/version/display_name/bounds → tools/pack_sign.py 重签（.squad_tools/artisan-make-second-district.py）
+v0_skeleton/districts/xingfu-xiaoqu-north/tasks/task-002.json | 第二街区（纯数据新增，零内核改动）：第二街区任务 2 | 复制第一街区 → 改 id/version/display_name/bounds → tools/pack_sign.py 重签（.squad_tools/artisan-make-second-district.py）
+v0_skeleton/districts/xingfu-xiaoqu-north/world.seed.json | 第二街区（纯数据新增，零内核改动）：第二街区初始世界（含 weather；原样过 world.schema.json） | 复制第一街区 → 改 id/version/display_name/bounds → tools/pack_sign.py 重签（.squad_tools/artisan-make-second-district.py）
+v0_skeleton/kernel/deephealing_kernel/providers/adapters/__init__.py | provider adapter 目录标记（属 kernel_digest 的 adapter 目录并集豁免面） | 手工编写（M2 新增）
+v0_skeleton/kernel/deephealing_kernel/providers/adapters/relation_infer.py | relation.infer 的实现体（纯函数）：观察序列聚合 + 显式 tie-break，无随机/时钟/网络；位于 adapter 豁免面 ⇒ 新增能力不改既有内核文件 | 手工编写（M2 新增；kernel_digest 差集 changed==[] 已实测）
+v0_skeleton/kernel/deephealing_kernel/rules/requirement.py | 需求层：needs × weights → 可比较的需求记录（deficit 降序 → need_id 升序，纯函数） | 手工编写（M2 新增，设计 §3.2）
+v0_skeleton/kernel/tests/test_budget_ledger.py | AC-M2-4 用例：三级预算语义（per_tick / npc_daily / spend_impact）+ 降级可审计 + 「超时值来自契约声明」+ 静默回填负例 + 毫秒常量扫描 | 手工编写（M2 新增；已真跑绿）
+v0_skeleton/kernel/tests/test_io_shape_guards.py | P-4 回归用例：M-1/M-2/M-3 四元组判据（非 0 退出 + 结构化 E_ 码 + 无 Traceback + 无半截日志/无越界落盘） | 手工编写（M2 新增；已真跑绿；反例见 .squad_tools/artisan-p4-four-tuple.py revert）
+v0_skeleton/kernel/tests/test_memory_layers.py | AC-M2-5 用例：记忆三层真跑 + 唯一写入点 + 默认零写入 + 检索逐字节一致（含改 tie-break 负例）+ prune 软删与容量上限 + 事实 superseded_by 历史保留 | 手工编写（M2 新增；已真跑绿）
+v0_skeleton/kernel/tests/test_rules_layer.py | W4 规则层用例：需求层/效用层显式 tie-break + 行为树节点语义与构建期 fail-fast + 「调用能力是唯一接缝」源码扫描（含反向对照） | 手工编写（M2 新增；已真跑绿）
+v0_skeleton/kernel/tests/test_cassette_miss_cli.py | 修复轮 2 / 修-2（R-M2-2）：cassette miss 命令层可见性 —— replay miss ⇒ exit 1 + 结构化 E_CASSETTE_MISS + summary.fail_closed_events 计数、吞 miss 负例自证（exit 0 假绿复现）、正常回放回归 | 手工编写（修复轮 2 新增；已真跑绿，4 条）
+v0_skeleton/kernel/tests/test_pins_resolution.py | 修复轮 2 / 修-1（R-M2-1）：pins 多版本旁路关闭判据 —— pin 参与版本解析、pin 指向不存在版本 ⇒ E_CAP_VERSION_CONFLICT、忽略 pin 负例自证（判据 1 变红） | 手工编写（修复轮 2 新增；已真跑绿，7 条）
+v0_skeleton/kernel/tests/test_cassette_tamper_cli.py | 收口轮 / 修-6（R2-M2）：cassette 篡改与 miss 同等命令层可见 —— 篡改 ⇒ exit 1 + E_CASSETTE_TAMPERED + summary.cassette_tampered_events 顶层计数、干净回放与 miss 回归、「篡改只记不算失败」负例自证 | 手工编写（修复轮 3 新增；已真跑绿，5 条）
+v0_skeleton/kernel/tests/test_slot_conflict.py | 收口轮 / 修-5（R2-M1）：slot 冲突旁路关闭判据 —— 同一 slot 被多个不同 id 声明 ⇒ E_CAP_SLOT_CONFLICT、capability()/slots() fail-closed 不半装载、不查 slot 冲突负例自证（解析到 rogue ⇒ 判据变红）、修-1 回归 | 手工编写（修复轮 3 新增；已真跑绿，7 条）
+v0_skeleton/kernel/tests/test_cassette_no_backfill_r5.py | 修复轮 5 / R4-C1（CRITICAL）：`--replay` 命中被篡改 cassette ⇒ 降级**零回填**（源目录跑前/跑后全量 sha256 逐字节相同 + 仍 exit ≠ 0 + E_CASSETTE_TAMPERED + `cassette.record_suppressed` 留痕）、同一 key 重复出现 ⇒ `verify_chain()` 判红（单元 + 命令层）、生效 `replay_mode` 显式传入 `_fallback()`（构造参数不一致时不漏判）、F-1 守卫退回负例自证（`/tmp` 整树副本变异，锚点命中数断言 = 1 ⇒ 回填复现、判据变红）、回归：干净回放 exit 0 / miss exit ≠ 0 + E_CASSETTE_MISS | 手工编写（修复轮 5 新增；已真跑绿，6 条）

@@ -1,0 +1,131 @@
+{
+  "counts_a": {
+    "episodes": {
+      "active": 3,
+      "total": 3
+    },
+    "facts": {
+      "active": 2,
+      "total": 2
+    },
+    "working": {
+      "active": 2,
+      "total": 2
+    }
+  },
+  "counts_b": {
+    "episodes": {
+      "active": 3,
+      "total": 3
+    },
+    "facts": {
+      "active": 2,
+      "total": 2
+    },
+    "working": {
+      "active": 2,
+      "total": 2
+    }
+  },
+  "episodes_sample": [
+    {
+      "embedding": [
+        1.0,
+        0.0,
+        2.0
+      ],
+      "embedding_blob": "[1.0,0.0,2.0]",
+      "importance": 0.9,
+      "kind": "talk",
+      "npc_id": "npc-001",
+      "ref": 3,
+      "refs": [
+        "tick:12"
+      ],
+      "superseded_by": null,
+      "text_summary": "聊了很久",
+      "tick": 12
+    },
+    {
+      "embedding": [
+        1.0,
+        0.0,
+        1.0
+      ],
+      "embedding_blob": "[1.0,0.0,1.0]",
+      "importance": 0.5,
+      "kind": "meal",
+      "npc_id": "npc-001",
+      "ref": 2,
+      "refs": [
+        "tick:12"
+      ],
+      "superseded_by": null,
+      "text_summary": "一起吃饭",
+      "tick": 12
+    },
+    {
+      "embedding": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "embedding_blob": "[1.0,0.0,0.0]",
+      "importance": 0.8,
+      "kind": "visit",
+      "npc_id": "npc-001",
+      "ref": 1,
+      "refs": [
+        "tick:10"
+      ],
+      "superseded_by": null,
+      "text_summary": "去看了老张",
+      "tick": 10
+    }
+  ],
+  "facts_sample": [
+    {
+      "confidence": 0.7,
+      "key": "resident.mood",
+      "npc_id": "npc-001",
+      "ref": 2,
+      "refs": [
+        "tick:11"
+      ],
+      "superseded_by": null,
+      "updated_tick": 11,
+      "value": "平静"
+    },
+    {
+      "confidence": 0.9,
+      "key": "resident.name",
+      "npc_id": "npc-001",
+      "ref": 1,
+      "refs": [
+        "tick:10"
+      ],
+      "superseded_by": null,
+      "updated_tick": 10,
+      "value": "老张"
+    }
+  ],
+  "npc_id": "npc-001",
+  "working_sample": [
+    {
+      "kind": "visit",
+      "npc_id": "npc-001",
+      "ref": 1,
+      "slot": "default",
+      "text_summary": "去看了老张",
+      "tick": 10
+    },
+    {
+      "kind": "walk",
+      "npc_id": "npc-001",
+      "ref": 2,
+      "slot": "default",
+      "text_summary": "在院子里走",
+      "tick": 11
+    }
+  ]
+}

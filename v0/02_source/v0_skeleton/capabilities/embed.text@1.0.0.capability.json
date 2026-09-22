@@ -30,9 +30,9 @@
       "source_model": null, "world_model_backend": false, "determinism": "non_deterministic", "allowed_in_rule_layer": false,
       "source_model": null, "world_model_backend": false, "determinism": "non_deterministic", "allowed_in_rule_layer": false,
       "impl": "builtin:openai_compatible_embeddings",
-      "priority": 10,
+      "priority": 90,
       "model": "text-embedding-3-small",
-      "determinism_note": "best_effort：远端嵌入服务版本变更会改变向量；回放必须走 cassette_replay。",
+      "determinism_note": "best_effort：远端嵌入服务版本变更会改变向量；回放必须走 cassette_replay。【r3 裁决（PM 变更单）：本通道不可用 —— tokenfab /v1/embeddings 对 text-embedding-3-small 返回 404 model_not_found，该通道无任何嵌入模型；priority 已由 10 摘到 90，默认路由不再选中；见 02_source/07_adr.md ADR-014 与 06 §GAP-E1。】",
       "requires_secrets": ["HERMES_CUSTOM_TOKENFAB_API_KEY"]
     },
     {
@@ -41,7 +41,7 @@
       "source_model": null, "world_model_backend": false, "determinism": "deterministic", "allowed_in_rule_layer": true,
       "source_model": null, "world_model_backend": false, "determinism": "deterministic", "allowed_in_rule_layer": true,
       "impl": "builtin:cassette_replay",
-      "priority": 20,
+      "priority": 50,
       "determinism_note": "replayable：逐字节等价。"
     },
     {

@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0.0",
+  "id": "xingfu-xiaoqu-north",
+  "version": "0.2.0",
+  "display_name": "幸福小区北区（第二街区：纯数据新增，零内核改动）",
+  "engine_range": ">=1.0.0 <2.0.0",
+  "bounds_mm": {
+    "x": 72000,
+    "y": 30000,
+    "z": 24000
+  },
+  "author": "deep-healing content team",
+  "license": "proprietary-self-authored",
+  "entrypoints": {
+    "world_seed": "world.seed.json",
+    "buildings_glob": "buildings/*.json",
+    "npcs_glob": "npcs/*.json",
+    "tasks_glob": "tasks/*.json",
+    "schedules_glob": "schedules/*.json",
+    "assets_manifest": "assets/manifest.json"
+  },
+  "portals": [
+    {
+      "id": "portal-north-south",
+      "from_entity": "gate-south",
+      "to_pack_id": "xingfu-xiaoqu",
+      "to_entity": "gate-north",
+      "bidirectional": true,
+      "traversal_cost_ticks": 20
+    }
+  ],
+  "districts_version_note": "V0-M2 第二街区：复制第一街区 → 改 id/version/display_name/bounds → 重签 pack.sig。内核零改动。",
+  "tags": [
+    "vertical-slice",
+    "single-building",
+    "v0"
+  ]
+}

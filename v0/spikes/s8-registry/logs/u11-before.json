@@ -1,0 +1,27 @@
+{
+  "outside_content_sha256": "cf100831a05cd1f6be91cb41cdb53f257ddee00c57cbdff8d57cc82f6ffd2ac6",
+  "outside_file": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s8-registry/u11-scratch/outside-world.seed.json",
+  "outside_sha256_after": "cf100831a05cd1f6be91cb41cdb53f257ddee00c57cbdff8d57cc82f6ffd2ac6",
+  "outside_sha256_before": "cf100831a05cd1f6be91cb41cdb53f257ddee00c57cbdff8d57cc82f6ffd2ac6",
+  "outside_unchanged": true,
+  "pack": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s8-registry/u11-scratch/xingfu-xiaoqu",
+  "pack_sig_entry_sha256": "cf100831a05cd1f6be91cb41cdb53f257ddee00c57cbdff8d57cc82f6ffd2ac6",
+  "pack_sign": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "wrote /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s8-registry/u11-scratch/xingfu-xiaoqu/pack.sig entries=13"
+  },
+  "phase": "before",
+  "sig_entry_equals_outside_content": true,
+  "tool_provenance": {
+    "pack_sign_sha256": "a00c614f054535cacd9d57720d54c85749ebcc64bd8b87b0d840d9b1d77c8d76",
+    "repo": "/Users/wooyinq/personal/deep-healing",
+    "source": "git show HEAD:v0/02_source/v0_skeleton/tools/<tool>.py（修复前盘上版本，只读）",
+    "verify_pack_sha256": "03d0c7a102e9acf4ac22d43b5e6de9f23221f461ce4d2fdab9c4b5e75851a2a4"
+  },
+  "verify_pack": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "verify_pack: OK (13 files, pack_id=xingfu-xiaoqu version=0.1.0)"
+  }
+}

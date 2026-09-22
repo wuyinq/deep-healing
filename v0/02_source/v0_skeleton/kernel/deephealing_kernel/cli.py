@@ -36,14 +36,18 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 from . import KERNEL_CONTRACT_VERSION
 from . import snapshot as snapshot_mod
 from .events import EventChainError, EventLog, check_ech_invariants
 from .pack import PackInvalid, build_portal_edges, load_pack
+from .providers.cassette import CassetteMiss, CassetteTampered
+from .registry import CapabilityError
 from .snapshot import _load_checkpoint_dir, check_checkpoint_integrity, write_checkpoint
 from .tick import DEFAULT_PLAN_TICKS, WorldKernel
 
@@ -72,6 +76,12 @@ EVENT_STREAM_LOCATOR_KEYS = frozenset()
 # **总数与首个分歧 tick 不受影响**（`verify` 报告里的 `event_stream_divergences` 是**真实总数**，
 # `event_stream_divergences_reported` 才是明细行数）。
 MAX_DIVERGENCES = 25
+
+# **负例自证专用钩子（修-2 / R-M2-2）**：置 1 时复现**修复前**形态 —— `CassetteMiss` 被
+# 行为树的 action 节点吞成 FAILURE、`fail_closed_events` 从汇总里抹掉 ⇒ `--replay` 下 miss
+# 回到「exit 0 假绿」。**仅供** `tests/test_cassette_miss_cli.py::test_negative_control_*` 使用；
+# 生产路径**不得**设置该环境变量（否则 fail-closed 语义被绕过，属判据放松）。
+_NEGATIVE_HIDE_CASSETTE_MISS = "DH_NEGATIVE_HIDE_CASSETTE_MISS"
 
 
 def resolve_pack_dir(value: str) -> Path:
@@ -117,6 +127,14 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--replay", action="store_true", help="回放模式：能力强制走 cassette_replay 且 fail-closed")
     run.add_argument("--ticks", type=int, default=DEFAULT_PLAN_TICKS,
                      help="[加法扩展] 推进的 tick 数上界（默认 300）；冻结命令面本无终止参数")
+    run.add_argument("--cognition", action="store_true",
+                     help="[M2/W3~W6] 认知层驱动入口（**形态定死**，设计 §3.4b(2)）："
+                          "tick 循环之后跑一次认知循环，产物落 <out>/cognition/**（不写世界状态）")
+    run.add_argument("--memory", action="store_true",
+                     help="[M2/W5] 打开记忆层写入（**默认关闭** ⇒ 零写入，设计 §3.4b(5)）")
+    run.add_argument("--cassette-dir", default=None,
+                     help="[M2/W3] cassette 根目录（默认 `<out>/cognition/cassettes`）；"
+                          "`--replay` 时用它指向已录制的 cassette，miss ⇒ E_CASSETTE_MISS（fail-closed）")
 
     replay = sub.add_parser("replay", help="从 genesis 重放事件日志")
     replay.add_argument("--events", required=True)
@@ -141,6 +159,57 @@ def build_parser() -> argparse.ArgumentParser:
     sign.add_argument("dir")
 
     return parser
+
+
+def _writable_reason(path: Path) -> str | None:
+    """**可写性探测**（P-4 / M-2）：返回拒绝原因或 None。
+
+    为什么需要：只读目录（`chmod 500`）能通过「存在性 + 非空 + 是目录」三条守卫，
+    直到**第一个快照 tick** 才 `PermissionError` —— 裸 traceback + 半截日志（Raven 实测 252 行）。
+    探测点取「最近的已存在祖先目录」（`checkpoints/` 尚未创建时，要写的是它的父目录）。
+    """
+    target = path
+    while not target.exists():
+        if target.parent == target:
+            break
+        target = target.parent
+    if not target.exists():
+        return f"no existing ancestor directory for {path}"
+    if not target.is_dir():
+        return f"{target} exists but is not a directory"
+    if not os.access(target, os.W_OK):
+        return f"{target} is not writable (os.access(W_OK) is false)"
+    return None
+
+
+def _guard_output_dir(checkpoint_dir: Path, *, label: str) -> list[str]:
+    """输出面形态守卫（P-4 / M-2 + M-3）：返回拒绝原因列表（空 = 通过）。
+
+    **M-3（符号链接逃逸）**：`checkpoints` 是**指向 `out/**` 之外的符号链接目录**时，
+    `write_checkpoint` 的 `mkdir(exist_ok=True)` 会静默成功，字节落到 `out/**` 之外
+    （Raven 实测：`Z-outside/` 下 2 个检查点）。悬空符号链接同样拒收
+    （`exists()` 为假 ⇒ 后续 `mkdir` 抛 `FileExistsError` 裸 traceback）。
+    包**内**目标的符号链接（指向 `out/` 之内）仍合法 —— 与 `pack.py` 同一口径。
+
+    **M-2（可写性）**：最近祖先目录不可写 ⇒ fail-closed，不等到第一个快照 tick 才炸。
+    """
+    reasons: list[str] = []
+    parent = checkpoint_dir.parent
+    if checkpoint_dir.is_symlink():
+        resolved = checkpoint_dir.resolve()
+        if not checkpoint_dir.exists():
+            reasons.append(
+                f"{label} checkpoints path {checkpoint_dir} is a DANGLING symlink to {resolved}"
+            )
+        elif not resolved.is_relative_to(parent.resolve()):
+            reasons.append(
+                f"{label} checkpoints path {checkpoint_dir} is a symlink escaping the run-artifact "
+                f"directory: resolves to {resolved} which is outside {parent.resolve()}"
+            )
+    writable = _writable_reason(checkpoint_dir)
+    if writable is not None:
+        reasons.append(f"{label} checkpoints path is not writable: {writable}")
+    return reasons
 
 
 def _refuse_existing_run_outputs(log_path: Path, checkpoint_dir: Path) -> None:
@@ -180,19 +249,49 @@ def _refuse_existing_run_outputs(log_path: Path, checkpoint_dir: Path) -> None:
         )
 
 
+def _refuse_unusable_output_dir(checkpoint_dir: Path, *, label: str) -> None:
+    """输出面形态 fail-closed（P-4 / M-2 + M-3）。
+
+    与「已存在产物」是**两个不同的拒绝面**，因此给**不同的结构化码**（四元组判据要 `^E_` 行）：
+      - `E_OUTPUT_SYMLINK_ESCAPE`：`checkpoints` 是指向 run-artifact 目录之外的符号链接
+        （或悬空符号链接）⇒ 拒收，**不产生任何 `out/**` 之外的新文件**；
+      - `E_OUTPUT_NOT_WRITABLE`：最近祖先目录不可写 ⇒ 拒收，**不留下半截日志**。
+    两者都在 `WorldKernel` / `EventLog` 构造**之前**抛出 ⇒ 不写事件日志、不写检查点。
+    """
+    reasons = _guard_output_dir(checkpoint_dir, label=label)
+    if not reasons:
+        return
+    code = "E_OUTPUT_SYMLINK_ESCAPE" if any("symlink" in reason for reason in reasons) \
+        else "E_OUTPUT_NOT_WRITABLE"
+    raise PackInvalid(
+        f"{code}: refusing to {label}: " + "; ".join(reasons)
+        + " — the run-artifact directory must be a writable real directory inside the output tree"
+    )
+
+
 def _refuse_existing_replay_outputs(out_dir: Path) -> None:
-    """`replay` 侧的对称检查（修复轮 C7）：`replay.jsonl` 非空 或 已有检查点 ⇒ 拒绝。"""
+    """`replay` 侧的对称检查（修复轮 C7）：`replay.jsonl` 非空 或 已有检查点 ⇒ 拒绝。
+
+    **P-4 / M-1 对齐（M2）**：判定从 `is_dir()` 改为 `exists()`，与 run 侧（修复轮 2 / F3）
+    逐字对齐。`checkpoints` 路径**存在但不是目录**（普通文件占位）时 `is_dir()` 为假 ⇒
+    原先不触发 fail-closed，运行到第一个快照 tick 才 `FileExistsError`（裸 traceback +
+    252 行半截 `replay.jsonl`）。四元组判据：① 非 0 ② 结构化 `E_` 码 ③ 无 `Traceback`
+    ④ 无半截 `replay.jsonl`。
+    """
     reasons: list[str] = []
     replay_log = out_dir / "replay.jsonl"
     if replay_log.exists() and replay_log.stat().st_size > 0:
         reasons.append(f"non-empty replay log {replay_log}")
     checkpoint_dir = out_dir / "checkpoints"
-    if checkpoint_dir.is_dir():
-        stale = sorted(path.name for path in checkpoint_dir.glob("*.json"))
-        if stale:
-            reasons.append(
-                f"existing checkpoints in {checkpoint_dir} ({len(stale)}: {', '.join(stale[:6])}...)"
-            )
+    if checkpoint_dir.exists():
+        if not checkpoint_dir.is_dir():
+            reasons.append(f"{checkpoint_dir} exists but is not a directory")
+        else:
+            stale = sorted(path.name for path in checkpoint_dir.glob("*.json"))
+            if stale:
+                reasons.append(
+                    f"existing checkpoints in {checkpoint_dir} ({len(stale)}: {', '.join(stale[:6])}...)"
+                )
     if reasons:
         raise PackInvalid(
             "E_EVENTS_EXISTS: refusing to replay: " + "; ".join(reasons)
@@ -211,6 +310,7 @@ def cmd_run(args) -> int:
     checkpoint_dir = events_path.parent / "checkpoints"
     try:
         _refuse_existing_run_outputs(events_path, checkpoint_dir)
+        _refuse_unusable_output_dir(checkpoint_dir, label="run")
     except PackInvalid as exc:
         print(str(exc), file=sys.stderr)
         return 1
@@ -224,8 +324,52 @@ def cmd_run(args) -> int:
         plan_ticks=args.ticks,
     )
     kernel.run(args.ticks)
+    cognition_report = None
+    if args.cognition:
+        cognition_report = _run_cognition(
+            pack, kernel, out_dir=events_path.parent, replay_mode=bool(args.replay),
+            memory_writes=bool(args.memory),
+            cassette_dir=Path(args.cassette_dir) if args.cassette_dir else None)
+        # **修-2 / R-M2-2 + 修-6 / R2-M2（收口轮）**：`--replay` 下 cassette **miss** 与**篡改**
+        # 必须**同等命令层可见**（exit ≠ 0 + 结构化诊断），否则「只看 exit 的自动化验收」会把
+        # fail-closed 读成绿。方向保持不变：**不降级、不回填、不静默切远端**。
+        misses = int(cognition_report.get("fail_closed_events", 0))
+        chain_errors = list(cognition_report.get("cassette_chain_errors") or [])
+        tampered = int(cognition_report.get("cassette_tampered_events", 0))
+        # **负例自证专用钩子（修-6 / R2-M2）**：置 1 时复现**修复前**形态 —— 篡改只记
+        # `cassette_chain_errors` 嵌套字段、不算失败 ⇒ 命令层 exit 0（R2-M2 的缺陷形态）。
+        # **仅供** `tests/test_cassette_tamper_cli.py::test_negative_control_*` 使用；生产不得设置。
+        if os.environ.get("DH_NEGATIVE_TAMPER_AS_WARNING") == "1":
+            tampered = 0
+            chain_errors = []
+        if misses or tampered or chain_errors:
+            if tampered or chain_errors:
+                print(
+                    f"E_CASSETTE_TAMPERED: replay mode detected {tampered or len(chain_errors)} "
+                    "tampered cassette record(s) (chain hash mismatch); the cognition loop is "
+                    "fail-closed on tampering (no fallback, no remote switch). "
+                    "Re-record the cassettes from a trusted run.",
+                    file=sys.stderr,
+                )
+            if misses:
+                print(
+                    f"E_CASSETTE_MISS: replay mode had {misses} cassette miss(es); "
+                    "the cognition loop is fail-closed on miss (no fallback, no remote switch). "
+                    "Record the cassettes first (run without --replay) or point --cassette-dir at them.",
+                    file=sys.stderr,
+                )
+            print(json.dumps({
+                "command": "run", "pack_id": pack.manifest["id"], "seed": kernel.seed,
+                "ticks": args.ticks, "cassette_misses": misses,
+                "cassette_tampered": tampered or len(chain_errors),
+                "cassette_chain_errors": chain_errors,
+                "fail_closed": True,
+                "cognition_artifacts": cognition_report.get("artifacts"),
+            }, ensure_ascii=False, sort_keys=True))
+            return 1
     if args.replay:
-        print("note: --replay is a W3 (capability provider) switch; M1 makes no capability calls => no effect")
+        print("note: --replay forces the cognition layer onto cassette_replay (fail-closed on miss); "
+              "M1's tick path makes no capability calls => no effect there")
     print(f"note: --ws-port {args.ws_port} accepted but NOT listened on (serving is W8)")
     print(json.dumps({
         "command": "run", "pack_id": pack.manifest["id"], "seed": kernel.seed,
@@ -233,6 +377,16 @@ def cmd_run(args) -> int:
         "events": str(events_path), "checkpoints": str(checkpoint_dir),
         "chain_tail": kernel.log.last_hash if kernel.log is not None else None,
         "event_count": kernel.log._seq if kernel.log is not None else 0,  # noqa: SLF001 (诊断输出)
+        "cognition": None if cognition_report is None else {
+            "slots": cognition_report["registry"]["slots"],
+            "validation_errors": cognition_report["registry"]["validation_errors"],
+            "events": cognition_report["cognition_events"],
+            "fallback_counts": cognition_report["fallback_counts"],
+            "local_model_available": cognition_report["local_model_available"],
+            "memory_write_count": cognition_report["memory"]["write_count"],
+            "artifacts": cognition_report["artifacts"],
+            "state_hash_after_cognition": cognition_report["world_state_hash_after_cognition"],
+        },
     }, ensure_ascii=False, sort_keys=True))
     return 0
 
@@ -271,6 +425,7 @@ def cmd_replay(args) -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     try:
         _refuse_existing_replay_outputs(out_dir)
+        _refuse_unusable_output_dir(out_dir / "checkpoints", label="replay")
     except PackInvalid as exc:
         print(str(exc), file=sys.stderr)
         return 1
@@ -552,10 +707,292 @@ def cmd_pack_sign(args) -> int:
     except SystemExit as exc:
         print(str(exc), file=sys.stderr)
         return 1
-    out = pack_dir / "pack.sig"
-    out.write_text(json.dumps(signature, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    # 写侧唯一写入点（P-5）：`tools/pack_sign.py::write_signature` 内含 pack.sig 符号链接守卫，
+    # 避免 `kernel pack sign` 与工具脚本各写一份（原先 CLI 侧直接 write_text ⇒ 会跟随链接改写包外文件）。
+    try:
+        out = tool.write_signature(pack_dir, signature)
+    except SystemExit as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
     print(f"wrote {out} entries={len(signature['entries'])}")
     return 0
+
+
+# --------------------------------------------------------------------------- 认知层（W3~W6）
+# 树定义是**数据**（JSON 可表达，无代码分支）；同时落盘到 `<out>/cognition/tree.spec.json` 供审计。
+COGNITION_TREE_SPEC = {
+    "type": "selector",
+    "children": [
+        {
+            "type": "sequence",
+            "children": [
+                {"type": "condition", "key": "needs_pressure", "op": ">=", "value": 0.30},
+                {"type": "action", "slot": "intent.plan",
+                 "payload": {"npc_id": "$npc_id", "tick": "$tick", "needs": "$needs",
+                             "schedule_state": "$schedule_state", "candidate_actions": "$candidate_actions"},
+                 "store_as": "plan"},
+                {"type": "action", "slot": "emotion.appraise",
+                 "payload": {"npc_id": "$npc_id", "tick": "$tick",
+                             "event_summary": "$event_summary", "current_emotion": "$current_emotion"},
+                 "store_as": "emotion"},
+                {"type": "action", "slot": "relation.infer",
+                 "payload": {"npc_id": "$npc_id", "tick": "$tick", "observations": "$observations",
+                             "existing_relations": "$existing_relations"},
+                 "store_as": "relations"},
+            ],
+        },
+        {
+            "type": "action", "slot": "emotion.appraise",
+            "payload": {"npc_id": "$npc_id", "tick": "$tick",
+                        "event_summary": "$event_summary", "current_emotion": "$current_emotion"},
+            "store_as": "emotion",
+        },
+    ],
+}
+COGNITION_SLOTS = ("intent.plan", "emotion.appraise", "relation.infer", "embed.text")
+
+
+def _capability_caps(capabilities: list[dict]) -> tuple[int, int]:
+    """从能力契约的 `budget` 块派生预算上限（**数据驱动**，不硬编码数值）。
+
+    tick 级上限 = 各能力**自声明** `budget.per_tick_calls` 之和
+    （`BudgetLedger` 的 tick 级计数是全局的，因此把「每个能力各自的 tick 配额」求和
+     才是与契约等价的账本口径；不做任何调参放大）。
+    日级上限 = 各能力 `budget.per_npc_daily_tokens` 的**最小值**（最紧的那条约束生效）。
+    """
+    per_tick = [int(item["budget"]["per_tick_calls"]) for item in capabilities
+                if isinstance(item.get("budget"), dict) and isinstance(item["budget"].get("per_tick_calls"), int)]
+    daily = [int(item["budget"]["per_npc_daily_tokens"]) for item in capabilities
+             if isinstance(item.get("budget"), dict) and isinstance(item["budget"].get("per_npc_daily_tokens"), int)]
+    return (sum(per_tick) if per_tick else 2, min(daily) if daily else 65000)
+
+
+def _candidate_actions(state: str) -> list[dict]:
+    """日程状态 → 候选动作（**数据映射**，无 if 分支按 NPC 特判）。"""
+    table = {
+        "idle": [("rest", "physiology"), ("talk", "belonging"), ("walk", "self_actualization")],
+        "working": [("work", "esteem"), ("talk", "belonging"), ("rest", "physiology")],
+        "socializing": [("talk", "belonging"), ("work", "esteem"), ("rest", "physiology")],
+        "resting": [("rest", "physiology"), ("walk", "self_actualization"), ("talk", "belonging")],
+        "moving": [("walk", "self_actualization"), ("rest", "physiology"), ("talk", "belonging")],
+        "interrupted": [("flee", "safety"), ("rest", "physiology"), ("talk", "belonging")],
+    }
+    return [{"action": action, "need": need, "when_state": state} for action, need in table.get(state, table["idle"])]
+
+
+def _build_cognition_registry(out_dir: Path, *, cassette_root: Path, replay_mode: bool = False) -> tuple[object, dict]:
+    """装配 W3 注册表 + 四类 provider 适配器（返回 (registry, store)）。"""
+    from .budget import BudgetLedger
+    from .providers.cassette import CassetteReplayProvider, CassetteStore
+    from .providers.deterministic_rule import DeterministicRuleProvider
+    from .providers.local_model import LocalModelProvider
+    from .providers.remote_api import RemoteApiProvider
+    from .registry import CapabilityRegistry
+
+    capabilities_dir = V0_SKELETON / "capabilities"
+    store = CassetteStore(cassette_root)
+    registry = CapabilityRegistry(capabilities_dir, capabilities_dir / "pins.json",
+                                  cassette_store=store, clock=time.monotonic,
+                                  replay_mode=bool(replay_mode))
+    registry.register_adapter("remote_api", RemoteApiProvider())
+    registry.register_adapter("local_model", LocalModelProvider())
+    registry.register_adapter("deterministic_rule", DeterministicRuleProvider())
+    registry.register_adapter("cassette_replay", CassetteReplayProvider(store))
+    return registry, {"store": store, "budget_class": BudgetLedger}
+
+
+def _run_cognition(pack, kernel, *, out_dir: Path, replay_mode: bool, memory_writes: bool,
+                   cassette_dir: Path | None = None) -> dict:
+    """认知层驱动（`kernel run --cognition` 的实现体）。
+
+    **确定性边界（设计 §3.4b）**：本函数在 tick 循环**之外**运行；
+    不调用 `WorldKernel.step`、不写 `world`、不取 `WorldRng` 的任何 stream
+    ⇒ 默认路径的 `state_hash` / `chain_tail` 与不带 `--cognition` 时**逐位相同**。
+    认知层产物一律落 `<out>/cognition/**`（**不写** run 的 `out/**` 主树）。
+    """
+    from .budget import BudgetLedger
+    from .memory import retrieve as memory_retrieve
+    from .memory.store import MemoryStore
+    from .rules import behaviour_tree, requirement, utility
+
+    cognition_dir = out_dir / "cognition"
+    cognition_dir.mkdir(parents=True, exist_ok=True)
+    (cognition_dir / "tree.spec.json").write_text(
+        json.dumps(COGNITION_TREE_SPEC, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    registry, extra = _build_cognition_registry(
+        out_dir, cassette_root=Path(cassette_dir) if cassette_dir is not None else cognition_dir / "cassettes",
+        replay_mode=bool(replay_mode))
+    registry.discover()
+    validation_errors = registry.validate()
+
+    documents = [registry.capability(slot) for slot in registry.slots()]
+    per_tick_calls, daily_tokens = _capability_caps(documents)
+    budget = BudgetLedger(day_ticks=int(pack.world_seed["constants"].get("day_ticks", 1440)),
+                          per_tick_calls=per_tick_calls, per_npc_daily_tokens=daily_tokens)
+    memory = MemoryStore(cognition_dir / "memory.sqlite", write_enabled=memory_writes)
+    memory.init_schema()
+
+    journal_path = cognition_dir / "cognition.jsonl"
+    journal_path.write_text("", encoding="utf-8")
+    npcs = kernel.world.query(kind="npc")
+    seq = 0
+    provider_counts: dict[str, int] = {}
+    fallback_counts: dict[str, int] = {}
+    fail_closed_events: list[dict] = []
+    retrieval_digests: list[str] = []
+    decisions: list[dict] = []
+
+    def emit(record: dict) -> None:
+        nonlocal seq
+        seq += 1
+        record["seq"] = seq
+        with journal_path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
+
+    for index, entity in enumerate(kernel.world.query(kind="npc")):
+        components = entity.components
+        needs = components.get("needs") or {}
+        schedule = components.get("schedule") or {}
+        state = str(schedule.get("state", "idle"))
+        emotion = components.get("emotion") or {}
+        relations = components.get("relations") or {}
+        # 认知层按**每 tick 一个 NPC** 调度（tick 级预算按 tick 计；同一 tick 挤 5 个 NPC 会
+        # 全部撞上 per_tick 上限而退化为降级 —— 那不是判据，是调度口径）。
+        tick = max(1, int(kernel.world.tick) - (len(npcs) - 1 - index))
+        blackboard = {
+            "npc_id": entity.id,
+            "tick": tick,
+            "needs": needs,
+            "needs_pressure": utility.need_pressure(needs, {}),
+            "schedule_state": state,
+            "candidate_actions": _candidate_actions(state),
+            "event_summary": f"tick={tick} state={state} npc={entity.id}",
+            "current_emotion": emotion,
+            "observations": [{"subject": entity.id, "object": other, "kind": "talk",
+                              "weight": float(relations[other])}
+                             for other in sorted(relations) if isinstance(relations[other], (int, float))],
+            "existing_relations": {key: relations[key] for key in sorted(relations)
+                                   if isinstance(relations[key], (int, float))},
+        }
+        requirements = requirement.evaluate(needs, {"weights": {}, "npc_id": entity.id, "tick": tick})
+        scored = utility.score_actions(needs, {}, {"schedule_state": state},
+                                       [{"action": item["action"], "need": item["need"]} for item in
+                                        blackboard["candidate_actions"]])
+        calls_before = len(registry.calls)
+        journal_before = len(registry.journal)
+        hide_misses = os.environ.get(_NEGATIVE_HIDE_CASSETTE_MISS) == "1"
+        try:
+            outcome = behaviour_tree.run_tree(COGNITION_TREE_SPEC, blackboard, registry, budget)
+        except (ValueError, CapabilityError) as error:
+            # 树定义/槽位解析失败也是**结构化**失败（不得裸 traceback）
+            emit({"event": "cognition.tree_error", "npc_id": entity.id, "tick": tick,
+                  "error": type(error).__name__, "detail": str(error)[:200]})
+            outcome = {"status": behaviour_tree.FAILURE, "keys": sorted(blackboard)}
+        except CassetteMiss as error:
+            # **修-2 / R-M2-2**：`--replay` 下的 cassette miss **不得**被吞 —— 结构化落 journal + 汇总，
+            # 由 `cmd_run` 转成 exit 1 + `E_CASSETTE_MISS` 诊断（fail-closed，不降级、不切远端）。
+            emit({"event": "cognition.tree_error", "npc_id": entity.id, "tick": tick,
+                  "error": type(error).__name__, "detail": str(error)[:200], "fail_closed": True})
+            outcome = {"status": behaviour_tree.FAILURE, "keys": sorted(blackboard)}
+        except CassetteTampered as error:
+            # **修-6 / R2-M2（收口轮）**：cassette **篡改**（链哈希失配）与 miss **同等可见** ——
+            # 被篡改的回放源不得被树吞成 `on_error` 降级而命令层 exit 0。结构化落 journal + 汇总，
+            # 由 `cmd_run` 转成 exit 1 + `E_CASSETTE_TAMPERED` 诊断（零回填、零远端切换）。
+            emit({"event": "cognition.tree_error", "npc_id": entity.id, "tick": tick,
+                  "error": type(error).__name__, "detail": str(error)[:200], "fail_closed": True})
+            outcome = {"status": behaviour_tree.FAILURE, "keys": sorted(blackboard)}
+        except Exception as error:  # noqa: BLE001 —— 其他未预期异常也要结构化（不得裸 traceback）
+            emit({"event": "cognition.tree_error", "npc_id": entity.id, "tick": tick,
+                  "error": type(error).__name__, "detail": str(error)[:200]})
+            outcome = {"status": behaviour_tree.FAILURE, "keys": sorted(blackboard)}
+        for entry in registry.journal[journal_before:]:
+            if entry.get("event") == "capability.fallback":
+                fallback_counts[entry.get("reason", "?")] = fallback_counts.get(entry.get("reason", "?"), 0) + 1
+            if entry.get("event") == "cassette.miss" and not hide_misses:
+                fail_closed_events.append(entry)
+        for call in registry.calls[calls_before:]:
+            emit({"event": "capability.call", "npc_id": entity.id, "tick": tick, **call})
+        emit({
+            "event": "cognition.cycle", "npc_id": entity.id, "tick": tick,
+            "tree_status": outcome["status"], "blackboard_keys": outcome["keys"],
+            "top_requirement": {"need_id": requirements[0].need_id, "deficit": requirements[0].deficit},
+            "selected_action": scored[0]["action"] if scored else None,
+            "plan": blackboard.get("plan"), "emotion": blackboard.get("emotion"),
+            "relations": blackboard.get("relations"),
+        })
+        if outcome["status"] != behaviour_tree.SUCCESS:
+            emit({"event": "cognition.degraded", "npc_id": entity.id, "tick": tick,
+                  "errors": blackboard.get("__errors__", [])})
+
+        if memory_writes and isinstance(blackboard.get("emotion"), dict):
+            summary = f"{entity.id}@{tick} {state}"
+            embedding_output = registry.invoke("embed.text", {"texts": [summary]}, budget=budget)
+            vector = (embedding_output.output.get("vectors") or [[]])[0]
+            ref = memory.remember("episodes", {
+                "npc_id": entity.id, "tick": tick, "kind": "cognition",
+                "text_summary": summary, "importance": float(blackboard["emotion"].get("importance", 0.0)),
+                "refs": [f"tick:{tick}"], "embedding": vector,
+            })
+            memory.remember("working", {"npc_id": entity.id, "tick": tick, "kind": "cognition",
+                                        "text_summary": summary})
+            top = memory_retrieve.retrieve(memory, entity.id, vector, top_k=8)
+            retrieval_digests.append(memory_retrieve.digest(top))
+            emit({"event": "memory.write", "npc_id": entity.id, "tick": tick, "episode_ref": ref,
+                  "retrieval_digest": retrieval_digests[-1], "top_k": len(top)})
+        decisions.append({"npc_id": entity.id, "status": outcome["status"],
+                          "action": scored[0]["action"] if scored else None})
+
+    # 每一类 provider 的调用计数（从能力契约的数据派生，顺序确定）
+    for slot in registry.slots():
+        for provider in registry.capability(slot).get("providers", []):
+            provider_counts[str(provider.get("class"))] = provider_counts.get(str(provider.get("class")), 0) + 1
+
+    local_available = None
+    for provider_class, adapter in sorted(registry._adapters.items()):  # noqa: SLF001 (诊断输出)
+        if provider_class == "local_model" and hasattr(adapter, "available"):
+            local_available = bool(adapter.available())
+
+    chain_errors = extra["store"].verify_chain()
+    report = {
+        "command": "run --cognition",
+        "registry": {"slots": registry.slots(), "validation_errors": validation_errors,
+                     "provider_class_counts": provider_counts},
+        "budget": {"per_tick_calls": per_tick_calls, "per_npc_daily_tokens": daily_tokens,
+                   "daily_report": budget.daily_report(int(kernel.world.tick))},
+        "memory": {"writes_enabled": memory_writes, "write_count": memory.write_count,
+                   "retrieval_digests": retrieval_digests},
+        "fallback_counts": fallback_counts,
+        "registry_journal": registry.journal,
+        "fail_closed_events": len(fail_closed_events),
+        "degraded_reasons": sorted({str(entry.get("slot", "?")) for entry in fail_closed_events}),
+        # **修-6 / R2-M2（收口轮）**：篡改计数提到 summary **顶层**（= journal 里 CassetteTampered
+        # 事件数），不得只埋在嵌套字段里；`cassette_chain_errors` 仍保留明细。
+        "cassette_tampered_events": sum(
+            1 for entry in registry.journal
+            if entry.get("event") in ("cassette.tampered", "provider.error")
+            and entry.get("error") == "CassetteTampered"
+        ),
+        "local_model_available": local_available,
+        "cassette_chain_errors": chain_errors,
+        "cognition_events": seq,
+        "decisions": decisions,
+        "world_state_hash_after_cognition": kernel.state_hash(),
+        "artifacts": {
+            "dir": str(cognition_dir), "journal": str(journal_path),
+            "tree_spec": str(cognition_dir / "tree.spec.json"),
+            "cassettes": str(cognition_dir / "cassettes"),
+            "memory_db": str(cognition_dir / "memory.sqlite"),
+        },
+        "claim_boundary": (
+            "cognition artifacts live under <out>/cognition/** only; snapshot.state is untouched "
+            "(no provider output / memory content / budget counters); the world rng streams are not "
+            "consumed here, so state_hash and chain_tail are identical with and without --cognition"
+        ),
+    }
+    (cognition_dir / "summary.json").write_text(
+        json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return report
 
 
 # --------------------------------------------------------------------------- main

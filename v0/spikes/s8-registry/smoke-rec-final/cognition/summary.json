@@ -1,0 +1,302 @@
+{
+  "artifacts": {
+    "cassettes": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s8-registry/smoke-rec-final/cognition/cassettes",
+    "dir": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s8-registry/smoke-rec-final/cognition",
+    "journal": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s8-registry/smoke-rec-final/cognition/cognition.jsonl",
+    "memory_db": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s8-registry/smoke-rec-final/cognition/memory.sqlite",
+    "tree_spec": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s8-registry/smoke-rec-final/cognition/tree.spec.json"
+  },
+  "budget": {
+    "daily_report": {
+      "day_index": 0,
+      "day_ticks": 1440,
+      "npcs": {
+        "npc-001": {
+          "calls": 2,
+          "limit_tokens": 20000,
+          "tokens": 1500,
+          "tokens_in": 1320,
+          "tokens_out": 180,
+          "usd": 0.000236
+        },
+        "npc-002": {
+          "calls": 2,
+          "limit_tokens": 20000,
+          "tokens": 1500,
+          "tokens_in": 1320,
+          "tokens_out": 180,
+          "usd": 0.000236
+        },
+        "npc-003": {
+          "calls": 2,
+          "limit_tokens": 20000,
+          "tokens": 1500,
+          "tokens_in": 1320,
+          "tokens_out": 180,
+          "usd": 0.000236
+        },
+        "npc-004": {
+          "calls": 2,
+          "limit_tokens": 20000,
+          "tokens": 1500,
+          "tokens_in": 1320,
+          "tokens_out": 180,
+          "usd": 0.000236
+        },
+        "npc-005": {
+          "calls": 2,
+          "limit_tokens": 20000,
+          "tokens": 1500,
+          "tokens_in": 1320,
+          "tokens_out": 180,
+          "usd": 0.000236
+        }
+      },
+      "tick_calls": {
+        "56": 2,
+        "57": 2,
+        "58": 2,
+        "59": 2,
+        "60": 2
+      }
+    },
+    "per_npc_daily_tokens": 20000,
+    "per_tick_calls": 7
+  },
+  "cassette_chain_errors": [],
+  "claim_boundary": "cognition artifacts live under <out>/cognition/** only; snapshot.state is untouched (no provider output / memory content / budget counters); the world rng streams are not consumed here, so state_hash and chain_tail are identical with and without --cognition",
+  "cognition_events": 25,
+  "command": "run --cognition",
+  "decisions": [
+    {
+      "action": "talk",
+      "npc_id": "npc-001",
+      "status": "SUCCESS"
+    },
+    {
+      "action": "work",
+      "npc_id": "npc-002",
+      "status": "SUCCESS"
+    },
+    {
+      "action": "talk",
+      "npc_id": "npc-003",
+      "status": "SUCCESS"
+    },
+    {
+      "action": "talk",
+      "npc_id": "npc-004",
+      "status": "SUCCESS"
+    },
+    {
+      "action": "talk",
+      "npc_id": "npc-005",
+      "status": "SUCCESS"
+    }
+  ],
+  "fallback_counts": {
+    "on_invalid_schema": 5
+  },
+  "local_model_available": false,
+  "memory": {
+    "retrieval_digests": [
+      "2767e9ac95db09075230904b96c4ae4a65c80d998f7bbcfd34e861fd34287808",
+      "a08c98f0c593ee246c611a3d893841947320ade33ab0aec92e20821ebb456cc8",
+      "8873d0cf837bce48e26a5ee67d77a2e1a0d1d765e127f6a03db6bcd2281fbdbb",
+      "c59e1e84a07faa0c162f0a90b2e459bea1d422443de130ccf1294778c0faa5ab",
+      "ad3362f728b91f784711d8d589c7abf580dc2881392d0b9e4e6493e164438e78"
+    ],
+    "write_count": 10,
+    "writes_enabled": true
+  },
+  "registry": {
+    "provider_class_counts": {
+      "cassette_replay": 5,
+      "deterministic_rule": 5,
+      "local_model": 5,
+      "remote_api": 6
+    },
+    "slots": [
+      "embed.text",
+      "emotion.appraise",
+      "imagine.predict",
+      "intent.plan",
+      "memory.reflect",
+      "relation.infer"
+    ],
+    "validation_errors": []
+  },
+  "registry_journal": [
+    {
+      "event": "provider.invalid_output",
+      "npc_id": "npc-001",
+      "problems": [
+        "relations/1: Additional properties are not allowed ('kind', 'target', 'weight' were unexpected)"
+      ],
+      "provider": "remote_api",
+      "reason": "on_invalid_schema",
+      "slot": "relation.infer"
+    },
+    {
+      "detail": "relations/1: Additional properties are not allowed ('kind', 'target', 'weight' were unexpected)",
+      "event": "capability.fallback",
+      "npc_id": "npc-001",
+      "reason": "on_invalid_schema",
+      "slot": "relation.infer",
+      "target": "deterministic_rule"
+    },
+    {
+      "error": "RemoteApiError",
+      "event": "provider.error",
+      "npc_id": null,
+      "provider": "remote_api",
+      "reason": "on_error",
+      "slot": "embed.text"
+    },
+    {
+      "detail": "RemoteApiError",
+      "event": "capability.fallback",
+      "npc_id": null,
+      "reason": "on_error",
+      "slot": "embed.text",
+      "target": "deterministic_rule"
+    },
+    {
+      "event": "provider.invalid_output",
+      "npc_id": "npc-002",
+      "problems": [
+        "relations/1: Additional properties are not allowed ('kind', 'target', 'weight' were unexpected)"
+      ],
+      "provider": "remote_api",
+      "reason": "on_invalid_schema",
+      "slot": "relation.infer"
+    },
+    {
+      "detail": "relations/1: Additional properties are not allowed ('kind', 'target', 'weight' were unexpected)",
+      "event": "capability.fallback",
+      "npc_id": "npc-002",
+      "reason": "on_invalid_schema",
+      "slot": "relation.infer",
+      "target": "deterministic_rule"
+    },
+    {
+      "error": "RemoteApiError",
+      "event": "provider.error",
+      "npc_id": null,
+      "provider": "remote_api",
+      "reason": "on_error",
+      "slot": "embed.text"
+    },
+    {
+      "detail": "RemoteApiError",
+      "event": "capability.fallback",
+      "npc_id": null,
+      "reason": "on_error",
+      "slot": "embed.text",
+      "target": "deterministic_rule"
+    },
+    {
+      "event": "provider.invalid_output",
+      "npc_id": "npc-003",
+      "problems": [
+        "relations/1: Additional properties are not allowed ('kind', 'source', 'target', 'weight' were unexpected)"
+      ],
+      "provider": "remote_api",
+      "reason": "on_invalid_schema",
+      "slot": "relation.infer"
+    },
+    {
+      "detail": "relations/1: Additional properties are not allowed ('kind', 'source', 'target', 'weight' were unexpected)",
+      "event": "capability.fallback",
+      "npc_id": "npc-003",
+      "reason": "on_invalid_schema",
+      "slot": "relation.infer",
+      "target": "deterministic_rule"
+    },
+    {
+      "error": "RemoteApiError",
+      "event": "provider.error",
+      "npc_id": null,
+      "provider": "remote_api",
+      "reason": "on_error",
+      "slot": "embed.text"
+    },
+    {
+      "detail": "RemoteApiError",
+      "event": "capability.fallback",
+      "npc_id": null,
+      "reason": "on_error",
+      "slot": "embed.text",
+      "target": "deterministic_rule"
+    },
+    {
+      "event": "provider.invalid_output",
+      "npc_id": "npc-004",
+      "problems": [
+        "relations/1: Additional properties are not allowed ('target', 'weight' were unexpected)"
+      ],
+      "provider": "remote_api",
+      "reason": "on_invalid_schema",
+      "slot": "relation.infer"
+    },
+    {
+      "detail": "relations/1: Additional properties are not allowed ('target', 'weight' were unexpected)",
+      "event": "capability.fallback",
+      "npc_id": "npc-004",
+      "reason": "on_invalid_schema",
+      "slot": "relation.infer",
+      "target": "deterministic_rule"
+    },
+    {
+      "error": "RemoteApiError",
+      "event": "provider.error",
+      "npc_id": null,
+      "provider": "remote_api",
+      "reason": "on_error",
+      "slot": "embed.text"
+    },
+    {
+      "detail": "RemoteApiError",
+      "event": "capability.fallback",
+      "npc_id": null,
+      "reason": "on_error",
+      "slot": "embed.text",
+      "target": "deterministic_rule"
+    },
+    {
+      "event": "provider.invalid_output",
+      "npc_id": "npc-005",
+      "problems": [
+        "relations/1: Additional properties are not allowed ('kind', 'target', 'weight' were unexpected)"
+      ],
+      "provider": "remote_api",
+      "reason": "on_invalid_schema",
+      "slot": "relation.infer"
+    },
+    {
+      "detail": "relations/1: Additional properties are not allowed ('kind', 'target', 'weight' were unexpected)",
+      "event": "capability.fallback",
+      "npc_id": "npc-005",
+      "reason": "on_invalid_schema",
+      "slot": "relation.infer",
+      "target": "deterministic_rule"
+    },
+    {
+      "error": "RemoteApiError",
+      "event": "provider.error",
+      "npc_id": null,
+      "provider": "remote_api",
+      "reason": "on_error",
+      "slot": "embed.text"
+    },
+    {
+      "detail": "RemoteApiError",
+      "event": "capability.fallback",
+      "npc_id": null,
+      "reason": "on_error",
+      "slot": "embed.text",
+      "target": "deterministic_rule"
+    }
+  ],
+  "world_state_hash_after_cognition": "cff4bdb5847edbd7009d4c61e729ec17ee0671f78a80ca9cc03a33311ca54a9c"
+}

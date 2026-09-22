@@ -1,0 +1,63 @@
+{
+  "id": "weekday",
+  "display_name": "工作日日程表",
+  "day_ticks": 1440,
+  "time_scale_note": "1 tick = 1 世界分钟（600:1 压缩）；tick 0 = 07:00 起床点。",
+  "entries": {
+    "night-shift": {
+      "npc_id": "npc-001",
+      "blocks": [
+        { "start_tick": 0, "end_tick": 420, "state": "resting", "target_entity": "room-101", "capability_budget": { "per_tick_calls": 0 } },
+        { "start_tick": 420, "end_tick": 900, "state": "working", "target_entity": "room-101", "capability_budget": { "per_tick_calls": 1 } },
+        { "start_tick": 900, "end_tick": 1200, "state": "idle", "target_entity": "courtyard-01", "capability_budget": { "per_tick_calls": 1 } },
+        { "start_tick": 1200, "end_tick": 1440, "state": "resting", "target_entity": "room-101", "capability_budget": { "per_tick_calls": 0 } }
+      ],
+      "reflect_at": [1380]
+    },
+    "commuter": {
+      "npc_id": "npc-002",
+      "blocks": [
+        { "start_tick": 0, "end_tick": 60, "state": "idle", "target_entity": "room-102", "capability_budget": { "per_tick_calls": 2 } },
+        { "start_tick": 60, "end_tick": 120, "state": "moving", "target_entity": "gate-north", "capability_budget": { "per_tick_calls": 1 } },
+        { "start_tick": 120, "end_tick": 900, "state": "working", "target_entity": null, "capability_budget": { "per_tick_calls": 1 } },
+        { "start_tick": 900, "end_tick": 1080, "state": "socializing", "target_entity": "courtyard-01", "capability_budget": { "per_tick_calls": 2 } },
+        { "start_tick": 1080, "end_tick": 1440, "state": "resting", "target_entity": "room-102", "capability_budget": { "per_tick_calls": 0 } }
+      ],
+      "reflect_at": [1320]
+    },
+    "retired": {
+      "npc_id": "npc-003",
+      "blocks": [
+        { "start_tick": 0, "end_tick": 90, "state": "socializing", "target_entity": "courtyard-01", "capability_budget": { "per_tick_calls": 2 } },
+        { "start_tick": 90, "end_tick": 300, "state": "idle", "target_entity": "courtyard-01", "capability_budget": { "per_tick_calls": 1 } },
+        { "start_tick": 300, "end_tick": 720, "state": "working", "target_entity": "room-102", "capability_budget": { "per_tick_calls": 0 } },
+        { "start_tick": 720, "end_tick": 1140, "state": "socializing", "target_entity": "courtyard-01", "capability_budget": { "per_tick_calls": 2 } },
+        { "start_tick": 1140, "end_tick": 1440, "state": "resting", "target_entity": "room-102", "capability_budget": { "per_tick_calls": 0 } }
+      ],
+      "reflect_at": [1200]
+    },
+    "caregiver": {
+      "npc_id": "npc-004",
+      "blocks": [
+        { "start_tick": 0, "end_tick": 45, "state": "working", "target_entity": "laundry-01", "capability_budget": { "per_tick_calls": 2 } },
+        { "start_tick": 45, "end_tick": 600, "state": "working", "target_entity": "room-102", "capability_budget": { "per_tick_calls": 1 } },
+        { "start_tick": 600, "end_tick": 900, "state": "idle", "target_entity": "courtyard-01", "capability_budget": { "per_tick_calls": 2 } },
+        { "start_tick": 900, "end_tick": 1260, "state": "working", "target_entity": "room-102", "capability_budget": { "per_tick_calls": 1 } },
+        { "start_tick": 1260, "end_tick": 1440, "state": "resting", "target_entity": "room-102", "capability_budget": { "per_tick_calls": 0 } }
+      ],
+      "reflect_at": [1080, 1400]
+    },
+    "student": {
+      "npc_id": "npc-005",
+      "blocks": [
+        { "start_tick": 0, "end_tick": 120, "state": "working", "target_entity": "room-201", "capability_budget": { "per_tick_calls": 1 } },
+        { "start_tick": 120, "end_tick": 480, "state": "working", "target_entity": "room-201", "capability_budget": { "per_tick_calls": 0 } },
+        { "start_tick": 480, "end_tick": 540, "state": "socializing", "target_entity": "courtyard-01", "capability_budget": { "per_tick_calls": 2 } },
+        { "start_tick": 540, "end_tick": 1080, "state": "working", "target_entity": "room-201", "capability_budget": { "per_tick_calls": 0 } },
+        { "start_tick": 1080, "end_tick": 1440, "state": "resting", "target_entity": "room-201", "capability_budget": { "per_tick_calls": 0 } }
+      ],
+      "reflect_at": [1200]
+    }
+  },
+  "v0_note": "日程是数据；内核只按 start_tick/end_tick 取当前块，不写任何 if npc_id 分支（AC-6 的数据驱动要求）。"
+}

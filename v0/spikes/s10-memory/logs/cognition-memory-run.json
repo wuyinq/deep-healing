@@ -1,0 +1,40 @@
+{
+  "artifact_hashes": {
+    "cognition.jsonl": "f64378b07b4197d0954c6a22a129e4a9bb1181bb696a273a7fe29b80e300c230",
+    "summary.json": "9f6602f69f9b168116a4cdec9af99ac5a6dd42feb2fa16eaffc1ee7f4999617b"
+  },
+  "command": "PYTHONDONTWRITEBYTECODE=1 python3 -m deephealing_kernel run --pack districts/xingfu-xiaoqu --seed 20260921 --events <run_dir>/e.jsonl --snapshot-every 50 --ticks 60 --cognition --memory",
+  "exit": 0,
+  "journal_path": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s10-memory/cognition-run/cognition/cognition.jsonl",
+  "local_model_available": false,
+  "memory_write_count": 10,
+  "memory_write_events": 5,
+  "registry_slots": [
+    "embed.text",
+    "emotion.appraise",
+    "imagine.predict",
+    "intent.plan",
+    "memory.reflect",
+    "relation.infer"
+  ],
+  "retrieval_digest_unique": [
+    "2767e9ac95db09075230904b96c4ae4a65c80d998f7bbcfd34e861fd34287808",
+    "67b409b307d7c3f2e7ee9ac544383e6af732bd9ddc6ee49ef1a96376e3ee3f16",
+    "7ad27110e6092d2c5d79ce1c8debfe278d0c75070685a755b6f5e3983a56c3b7",
+    "8eb5937250a805d3b0f584aba4961fb158f544b9b4685eb6f0da003afc3bd484",
+    "ae8262599a0e8a816ce294b1b9eb5c63c8645b051c1a83e25d08788cf04ed76e"
+  ],
+  "retrieval_digests": [
+    "2767e9ac95db09075230904b96c4ae4a65c80d998f7bbcfd34e861fd34287808",
+    "7ad27110e6092d2c5d79ce1c8debfe278d0c75070685a755b6f5e3983a56c3b7",
+    "67b409b307d7c3f2e7ee9ac544383e6af732bd9ddc6ee49ef1a96376e3ee3f16",
+    "8eb5937250a805d3b0f584aba4961fb158f544b9b4685eb6f0da003afc3bd484",
+    "ae8262599a0e8a816ce294b1b9eb5c63c8645b051c1a83e25d08788cf04ed76e"
+  ],
+  "run_dir": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s10-memory/cognition-run",
+  "state_hash_changed_by_cognition": null,
+  "summary_path": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s10-memory/cognition-run/cognition/summary.json",
+  "validation_errors": [],
+  "workdir": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/02_source/v0_skeleton/kernel",
+  "world_state_hash_after_cognition": "cff4bdb5847edbd7009d4c61e729ec17ee0671f78a80ca9cc03a33311ca54a9c"
+}

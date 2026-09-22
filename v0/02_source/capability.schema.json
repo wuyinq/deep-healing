@@ -44,6 +44,12 @@
     "negative_example_schema_legal": "round 3 · 修复迭代 2（G3 / Raven N-3）：`providers[].sampling`（及顶层同名旋钮 temperature/top_p/top_k/min_p/penalty*）已写入本 schema 的 provider 属性白名单，因此「带采样却声明 `deterministic`」的负例现在是**schema 合法**的 manifest —— 判据可达，不再依赖「写成 schema 非法而没人发现」。schema 校验执行体：v0_skeleton/tools/validate_capability_schema.py（门禁链步骤见 verify_specs.sh §9b）。",
     "determinism_field_required": "round 3 · 修复迭代 2（G2 / Raven N-2）：`providers[].determinism` 已列入 provider 的 `required`；缺失/非法 ⇒ 视为 `non_deterministic`（fail-closed）且**不得进规则层**（校验期 reason code `B2_DETERMINISM_FIELD_MISSING`）。"
   },
+  "x-anchor-policy": {
+    "clause": "**无锚点 = 只证确定性、不证真实性**（no anchor ⇒ proves determinism, NOT authenticity）。",
+    "detail": "哈希链与 cassette 完整性链**均无密钥**（`cassette.format.md` 的 `FROZEN-CASSETTE-INTEGRITY-1`）。不带链外锚点时的 `exit 0` 只证明：① 链自洽；② 检查点与一次独立重放逐点一致；③ 日志事件流与重放的语义序列一致。它**不**证明「日志/回放未被篡改」——「截断 + 改写 `plan_ticks` + 重算整链」这类**自洽前缀**伪造可合法复现。",
+    "required_procedure": "**验收程序仍强制 `--expected-hash`（链外锚点）**：`verify --expected-hash <hex>` 不符即 fail-closed（`anchor_mismatch`，非 0 退出）。本条文属 GAP-7 的**显式化**，**不放松任何判据**：M1 的 `--expected-hash` 强制口径一字未改。",
+    "round": "M2（REQ-20260921-004 · P-3）：只做可选属性 / description 级补写，**不动** `required`、**不动** `additionalProperties`。"
+  },
   "x-tick-decoupling": {
     "tick_number_and_content_must_not_derive_from_wall_clock": true,
     "note": "tick 的**编号**与**事件内容**不得由实测耗时派生；`wall_clock` 严禁参与任何 hash 或 tick 内决策（沿用 snapshot.schema.json 既有条文）。G2 的「tick 抖动」只是**调度**指标，不得进入任何哈希。"
@@ -263,6 +269,10 @@
           "type": "string",
           "enum": ["world_seed_stream", "no_randomness", "provider_side_ignored"],
           "description": "随机源策略：world_seed_stream = 由 WorldRng 的子系统 stream 派生；no_randomness = 纯函数；provider_side_ignored = 远端随机性被忽略（best_effort）。"
+        },
+        "anchor_policy": {
+          "type": "string",
+          "description": "**可选属性（M2 / P-3，GAP-7 显式化）**：确定性策略的锚点口径。冻结条文 =「**无锚点 = 只证确定性、不证真实性**」：不带链外锚点时，`verify` 的 `exit 0` 只证哈希链自洽 + 检查点与独立重放一致 + 事件流语义序列一致；**不**证日志未被篡改（无密钥链，`FROZEN-CASSETTE-INTEGRITY-1`）。验收程序**仍强制** `--expected-hash`，本字段只是把它写进契约文本，**不放松任何判据**。"
         }
       }
     },

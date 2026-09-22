@@ -1,0 +1,16 @@
+{
+  "baseline_digest": "1ec6512aa00f03cc7f775d1c0e30a311d2d8c72122586d06654d7b8f8f6f37cf",
+  "declaration": "把 tie-break 顺序改掉（相似度升序 / 整体倒置）⇒ 比对器**必须**报不一致",
+  "mutations": [
+    {
+      "digest": "883d2e665cfc1b8b529e32fbe5605ae56882735f46a49f58a872fa9ae078e54e",
+      "name": "similarity_ascending",
+      "verdict": "INCONSISTENT"
+    },
+    {
+      "digest": "883d2e665cfc1b8b529e32fbe5605ae56882735f46a49f58a872fa9ae078e54e",
+      "name": "container_iteration_order",
+      "verdict": "INCONSISTENT"
+    }
+  ]
+}

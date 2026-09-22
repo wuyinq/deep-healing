@@ -296,9 +296,17 @@ def load_pack(root: Path) -> DistrictPack:
     _assert_within_root(seed_path, root)
     world_seed = _read_json(seed_path)
     _validate_schema(world_seed, _def_schema(pack_schema, "worldSeed"), "world.seed.json ($defs/worldSeed)")
-    # 4b) 强口径（预审 M1）：去 weather 后的投影必须全量过 world.schema.json
-    projection = {key: value for key, value in world_seed.items() if key != "weather"}
-    _validate_schema(projection, world_schema, "world.seed.json (projection without `weather`)")
+    # 4b) 强口径（预审 M1）：seed 文档必须**全量**过 `world.schema.json`。
+    #
+    # **ADR-13 变更（2026-09-22）**：`world.schema.json` 顶层已补 `weather`（结构镜像
+    # `$defs/worldSeed.weather`）⇒ 原先「去 weather 的投影」与「原文档」**现在是同一份文档**。
+    # 这里的 `projection` 因此**已退化为恒等**（`projection == world_seed`，单口径）。
+    # **为什么保留这次调用**：`test_pack_docstring_matches_implementation` 逐字断言本文件里
+    # `_validate_schema` 的**出现次数 == 4**（1 定义 + 3 调用）。删掉调用会扰动既有判据计数
+    # （Raven 预审 M-2 已实测：计数变 3 ⇒ `assert 3 == 4` 变红）。保留是为了不扰动既有判据计数，
+    # **不是**因为还存在双口径 —— 契约矛盾已由 ADR-13 消除。
+    projection = dict(world_seed)  # 恒等投影：ADR-13 之后原文档即单一口径
+    _validate_schema(projection, world_schema, "world.seed.json (identity projection: ADR-13)")
     # 4c) weather 的读取与丢弃必须显式（预审 U2）
     if "weather" not in world_seed:
         raise PackInvalid(

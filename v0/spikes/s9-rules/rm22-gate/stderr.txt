@@ -1,0 +1,1 @@
+E_CASSETTE_MISS: replay mode had 10 cassette miss(es); the cognition loop is fail-closed on miss (no fallback, no remote switch). Record the cassettes first (run without --replay) or point --cassette-dir at them.

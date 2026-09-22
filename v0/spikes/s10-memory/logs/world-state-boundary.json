@@ -1,0 +1,7 @@
+{
+  "chain_tail_identical": true,
+  "cognition_chain_tail": "b4a9b6aaa2de7690e36b1b1cb8be26813094d66716802dc2f8c611f0761bbdc3",
+  "declaration": "记忆/认知层不写世界状态：带与不带 --cognition --memory 的 chain_tail 逐位相同（世界级 rng stream 不被认知层消耗）",
+  "plain_chain_tail": "b4a9b6aaa2de7690e36b1b1cb8be26813094d66716802dc2f8c611f0761bbdc3",
+  "plain_exit": 0
+}

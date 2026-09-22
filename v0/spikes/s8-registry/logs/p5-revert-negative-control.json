@@ -1,0 +1,27 @@
+{
+  "case_1_escape_symlink": {
+    "legacy_pack_sign_exit": 0,
+    "legacy_verify_pack_exit": 0,
+    "legacy_verify_pack_stdout": "verify_pack: OK (13 files, pack_id=xingfu-xiaoqu version=0.1.0)",
+    "outside_content_sha256": "804293b5d8a0a58106c21271620e94e55f80f0d121f1c6baa29b435abb69cc75",
+    "sig_entry_equals_outside_content": true,
+    "sig_entry_sha256": "804293b5d8a0a58106c21271620e94e55f80f0d121f1c6baa29b435abb69cc75"
+  },
+  "case_2_pack_sig_symlink": {
+    "legacy_pack_sign_exit": 0,
+    "outside_rewritten_by_legacy": true,
+    "outside_sha256_after": "72e6cc90bb1a3e1690a4922d3226af760ba6145ac84d1e99e64f8c6817490650",
+    "outside_sha256_before": "76c5abe819218a7e10e579b498f436840fc5cd69543337cd24affbd65bc7fd0c"
+  },
+  "case_3_magic_renamed_to_txt": {
+    "legacy_pack_sign_exit": 0,
+    "legacy_pack_sign_stdout": "wrote /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s8-registry/revert-scratch/magic/xingfu-xiaoqu/pack.sig entries=14"
+  },
+  "failures": [],
+  "provenance": {
+    "legacy_pack_sign_sha256": "a00c614f054535cacd9d57720d54c85749ebcc64bd8b87b0d840d9b1d77c8d76",
+    "legacy_verify_pack_sha256": "03d0c7a102e9acf4ac22d43b5e6de9f23221f461ce4d2fdab9c4b5e75851a2a4",
+    "repo": "/Users/wooyinq/personal/deep-healing",
+    "source": "git show HEAD:v0/02_source/v0_skeleton/tools/<tool>.py（修复前盘上版本，只读）"
+  }
+}

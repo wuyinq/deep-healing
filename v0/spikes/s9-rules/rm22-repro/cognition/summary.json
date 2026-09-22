@@ -1,0 +1,147 @@
+{
+  "artifacts": {
+    "cassettes": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s9-rules/rm22-repro/cognition/cassettes",
+    "dir": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s9-rules/rm22-repro/cognition",
+    "journal": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s9-rules/rm22-repro/cognition/cognition.jsonl",
+    "memory_db": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s9-rules/rm22-repro/cognition/memory.sqlite",
+    "tree_spec": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s9-rules/rm22-repro/cognition/tree.spec.json"
+  },
+  "budget": {
+    "daily_report": {
+      "day_index": 0,
+      "day_ticks": 1440,
+      "npcs": {},
+      "tick_calls": {}
+    },
+    "per_npc_daily_tokens": 20000,
+    "per_tick_calls": 7
+  },
+  "cassette_chain_errors": [],
+  "claim_boundary": "cognition artifacts live under <out>/cognition/** only; snapshot.state is untouched (no provider output / memory content / budget counters); the world rng streams are not consumed here, so state_hash and chain_tail are identical with and without --cognition",
+  "cognition_events": 10,
+  "command": "run --cognition",
+  "decisions": [
+    {
+      "action": "talk",
+      "npc_id": "npc-001",
+      "status": "FAILURE"
+    },
+    {
+      "action": "work",
+      "npc_id": "npc-002",
+      "status": "FAILURE"
+    },
+    {
+      "action": "talk",
+      "npc_id": "npc-003",
+      "status": "FAILURE"
+    },
+    {
+      "action": "talk",
+      "npc_id": "npc-004",
+      "status": "FAILURE"
+    },
+    {
+      "action": "talk",
+      "npc_id": "npc-005",
+      "status": "FAILURE"
+    }
+  ],
+  "fallback_counts": {},
+  "local_model_available": false,
+  "memory": {
+    "retrieval_digests": [],
+    "write_count": 0,
+    "writes_enabled": false
+  },
+  "registry": {
+    "provider_class_counts": {
+      "cassette_replay": 5,
+      "deterministic_rule": 5,
+      "local_model": 5,
+      "remote_api": 6
+    },
+    "slots": [
+      "embed.text",
+      "emotion.appraise",
+      "imagine.predict",
+      "intent.plan",
+      "memory.reflect",
+      "relation.infer"
+    ],
+    "validation_errors": []
+  },
+  "registry_journal": [
+    {
+      "event": "cassette.miss",
+      "fail_closed": true,
+      "npc_id": "npc-001",
+      "provider": "cassette_replay",
+      "slot": "intent.plan"
+    },
+    {
+      "event": "cassette.miss",
+      "fail_closed": true,
+      "npc_id": "npc-001",
+      "provider": "cassette_replay",
+      "slot": "emotion.appraise"
+    },
+    {
+      "event": "cassette.miss",
+      "fail_closed": true,
+      "npc_id": "npc-002",
+      "provider": "cassette_replay",
+      "slot": "intent.plan"
+    },
+    {
+      "event": "cassette.miss",
+      "fail_closed": true,
+      "npc_id": "npc-002",
+      "provider": "cassette_replay",
+      "slot": "emotion.appraise"
+    },
+    {
+      "event": "cassette.miss",
+      "fail_closed": true,
+      "npc_id": "npc-003",
+      "provider": "cassette_replay",
+      "slot": "intent.plan"
+    },
+    {
+      "event": "cassette.miss",
+      "fail_closed": true,
+      "npc_id": "npc-003",
+      "provider": "cassette_replay",
+      "slot": "emotion.appraise"
+    },
+    {
+      "event": "cassette.miss",
+      "fail_closed": true,
+      "npc_id": "npc-004",
+      "provider": "cassette_replay",
+      "slot": "intent.plan"
+    },
+    {
+      "event": "cassette.miss",
+      "fail_closed": true,
+      "npc_id": "npc-004",
+      "provider": "cassette_replay",
+      "slot": "emotion.appraise"
+    },
+    {
+      "event": "cassette.miss",
+      "fail_closed": true,
+      "npc_id": "npc-005",
+      "provider": "cassette_replay",
+      "slot": "intent.plan"
+    },
+    {
+      "event": "cassette.miss",
+      "fail_closed": true,
+      "npc_id": "npc-005",
+      "provider": "cassette_replay",
+      "slot": "emotion.appraise"
+    }
+  ],
+  "world_state_hash_after_cognition": "b7a70375cf801af04fb07b7cb0ce38c69224fae02b52b073effe0ed07e396314"
+}

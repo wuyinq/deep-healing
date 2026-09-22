@@ -1,0 +1,26 @@
+{
+  "outside_content_sha256": "cf100831a05cd1f6be91cb41cdb53f257ddee00c57cbdff8d57cc82f6ffd2ac6",
+  "outside_file": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s8-registry/u11-scratch/outside-world.seed.json",
+  "outside_sha256_after": "cf100831a05cd1f6be91cb41cdb53f257ddee00c57cbdff8d57cc82f6ffd2ac6",
+  "outside_sha256_before": "cf100831a05cd1f6be91cb41cdb53f257ddee00c57cbdff8d57cc82f6ffd2ac6",
+  "outside_unchanged": true,
+  "pack": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s8-registry/u11-scratch/xingfu-xiaoqu",
+  "pack_sig_entry_sha256": "804293b5d8a0a58106c21271620e94e55f80f0d121f1c6baa29b435abb69cc75",
+  "pack_sign": {
+    "exit": 1,
+    "stderr": "E_PACK_INVALID: symlink escape: /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s8-registry/u11-scratch/xingfu-xiaoqu/world.seed.json resolves to /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s8-registry/u11-scratch/outside-world.seed.json which is outside pack root /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s8-registry/u11-scratch/xingfu-xiaoqu",
+    "stdout": ""
+  },
+  "phase": "after",
+  "sig_entry_equals_outside_content": false,
+  "tool_provenance": {
+    "pack_sign_sha256": "d4541a4972956b37500df8d4a44a3d911fc86ffd276e26ac459a16acdfcb984b",
+    "source": "本轮实现（02_source/v0_skeleton/tools/*.py）",
+    "verify_pack_sha256": "bddea5d7c364358104e66f4538235fc73b7defdd0ad3c9d3de7e306d88506fa1"
+  },
+  "verify_pack": {
+    "exit": 1,
+    "stderr": "E_PACK_INVALID: symlink escape: /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s8-registry/u11-scratch/xingfu-xiaoqu/world.seed.json resolves to /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s8-registry/u11-scratch/outside-world.seed.json which is outside pack root /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s8-registry/u11-scratch/xingfu-xiaoqu",
+    "stdout": ""
+  }
+}

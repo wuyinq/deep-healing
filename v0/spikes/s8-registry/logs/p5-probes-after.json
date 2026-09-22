@@ -1,0 +1,25 @@
+{
+  "failures": [],
+  "phase": "after",
+  "records": [
+    {
+      "case": "magic_renamed_to_txt",
+      "pack": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s8-registry/p5-scratch/magic-after/xingfu-xiaoqu",
+      "pack_sign_exit": 1,
+      "pack_sign_stderr": "E_PACK_INVALID: executable file in content pack: /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s8-registry/p5-scratch/magic-after/xingfu-xiaoqu/assets/notes.txt（判据：内容魔数=shebang 脚本）",
+      "verify_pack_exit": 1,
+      "verify_pack_stderr": "E_PACK_INVALID: executable file in content pack: /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s8-registry/p5-scratch/magic-after/xingfu-xiaoqu/assets/notes.txt（判据：内容魔数=shebang 脚本）"
+    },
+    {
+      "case": "pack_sig_symlink_to_outside",
+      "outside_file": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s8-registry/p5-scratch/sigsym-after/outside.pack.sig",
+      "outside_sha256_after": "76c5abe819218a7e10e579b498f436840fc5cd69543337cd24affbd65bc7fd0c",
+      "outside_sha256_before": "76c5abe819218a7e10e579b498f436840fc5cd69543337cd24affbd65bc7fd0c",
+      "outside_still_sentinel": true,
+      "outside_unchanged": true,
+      "pack": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s8-registry/p5-scratch/sigsym-after/xingfu-xiaoqu",
+      "pack_sign_exit": 1,
+      "pack_sign_stderr": "E_PACK_INVALID: refusing to write pack.sig through a symlink: /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s8-registry/p5-scratch/sigsym-after/xingfu-xiaoqu/pack.sig -> /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-004-deephealing-v0-m2/spikes/s8-registry/p5-scratch/sigsym-after/outside.pack.sig"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "active_after": 0,
+  "capacity": 2,
+  "declaration": "prune 只软删（superseded_by 非空），行仍在库 ⇒ 可审计、可回滚",
+  "inserted": 5,
+  "prune_returned": 5,
+  "soft_deleted": [
+    5,
+    4,
+    3,
+    2,
+    1
+  ],
+  "total_rows_kept": 5
+}

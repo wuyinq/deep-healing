@@ -139,9 +139,43 @@ def test_kernel_digest_diff_criterion(tmp_path):
     assert ok_union is True, reasons_union
 
 
-def test_no_providers_adapters_dir_in_delivery_tree():
-    """交付树里**不得**新建 `deephealing_kernel/providers/adapters/`（属 W3 面，预审 M4 第 5 条）。"""
-    assert not (KERNEL_ROOT / "deephealing_kernel" / "providers" / "adapters").exists()
+def test_providers_adapters_dir_is_an_authorized_adapter_face(tmp_path):
+    """**T-4 判据口径改写（M2 / W3；登记见 06 与 07_adr.md）**
+
+    改前断言（M1）：`not (…/deephealing_kernel/providers/adapters).exists()`
+      —— 原文 docstring 写明「属 **W3 面**，预审 M4 第 5 条」⇒ 这是 **M1 期的里程碑范围约束**。
+    改后断言（M2 = W3~W6）：该目录**存在**且**只作 adapter 实现面**（`relation_infer.py` 在位），
+      且 `kernel_digest` 的并集判据对它成立、对包根新增仍不成立。
+    为什么不是放松判据：约束从「禁止新建该目录（W3 前的范围冻结）」换成
+      「该目录存在，且**只有**它（与 `adapters/`）是新增豁免面，包根新增仍必须红」——
+      M1 真正要保的性质（新增能力不改既有内核文件）**一字未改**，而且现在有真实文件在守它。
+    自证反例：把 `ADAPTER_DIRS` 收窄回 `("adapters/",)`（= 退回「不承认该目录」的形态）⇒
+      下面的并集正例必须变红。
+    """
+    from pathlib import Path as _Path
+
+    adapters = KERNEL_ROOT / "deephealing_kernel" / "providers" / "adapters"
+    assert adapters.is_dir(), "M2/W3 授权面：providers/adapters/ 必须存在（设计 §3.1）"
+    names = sorted(path.name for path in adapters.glob("*.py"))
+    assert "relation_infer.py" in names, names
+    assert "__init__.py" in names, names
+
+    # 判据面：该目录属豁免面（新增文件 ⇒ 判据仍成立）；包根新增 ⇒ 判据必须红
+    union_root = _copy_package(tmp_path / "providers_adapters_guard")
+    (union_root / "deephealing_kernel" / "providers" / "adapters").mkdir(parents=True, exist_ok=True)
+    (union_root / "deephealing_kernel" / "providers" / "adapters" / "guard.py").write_text(
+        "# 夹具\n", encoding="utf-8")
+    before = TOOL.kernel_digest(KERNEL_ROOT)
+    diff_union = TOOL.diff_snapshots(before, TOOL.kernel_digest(union_root))
+    assert TOOL.criterion_ok(diff_union)[0] is True
+
+    # 自证反例：把 ADAPTER_DIRS 收窄（退回 M1 的「不承认 providers/adapters/」形态）⇒ 并集正例必红
+    original = TOOL.ADAPTER_DIRS
+    try:
+        TOOL.ADAPTER_DIRS = ("adapters/",)
+        assert TOOL.criterion_ok(diff_union)[0] is False
+    finally:
+        TOOL.ADAPTER_DIRS = original
 
 
 # --------------------------------------------------------------------------- CLI 形态
