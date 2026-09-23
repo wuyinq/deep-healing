@@ -1,0 +1,149 @@
+{
+  "all_delivery_face_unchanged": true,
+  "all_ok": false,
+  "cases": [
+    {
+      "camera_judgement_present_in_copy": false,
+      "case": "r4_pristine",
+      "cmd": "node scripts/scene_assert.mjs",
+      "copy": "/tmp/r4-artisan/r4_pristine",
+      "crash_markers": [],
+      "cwd": "/tmp/r4-artisan/r4_pristine/02_source/v0_skeleton/web",
+      "delivery_face_sha_tree_after": "ed2994a53c96b7465934513280082123fa19b0f9a5bc38b45c10f38646e23b4f",
+      "delivery_face_sha_tree_before": "ed2994a53c96b7465934513280082123fa19b0f9a5bc38b45c10f38646e23b4f",
+      "delivery_face_unchanged": true,
+      "exit": 0,
+      "expect": "judged_green",
+      "expect_fail": null,
+      "fail": 0,
+      "fail_names": [],
+      "injections": [],
+      "log": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-005-deephealing-v0-m3/spikes/s13-render/logs/negctl-r4_pristine.log",
+      "ok": true,
+      "pass": 27,
+      "seconds": 0.2,
+      "turned_red": false,
+      "verdict": "judged_green",
+      "why": "阳性对照：无注入 ⇒ 必须绿（证明副本 + 依赖软链可用，不是环境假红）"
+    },
+    {
+      "camera_judgement_present_in_copy": false,
+      "case": "r4_neg_mesh_scale",
+      "cmd": "node scripts/scene_assert.mjs",
+      "copy": "/tmp/r4-artisan/r4_neg_mesh_scale",
+      "crash_markers": [],
+      "cwd": "/tmp/r4-artisan/r4_neg_mesh_scale/02_source/v0_skeleton/web",
+      "delivery_face_sha_tree_after": "ed2994a53c96b7465934513280082123fa19b0f9a5bc38b45c10f38646e23b4f",
+      "delivery_face_sha_tree_before": "ed2994a53c96b7465934513280082123fa19b0f9a5bc38b45c10f38646e23b4f",
+      "delivery_face_unchanged": true,
+      "exit": 0,
+      "expect": "judged_red",
+      "expect_fail": "two_reads_share_rendered_geometry",
+      "fail": 0,
+      "fail_names": [],
+      "injections": [
+        "'      meshes.set(box.id, mesh);\\n    });\\n  }' -> \"      meshes.set(box.id, mesh);\\n      if (currentReading === 'underneath') { mesh.scale.set(3, 3, 3); }\\n    });\\n  }\" (x1)"
+      ],
+      "log": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-005-deephealing-v0-m3/spikes/s13-render/logs/negctl-r4_neg_mesh_scale.log",
+      "ok": false,
+      "pass": 27,
+      "seconds": 0.1,
+      "turned_red": false,
+      "verdict": "judged_green",
+      "why": "R4-C / PM 读数 B：装配后把 underneath 的 mesh 放大 3 倍 —— 旧判据（只比 parameters/position attribute/mesh.position）看不见 ⇒ 加宽后 `mesh_scales` 必须抓到"
+    },
+    {
+      "camera_judgement_present_in_copy": false,
+      "case": "r4_neg_mesh_rotation",
+      "cmd": "node scripts/scene_assert.mjs",
+      "copy": "/tmp/r4-artisan/r4_neg_mesh_rotation",
+      "crash_markers": [],
+      "cwd": "/tmp/r4-artisan/r4_neg_mesh_rotation/02_source/v0_skeleton/web",
+      "delivery_face_sha_tree_after": "ed2994a53c96b7465934513280082123fa19b0f9a5bc38b45c10f38646e23b4f",
+      "delivery_face_sha_tree_before": "ed2994a53c96b7465934513280082123fa19b0f9a5bc38b45c10f38646e23b4f",
+      "delivery_face_unchanged": true,
+      "exit": 0,
+      "expect": "judged_red",
+      "expect_fail": "two_reads_share_rendered_geometry",
+      "fail": 0,
+      "fail_names": [],
+      "injections": [
+        "'      meshes.set(box.id, mesh);\\n    });\\n  }' -> \"      meshes.set(box.id, mesh);\\n      if (currentReading === 'underneath') { mesh.rotation.y = Math.PI / 2; }\\n    });\\n  }\" (x1)"
+      ],
+      "log": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-005-deephealing-v0-m3/spikes/s13-render/logs/negctl-r4_neg_mesh_rotation.log",
+      "ok": false,
+      "pass": 27,
+      "seconds": 0.1,
+      "turned_red": false,
+      "verdict": "judged_green",
+      "why": "R4-C / PM 读数 C：装配后把 underneath 的 mesh 转 90°（改 `rotation` ⇒ 同步改 `quaternion`）—— 旧判据看不见 ⇒ 加宽后 `mesh_rotations` 必须抓到"
+    },
+    {
+      "camera_judgement_present_in_copy": false,
+      "case": "r4_neg_camera_switch",
+      "cmd": "node scripts/scene_assert.mjs",
+      "copy": "/tmp/r4-artisan/r4_neg_camera_switch",
+      "crash_markers": [],
+      "cwd": "/tmp/r4-artisan/r4_neg_camera_switch/02_source/v0_skeleton/web",
+      "delivery_face_sha_tree_after": "ed2994a53c96b7465934513280082123fa19b0f9a5bc38b45c10f38646e23b4f",
+      "delivery_face_sha_tree_before": "ed2994a53c96b7465934513280082123fa19b0f9a5bc38b45c10f38646e23b4f",
+      "delivery_face_unchanged": true,
+      "exit": 0,
+      "expect": "judged_red",
+      "expect_fail": "two_reads_share_camera",
+      "fail": 0,
+      "fail_names": [],
+      "injections": [
+        "'    const boxes = buildEntityBoxes(state, currentReading);' -> \"    const boxes = buildEntityBoxes(state, currentReading);\\n    if (currentReading === 'underneath') { camera.position.set(40, 40, 40); }\" (x1)"
+      ],
+      "log": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-005-deephealing-v0-m3/spikes/s13-render/logs/negctl-r4_neg_camera_switch.log",
+      "ok": false,
+      "pass": 27,
+      "seconds": 0.1,
+      "turned_red": false,
+      "verdict": "judged_green",
+      "why": "R4-C / PM 读数 D：D-7 明文禁止「换相机」，此前**零判据** ⇒ 新增的 `two_reads_share_camera` 必须红（且这是本 case 的**唯一**期望失败点）"
+    },
+    {
+      "camera_judgement_present_in_copy": false,
+      "case": "r4_ctl_position_shift",
+      "cmd": "node scripts/scene_assert.mjs",
+      "copy": "/tmp/r4-artisan/r4_ctl_position_shift",
+      "crash_markers": [],
+      "cwd": "/tmp/r4-artisan/r4_ctl_position_shift/02_source/v0_skeleton/web",
+      "delivery_face_sha_tree_after": "ed2994a53c96b7465934513280082123fa19b0f9a5bc38b45c10f38646e23b4f",
+      "delivery_face_sha_tree_before": "ed2994a53c96b7465934513280082123fa19b0f9a5bc38b45c10f38646e23b4f",
+      "delivery_face_unchanged": true,
+      "exit": 1,
+      "expect": "judged_red",
+      "expect_fail": "two_reads_share_rendered_geometry",
+      "fail": 1,
+      "fail_names": [
+        "two_reads_share_rendered_geometry"
+      ],
+      "injections": [
+        "'      meshes.set(box.id, mesh);\\n    });\\n  }' -> \"      meshes.set(box.id, mesh);\\n      if (currentReading === 'underneath') { mesh.position.x += 5; }\\n    });\\n  }\" (x1)"
+      ],
+      "log": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-005-deephealing-v0-m3/spikes/s13-render/logs/negctl-r4_ctl_position_shift.log",
+      "ok": true,
+      "pass": 26,
+      "seconds": 0.09,
+      "turned_red": true,
+      "verdict": "judged_red",
+      "why": "R4-C 对照 / PM 读数 E：`mesh.position.x += 5` 形态 —— 加宽**不得**让它失效，必须仍由 `two_reads_share_rendered_geometry` 判红"
+    }
+  ],
+  "crashes": [],
+  "escapes": [
+    "r4_neg_camera_switch",
+    "r4_neg_mesh_rotation",
+    "r4_neg_mesh_scale"
+  ],
+  "item": "F5 R4 judgement widening (mesh scale/quaternion + camera consistency)",
+  "label": "red",
+  "neg_root": "/tmp/r4-artisan",
+  "round": "R4",
+  "turned_red": [
+    "r4_ctl_position_shift"
+  ]
+}

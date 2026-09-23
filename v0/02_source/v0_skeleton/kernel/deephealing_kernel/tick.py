@@ -32,6 +32,7 @@ from .ecs import Entity, World
 from .events import EventLog
 from .pack import DistrictPack
 from .rng import WorldRng
+from .rules.adaptation import TaskAdaptationEngine
 from . import snapshot as snapshot_mod
 
 PHASES = (
@@ -45,6 +46,15 @@ PHASES = (
 
 STEP_MM = 500          # 每 tick 最大位移（整数毫米）
 JITTER_MM = 100        # 抖动幅度（整数毫米，来自 rng.stream("npc.<id>.move")）
+
+# `--ticks` 默认值的**单一权威定义**（P-1 / D-3 / 3A-C1；本轮只在此处定义，**不搬家**）：
+#
+#   `--ticks` 的默认值 = **V0 参考跑长度 300 tick**，语义是「**无外部终止信号时的自终止上界**」。
+#   它**不是**世界长度、**不是**墙钟时长、**不是**会话/渲染层的时长常量；
+#   会话层与渲染层**不得**消费该数值，也不得各自复制一份默认值。
+#
+# 消费方：`cli.py` **只导入**（`from .tick import DEFAULT_PLAN_TICKS`），不得再写一份同名常量
+# （遮蔽/冲突），也不得把权威搬进 `cli.py`（会造成 `tick.py → cli.py` 循环导入）。
 DEFAULT_PLAN_TICKS = 300
 
 
@@ -80,6 +90,13 @@ def build_schedule_index(pack: DistrictPack | None) -> dict[str, list[dict]]:
                 blocks.append(item)
             index[npc_id] = blocks
     return index
+
+
+def _safe_session_id(value: object) -> str:
+    """会话标识归一化：只留 `[A-Za-z0-9_-]`（events.schema.json 的 actor pattern 要求），
+    并保证非空。会话 id 不是密钥，但玩家可控 ⇒ 必须收敛字符集，防止 actor 字段被注入非法字符。"""
+    text = "".join(char for char in str(value or "") if char.isalnum() or char in "_-")
+    return text[:64] or "unknown"
 
 
 def _next_block(blocks: list[dict], current_until_tick: int) -> dict | None:
@@ -191,6 +208,11 @@ class WorldKernel:
         self.world.schedule_index = build_schedule_index(pack)
         self.ticks_done = 0
         self.last_snapshot: snapshot_mod.Snapshot | None = None
+        # 任务演进引擎（AC-M3-5 / D-14）：规则**全部**来自内容包 `tasks/*.json` 的
+        # `adaptation_rules`（数据驱动）。无 intent 时**零副作用** ⇒ F-4 基线逐位不变（R-1 红线）。
+        self.adaptation = TaskAdaptationEngine(pack.tasks if pack is not None else [])
+        # 玩家意图队列：**只在 tick 边界出队应用**（D-1 / AC-M3-2②）。队列为空 ⇒ step() 行为不变。
+        self._intent_queue: list[dict] = []
         if pack is not None:
             self._load_seed_entities(pack)
             self._emit_world_init(pack)
@@ -218,6 +240,135 @@ class WorldKernel:
             "snapshot_every": self.snapshot_every,
         })
 
+    # ------------------------------------------------------------------ 玩家意图（唯一入口）
+    def submit_intent(self, intent: dict, *, mode: str = "participate") -> dict:
+        """玩家意图的**唯一入口**（AC-M3-2①；D-1）。
+
+        - `mode != "participate"`（含 `observe`）⇒ **一律拒** `E_MODE_READONLY`，
+          并落 `intent.rejected` 事件（契约 `session.protocol.schema.json` 的 `$comment` 冻结语义）。
+        - `kind` 只允许 `delegate_instruction`（V0 冻结；`ghost_hand` / `avatar` ⇒ `E_SCHEMA_INVALID`）。
+        - 通过校验 ⇒ **入队**，返回 `queued`；**不在 tick 中途写世界**，只在下一个 tick 边界出队应用。
+        """
+        intent_id = str(intent.get("id", ""))
+        session_id = _safe_session_id(intent.get("session_id"))
+        kind = str(intent.get("kind", "delegate_instruction"))
+        target = str(intent.get("target", ""))
+        if mode != "participate":
+            return self._reject_intent(intent_id, session_id, "E_MODE_READONLY",
+                                       f"session mode {mode!r} is read-only")
+        if kind != "delegate_instruction":
+            return self._reject_intent(intent_id, session_id, "E_SCHEMA_INVALID",
+                                       f"channel {kind!r} is not implemented in V0")
+        if not target:
+            return self._reject_intent(intent_id, session_id, "E_SCHEMA_INVALID",
+                                       "intent.target is required")
+        if self.world.get(target) is None:
+            return self._reject_intent(intent_id, session_id, "E_TARGET_UNKNOWN",
+                                       f"unknown target entity {target!r}")
+        self._intent_queue.append({
+            "id": intent_id,
+            "session_id": session_id,
+            "kind": kind,
+            "target": target,
+            "impact_cost": float(intent.get("impact_cost", 0.0)),
+            "instruction_digest": str(intent.get("instruction_digest", "")),
+        })
+        return {"id": intent_id, "status": "queued", "reason": None,
+                "queued_depth": len(self._intent_queue)}
+
+    def _reject_intent(self, intent_id: str, session_id: str, reason_code: str, detail: str) -> dict:
+        """拒绝即**落事件**（可审计、可回放），且**不**入队、**不**改世界状态。"""
+        if self.log is not None:
+            self.log.append(self.world.tick, "intent.rejected", f"session:{session_id}", {
+                "intent_id": intent_id,
+                "session_id": session_id,
+                "reason_code": reason_code,
+                "detail": detail,
+            })
+        return {"id": intent_id, "status": "rejected", "reason": reason_code, "detail": detail}
+
+    def pending_intent_count(self) -> int:
+        return len(self._intent_queue)
+
+    def void_pending_intents(self, reason_code: str = "E_BUDGET_EXHAUSTED",
+                             session_id: str | None = None) -> list[str]:
+        """**作废**内核侧待应用意图（唯一调用点 = 会话层预算耗尽降级）。
+
+        契约（R2 / M3-03）：已 ack 为 `queued` 的意图**不得静默失效**。降级时对每条待应用意图
+        逐条落 `intent.rejected{reason_code}` 并**清空**队列 ⇒ 不存在「已 ack 但无声消失」的意图。
+        `session_id` 非空时只作废该会话的条目（其余保留原顺序）。队列为空 ⇒ 零副作用。
+        返回被作废的 `intent_id` 列表（按队列顺序）。
+
+        **归属校验（R3 / G8，fail-closed）**：`session_id` **必填**。缺失/空串 ⇒ 抛
+        `ValueError`，**不**作废任何条目。此前 `None` 会作废**所有**会话的待应用意图 ——
+        等于给了「跨会话作废」这条越权路径（Raven r2 R2-M1）。
+        """
+        if not session_id:
+            raise ValueError(
+                "E_SESSION_UNKNOWN: void_pending_intents requires an owning session_id "
+                "(跨会话 / 无归属的作废请求一律拒绝)"
+            )
+        voided: list[str] = []
+        remaining: list[dict] = []
+        for item in self._intent_queue:
+            if item.get("session_id") != session_id:
+                remaining.append(item)
+                continue
+            self._reject_intent(str(item["id"]), str(item.get("session_id", "")), reason_code,
+                                "voided on budget downgrade (was queued, never applied)")
+            voided.append(str(item["id"]))
+        self._intent_queue = remaining
+        return voided
+
+    def _apply_queued_intents(self, tick: int) -> list[dict]:
+        """**tick 边界**出队应用（唯一调用点 = `step()` 的 [1] 输入阶段）。
+
+        顺序冻结：先记 `intent.applied`，再求值 adaptation（`task.state_changed` 紧随其后）。
+        队列为空 ⇒ 本方法**零副作用**（不发事件、不动状态）。
+        """
+        applied: list[dict] = []
+        while self._intent_queue:
+            item = self._intent_queue.pop(0)
+            if self.log is not None:
+                payload = {
+                    "intent_id": item["id"],
+                    "session_id": item["session_id"],
+                    "kind": item["kind"],
+                    "target": item["target"],
+                    "applied_tick": int(tick),
+                    "impact_cost": float(item["impact_cost"]),
+                }
+                digest = str(item.get("instruction_digest", ""))
+                if len(digest) == 64:
+                    payload["instruction_digest"] = digest
+                self.log.append(tick, "intent.applied", f"session:{item['session_id']}", payload)
+            applied.append(item)
+            # 求值顺序（**冻结**）：先用「上几次介入」的登记求值，**再**登记本次介入的 tick。
+            # 若反过来先登记，守卫规则会在**第一次**介入时就命中（把「重复」误判成「首次」），
+            # 防刷语义被静默反转 —— 这是 D-14 顺序裁决的承重细节。
+            audits = self.adaptation.evaluate(
+                event_type="intent.applied", kind=item["kind"], target=item["target"],
+                tick=int(tick), impact_cost=float(item["impact_cost"]),
+            )
+            self.adaptation.note_intent_applied(target=item["target"], tick=int(tick))
+            for audit in audits:
+                if not audit.is_shift:
+                    continue
+                if self.log is not None:
+                    self.log.append(tick, "task.state_changed", f"session:{item['session_id']}", {
+                        "task_id": audit.task_id,
+                        "from_state": audit.from_state,
+                        "to_state": audit.to_state,
+                        "reason": audit.reason,
+                        "caused_by": item["id"],
+                        "rule_id": audit.rule_id,
+                        "shift_index": audit.shift_index,
+                        # 审计附加字段（events.schema.json 允许）：impact_cost 与预算联动
+                        "impact_cost": audit.impact_cost,
+                        "decision": audit.decision,
+                    })
+        return applied
+
     # ------------------------------------------------------------------ tick
     def step(self) -> None:
         """推进一个 tick（阶段顺序 = PHASES，不可交换）。"""
@@ -225,7 +376,8 @@ class WorldKernel:
         ctx = TickContext(tick=next_tick, dt_ms=int(self.world.constants.get("dt_ms", 100)))
 
         # [1] 输入：tick 边界注入已完成的能力结果（M1 无能力调用 ⇒ 空队列）
-        inbound: list[dict] = []
+        #            + **玩家意图只在 tick 边界出队应用**（D-1；队列空 ⇒ 零副作用）
+        inbound: list[dict] = self._apply_queued_intents(ctx.tick)
         # [2] 感知：构造确定性感知视图（M1 无外部输入 ⇒ 仅 tick 与实体计数）
         perception = {"tick": ctx.tick, "entity_count": len(self.world.query())}
         self.bus.publish("metrics", {"perception": perception, "inbound": len(inbound)})

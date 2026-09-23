@@ -73,6 +73,16 @@ def _assert_within_root(path: Path, root: Path) -> None:
         )
 
 
+def symlinked_directories(root: Path) -> list[Path]:
+    """**目录符号链接守卫（R2 / R-M2-3 收口，写侧）**：枚举 pack 内「解析后是目录」的符号链接。
+
+    `rglob('*')` 不递归进目录符号链接、`is_file()` 对目录链接为 `False` ⇒ 该子树既不被 hash
+    也不报 undeclared_file ⇒ 签出来的 `pack.sig` 会**漏掉整棵子树**（签名不再覆盖 pack 全部内容）。
+    口径：任何目录符号链接一律拒收（不区分目标在包内还是包外），与 `tools/verify_pack.py` 一致。
+    """
+    return sorted(path for path in root.rglob("*") if path.is_symlink() and path.resolve().is_dir())
+
+
 def sha256_of(path: Path) -> tuple[str, int]:
     digest = hashlib.sha256()
     size = 0
@@ -90,6 +100,16 @@ def build_signature(pack_dir: Path) -> dict:
         raise SystemExit(f"E_PACK_INVALID: missing pack.json in {pack_dir}")
     _assert_within_root(manifest_path, pack_dir)
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    # **目录符号链接守卫（R2 / R-M2-3 收口，写侧）**：不得对「含目录链接的 pack」签名 ——
+    # 否则 `pack.sig` 会漏掉整棵被跳过的子树（`verify_pack` 侧同样拒收）。
+    dir_links = symlinked_directories(pack_dir)
+    if dir_links:
+        for path in dir_links:
+            raise SystemExit(
+                f"E_PACK_INVALID: refusing to sign a pack containing a symlinked directory: "
+                f"{path} -> {path.resolve()}"
+            )
 
     entries = []
     for path in sorted(pack_dir.rglob("*")):

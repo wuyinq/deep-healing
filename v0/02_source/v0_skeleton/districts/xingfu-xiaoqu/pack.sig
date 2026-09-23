@@ -21,33 +21,33 @@
     },
     {
       "path": "npcs/npc-001.json",
-      "sha256": "0281a6f7e59ea4526a1dbba977f12ebef4fbc89b85eab73a53461dd7b71422bb",
-      "bytes": 1126
+      "sha256": "ced990d70fde6119b8eedc4a6779c2e63ec50e6ddb73c9ace64d9d68eb17b678",
+      "bytes": 1424
     },
     {
       "path": "npcs/npc-002.json",
-      "sha256": "4414c43d261d46d3d6aa17a06e6496397821eadccd74b17053a611cc680f0675",
-      "bytes": 1050
+      "sha256": "19ff55c2da63d7f01d87258a4e00c068228688a75a44cc15334c0a76151b7724",
+      "bytes": 1350
     },
     {
       "path": "npcs/npc-003.json",
-      "sha256": "60449dd35b5cbe9fccee02a34bf4cb49f7ce487b9133352007e1da70149cad82",
-      "bytes": 1126
+      "sha256": "67dcf6004b390182feb27e14100d5f950d2af83e3dd6bc6f7be8bc35da754361",
+      "bytes": 1442
     },
     {
       "path": "npcs/npc-004.json",
-      "sha256": "df581c13a788cbbf3b78bd7afd55f02b0da6f095e3ae12db38c66b3a82f155af",
-      "bytes": 1164
+      "sha256": "66785a910b8def6769d73faad9bfea00082c948f48d00fc8453ea17035560962",
+      "bytes": 1486
     },
     {
       "path": "npcs/npc-005.json",
-      "sha256": "37d3923e2d78a885039fdd2d54d1293248eab3168f57e24bc47edb6a38f9c68e",
-      "bytes": 1102
+      "sha256": "5203991b3e6d7a36fcb8bb3ef383b0fd67cfa16af977a4c6128341bcf00e483a",
+      "bytes": 1384
     },
     {
       "path": "pack.json",
-      "sha256": "d8acb1eacb1aeed904ef9f0d762849a77844a9fa421317de9126e48f0121b7ba",
-      "bytes": 1127
+      "sha256": "87b48a98bc6b5f848961a5d61d09af8ccc6b375505da5ae1576dd20b5dea2a4a",
+      "bytes": 1192
     },
     {
       "path": "schedules/weekday.json",
@@ -68,6 +68,11 @@
       "path": "world.seed.json",
       "sha256": "804293b5d8a0a58106c21271620e94e55f80f0d121f1c6baa29b435abb69cc75",
       "bytes": 6586
+    },
+    {
+      "path": "worldview.json",
+      "sha256": "4b4d0b2cf506e02a3a043297488823cde9eb174342df22d2bea4f847041ab3a7",
+      "bytes": 1499
     }
   ]
 }

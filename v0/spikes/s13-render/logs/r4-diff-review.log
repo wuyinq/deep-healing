@@ -1,0 +1,339 @@
+# R4 diff review — pre-R4 baseline = /tmp/r3-artisan/f1_pristine/02_source (sha256 与 R3 V0_M3.sha256 逐字节一致)
+# epoch 1790102700  Wed Sep 23 02:45:00 CST 2026
+
+=================== diff -u $OLD/v0_skeleton/web/src/scene/world.ts $NEW/v0_skeleton/web/src/scene/world.ts
+--- /tmp/r3-artisan/f1_pristine/02_source/v0_skeleton/web/src/scene/world.ts	2026-09-23 01:47:26
++++ 02_source/v0_skeleton/web/src/scene/world.ts	2026-09-23 02:44:03
+@@ -10,6 +10,17 @@
+  * 对「深层态换一套尺寸」不可见。现在的指纹 = 每实体 `size` + `geometry.parameters` +
+  * **position attribute 浮点序列的确定性摘要**（微米级量化后 FNV-1a 64）⇒ 尺寸/顶点任一变化必变。
+  *
++ * R4 / R3-C1（PM 裁决的**有界补丁轮**，判据层）：R3 的判据仍**名不副实** —— 名字声称覆盖
++ * 「渲染后几何」，实际只覆盖 `geometry.parameters` + `position` attribute + 装配后 `mesh.position`。
++ * 于是「只作用于 `underneath` 读法」的三类注入**逃逸**（PM 独立复现）：
++ *   - `mesh.scale.set(3,3,3)`     ⇒ 缩放不在比较面内；
++ *   - `mesh.rotation.y = π/2`     ⇒ 旋转不在比较面内；
++ *   - `camera.position.set(40,40,40)`（D-7 明文禁止「换相机」）⇒ **零判据**。
++ * 加宽（**最小、语义不变**）：装配变换（`scale` 三分量 + `quaternion` 四分量）进**形状指纹**与
++ * `geometry_digest`；`assemblyReport()` 从 mesh **读回** `mesh.scale` / `mesh.quaternion` 并暴露
++ * `mesh_scales` / `mesh_rotations`；另增 `cameraReport()`（**从 `THREE.Camera` 实例读回**，
++ * 不读实现源文本、不硬编码字面量）供 `two_reads_share_camera` 断言。
++ *
+  * 同时暴露**两条取数路径**，判据必须**都**跑：
+  *   - `geometryFor(reading)`：装配函数的产物（纯函数路径）；
+  *   - `assemblyReport()`：从**场景图的 mesh 层读回**（装配**之后**有没有再被改写，只有它能看见）。
+@@ -30,6 +41,10 @@
+   kind: string;
+   position: [number, number, number];
+   size: [number, number, number];
++  /** R4 / R3-C1：装配时**打算**写入 mesh 的缩放（默认 `[1,1,1]`）。 */
++  scale: [number, number, number];
++  /** R4 / R3-C1：装配时**打算**写入 mesh 的旋转（四元数，默认 `[0,0,0,1]`）。 */
++  quaternion: [number, number, number, number];
+   geometry: THREE.BoxGeometry;
+ }
+ 
+@@ -39,6 +54,13 @@
+ 
+ const MM = 1000; // 毫米 → 米（渲染单位）
+ 
++/** R4 / R3-C1：默认装配变换 —— 两态都必须用它（语义不变：单位缩放 + 单位旋转）。 */
++const DEFAULT_SCALE: [number, number, number] = [1, 1, 1];
++const DEFAULT_QUATERNION: [number, number, number, number] = [0, 0, 0, 1];
++
++/** 浮点读数统一到 6 位小数（消除尾差噪声，同时保留任何真实变换差异）。 */
++const q6 = (value: number): string => value.toFixed(6);
++
+ /**
+  * **读法 → 几何装配配置**（D-7 / ADR-016）。
+  *
+@@ -100,6 +122,10 @@
+   id: string;
+   /** 装配用的尺寸（米）；**尺寸必须进指纹**（顶点数对尺寸不敏感）。 */
+   size: [number, number, number];
++  /** R4 / R3-C1：装配变换的缩放分量；**必须进指纹**（此前 `scale` 注入可逃逸）。 */
++  scale: [number, number, number];
++  /** R4 / R3-C1：装配变换的旋转分量（四元数）；**必须进指纹**（此前 `rotation` 注入可逃逸）。 */
++  quaternion: [number, number, number, number];
+   /** `BoxGeometry.parameters`（width/height/depth + 分段数）。 */
+   parameters: Record<string, number>;
+   /** `position` attribute 的确定性摘要。 */
+@@ -107,11 +133,14 @@
+   vertex_count: number;
+ }
+ 
+-function shapeOf(id: string, geometry: THREE.BoxGeometry, size: [number, number, number]): EntityShape {
++function shapeOf(id: string, geometry: THREE.BoxGeometry, size: [number, number, number],
++                 scale: [number, number, number], quaternion: [number, number, number, number]): EntityShape {
+   const attribute = geometry.getAttribute('position');
+   return {
+     id,
+     size: [size[0], size[1], size[2]],
++    scale: [scale[0], scale[1], scale[2]],
++    quaternion: [quaternion[0], quaternion[1], quaternion[2], quaternion[3]],
+     parameters: { ...(geometry.parameters as unknown as Record<string, number>) },
+     position_attribute_digest: digestPositions(attribute.array as unknown as ArrayLike<number>),
+     vertex_count: attribute.count,
+@@ -119,7 +148,10 @@
+ }
+ 
+ function shapeDigestString(shape: EntityShape): string {
+-  return `${shape.id}:${shape.size.join(',')}:${JSON.stringify(shape.parameters)}:${shape.position_attribute_digest}`;
++  return `${shape.id}:${shape.size.join(',')}`
++    + `:s=${shape.scale.map(q6).join(',')}`
++    + `:q=${shape.quaternion.map(q6).join(',')}`
++    + `:${JSON.stringify(shape.parameters)}:${shape.position_attribute_digest}`;
+ }
+ 
+ /**
+@@ -140,6 +172,10 @@
+       kind: entity.kind,
+       position: [pos.x / MM, (pos.y + profile.y_offset_mm) / MM, pos.z / MM] as [number, number, number],
+       size,
++      // R4 / R3-C1：装配变换也**由下发状态/装配配置决定**（当前恒为单位变换 ⇒ 两态逐项相同）
++      scale: [DEFAULT_SCALE[0], DEFAULT_SCALE[1], DEFAULT_SCALE[2]] as [number, number, number],
++      quaternion: [DEFAULT_QUATERNION[0], DEFAULT_QUATERNION[1], DEFAULT_QUATERNION[2],
++        DEFAULT_QUATERNION[3]] as [number, number, number, number],
+       geometry: new THREE.BoxGeometry(size[0], size[1], size[2]),
+     };
+   });
+@@ -152,7 +188,7 @@
+   entity_ids: string[];
+   vertex_count_total: number;
+   vertex_counts: Record<string, number>;
+-  /** 每实体的**形状指纹**（尺寸 + parameters + position attribute 摘要）。 */
++  /** 每实体的**形状指纹**（尺寸 + 装配变换 + parameters + position attribute 摘要）。 */
+   shapes: EntityShape[];
+   /** 每实体的指纹摘要串（便于逐项比较）。 */
+   shape_digests: Record<string, string>;
+@@ -171,7 +207,7 @@
+   let total = 0;
+   const parts: string[] = [];
+   for (const box of boxes) {
+-    const shape = shapeOf(box.id, box.geometry, box.size);
++    const shape = shapeOf(box.id, box.geometry, box.size, box.scale, box.quaternion);
+     shapes.push(shape);
+     shapeDigests[box.id] = shapeDigestString(shape);
+     vertexCounts[box.id] = shape.vertex_count;
+@@ -198,6 +234,10 @@
+   shape_digests: Record<string, string>;
+   /** mesh 的世界坐标（装配后写入的那一份）。 */
+   mesh_positions: Record<string, string>;
++  /** R4 / R3-C1：从 mesh 读回的**缩放**（逐项可比较；此前不在比较面内 ⇒ 可逃逸）。 */
++  mesh_scales: Record<string, string>;
++  /** R4 / R3-C1：从 mesh 读回的**旋转四元数**（逐项可比较；此前不在比较面内 ⇒ 可逃逸）。 */
++  mesh_rotations: Record<string, string>;
+   geometry_digest: string;
+   mesh_count: number;
+ }
+@@ -213,6 +253,20 @@
+   webgl: boolean;
+ }
+ 
++/**
++ * 相机读数（R4 / R3-C1）：D-7「**禁止换相机**」的机器读数。
++ * 一律**从 `THREE.Camera` 实例读回**（不读实现源文本、不硬编码字面量）。
++ * `aspect` 随视口变化 ⇒ 作为**信息性**读数（是否参与相等断言由 `scene_assert.mjs` 决定并在 `06` 声明）。
++ */
++export interface CameraReport {
++  position: [number, number, number];
++  quaternion: [number, number, number, number];
++  fov: number;
++  near: number;
++  far: number;
++  aspect: number;
++}
++
+ interface RendererLike {
+   setPixelRatio(value: number): void;
+   setSize(width: number, height: number, updateStyle?: boolean): void;
+@@ -243,6 +297,8 @@
+   geometryFor(reading: Reading): GeometryReport;
+   /** 场景图（mesh 层）读数：装配之后有没有再被改写。 */
+   assemblyReport(): AssemblyReport;
++  /** R4 / R3-C1：相机读数（D-7「不换相机」的机器判据取数点）。 */
++  cameraReport(): CameraReport;
+   /** 画布尺寸 / 绘制缓冲（G1 的机器读数）。 */
+   viewport(): ViewportReport;
+   /** 把画布尺寸同步到当前视口（`setSize` + DPR + camera.aspect）。 */
+@@ -304,6 +360,19 @@
+     };
+   }
+ 
++  /** R4 / R3-C1：相机读数 —— 从 `THREE.Camera` 实例读回（D-7「不换相机」的机器判据取数点）。 */
++  function cameraReport(): CameraReport {
++    const perspective = camera as THREE.PerspectiveCamera;
++    return {
++      position: [camera.position.x, camera.position.y, camera.position.z],
++      quaternion: [camera.quaternion.x, camera.quaternion.y, camera.quaternion.z, camera.quaternion.w],
++      fov: Number(perspective.fov),
++      near: Number(perspective.near),
++      far: Number(perspective.far),
++      aspect: Number(perspective.aspect),
++    };
++  }
++
+   let resizeObserver: { disconnect(): void } | null = null;
+   if (typeof (globalThis as unknown as { ResizeObserver?: unknown }).ResizeObserver === 'function') {
+     const Observer = (globalThis as unknown as { ResizeObserver: new (cb: () => void) => { observe(el: unknown): void; disconnect(): void } }).ResizeObserver;
+@@ -333,6 +402,10 @@
+       const mesh = new THREE.Mesh(box.geometry, materialFor(index));
+       mesh.name = box.id;
+       mesh.position.set(...box.position);
++      // R4 / R3-C1：装配变换（缩放 + 旋转）**真写入** mesh —— 默认单位变换 ⇒ 语义不变；
++      // 装配后 mesh 层的 `scale`/`rotation` 分叉因此可被 `assemblyReport()` 读回并判红。
++      mesh.scale.set(box.scale[0], box.scale[1], box.scale[2]);
++      mesh.quaternion.set(box.quaternion[0], box.quaternion[1], box.quaternion[2], box.quaternion[3]);
+       mesh.userData.entity_id = box.id;
+       mesh.userData.kind = box.kind;
+       root.add(mesh);
+@@ -345,22 +418,31 @@
+     const ids = [...meshes.keys()].sort();
+     const shapeDigests: Record<string, string> = {};
+     const meshPositions: Record<string, string> = {};
++    const meshScales: Record<string, string> = {};
++    const meshRotations: Record<string, string> = {};
+     const parts: string[] = [];
+     for (const id of ids) {
+       const mesh = meshes.get(id) as THREE.Mesh;
+       const geometry = mesh.geometry as THREE.BoxGeometry;
+       const size = [geometry.parameters.width, geometry.parameters.height, geometry.parameters.depth] as [number, number, number];
+-      const shape = shapeOf(id, geometry, size);
++      // R4 / R3-C1：缩放与旋转也**从 mesh 读回**（此前只读 position ⇒ scale/rotation 注入可逃逸）
++      const scale: [number, number, number] = [mesh.scale.x, mesh.scale.y, mesh.scale.z];
++      const quaternion: [number, number, number, number] = [mesh.quaternion.x, mesh.quaternion.y,
++        mesh.quaternion.z, mesh.quaternion.w];
++      const shape = shapeOf(id, geometry, size, scale, quaternion);
+       shapeDigests[id] = shapeDigestString(shape);
+-      meshPositions[id] = [mesh.position.x, mesh.position.y, mesh.position.z]
+-        .map((value) => value.toFixed(6)).join(',');
+-      parts.push(`${id}:${shapeDigests[id]}`);
++      meshPositions[id] = [mesh.position.x, mesh.position.y, mesh.position.z].map(q6).join(',');
++      meshScales[id] = scale.map(q6).join(',');
++      meshRotations[id] = quaternion.map(q6).join(',');
++      parts.push(`${id}:${shapeDigests[id]}:${meshPositions[id]}:${meshScales[id]}:${meshRotations[id]}`);
+     }
+     return {
+       reading: currentReading,
+       entity_ids: ids,
+       shape_digests: shapeDigests,
+       mesh_positions: meshPositions,
++      mesh_scales: meshScales,
++      mesh_rotations: meshRotations,
+       geometry_digest: parts.join('|'),
+       mesh_count: ids.length,
+     };
+@@ -396,6 +478,7 @@
+     // 两读法同几何是**装配配置等价**的结果，不再是「同一个入参算两遍」
+     geometryFor: (reading) => geometryReport(latestState, reading),
+     assemblyReport,
++    cameraReport,
+     viewport,
+     resize,
+     startRenderLoop() {
+diff_exit=1
+=================== diff -u $OLD/v0_skeleton/web/scripts/scene_assert.mjs $NEW/v0_skeleton/web/scripts/scene_assert.mjs
+--- /tmp/r3-artisan/f1_pristine/02_source/v0_skeleton/web/scripts/scene_assert.mjs	2026-09-23 01:48:22
++++ 02_source/v0_skeleton/web/scripts/scene_assert.mjs	2026-09-23 02:44:34
+@@ -7,13 +7,22 @@
+  * 判据（全部**读数据文件**，不硬编码被断言的数字）：
+  *   1. 治愈系基调：饱和 ≤45 / 色相暖区 / 粗糙度 ≥0.6 / 无镜面（来自 pack 的 assets/manifest.json）
+  *   2. `two_reads_share_geometry`：两态**共用同一几何** —— 由**两次独立装配**得到，且比较量是
+- *      **真的形状指纹**（每实体 `size` + `geometry.parameters` + `position` attribute 摘要），
+- *      不是顶点数（`BoxGeometry` 的位置顶点数**恒为 24**，与尺寸无关 ⇒ 顶点数不是形状指纹）。
++ *      **真的形状指纹**（每实体 `size` + 装配变换 `scale`/`quaternion` + `geometry.parameters`
++ *      + `position` attribute 摘要），不是顶点数（`BoxGeometry` 的位置顶点数**恒为 24**，与尺寸无关
++ *      ⇒ 顶点数不是形状指纹）。
+  *      R3 / G2 修正：判据经 **`createScene()` 的句柄**取数
+  *      （`setReading()` / `geometryFor()` / `entityIds()` / `assemblyReport()`），不再只打自由函数；
+  *      并且**两条路径都跑**：装配函数产物 + **场景图 mesh 层读回**（装配之后有没有再被改写）。
+- *   3. `underneath_does_not_raise_saturation`：深层态饱和**不升**
+- *   4. 深层态 = 同一色板**降明度**：`light_k` / `ambient_ratio` / 派生亮度系数均**下降**
++ *      R4 / R3-C1 加宽（PM 裁决的有界补丁轮）：`two_reads_share_rendered_geometry` 的比较面在
++ *      ids / shape_digests / mesh_positions / geometry_digest 之外**再纳入** `mesh_scales` /
++ *      `mesh_rotations` —— 此前「只作用于 underneath」的 `mesh.scale.set(3,3,3)` /
++ *      `mesh.rotation.y = π/2` 注入可**逃逸**（PM 独立复现）。
++ *   3. `two_reads_share_camera`：**同一视口下**两态相机读数逐项相同（`position` / `quaternion` /
++ *      `fov` / `near` / `far`）—— D-7「**禁止换相机**」的机器判据（此前**零判据**）。
++ *      口径：两次读法之间**不做 resize**（只比较读法切换造成的差异）；`aspect` 是视口派生量 ⇒
++ *      **信息性**读数、**不参与**相等断言（视口尺寸由 `viewport_follows_canvas_box` 覆盖），见 `06` R4 段。
++ *   4. `underneath_does_not_raise_saturation`：深层态饱和**不升**
++ *   5. 深层态 = 同一色板**降明度**：`light_k` / `ambient_ratio` / 派生亮度系数均**下降**
+  *
+  * 无 WebGL 环境（Node）下 `createScene` 退化为空渲染器：**几何与场景图照常装配**，
+  * 判据跑的是与浏览器**同一条装配路径**。
+@@ -110,6 +119,20 @@
+   && typeof scene.viewport === 'function',
+   'createScene() 句柄暴露 setReading/geometryFor/entityIds/assemblyReport/viewport');
+ 
++// R4 / R3-C1：`cameraReport()` 必须**从 `THREE.Camera` 实例读回**（不读实现源文本、不硬编码字面量）。
++// 命中能力自证：相机 `aspect` 随视口走 ⇒ 读数必须与 `viewport().aspect` 一致；且各分量必须是有限数
++// （读回失败会给出 undefined/NaN ⇒ 这里必红）。
++check('scene_handle_camera_report_is_live', (() => {
++  if (typeof scene.cameraReport !== 'function') return false;
++  const cameraReading = scene.cameraReport();
++  const viewportReading = scene.viewport();
++  return Array.isArray(cameraReading.position) && cameraReading.position.length === 3
++    && Array.isArray(cameraReading.quaternion) && cameraReading.quaternion.length === 4
++    && Number.isFinite(cameraReading.fov) && Number.isFinite(cameraReading.near)
++    && Number.isFinite(cameraReading.far) && Number.isFinite(cameraReading.aspect)
++    && Math.abs(cameraReading.aspect - viewportReading.aspect) < 1e-9;
++})(), 'cameraReport() 暴露 position[3]/quaternion[4]/fov/near/far/aspect 且与实例读数一致');
++
+ const viewport = scene.viewport();
+ check('viewport_follows_canvas_box', viewport.client_width === 1440 && viewport.client_height === 900
+   && viewport.drawing_buffer_width >= viewport.client_width && viewport.aspect > 1,
+@@ -120,10 +143,12 @@
+ const reportSurface = scene.geometryFor('surface');
+ const asmSurface = scene.assemblyReport();
+ const idsSurface = scene.entityIds();
++const camSurface = scene.cameraReport();
+ scene.setReading('underneath');
+ const reportUnderneath = scene.geometryFor('underneath');
+ const asmUnderneath = scene.assemblyReport();
+ const idsUnderneath = scene.entityIds();
++const camUnderneath = scene.cameraReport();
+ scene.setReading('surface');
+ const asmRestored = scene.assemblyReport();
+ 
+@@ -201,18 +226,36 @@
+ check('two_reads_share_rendered_geometry', (() => {
+   // R3 / G2③b+c：**装配之后**的真相 —— 从场景图 mesh 层读回。`rebuild()` 里或装配之后再分叉
+   // （Raven r2 的 a5 形态）在这里必红；纯函数路径看不见它。
++  // R4 / R3-C1 加宽：比较面纳入 `mesh_scales` / `mesh_rotations`（此前 `mesh.scale.set(3,3,3)` 与
++  // `mesh.rotation.y = π/2` 注入可逃逸 ⇒ 判据名不副实）。
+   const sameIds = JSON.stringify(asmSurface.entity_ids) === JSON.stringify(asmUnderneath.entity_ids);
+   const sameShapes = JSON.stringify(asmSurface.shape_digests) === JSON.stringify(asmUnderneath.shape_digests);
+   const samePositions = JSON.stringify(asmSurface.mesh_positions) === JSON.stringify(asmUnderneath.mesh_positions);
+-  return sameIds && sameShapes && samePositions
++  const sameScales = JSON.stringify(asmSurface.mesh_scales) === JSON.stringify(asmUnderneath.mesh_scales);
++  const sameRotations = JSON.stringify(asmSurface.mesh_rotations) === JSON.stringify(asmUnderneath.mesh_rotations);
++  return sameIds && sameShapes && samePositions && sameScales && sameRotations
+     && asmSurface.geometry_digest === asmUnderneath.geometry_digest
+     && asmSurface.reading === 'surface' && asmUnderneath.reading === 'underneath'
+     && JSON.stringify(idsSurface) === JSON.stringify(idsUnderneath);
+-})(), `mesh=${asmSurface.mesh_count}/${asmUnderneath.mesh_count} ids=${idsSurface.length}/${idsUnderneath.length}`);
++})(), `mesh=${asmSurface.mesh_count}/${asmUnderneath.mesh_count} ids=${idsSurface.length}/${idsUnderneath.length} scales=${Object.keys(asmSurface.mesh_scales).length} rotations=${Object.keys(asmSurface.mesh_rotations).length}`);
+ 
++check('two_reads_share_camera', (() => {
++  // R4 / R3-C1：D-7「**禁止换相机**」的机器判据（此前**零判据** ⇒ 换相机可逃逸）。
++  // 口径（见 `06` R4 段）：同一视口下逐项比较**读法切换**造成的差异；两次读法之间**不做 resize**。
++  // `aspect` 是视口派生量 ⇒ **信息性**读数、不参与相等断言（视口尺寸由 viewport 判据覆盖）。
++  const samePosition = JSON.stringify(camSurface.position) === JSON.stringify(camUnderneath.position);
++  const sameQuaternion = JSON.stringify(camSurface.quaternion) === JSON.stringify(camUnderneath.quaternion);
++  return samePosition && sameQuaternion
++    && camSurface.fov === camUnderneath.fov
++    && camSurface.near === camUnderneath.near
++    && camSurface.far === camUnderneath.far;
++})(), `position=${JSON.stringify(camSurface.position)} quaternion[0..3]=${JSON.stringify(camUnderneath.quaternion)} fov=${camSurface.fov} near=${camSurface.near} far=${camSurface.far} aspect(info)=${camSurface.aspect.toFixed(4)}`);
++
+ check('assembly_report_stable_after_reading_round_trip',
+   JSON.stringify(asmRestored.mesh_positions) === JSON.stringify(asmSurface.mesh_positions)
+-  && JSON.stringify(asmRestored.shape_digests) === JSON.stringify(asmSurface.shape_digests),
++  && JSON.stringify(asmRestored.shape_digests) === JSON.stringify(asmSurface.shape_digests)
++  && JSON.stringify(asmRestored.mesh_scales) === JSON.stringify(asmSurface.mesh_scales)
++  && JSON.stringify(asmRestored.mesh_rotations) === JSON.stringify(asmSurface.mesh_rotations),
+   'surface→underneath→surface 后场景图读数回到原值');
+ 
+ check('geometry_covers_every_seeded_entity',
+diff_exit=1

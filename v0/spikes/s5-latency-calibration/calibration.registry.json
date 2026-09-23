@@ -1,19 +1,20 @@
 {
   "accepted_degradation_range": {
     "mtime": "2026-09-22T11:41:58+0800",
-    "path": "/Users/wooyinq/personal/deep-healing/v0/spikes/s5-latency-calibration/ACCEPTED-DEGRADATION-RANGE.frozen.md",
+    "path": "ACCEPTED-DEGRADATION-RANGE.frozen.md",
     "sha256": "713dba90df07f63e685fc98dcf276769ba37f2617f9c8a4b38319d8c174bddb4"
   },
   "environment_class_rule": {
     "mtime": "2026-09-22T11:41:58+0800",
-    "path": "/Users/wooyinq/personal/deep-healing/v0/spikes/s5-latency-calibration/ENVIRONMENT-CLASS.frozen.md",
+    "path": "ENVIRONMENT-CLASS.frozen.md",
     "sha256": "962cba083c61752c263e2399aaa62cba67b534cb9641b1d9453fa27bd30a6ada"
   },
   "frozen_rule": {
     "mtime": "2026-09-22T11:41:58+0800",
-    "path": "/Users/wooyinq/personal/deep-healing/v0/spikes/s5-latency-calibration/DERIVATION-RULE.frozen.md",
+    "path": "DERIVATION-RULE.frozen.md",
     "sha256": "7590eab4b765671860eaa50b68de807606581bfdd439cb3aa6fe2d953edb0feb"
   },
   "note": "规则 / 区间 / 环境判定三份冻结物必须先于测量落盘；本文件即「时间戳顺序」的登记处（防自证第 1/3/4 条）。",
+  "path_base": "registry 所在目录（相对路径口径，P-9）",
   "registry_written_at": "2026-09-22T11:42:48+0800"
 }

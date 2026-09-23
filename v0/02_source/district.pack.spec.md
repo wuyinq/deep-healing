@@ -77,3 +77,31 @@ bash verify_specs.sh                                           # exit 0（含 pa
 - 内容包独立版本号；`engine_range` 声明兼容的内核契约区间。
 - 内容变更只需重签 `pack.sig`；回滚 = 切回旧 pack 目录版本（内核代码不动）。
 - 一个内核实例同时只加载一个主 pack（跨区经 portals），避免「多 pack 状态合并」的确定性复杂度（V0 冻结）。
+
+## 7. `worldview.json`（M3 新增，ADR-016）
+
+- **落点**：`districts/<pack_id>/worldview.json`（pack 根），经 `pack.json.entrypoints.worldview` 登记；
+  `entrypoints` 因此由 6 键扩为 **7 键**，`district.pack.schema.json` 的该键已进 `required`
+  （**两个 pack 都必须有**，否则第二街区 load 失败）。
+- **契约**：`02_source/worldview.schema.json`（draft 2020-12，与 `district.pack.schema.json` 同级）。
+  字段：`schema_version` / `pack_id` / `tone.{surface,underneath}.{light_k,ambient_ratio,saturation_pct}` /
+  `anomalies[]`（`id` / `at_entity` / `kind` / `surface_read` / `underneath_read` / `reveal_at_tick`）/
+  `fault_lines[]`（`id` / `about` / `kind` / `repair_via` / `repaired_state`）。
+- **禁止形容词**：每个对象 `additionalProperties:false`，任何形容词键（如 `mood` / `feeling`）都会被拒。
+- **数值边界**（在 `art-bible.md` 之内，不推翻）：`light_k` 3200–5200；`ambient_ratio` 0–0.6（表层 ≥0.25）；
+  `saturation_pct` ≤ 45。深层态 = **同一色板降明度**：`saturation_pct(underneath) ≤ saturation_pct(surface)`。
+- **同一几何两态**：两态**共用同一份几何数据**（顶点数 / 实体 id 集合逐项相同）；禁止第二张地图、第二个 pack、换相机。
+- **校验**：`verify_specs.sh` 对**两个** pack 的 `worldview.json` 真跑 `worldview.schema.json` 校验
+  （`v0_skeleton/tools/schema_validate.py`，引擎 jsonschema）。
+- **变更即重签**：改数据后两个 pack 都要 `kernel pack sign <dir>`。
+
+## 8. `narrative_hooks` → `healing_face` / `hidden_face`（M3 兼容/迁移说明，ADR-016）
+
+- **加字段、不删字段**：`npcs/*.json` 保留既有 `narrative_hooks: [string]`，**新增**
+  `healing_face: [string]`（表层读法：这个人在做的好事）与 `hidden_face: [string]`（深层读法：没人注意到的那一面）。
+- **旧消费方零改动**：M3 复核的 `narrative_hooks` 消费点是**内容包数据文件自身**；
+  内核 / 会话层 / 渲染层 **0 命中消费**（`grep -rn narrative_hooks 02_source` 的命中全在 `districts/**/npcs/*.json`）。
+  因此兼容风险面只有「内容包校验 + 未来消费者」。
+- **校验**：`verify_specs.sh` 断言**每个** NPC 同时具备非空 `healing_face` 与 `hidden_face`，且 `narrative_hooks` 仍在。
+  负例：删掉任一 NPC 的 `hidden_face` ⇒ 该断言**必须红**（隔离副本实测）。
+- **渲染语义**：表层态显示 `healing_face`，深层态显示 `hidden_face`；两者**不是**两个 pack、也不是两份数据。

@@ -1,0 +1,100 @@
+{
+  "added": [
+    "02_source/v0_skeleton/districts/xingfu-xiaoqu/worldview.json",
+    "02_source/v0_skeleton/districts/xingfu-xiaoqu-north/worldview.json",
+    "02_source/v0_skeleton/kernel/deephealing_kernel/rules/adaptation.py",
+    "02_source/v0_skeleton/kernel/tests/test_budget_downgrade_void.py",
+    "02_source/v0_skeleton/kernel/tests/test_task_adaptation.py",
+    "02_source/v0_skeleton/session/bridge/kernel_bridge.py",
+    "02_source/v0_skeleton/session/src/protocol.js",
+    "02_source/v0_skeleton/tools/scan_ip_boundary.py",
+    "02_source/v0_skeleton/web/scripts/scene_assert.mjs",
+    "02_source/v0_skeleton/web/test/render-client.test.ts",
+    "02_source/worldview.schema.json"
+  ],
+  "added_count": 11,
+  "basis": "V0_M2.sha256 采集面 + 02_source 全树（复算，不是手写）",
+  "declared_at_epoch": 1790096082,
+  "declared_at_local": "2026-09-23T00:54:42+0800",
+  "inherited_m2_deviations": [
+    {
+      "m2_disk_sha256": "23fed40d…（R1 登记：M2 提交态与 V0_M2 记录不一致）",
+      "path": "02_source/v0_skeleton/kernel/tools/calibrate_latency.py",
+      "reason": "M2 继承缺陷：V0_M2.sha256 的该条记录**在 M2 收尾时**就与盘上/M2 提交态不一致（M3 R1 未动过该文件）。R2 本轮因 P-9（F5）**另有**修改 ⇒ 现在它同时是「本轮声明改动」。",
+      "v0_m2_recorded_sha256": "e30be65b…（R1 登记，R1 已独立复现）"
+    }
+  ],
+  "modified": [
+    "02_source/07_adr.md",
+    "02_source/district.pack.schema.json",
+    "02_source/district.pack.spec.md",
+    "02_source/intervention.policy.schema.json",
+    "02_source/manifest.txt",
+    "02_source/v0_skeleton/capabilities/pins.json",
+    "02_source/v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-001.json",
+    "02_source/v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-002.json",
+    "02_source/v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-003.json",
+    "02_source/v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-004.json",
+    "02_source/v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-005.json",
+    "02_source/v0_skeleton/districts/xingfu-xiaoqu-north/pack.json",
+    "02_source/v0_skeleton/districts/xingfu-xiaoqu-north/pack.sig",
+    "02_source/v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-001.json",
+    "02_source/v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-002.json",
+    "02_source/v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-003.json",
+    "02_source/v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-004.json",
+    "02_source/v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-005.json",
+    "02_source/v0_skeleton/districts/xingfu-xiaoqu/pack.json",
+    "02_source/v0_skeleton/districts/xingfu-xiaoqu/pack.sig",
+    "02_source/v0_skeleton/kernel/deephealing_kernel/cli.py",
+    "02_source/v0_skeleton/kernel/deephealing_kernel/registry.py",
+    "02_source/v0_skeleton/kernel/deephealing_kernel/tick.py",
+    "02_source/v0_skeleton/kernel/tests/test_calibrate_latency.py",
+    "02_source/v0_skeleton/kernel/tests/test_observe_mode_readonly.py",
+    "02_source/v0_skeleton/kernel/tests/test_pack_validate.py",
+    "02_source/v0_skeleton/kernel/tests/test_pins_resolution.py",
+    "02_source/v0_skeleton/kernel/tools/calibrate_latency.py",
+    "02_source/v0_skeleton/session/src/mode.js",
+    "02_source/v0_skeleton/session/src/policy.js",
+    "02_source/v0_skeleton/session/src/server.js",
+    "02_source/v0_skeleton/session/src/upstream.js",
+    "02_source/v0_skeleton/session/test/session.test.js",
+    "02_source/v0_skeleton/tools/pack_sign.py",
+    "02_source/v0_skeleton/tools/verify_pack.py",
+    "02_source/v0_skeleton/web/index.html",
+    "02_source/v0_skeleton/web/package.json",
+    "02_source/v0_skeleton/web/src/main.ts",
+    "02_source/v0_skeleton/web/src/net/client.ts",
+    "02_source/v0_skeleton/web/src/scene/lighting.ts",
+    "02_source/v0_skeleton/web/src/scene/world.ts",
+    "02_source/v0_skeleton/web/src/ui/observe/panel.ts",
+    "02_source/v0_skeleton/web/src/ui/participate/intervention.ts",
+    "02_source/v0_skeleton/web/vite.config.ts",
+    "02_source/verify_specs.sh",
+    "03_artisan_self_test.log"
+  ],
+  "modified_count": 46,
+  "note": "非 OK 集合必须 == modified（SECTION A）∪ inherited_m2_deviations 的解释面；双向判据见 ac-m3-1b-check.py。",
+  "outside_face": [
+    {
+      "path": "spikes/s5-latency-calibration/calibration.registry.json",
+      "reason": "P-9 / 3A-C3：绝对路径 → 相对路径迁移（本文件不在 V0_M2.sha256 采集面内）"
+    },
+    {
+      "path": "spikes/s5-latency-calibration/negctl/**",
+      "reason": "R2 新增：registry 路径格式判据的负例载体（采集面外）"
+    },
+    {
+      "path": "spikes/s12-session/**",
+      "reason": "R2 新增/改写：负例套件、判据驱动、变更声明（M3 采集面 = V0_M3.sha256，非 V0_M2）"
+    },
+    {
+      "path": "spikes/s13-render/**",
+      "reason": "R2 新增：真浏览器验收驱动 + 截图 + 日志（M3 采集面 = V0_M3.sha256，非 V0_M2）"
+    }
+  ],
+  "plan_id": "REQ-20260921-005-deephealing-v0-m3",
+  "round": "R2",
+  "schema_version": 1,
+  "shasum_check_raw": "02_source/07_adr.md: FAILED\n02_source/art-bible.md: OK\n02_source/asset.license.table.data.json: OK\n02_source/asset.license.table.json: OK\n02_source/asset.manifest.schema.json: OK\n02_source/capability.registry.sample.json: OK\n02_source/capability.schema.json: OK\n02_source/capability.time-budget.spec.md: OK\n02_source/cassette.format.md: OK\n02_source/cassette.schema.json: OK\n02_source/content-pipeline.spec.md: OK\n02_source/district.pack.schema.json: FAILED\n02_source/district.pack.spec.md: FAILED\n02_source/events.schema.json: OK\n02_source/intervention.policy.schema.json: FAILED\n02_source/manifest.txt: FAILED\n02_source/session.protocol.schema.json: OK\n02_source/snapshot.schema.json: OK\n02_source/v0_skeleton/README.md: OK\n02_source/v0_skeleton/assets-sample/asset.manifest.sample.json: OK\n02_source/v0_skeleton/assets-sample/placeholder-001.png: OK\n02_source/v0_skeleton/assets-sample/workflows/procedural-placeholder.json: OK\n02_source/v0_skeleton/capabilities/embed.text@1.0.0.capability.json: OK\n02_source/v0_skeleton/capabilities/emotion.appraise@1.0.0.capability.json: OK\n02_source/v0_skeleton/capabilities/imagine.predict@1.0.0.capability.json: OK\n02_source/v0_skeleton/capabilities/intent.plan@1.0.0.capability.json: OK\n02_source/v0_skeleton/capabilities/memory.reflect@1.0.0.capability.json: OK\n02_source/v0_skeleton/capabilities/pins.json: FAILED\n02_source/v0_skeleton/capabilities/relation.infer@1.0.0.capability.json: OK\n02_source/v0_skeleton/districts/xingfu-xiaoqu-north/assets/manifest.json: OK\n02_source/v0_skeleton/districts/xingfu-xiaoqu-north/buildings/b1-building.json: OK\n02_source/v0_skeleton/districts/xingfu-xiaoqu-north/buildings/courtyard-01.json: OK\n02_source/v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-001.json: FAILED\n02_source/v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-002.json: FAILED\n02_source/v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-003.json: FAILED\n02_source/v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-004.json: FAILED\n02_source/v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-005.json: FAILED\n02_source/v0_skeleton/districts/xingfu-xiaoqu-north/pack.json: FAILED\n02_source/v0_skeleton/districts/xingfu-xiaoqu-north/pack.sig: FAILED\n02_source/v0_skeleton/districts/xingfu-xiaoqu-north/schedules/weekday.json: OK\n02_source/v0_skeleton/districts/xingfu-xiaoqu-north/tasks/task-001.json: OK\n02_source/v0_skeleton/districts/xingfu-xiaoqu-north/tasks/task-002.json: OK\n02_source/v0_skeleton/districts/xingfu-xiaoqu-north/world.seed.json: OK\n02_source/v0_skeleton/districts/xingfu-xiaoqu/assets/manifest.json: OK\n02_source/v0_skeleton/districts/xingfu-xiaoqu/buildings/b1-building.json: OK\n02_source/v0_skeleton/districts/xingfu-xiaoqu/buildings/courtyard-01.json: OK\n02_source/v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-001.json: FAILED\n02_source/v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-002.json: FAILED\n02_source/v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-003.json: FAILED\n02_source/v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-004.json: FAILED\n02_source/v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-005.json: FAILED\n02_source/v0_skeleton/districts/xingfu-xiaoqu/pack.json: FAILED\n02_source/v0_skeleton/districts/xingfu-xiaoqu/pack.sig: FAILED\n02_source/v0_skeleton/districts/xingfu-xiaoqu/schedules/weekday.json: OK\n02_source/v0_skeleton/districts/xingfu-xiaoqu/tasks/task-001.json: OK\n02_source/v0_skeleton/districts/xingfu-xiaoqu/tasks/task-002.json: OK\n02_source/v0_skeleton/districts/xingfu-xiaoqu/world.seed.json: OK\n02_source/v0_skeleton/kernel/conftest.py: OK\n02_source/v0_skeleton/kernel/deephealing_kernel/__init__.py: OK\n02_source/v0_skeleton/kernel/deephealing_kernel/__main__.py: OK\n02_source/v0_skeleton/kernel/deephealing_kernel/adapters/__init__.py: OK\n02_source/v0_skeleton/kernel/deephealing_kernel/adapters/determinism_probe.py: OK\n02_source/v0_skeleton/kernel/deephealing_kernel/budget.py: OK\n02_source/v0_skeleton/kernel/deephealing_kernel/bus.py: OK\n02_source/v0_skeleton/kernel/deephealing_kernel/cli.py: FAILED\n02_source/v0_skeleton/kernel/deephealing_kernel/ecs.py: OK\n02_source/v0_skeleton/kernel/deephealing_kernel/events.py: OK\n02_source/v0_skeleton/kernel/deephealing_kernel/memory/__init__.py: OK\n02_source/v0_skeleton/kernel/deephealing_kernel/memory/retrieve.py: OK\n02_source/v0_skeleton/kernel/deephealing_kernel/memory/store.py: OK\n02_source/v0_skeleton/kernel/deephealing_kernel/pack.py: OK\n02_source/v0_skeleton/kernel/deephealing_kernel/providers/__init__.py: OK\n02_source/v0_skeleton/kernel/deephealing_kernel/providers/adapters/__init__.py: OK\n02_source/v0_skeleton/kernel/deephealing_kernel/providers/adapters/relation_infer.py: OK\n02_source/v0_skeleton/kernel/deephealing_kernel/providers/cassette.py: OK\n02_source/v0_skeleton/kernel/deephealing_kernel/providers/deterministic_rule.py: OK\n02_source/v0_skeleton/kernel/deephealing_kernel/providers/local_model.py: OK\n02_source/v0_skeleton/kernel/deephealing_kernel/providers/remote_api.py: OK\n02_source/v0_skeleton/kernel/deephealing_kernel/registry.py: FAILED\n02_source/v0_skeleton/kernel/deephealing_kernel/rng.py: OK\n02_source/v0_skeleton/kernel/deephealing_kernel/rules/__init__.py: OK\n02_source/v0_skeleton/kernel/deephealing_kernel/rules/behaviour_tree.py: OK\n02_source/v0_skeleton/kernel/deephealing_kernel/rules/requirement.py: OK\n02_source/v0_skeleton/kernel/deephealing_kernel/rules/utility.py: OK\n02_source/v0_skeleton/kernel/deephealing_kernel/snapshot.py: OK\n02_source/v0_skeleton/kernel/deephealing_kernel/tick.py: FAILED\n02_source/v0_skeleton/kernel/pyproject.toml: OK\n02_source/v0_skeleton/kernel/tests/test_budget_ledger.py: OK\n02_source/v0_skeleton/kernel/tests/test_bus_and_ecs_invariants.py: OK\n02_source/v0_skeleton/kernel/tests/test_calibrate_latency.py: FAILED\n02_source/v0_skeleton/kernel/tests/test_canonical_contract.py: OK\n02_source/v0_skeleton/kernel/tests/test_capability_registry.py: OK\n02_source/v0_skeleton/kernel/tests/test_cassette_miss_cli.py: OK\n02_source/v0_skeleton/kernel/tests/test_cassette_no_backfill_r5.py: OK\n02_source/v0_skeleton/kernel/tests/test_cassette_tamper_cli.py: OK\n02_source/v0_skeleton/kernel/tests/test_determinism_replay.py: OK\n02_source/v0_skeleton/kernel/tests/test_e2e_run_verify.py: OK\n02_source/v0_skeleton/kernel/tests/test_events_snapshot_invariants.py: OK\n02_source/v0_skeleton/kernel/tests/test_evidence_scan.py: OK\n02_source/v0_skeleton/kernel/tests/test_io_shape_guards.py: OK\n02_source/v0_skeleton/kernel/tests/test_kernel_digest.py: OK\n02_source/v0_skeleton/kernel/tests/test_memory_layers.py: OK\n02_source/v0_skeleton/kernel/tests/test_observe_mode_readonly.py: FAILED\n02_source/v0_skeleton/kernel/tests/test_pack_validate.py: FAILED\n02_source/v0_skeleton/kernel/tests/test_pins_resolution.py: FAILED\n02_source/v0_skeleton/kernel/tests/test_rules_layer.py: OK\n02_source/v0_skeleton/kernel/tests/test_slot_conflict.py: OK\n02_source/v0_skeleton/kernel/tools/calibrate_latency.py: FAILED\n02_source/v0_skeleton/kernel/tools/kernel_digest.py: OK\n02_source/v0_skeleton/session/package.json: OK\n02_source/v0_skeleton/session/src/mode.js: FAILED\n02_source/v0_skeleton/session/src/policy.js: FAILED\n02_source/v0_skeleton/session/src/server.js: FAILED\n02_source/v0_skeleton/session/src/upstream.js: FAILED\n02_source/v0_skeleton/session/test/session.test.js: FAILED\n02_source/v0_skeleton/tools/aesthetic_check.py: OK\n02_source/v0_skeleton/tools/canonical_json.py: OK\n02_source/v0_skeleton/tools/determinism_probe_worker.py: OK\n02_source/v0_skeleton/tools/duckdb_queries.sql: OK\n02_source/v0_skeleton/tools/make_placeholder_asset.py: OK\n02_source/v0_skeleton/tools/pack_sign.py: FAILED\n02_source/v0_skeleton/tools/schema_validate.py: OK\n02_source/v0_skeleton/tools/validate_capability_schema.py: OK\n02_source/v0_skeleton/tools/verify_asset_pack.py: OK\n02_source/v0_skeleton/tools/verify_capability_binding.py: OK\n02_source/v0_skeleton/tools/verify_pack.py: FAILED\n02_source/v0_skeleton/web/index.html: FAILED\n02_source/v0_skeleton/web/package.json: FAILED\n02_source/v0_skeleton/web/src/main.ts: FAILED\n02_source/v0_skeleton/web/src/net/client.ts: FAILED\n02_source/v0_skeleton/web/src/scene/lighting.ts: FAILED\n02_source/v0_skeleton/web/src/scene/world.ts: FAILED\n02_source/v0_skeleton/web/src/ui/observe/panel.ts: FAILED\n02_source/v0_skeleton/web/src/ui/participate/intervention.ts: FAILED\n02_source/v0_skeleton/web/tsconfig.json: OK\n02_source/v0_skeleton/web/vite.config.ts: FAILED\n02_source/verify_specs.sh: FAILED\n02_source/world.schema.json: OK\n02_source/worldmodel.adapter.spec.md: OK\n03_artisan_self_test.log: FAILED\n06_v0_m2_self_test.md: OK\nspikes/s10-memory/README.md: OK\nspikes/s10-memory/cognition-run-plain/checkpoints/000050.json: OK\nspikes/s10-memory/cognition-run-plain/e.jsonl: OK\nspikes/s10-memory/cognition-run/checkpoints/000050.json: OK\nspikes/s10-memory/cognition-run/cognition/cassettes/embed.text__deterministic_rule.jsonl: OK\nspikes/s10-memory/cognition-run/cognition/cassettes/emotion.appraise__remote_api.jsonl: OK\nspikes/s10-memory/cognition-run/cognition/cassettes/intent.plan__remote_api.jsonl: OK\nspikes/s10-memory/cognition-run/cognition/cassettes/relation.infer__deterministic_rule.jsonl: OK\nspikes/s10-memory/cognition-run/cognition/cognition.jsonl: OK\nspikes/s10-memory/cognition-run/cognition/memory.sqlite: OK\nspikes/s10-memory/cognition-run/cognition/summary.json: OK\nspikes/s10-memory/cognition-run/cognition/tree.spec.json: OK\nspikes/s10-memory/cognition-run/e.jsonl: OK\nspikes/s10-memory/facts.sqlite: OK\nspikes/s10-memory/logs/cognition-memory-run.json: OK\nspikes/s10-memory/logs/memory-layers.json: OK\nspikes/s10-memory/logs/prune-soft-delete.json: OK\nspikes/s10-memory/logs/retrieval-digest-compare.json: OK\nspikes/s10-memory/logs/retrieval-digest-negative.json: OK\nspikes/s10-memory/logs/supersede-history.json: OK\nspikes/s10-memory/logs/world-state-boundary.json: OK\nspikes/s10-memory/logs/write-point.json: OK\nspikes/s10-memory/prune.sqlite: OK\nspikes/s10-memory/run-a.sqlite: OK\nspikes/s10-memory/run-b.sqlite: OK\nspikes/s10-memory/write-point-off.sqlite: OK\nspikes/s10-memory/write-point-on.sqlite: OK\nspikes/s11-pack2/out-north-final/checkpoints/000050.json: OK\nspikes/s11-pack2/out-north-final/checkpoints/000100.json: OK\nspikes/s11-pack2/out-north-final/e.jsonl: OK\nspikes/s11-pack2/out-north/checkpoints/000050.json: OK\nspikes/s11-pack2/out-north/checkpoints/000100.json: OK\nspikes/s11-pack2/out-north/e.jsonl: OK\nspikes/s8-registry/baseline-recompute-final/checkpoints/000050.json: OK\nspikes/s8-registry/baseline-recompute-final/checkpoints/000100.json: OK\nspikes/s8-registry/baseline-recompute-final/checkpoints/000150.json: OK\nspikes/s8-registry/baseline-recompute-final/checkpoints/000200.json: OK\nspikes/s8-registry/baseline-recompute-final/checkpoints/000250.json: OK\nspikes/s8-registry/baseline-recompute-final/checkpoints/000300.json: OK\nspikes/s8-registry/baseline-recompute-final/e.jsonl: OK\nspikes/s8-registry/baseline-recompute-fix2/checkpoints/000050.json: OK\nspikes/s8-registry/baseline-recompute-fix2/checkpoints/000100.json: OK\nspikes/s8-registry/baseline-recompute-fix2/checkpoints/000150.json: OK\nspikes/s8-registry/baseline-recompute-fix2/checkpoints/000200.json: OK\nspikes/s8-registry/baseline-recompute-fix2/checkpoints/000250.json: OK\nspikes/s8-registry/baseline-recompute-fix2/checkpoints/000300.json: OK\nspikes/s8-registry/baseline-recompute-fix2/e.jsonl: OK\nspikes/s8-registry/logs/ac-m2-8-and-credential-scan.json: OK\nspikes/s8-registry/logs/kernel-digest-evidence.json: OK\nspikes/s8-registry/logs/manifest-exhaustiveness-fix2.json: OK\nspikes/s8-registry/logs/manifest-exhaustiveness-fix3.json: OK\nspikes/s8-registry/logs/manifest-exhaustiveness.json: OK\nspikes/s8-registry/logs/p5-probes-after.json: OK\nspikes/s8-registry/logs/p5-revert-negative-control.json: OK\nspikes/s8-registry/logs/u11-after.json: OK\nspikes/s8-registry/logs/u11-after.log: OK\nspikes/s8-registry/logs/u11-before.json: OK\nspikes/s8-registry/logs/u11-before.log: OK\nspikes/s8-registry/smoke-cassettes-final/embed.text__deterministic_rule.jsonl: OK\nspikes/s8-registry/smoke-cassettes-final/emotion.appraise__remote_api.jsonl: OK\nspikes/s8-registry/smoke-cassettes-final/intent.plan__remote_api.jsonl: OK\nspikes/s8-registry/smoke-cassettes-final/relation.infer__deterministic_rule.jsonl: OK\nspikes/s8-registry/smoke-cassettes/emotion.appraise__remote_api.jsonl: OK\nspikes/s8-registry/smoke-cassettes/intent.plan__remote_api.jsonl: OK\nspikes/s8-registry/smoke-rec-final/checkpoints/000050.json: OK\nspikes/s8-registry/smoke-rec-final/cognition/cognition.jsonl: OK\nspikes/s8-registry/smoke-rec-final/cognition/memory.sqlite: OK\nspikes/s8-registry/smoke-rec-final/cognition/summary.json: OK\nspikes/s8-registry/smoke-rec-final/cognition/tree.spec.json: OK\nspikes/s8-registry/smoke-rec-final/e.jsonl: OK\nspikes/s9-rules/logs/p4-four-tuple-after.json: OK\nspikes/s9-rules/logs/p4-four-tuple-revert.json: OK\nspikes/s9-rules/rm22-gate-final/checkpoints/000050.json: OK\nspikes/s9-rules/rm22-gate-final/checkpoints/000100.json: OK\nspikes/s9-rules/rm22-gate-final/cog-e.jsonl: OK\nspikes/s9-rules/rm22-gate-final/cognition/cognition.jsonl: OK\nspikes/s9-rules/rm22-gate-final/cognition/memory.sqlite: OK\nspikes/s9-rules/rm22-gate-final/cognition/summary.json: OK\nspikes/s9-rules/rm22-gate-final/cognition/tree.spec.json: OK\nspikes/s9-rules/rm22-gate/checkpoints/000050.json: OK\nspikes/s9-rules/rm22-gate/checkpoints/000100.json: OK\nspikes/s9-rules/rm22-gate/cog-e.jsonl: OK\nspikes/s9-rules/rm22-gate/cognition/cognition.jsonl: OK\nspikes/s9-rules/rm22-gate/cognition/memory.sqlite: OK\nspikes/s9-rules/rm22-gate/cognition/summary.json: OK\nspikes/s9-rules/rm22-gate/cognition/tree.spec.json: OK\nspikes/s9-rules/rm22-gate/stderr.txt: OK\nspikes/s9-rules/rm22-gate/stdout.txt: OK\nspikes/s9-rules/rm22-repro/checkpoints/000050.json: OK\nspikes/s9-rules/rm22-repro/checkpoints/000100.json: OK\nspikes/s9-rules/rm22-repro/cog-e.jsonl: OK\nspikes/s9-rules/rm22-repro/cognition/cognition.jsonl: OK\nspikes/s9-rules/rm22-repro/cognition/memory.sqlite: OK\nspikes/s9-rules/rm22-repro/cognition/summary.json: OK\nspikes/s9-rules/rm22-repro/cognition/tree.spec.json: OK\nspikes/s9-rules/rm22-repro/stderr.txt: OK\nspikes/s9-rules/rm22-repro/stdout.txt: OK\n",
+  "v0_m2_lines": 238
+}

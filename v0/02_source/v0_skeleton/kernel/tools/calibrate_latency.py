@@ -22,6 +22,7 @@
 
 用法（workdir = `02_source/v0_skeleton/kernel`）：
     python3 tools/calibrate_latency.py registry
+    python3 tools/calibrate_latency.py registry --force-rewrite   # 迁移旧版绝对路径 → 相对路径（P-9）
     python3 tools/calibrate_latency.py dist --samples 24 --timeout-ms 60000 \
         --out ../../../../spikes/s5-latency-calibration/logs/latency.distribution.json
     python3 tools/calibrate_latency.py derive --dist <dist.json> --out <calibration.json>
@@ -65,9 +66,19 @@ BASE_URL = os.environ.get("DEEPHEALING_BASE_URL", "https://api.tokenfab.cn/v1")
 DEFAULT_MODEL = "deepseek-v4.1-flash"
 CREDENTIAL_ENV = "HERMES_CUSTOM_TOKENFAB_API_KEY"
 
-# 冻结物 sha256（预审 C3 关闭判据；`registry` 会断言盘上文件与这两个值一致）
+# 冻结物 sha256（预审 C3 关闭判据；`registry` 会断言盘上文件与这三个值一致）
+# R3 / G6：补上第三份（`ENVIRONMENT-CLASS.frozen.md`）—— 此前只有两份有锚，该文件被篡改后
+# 跑**普通** `registry` 会静默把新摘要写进 registry（Raven r2 R2-M2 实测 `rewritten:true` / exit 0）。
 FROZEN_RULE_SHA256 = "7590eab4b765671860eaa50b68de807606581bfdd439cb3aa6fe2d953edb0feb"
 FROZEN_RANGE_SHA256 = "713dba90df07f63e685fc98dcf276769ba37f2617f9c8a4b38319d8c174bddb4"
+FROZEN_ENVCLASS_SHA256 = "962cba083c61752c263e2399aaa62cba67b534cb9641b1d9453fa27bd30a6ada"
+
+# 三条锚的**单一定义点**（registry / check / verify_specs.sh 都从这里取，不再各写一份）
+FROZEN_ANCHORS: tuple[tuple[Path, str], ...] = (
+    (RULE_FILE, FROZEN_RULE_SHA256),
+    (RANGE_FILE, FROZEN_RANGE_SHA256),
+    (ENVCLASS_FILE, FROZEN_ENVCLASS_SHA256),
+)
 
 # DERIVATION-RULE.frozen.md 的 offset_ms 表（镜像；由测试断言防漂移）
 CAP_OFFSET_MS = {
@@ -118,6 +129,22 @@ def mtime_iso(path: Path) -> str:
 def _write_json(path: Path, document: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(document, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+# --------------------------------------------------------------------------- 路径口径（R2 / P-9 / 3A-C3）
+def relative_to_registry(path: Path) -> str:
+    """登记用的**相对路径**（相对 registry 所在目录）。
+
+    为什么不能写绝对路径（P-9）：registry 登记的是**本工作区内**的冻结物，绝对路径会把
+    「某台机器的检出位置」烙进交付产物 —— 换机 / 克隆后 `path` 立即失效，且泄漏本地目录结构。
+    """
+    return os.path.relpath(path.resolve(), REGISTRY.parent.resolve())
+
+
+def resolve_registry_path(value: str) -> Path:
+    """**读取时运行时解析**：相对路径按 registry 目录解析；绝对路径原样返回（只用于诊断旧产物）。"""
+    candidate = Path(value)
+    return candidate if candidate.is_absolute() else (REGISTRY.parent / candidate)
 
 
 def classify(p50: float | None, p90: float | None, ok_count: int, failed_count: int) -> tuple[str, list[str]]:
@@ -179,7 +206,7 @@ def _content_anchors(document: dict) -> dict:
             if isinstance(v, dict) and isinstance(v.get("sha256"), str)}
 
 
-def cmd_registry(_args) -> int:
+def cmd_registry(args) -> int:
     """登记三份冻结物的 sha256/mtime（**幂等**）。
 
     **幂等性（修复轮 2 / F1 / Sentinel Bug#9）**：修复前每次都写入
@@ -192,23 +219,41 @@ def cmd_registry(_args) -> int:
         且**内容逐字节相同则不写盘**（`unchanged`）；
       - 否则（首次 / 冻结物真的变了）⇒ 写入当前时刻。
     ⇒ 连跑两次 `registry` 后文件 sha256 **不变**（关闭判据）。
+
+    **路径口径（R2 / P-9 / 3A-C3）**：三份冻结物的 `path` 一律写**相对 registry 目录**的路径
+    （`relative_to_registry`），读取侧用 `resolve_registry_path` 运行时解析。盘上若残留旧版
+    绝对路径，用 `registry --force-rewrite` **一次性迁移**（内容锚未变时默认不写盘 ⇒ 迁移必须显式）。
     """
-    for path, expected in ((RULE_FILE, FROZEN_RULE_SHA256), (RANGE_FILE, FROZEN_RANGE_SHA256)):
+    force_rewrite = bool(getattr(args, "force_rewrite", False))
+    for path, expected in FROZEN_ANCHORS:
         actual = sha256_file(path)
         if actual != expected:
             print(f"E_FROZEN_MISMATCH: {path} sha256={actual} expected={expected}", file=sys.stderr)
             return 1
     document = {
-        "frozen_rule": {"path": str(RULE_FILE), "sha256": sha256_file(RULE_FILE), "mtime": mtime_iso(RULE_FILE)},
-        "accepted_degradation_range": {"path": str(RANGE_FILE), "sha256": sha256_file(RANGE_FILE),
+        "frozen_rule": {"path": relative_to_registry(RULE_FILE), "sha256": sha256_file(RULE_FILE),
+                        "mtime": mtime_iso(RULE_FILE)},
+        "accepted_degradation_range": {"path": relative_to_registry(RANGE_FILE), "sha256": sha256_file(RANGE_FILE),
                                        "mtime": mtime_iso(RANGE_FILE)},
-        "environment_class_rule": {"path": str(ENVCLASS_FILE), "sha256": sha256_file(ENVCLASS_FILE),
+        "environment_class_rule": {"path": relative_to_registry(ENVCLASS_FILE), "sha256": sha256_file(ENVCLASS_FILE),
                                    "mtime": mtime_iso(ENVCLASS_FILE)},
+        "path_base": "registry 所在目录（相对路径口径，P-9）",
         "note": "规则 / 区间 / 环境判定三份冻结物必须先于测量落盘；本文件即「时间戳顺序」的登记处（防自证第 1/3/4 条）。",
     }
 
+    # **fail-closed 自检**：自己的产物不得含绝对路径，且每条 path 必须能解析到真实文件。
+    absolute_keys = sorted(key for key, value in document.items()
+                           if isinstance(value, dict) and str(value.get("path", "")).startswith("/"))
+    unresolved_keys = sorted(key for key, value in document.items()
+                             if isinstance(value, dict)
+                             and not resolve_registry_path(str(value.get("path", ""))).is_file())
+    if absolute_keys or unresolved_keys:
+        print(f"E_REGISTRY_PATH_FORMAT: absolute={absolute_keys} unresolved={unresolved_keys}", file=sys.stderr)
+        return 1
+
     written_at = time.strftime("%Y-%m-%dT%H:%M:%S%z")
     content_unchanged = False
+    on_disk_malformed: list[str] = []
     if REGISTRY.is_file():
         try:
             existing = json.loads(REGISTRY.read_text(encoding="utf-8"))
@@ -217,23 +262,50 @@ def cmd_registry(_args) -> int:
         content_unchanged = _content_anchors(existing) == _content_anchors(document)
         if content_unchanged and existing.get("registry_written_at"):
             written_at = existing["registry_written_at"]        # 沿用首次写入时刻 ⇒ 内容稳定
+        # **格式漂移**（旧版绝对路径 / 解析不到的 path）也必须触发重写：否则「内容锚未变」
+        # 会把不合规的 path 永久留在盘上（P-9 的 3 条 `/Users/…` 就是这么活过 M3 的）。
+        on_disk_malformed = sorted(
+            key for key, value in existing.items()
+            if isinstance(value, dict) and "path" in value
+            and (str(value.get("path", "")).startswith("/")
+                 or not resolve_registry_path(str(value.get("path", ""))).is_file()))
     document["registry_written_at"] = written_at
 
-    if content_unchanged:
-        # 内容锚（各冻结物 sha256）一致 ⇒ **不写盘**，逐字节保留既有文件。
+    if content_unchanged and not force_rewrite and not on_disk_malformed:
+        # 内容锚（各冻结物 sha256）一致且路径格式合规 ⇒ **不写盘**，逐字节保留既有文件。
         # 理由：`path` / `mtime` 是随位置与检出时间漂移的**说明性**字段，不是完整性判据。
         # 若把它们纳入「是否重写」的判定，则任何复制 / 克隆到新路径都会改写本文件 ——
         # 使 `test_registry_is_idempotent` 在**克隆里首跑即红**（已实测）。完整性由 sha256 锚定：
         # 冻结物内容真的变了才重写。
         unchanged = True
+        rewritten = False
     else:
         rendered = json.dumps(document, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
         unchanged = REGISTRY.is_file() and REGISTRY.read_text(encoding="utf-8") == rendered
         if not unchanged:
             _write_json(REGISTRY, document)
-    print(json.dumps({"registry": str(REGISTRY), "unchanged": unchanged,
-                      "registry_written_at": written_at, "sha256": sha256_file(REGISTRY)},
+        rewritten = not unchanged
+
+    # 落盘后**回读**校验（读取侧运行时解析）：迁移是否真的生效、路径是否真能解析
+    on_disk = json.loads(REGISTRY.read_text(encoding="utf-8")) if REGISTRY.is_file() else {}
+    on_disk_absolute = sorted(key for key, value in on_disk.items()
+                              if isinstance(value, dict) and str(value.get("path", "")).startswith("/"))
+    on_disk_unresolved = sorted(key for key, value in on_disk.items()
+                                if isinstance(value, dict)
+                                and not resolve_registry_path(str(value.get("path", ""))).is_file())
+    print(json.dumps({"registry": str(REGISTRY), "unchanged": unchanged, "rewritten": rewritten,
+                      "force_rewrite": force_rewrite,
+                      "malformed_path_keys_migrated": on_disk_malformed,
+                      "registry_written_at": written_at, "sha256": sha256_file(REGISTRY),
+                      "relative_paths": sorted(str(v.get("path")) for v in on_disk.values()
+                                               if isinstance(v, dict) and "path" in v),
+                      "on_disk_absolute_path_keys": on_disk_absolute,
+                      "on_disk_unresolved_path_keys": on_disk_unresolved},
                      ensure_ascii=False, sort_keys=True))
+    if on_disk_absolute or on_disk_unresolved:
+        print(f"E_REGISTRY_PATH_FORMAT: 盘上仍有绝对路径 / 解析不到的 path "
+              f"absolute={on_disk_absolute} unresolved={on_disk_unresolved}", file=sys.stderr)
+        return 1
     return 0
 
 
@@ -438,10 +510,9 @@ def cmd_check(args) -> int:
     # ① 规则文件 mtime 早于分布日志 + 冻结物 sha256 与 round-3 逐字节一致
     if not RULE_FILE.stat().st_mtime < dist_path.stat().st_mtime:
         problems.append("rule file mtime is not earlier than the distribution log")
-    if sha256_file(RULE_FILE) != FROZEN_RULE_SHA256:
-        problems.append(f"DERIVATION-RULE.frozen.md sha256 != {FROZEN_RULE_SHA256}")
-    if sha256_file(RANGE_FILE) != FROZEN_RANGE_SHA256:
-        problems.append(f"ACCEPTED-DEGRADATION-RANGE.frozen.md sha256 != {FROZEN_RANGE_SHA256}")
+    for frozen_path, expected in FROZEN_ANCHORS:
+        if sha256_file(frozen_path) != expected:
+            problems.append(f"{frozen_path.name} sha256 != {expected}")
 
     # ② 独立重算（不信任 calibration.json 的自报值）—— 修复轮 C5：p50/p90/p95/p99/max **五个量全部**重算
     latencies = [s["latency_ms"] for s in dist["samples"] if s.get("latency_ms") is not None]
@@ -466,8 +537,7 @@ def cmd_check(args) -> int:
         print(json.dumps({"environment_class": calibration["environment_class"],
                           "refuses_to_declare": True,
                           "four_value_table": calibration["four_value_table"],
-                          "frozen_sha256_ok": sha256_file(RULE_FILE) == FROZEN_RULE_SHA256
-                          and sha256_file(RANGE_FILE) == FROZEN_RANGE_SHA256,
+                          "frozen_sha256_ok": all(sha256_file(path) == expected for path, expected in FROZEN_ANCHORS),
                           "problems": problems}, ensure_ascii=False, sort_keys=True))
         print("GAP: 标定 fail-closed（环境 degraded）⇒ 判据 ②③④ 无从成立；判据 ① 已由本命令断言", file=sys.stderr)
         return 1
@@ -537,7 +607,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="calibrate_latency.py")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    sub.add_parser("registry", help="登记三份冻结物的 sha256/mtime（必须先于测量）")
+    registry_parser = sub.add_parser("registry", help="登记三份冻结物的 sha256/mtime（必须先于测量）")
+    registry_parser.add_argument("--force-rewrite", action="store_true",
+                                 help="内容锚未变也强制重写（用于把盘上旧的**绝对路径**一次性迁移成相对路径，P-9）")
 
     dist = sub.add_parser("dist", help="采样延迟分布")
     dist.add_argument("--samples", type=int, default=24)

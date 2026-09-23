@@ -1,0 +1,18 @@
+{
+  "added": [],
+  "after_manifest": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-005-deephealing-v0-m3/spikes/s12-session/logs/p8-after-r2.txt",
+  "before_manifest": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-005-deephealing-v0-m3/spikes/s12-session/logs/p8-before-r2.txt",
+  "bridge_exit": 0,
+  "changed": [],
+  "delivery_face_byte_identical": true,
+  "file_count_after": 150,
+  "file_count_before": 150,
+  "manifest_sha256_after": "2564404ed543d48efc64836e600abd943365ef869f116dbc610f31d1c42d1210",
+  "manifest_sha256_before": "2564404ed543d48efc64836e600abd943365ef869f116dbc610f31d1c42d1210",
+  "reason_for_retake": "R1 的 P-8 快照（23:40）早于交付面最后写入（3 个文件被改）⇒ 全部写入完成、冻结面定格后重采 before/after（F7 关闭判据）",
+  "removed": [],
+  "runtime_dir": "/tmp/r2-artisan/p8-runtime",
+  "taken_at_epoch": 1790096985,
+  "taken_at_local": "2026-09-23T01:09:45+0800",
+  "workspace": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-005-deephealing-v0-m3"
+}

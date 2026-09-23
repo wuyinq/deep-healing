@@ -2,20 +2,53 @@
   "id": "npc-002",
   "display_name": "通勤住户（1-102）",
   "home_entity": "room-102",
-  "need_weights": { "physiology": 0.8, "safety": 0.7, "belonging": 1.0, "esteem": 1.3, "self_actualization": 1.2 },
-  "schedule_ref": "schedules/weekday.json#commuter",
-  "relations_seed": { "npc-001": 0.35, "npc-004": 0.5 },
-  "trauma_flags": [],
-  "personality": { "openness": 0.6, "conscientiousness": 0.8, "extraversion": 0.7, "agreeableness": 0.65, "neuroticism": 0.35 },
-  "cognition_policy": {
-    "capability_slots": ["intent.plan", "emotion.appraise", "memory.reflect", "narrative.generate"],
-    "daily_token_budget": 65000,
-    "reflect_trigger": { "min_ticks_between": 480, "importance_threshold": 0.5 }
+  "need_weights": {
+    "physiology": 0.8,
+    "safety": 0.7,
+    "belonging": 1.0,
+    "esteem": 1.3,
+    "self_actualization": 1.2
   },
-  "memory_policy": { "working_capacity": 64, "episodic_keep_top": 500, "decay_half_life_ticks": 21600 },
+  "schedule_ref": "schedules/weekday.json#commuter",
+  "relations_seed": {
+    "npc-001": 0.35,
+    "npc-004": 0.5
+  },
+  "trauma_flags": [],
+  "personality": {
+    "openness": 0.6,
+    "conscientiousness": 0.8,
+    "extraversion": 0.7,
+    "agreeableness": 0.65,
+    "neuroticism": 0.35
+  },
+  "cognition_policy": {
+    "capability_slots": [
+      "intent.plan",
+      "emotion.appraise",
+      "memory.reflect",
+      "narrative.generate"
+    ],
+    "daily_token_budget": 65000,
+    "reflect_trigger": {
+      "min_ticks_between": 480,
+      "importance_threshold": 0.5
+    }
+  },
+  "memory_policy": {
+    "working_capacity": 64,
+    "episodic_keep_top": 500,
+    "decay_half_life_ticks": 21600
+  },
   "narrative_hooks": [
     "总在出门前回头看一眼走廊",
     "把加班当成理所当然，直到有人替他记了一次晚饭"
+  ],
+  "healing_face": [
+    "出门前会回头看一眼走廊，像在确认什么都在"
+  ],
+  "hidden_face": [
+    "加班成了理所当然，直到有人替他记了一次晚饭"
   ],
   "v0_role": "「常规」活跃度样本（事件触发规划 + 情绪评估）"
 }

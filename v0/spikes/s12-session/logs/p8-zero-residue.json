@@ -1,0 +1,35 @@
+{
+  "source_files_before": 148,
+  "source_files_after": 148,
+  "changed": [],
+  "added": [],
+  "removed": [],
+  "byte_identical": true,
+  "kernel_file": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-005-deephealing-v0-m3/spikes/s12-session/runtime/02_source/v0_skeleton/kernel/deephealing_kernel/__init__.py",
+  "kernel_inside_copy": true,
+  "kernel_copy": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-005-deephealing-v0-m3/spikes/s12-session/runtime/02_source/v0_skeleton/kernel",
+  "observe_ack": {
+    "detail": "session mode 'observe' is read-only",
+    "id": "p8-obs",
+    "impact_budget_remaining": null,
+    "kind": "intent_ack",
+    "reason": "E_MODE_READONLY",
+    "seq": 1,
+    "status": "rejected",
+    "tick": 0
+  },
+  "participate_ack": {
+    "detail": null,
+    "id": "p8-part",
+    "impact_budget_remaining": 100,
+    "kind": "intent_ack",
+    "reason": null,
+    "seq": 2,
+    "status": "queued",
+    "tick": 0
+  },
+  "event_kinds": [
+    "p8-obs:rejected:E_MODE_READONLY",
+    "p8-part:queued:"
+  ]
+}

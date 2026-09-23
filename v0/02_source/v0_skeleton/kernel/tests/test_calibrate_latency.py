@@ -245,8 +245,71 @@ def test_registry_registers_three_frozen_artifacts():
     assert registry["frozen_rule"]["sha256"] == FROZEN_RULE_SHA256
     assert registry["accepted_degradation_range"]["sha256"] == FROZEN_RANGE_SHA256
     assert registry["environment_class_rule"]["sha256"] == _sha256(SPIKE_DIR / "ENVIRONMENT-CLASS.frozen.md")
-    assert Path(registry["frozen_rule"]["path"]).stat().st_mtime < registry_path.stat().st_mtime
-    assert Path(registry["environment_class_rule"]["path"]).stat().st_mtime < registry_path.stat().st_mtime
+    # R2 / P-9：`path` 是**相对 registry 目录**的路径 ⇒ 必须用工具的运行时解析器解析（不是相对 cwd）
+    assert TOOL.resolve_registry_path(registry["frozen_rule"]["path"]).stat().st_mtime < registry_path.stat().st_mtime
+    assert TOOL.resolve_registry_path(registry["environment_class_rule"]["path"]).stat().st_mtime < registry_path.stat().st_mtime
+
+
+def test_registry_paths_are_relative_to_registry_dir():
+    """R2 / P-9 / 3A-C3：registry 内**零绝对路径**，且每条 `path` 都能在运行时解析到真实文件。"""
+    registry_path = SPIKE_DIR / "calibration.registry.json"
+    text = registry_path.read_text(encoding="utf-8")
+    registry = json.loads(text)
+    assert "/Users/" not in text, "registry 不得含任何绝对路径（换机/克隆后失效，且泄漏本地目录结构）"
+    for key in ("frozen_rule", "accepted_degradation_range", "environment_class_rule"):
+        value = registry[key]["path"]
+        assert not value.startswith("/"), f"{key}.path 必须是相对路径：{value}"
+        assert ".." not in Path(value).parts, f"{key}.path 不得逃出 registry 目录：{value}"
+        assert TOOL.resolve_registry_path(value).is_file(), f"{key}.path 解析不到文件：{value}"
+
+
+def test_registry_force_rewrite_migrates_absolute_paths():
+    """R2 / P-9 迁移机制：盘上残留绝对路径 ⇒ `registry` 必须真的把它们迁移成相对路径。
+
+    两条迁移路径都要真跑：
+      ① 默认口径：检测到**格式漂移**（绝对路径）⇒ 自动重写迁移（并如实报告迁移了哪些键）；
+      ② `--force-rewrite`：显式强制重写，同样必须迁移。
+    **负例**：迁移后盘上若仍含绝对路径，本用例的断言必须红。
+    """
+    registry_path = SPIKE_DIR / "calibration.registry.json"
+    original = registry_path.read_bytes()
+    keys = ("frozen_rule", "accepted_degradation_range", "environment_class_rule")
+
+    def inject_absolute_paths() -> None:
+        document = json.loads(registry_path.read_text(encoding="utf-8"))
+        for key in keys:
+            document[key]["path"] = str(SPIKE_DIR / Path(document[key]["path"]).name)  # 注回**绝对**路径
+        registry_path.write_text(json.dumps(document, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+                                 encoding="utf-8")
+        assert "/Users/" in registry_path.read_text(encoding="utf-8"), "夹具未注入绝对路径"
+
+    try:
+        # ① 默认口径必须自动迁移
+        inject_absolute_paths()
+        assert TOOL.main(["registry"]) == 0
+        migrated_text = registry_path.read_text(encoding="utf-8")
+        assert "/Users/" not in migrated_text, "默认口径下格式漂移必须被自动迁移"
+        migrated = json.loads(migrated_text)
+        for key in keys:
+            assert not migrated[key]["path"].startswith("/"), f"{key}.path 未迁移：{migrated[key]['path']}"
+            assert TOOL.resolve_registry_path(migrated[key]["path"]).is_file()
+            assert migrated[key]["sha256"] == TOOL.sha256_file(SPIKE_DIR / Path(migrated[key]["path"]).name)
+
+        # ② `--force-rewrite` 同样必须迁移（显式强制路径）
+        inject_absolute_paths()
+        assert TOOL.main(["registry", "--force-rewrite"]) == 0
+        forced_text = registry_path.read_text(encoding="utf-8")
+        assert "/Users/" not in forced_text
+        assert json.loads(forced_text)["frozen_rule"]["sha256"] == FROZEN_RULE_SHA256
+
+        # ③ 迁移后回到幂等：再跑两次（含 force）逐字节不变
+        assert TOOL.main(["registry"]) == 0
+        assert registry_path.read_text(encoding="utf-8") == forced_text
+        assert TOOL.main(["registry", "--force-rewrite"]) == 0
+        assert registry_path.read_text(encoding="utf-8") == forced_text
+    finally:
+        registry_path.write_bytes(original)
+        assert registry_path.read_bytes() == original, "夹具必须逐字节复原 registry"
 
 
 # --------------------------------------------------------------------------- C5（修复轮）

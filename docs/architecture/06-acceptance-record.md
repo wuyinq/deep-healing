@@ -1,7 +1,7 @@
 # PM 逐 AC 终验记录
 
 > 本文件按轮次累积：**§1~§6 = REQ-20260921-002（架构冻结轮）**，**§7~§11 = REQ-20260921-003（V0 · M1）**，
-> **§12~§16 = REQ-20260921-004（V0 · M2）**。
+> **§12~§16 = REQ-20260921-004（V0 · M2）**，**§17~§21 = REQ-20260921-005（V0 · M3）**。
 
 ## §0 轮次索引
 
@@ -10,6 +10,7 @@
 | 架构冻结 | `REQ-20260921-002` | 有条件通过（CRITICAL 0；AC-11 / AC-13 为 GAP） | `docs/`（commit `b421cb0`） |
 | V0 · M1 | `REQ-20260921-003` | 有条件通过（CRITICAL 0；6 PASS / 1 GAP / 1 分列均 PASS） | `v0/` |
 | V0 · M2 | `REQ-20260921-004` | **通过**（8/8 AC PASS，CRITICAL 0，残留 FAIL 0） | `v0/`（同树生长） |
+| V0 · M3 | `REQ-20260921-005` | **通过**（逐 AC PASS，**CRITICAL 0**，残留 MEDIUM/LOW/GAP 已逐条登记 M4） | `v0/`（同树生长） |
 
 ---
 
@@ -274,3 +275,121 @@ PM 自写 `pm_adversarial_ac3.py`，导入**冻结的** `tools/canonical_json.py
   **不是**可玩产品：双模式会话（W7）、渲染层与 UI（W8）、观测层（W9）、集成验收（W10）属 M3/M4。
 - `remote_api` 真跑依赖运行时环境变量（值不落盘）；`local_model` 只有槽位。
 - 「`verify` exit 0」**不等于**「日志未被篡改」——抗改写必须传 `--expected-hash`。
+
+---
+
+# 第四部分 · REQ-20260921-005（V0 垂直切片 · 里程碑 M3：会话层 + 渲染层 + 世界观落地）
+
+- 验收人：lanova（PM）　时间：2026-09-23 02:2x ~ 04:5x（Asia/Shanghai）
+- 被测：`dev_team_workspace/REQ-20260921-005-deephealing-v0-m3/`（01_m3_design + 02_source 150 + spikes s12/s13 + 03~08）
+- 真实仓库：`/Users/wooyinq/personal/deep-healing` = `develop` @ `98c781f`，`status --porcelain` = **0**（M3 全程零写入，落盘前复核）
+- 轮次：**R1 → R2 → R3 → R4（有界补丁）→ R5（终局有界轮）**，共 5 轮。
+  `R3-C1` 属「同一问题连续 2 轮未收敛」⇒ 按 PM 既有规则**停止乒乓、PM 介入**：PM 亲自给出**闭式判据口径**并只授权一轮。
+- 口径：**不采信任何自述**；下表每条读数都是 PM 亲跑或 PM 亲算。
+
+## 17. M3 逐 AC 终态（PM 亲跑读数）
+
+| AC | PM 读数（命令 / 实测） | 判定 |
+|---|---|---|
+| AC-M3-1 契约全绿 | `bash verify_specs.sh --quiet`（`02_source`）⇒ `verify_specs: OK (130 checks passed, 0 skipped)`，exit 0 | **PASS** |
+| AC-M3-1 前轮不回退 | 基线 300 tick：`925` 事件 / `6` 检查点 / `chain_tail=baecca92…` / `000300.json.state_hash=9a4ae3da…` —— 与 M1/M2/R3/R4 **逐位一致** | **PASS** |
+| AC-M3-1c 防诱饵 | `grep -rn '^\s*DEFAULT_PLAN_TICKS\s*=\s*300'` 全树 ⇒ **恰 1 处**（`tick.py:58`）；`cli.py` 只导入 | **PASS** |
+| AC-M3-1d 第二街区 | 两 pack `validate` 各 exit 0（`xingfu-xiaoqu` / `xingfu-xiaoqu-north`） | **PASS** |
+| AC-M3-1e 零残渣 | `find 02_source \( -name node_modules -o -name dist -o -name .build -o -name __pycache__ -o -name '*.pyc' \)` ⇒ **0**（跑完全部套件后复检仍 0） | **PASS** |
+| AC-M3-2 会话层双模式权限 | `npm test`（`session`）⇒ **16 tests / 16 pass / 0 fail**（4 条 AC 命名用例真跑，非 skip）；`intent.rejected` 真进事件流 | **PASS** |
+| AC-M3-3 渲染层真跑 | PM 自起 `serve.mjs`（8901）+ `browser-accept.mjs` ⇒ 6 张截图 / `console_errors=0` / `page_errors=0` / `bad_responses=[]` | **PASS** |
+| AC-M3-3 可见性 | `canvas_rect` = **1440×900**（桌面）/ **390×844**（窄屏）= `window.inner*`；`gl_drawing_buffer` 同值；HUD 外非背景像素占比 ≈**1.0** ≥ 阈值 **0.05** | **PASS** |
+| AC-M3-3 负例（判据有牙） | PM 亲跑 `negctl/f4_browser_negctl.py` ⇒ `all_ok=True`、`delivery_face_unchanged=True`；pristine `judged_green`；负例全红 | **PASS** |
+| AC-M3-4 双模式信息架构 | observe 模式 UI 树只有 2 个只读控件（`toggle-reading` / `toggle-mode`），写控件 **0**；切 participate ⇒ 挂 `input` + `button#submit-delegate`；本地拒 + WS 上行拒**均为 `E_MODE_READONLY`** | **PASS** |
+| AC-M3-5 参与影响任务演进 | `pytest tests/test_task_adaptation.py tests/test_observe_mode_readonly.py` ⇒ **10 passed**，exit 0；真实事件流含 `task.state_changed`（`rule_id`/`shift_index`/`impact_cost` 齐备）+ 防刷短路 | **PASS** |
+| AC-M3-6 确定性 | 同 AC-M3-1 前轮不回退行（三条读数逐位一致；同序列两次 `e.jsonl` 逐字节相同） | **PASS** |
+| AC-M3-7 仓库零改动 + 溯源 | `develop` @ `98c781f`，`porcelain` = **0**；`SEED.sha256` 聚合 `34fa7f6d…` 未变 | **PASS** |
+| AC-M3-8① worldview 契约 | `worldview.json` ×2（两 pack）+ `worldview.schema.json` 均可 `json.load`；`pack.entrypoints.worldview` 已登记；`district.pack.spec.md` 已写 | **PASS** |
+| AC-M3-8② narrative_hooks 两面 | 两 pack **5/5** 个 NPC 均含 `healing_face` / `hidden_face`（删 `hidden_face` ⇒ 红） | **PASS** |
+| AC-M3-8③ 同一几何两态 | `scene_assert: PASS=31 FAIL=0` exit 0；真浏览器 `geometry_surface` ≡ `geometry_underneath`（12 实体 / 288 顶点 / `shape_digests` 逐项相同） | **PASS** |
+| AC-M3-8④ 异常锚点双读 | PM 真浏览器读数：表层 `t=0 revealed=false` → 深层 `t=232/316 revealed=true`；`reveal_at_tick=55`；3 个锚点全有双读 | **PASS** |
+| AC-M3-8⑤ ISS 关闭判据① | `07_adr.md` 含 **ADR-016 世界观作为可检查契约（治愈内核 + 悬疑外壳）**，依据列 `REQ-…005 §4 AC-M3-8` + `ISS-20260922-001` | **PASS** |
+| 内核全量回归 | PM 亲跑 `pytest tests/ -q -p no:cacheprovider`（`kernel`）⇒ **151 passed / 0 failed / 0 skipped**，exit 0（填掉 R3 自述的「全量未重跑」GAP） | **PASS** |
+| D-12 冻结面口径 | PM 亲算双向比对：实算改动 **46** 条，**零未声明漂移**；声明面 11 条「未实现」经核对**全部是新增文件**（不在 `V0_M2.sha256` 内），非漏做 | **PASS** |
+| 交付面卫生 | `02_source` 文件 **150**；生成残渣 **0** | **PASS** |
+
+**汇总**：`overall_status = has_medium_low_risk`（**0 CRITICAL**）。
+
+## 18. 判据层 CRITICAL 的收敛轨迹（本轮最硬的一段）
+
+`R3-C1` 是 M3 唯一的 CRITICAL，且**连续两轮未收敛**，PM 亲自介入：
+
+| 轮 | PM 注入（只作用于 `underneath` 一态） | 实测 | 性质 |
+|---|---|---|---|
+| R3 前 | 基线 | `PASS=27 FAIL=0` exit 0 | 绿 |
+| R3 前 | `mesh.scale.set(3,3,3)` | `PASS=27 FAIL=0` exit 0 | **逃逸** |
+| R3 前 | `mesh.rotation.y = π/2` | `PASS=27 FAIL=0` exit 0 | **逃逸** |
+| R3 前 | `camera.position.set(40,40,40)`（D-7 明文禁止） | `PASS=27 FAIL=0` exit 0 | **逃逸（零判据）** |
+| R5 后 | 上列 3 条 + 12 条同类（共 **15 把几何/对象刀**） | **15/15 `FAIL=1` `two_reads_share_scene_structure`** | 判据有牙 |
+| R5 后 | **8 把相机刀**（`position` / `fov` / `zoom` / 手改 `projectionMatrix` / `setViewOffset` / `near` / `lookAt` / `up`） | **8/8 `FAIL=1` `two_reads_use_same_render_camera`** | 判据有牙 |
+| R5 后 | 对照（不动相机/世界） | `PASS=31 FAIL=0` 绿 | **无假红** |
+
+**根因（PM 定性）**：断言名为 `two_reads_share_rendered_geometry`（「渲染后几何」），实现只覆盖
+`geometry.parameters` + `position` attribute + 装配后 `mesh.position` ⇒ **名字过度声称**。
+实现本身干净（两态确共用同一几何），**被绕的是判据覆盖面**。按 PM 口径「可被绕过的判据 = 假绿 = CRITICAL」，
+**不得**以「实现没问题」放行。
+
+**PM 给出的闭式口径**（不再补字段，而是把结构性场景状态**闭式枚举**）：几何（`index` 摘要 + `groups` +
+`position`/`normal`/`uv` attribute）、对象（**`matrixWorld`** + `visible` + `layers.mask` + `renderOrder` +
+根子树身份/父子链）、相机（`matrixWorld` + `projectionMatrix` + `zoom` + `viewOffset` + `fov/near/far` +
+**实际渲染相机身份**）。该闭式集合**按构造**覆盖 Raven 报出的全部剩余类。
+
+**去过度声称已落地**：断言改名为 `two_reads_share_scene_structure`，新增 `two_reads_use_same_render_camera`；
+旧名仅存于注释里的改名说明；`06` 补 **13 条不覆盖清单**（逐条给理由）；沿用 **G9 口径**声明「一致性判据 ≠ 防篡改」。
+
+**分级裁定（R5 上抛项 1）**：Raven 判 CRITICAL / architect 降 MEDIUM ⇒ **PM 确认 MEDIUM**。
+理由：该 5 类（钉摘要常量 / 缓存 `cameraReport` / 伪造渲染入参记录 / 判据体自比）**全部要求改写判据自身的取数点或判据体**
+= **判据侧改写**；而 `R3-C1`/`R4-C1`/`R4-C2` 的 CRITICAL 口径针对**场景侧注入**（不动判据即逃逸），两者**不同类**。
+且判据源码在冻结面内（`02_source` 150/150 OK）⇒ 判据侧改写**由清单这一独立机制可发现**。
+
+## 19. M3 落盘口径与 P-9 跨面迁移（审计要点）
+
+1. **落盘范围 = `V0_M3.sha256` 冻结面（202 条）**：`02_source/**` 150 + `spikes/**` 50（s12-session 38 + s13-render 12）
+   + `03_artisan_self_test.log` + `06_v0_m3_self_test.md`。
+   工作区 `spikes/s12-session/**`（398 文件）/ `spikes/s13-render/**`（1275 文件）的**运行产物与 scratch 不落仓库**
+   —— 这是 `R4-M4` 冻结面口径修正的结果（可重生成的运行产物移出哈希面），使「任意次数真浏览器复跑后 `shasum -c` 仍全 OK」成立。
+2. **P-9 跨面迁移（已声明）**：`spikes/s5-latency-calibration/calibration.registry.json` 是派生缓存，
+   M3 的 P-9 把三处 `path` 由**绝对路径改为相对路径**（M3 门禁新断言要求 `absolute=0`）。
+   该文件**不在**任何里程碑冻结面内 ⇒ 落盘时在仓库内**就地 `registry --force-rewrite` 迁移**。
+   迁移后 `shasum -c V0_M3.sha256` 仍 **202 OK / 0 FAILED**；幂等复验：再跑 `registry`（不带 flag）⇒ `rewritten=false`、**逐字节不变**。
+3. **落盘执行与 PM 独立复验（落盘后实测，命令级）**：
+
+   | 判据 | 落盘后 PM 实测 |
+   |---|---|
+   | `shasum -a 256 -c V0_M3.sha256`（`v0/`） | **202 OK / 0 FAILED**（其中 `02_source` **150/150 OK**） |
+   | `bash verify_specs.sh --quiet`（`02_source`） | `verify_specs: OK (130 checks passed, 0 skipped)`，exit 0 |
+   | `npm test`（`session`） | **16 pass / 0 fail** |
+   | `npm test`（`web`） | **4 pass / 0 fail** |
+   | 端到端基线 300 tick | `925` 事件 / `6` 检查点 / `chain_tail=baecca92…` / `state_hash=9a4ae3da…` —— 逐位等于 M1 |
+   | registry 幂等 | 迁移后复跑 ⇒ **逐字节不变**（`5078be30…`） |
+
+4. **早前里程碑清单在本仓库的失配是预期行为**（冻结时刻证据 + 同树生长）：`V0_M2.sha256` 现为 192 OK / 46 FAILED
+   （45 条 `02_source` 被 M3 演进 + 自测日志追加）；`V0_M1.sha256` 为 95 OK / 181 FAILED / 128 缺失（含未随仓库提供的负控沙箱）。
+   **不是**交付面被改。
+
+## 20. M4 结转清单（禁止静默）
+
+1. **判据层非覆盖 13 条**中的：相机自身 `Object3D` 层状态；渲染相关状态（`fog`/`background`/`sortObjects`/`frustumCulled`）；
+   材质层属性；量化边界 `1e-6`；判据取数点自命中。
+2. **冻结面**：非 f4 驱动（f5/f6/f1）产物是否一并出哈希面；`runtime*` 前缀过宽（可误排 `02_source/runtime-*`）；
+   排除仅按名字模式 ⇒ **被排除路径不得承载判据结论**。
+3. **声明一致性**：`06` 的 R3 段（第 437 行）残留绝对措辞；`04`/`05` 既有轮次内容无哈希锚 ⇒ 不可核验。
+4. **链外锚**：AC-M3-8③⑤ 的**原始运行读数**外置后无独立锚。
+5. **`R3-RAV-M1` 桥权限自述**：**一旦接网络监听即升 CRITICAL**（升级条件见 `06` R3-H）。
+6. **Sentinel 遗留 MEDIUM**：`delta` 位移在**读法切换**时被 `rebuild(latestState)` 吃掉（R3 引入，非 R4/R5）。
+
+## 21. 诚实边界（不得在总结里弱化）
+
+- 本轮交付 = **双模式会话层（W7）+ 渲染层与 UI（W8）+ 世界观落地**，**不是**完整产品：
+  观测层（W9）、集成验收（W10）属 **M4**。
+- **一致性判据 ≠ 防篡改**：`scene_assert` 证明的是场景结构一致性；判据侧改写不被判据捕获，
+  只由**清单**这一独立机制发现。**禁止**把 `scene_assert` 读作「未被篡改」的证据。
+- **本仓库不含真浏览器截图证据**：运行产物按冻结面口径移出哈希面且未随仓库提供；
+  复现需按 `spikes/s13-render/browser-accept.mjs` 自行真跑（脚本与负控脚本**在**冻结面内）。
+- 「`verify` exit 0」**不等于**「日志未被篡改」——抗改写必须传 `--expected-hash`。
+- 残留 **MEDIUM/LOW/GAP 若干**（0 CRITICAL）已逐条登记 M4（见 §20），**不作「已关闭」处理**。

@@ -3,11 +3,13 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "DeepHealing L1 渲染层（three.js，只消费快照，零业务逻辑）。V0 骨架。",
+  "description": "DeepHealing L1 渲染层（three.js，只消费快照，零业务逻辑）。M3 实现。",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "build": "node ../../../node_modules/vite/bin/vite.js build",
+    "preview": "vite preview",
+    "test": "node --test test/render-client.test.ts",
+    "scene:assert": "node scripts/scene_assert.mjs"
   },
   "dependencies": {
     "three": "^0.180.0"
@@ -19,5 +21,5 @@
   "engines": {
     "node": ">=22"
   },
-  "comment": "three.js 为渲染主选（MIT）。react-three-fiber 保留为 V1 组件化选项；Babylon.js 作对照，见 06/07。"
+  "comment": "依赖**提升**到 <workspace>/node_modules（D-9）：02_source 内零 node_modules / 零 dist / 零 .build。three.js 为渲染主选（MIT）。"
 }

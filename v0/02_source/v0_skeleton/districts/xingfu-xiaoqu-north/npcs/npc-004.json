@@ -2,22 +2,59 @@
   "id": "npc-004",
   "display_name": "照护者住户（1-102 隔壁）",
   "home_entity": "room-102",
-  "need_weights": { "physiology": 1.2, "safety": 1.0, "belonging": 1.1, "esteem": 1.0, "self_actualization": 0.6 },
-  "schedule_ref": "schedules/weekday.json#caregiver",
-  "relations_seed": { "npc-002": 0.5, "npc-005": 0.2 },
-  "trauma_flags": [
-    { "id": "caregiver-burnout", "severity": 4, "since_tick": 0 }
-  ],
-  "personality": { "openness": 0.35, "conscientiousness": 0.9, "extraversion": 0.4, "agreeableness": 0.75, "neuroticism": 0.8 },
-  "cognition_policy": {
-    "capability_slots": ["intent.plan", "emotion.appraise", "memory.reflect", "narrative.generate"],
-    "daily_token_budget": 220000,
-    "reflect_trigger": { "min_ticks_between": 240, "importance_threshold": 0.4 }
+  "need_weights": {
+    "physiology": 1.2,
+    "safety": 1.0,
+    "belonging": 1.1,
+    "esteem": 1.0,
+    "self_actualization": 0.6
   },
-  "memory_policy": { "working_capacity": 64, "episodic_keep_top": 600, "decay_half_life_ticks": 14400 },
+  "schedule_ref": "schedules/weekday.json#caregiver",
+  "relations_seed": {
+    "npc-002": 0.5,
+    "npc-005": 0.2
+  },
+  "trauma_flags": [
+    {
+      "id": "caregiver-burnout",
+      "severity": 4,
+      "since_tick": 0
+    }
+  ],
+  "personality": {
+    "openness": 0.35,
+    "conscientiousness": 0.9,
+    "extraversion": 0.4,
+    "agreeableness": 0.75,
+    "neuroticism": 0.8
+  },
+  "cognition_policy": {
+    "capability_slots": [
+      "intent.plan",
+      "emotion.appraise",
+      "memory.reflect",
+      "narrative.generate"
+    ],
+    "daily_token_budget": 220000,
+    "reflect_trigger": {
+      "min_ticks_between": 240,
+      "importance_threshold": 0.4
+    }
+  },
+  "memory_policy": {
+    "working_capacity": 64,
+    "episodic_keep_top": 600,
+    "decay_half_life_ticks": 14400
+  },
   "narrative_hooks": [
     "把所有人的事都排在前面，自己的需求永远排最后",
     "洗衣服的时候会站着发一会儿呆"
+  ],
+  "healing_face": [
+    "把所有人的事都排在自己前面"
+  ],
+  "hidden_face": [
+    "洗衣服的时候会站着发一会儿呆：洗衣机今天转到同一格第三次"
   ],
   "v0_role": "「深度」活跃度样本（叙事生成 + 反思高峰，是 token 预算的边界用例）"
 }

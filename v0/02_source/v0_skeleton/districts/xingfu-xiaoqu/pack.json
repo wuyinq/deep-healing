@@ -4,7 +4,11 @@
   "version": "0.1.0",
   "display_name": "幸福小区（垂直切片：1 栋楼 + 5 位住户）",
   "engine_range": ">=1.0.0 <2.0.0",
-  "bounds_mm": { "x": 60000, "y": 30000, "z": 24000 },
+  "bounds_mm": {
+    "x": 60000,
+    "y": 30000,
+    "z": 24000
+  },
   "author": "deep-healing content team",
   "license": "proprietary-self-authored",
   "entrypoints": {
@@ -13,7 +17,8 @@
     "npcs_glob": "npcs/*.json",
     "tasks_glob": "tasks/*.json",
     "schedules_glob": "schedules/*.json",
-    "assets_manifest": "assets/manifest.json"
+    "assets_manifest": "assets/manifest.json",
+    "worldview": "worldview.json"
   },
   "portals": [
     {
@@ -26,5 +31,9 @@
     }
   ],
   "districts_version_note": "V0 只加载本 pack；portals 指向的第二街区尚未存在，边保留但标记 inactive（加载后自动激活，不需要改内核代码）。时间压缩比 600:1（1 tick = 1 世界分钟，dt=100ms）。",
-  "tags": ["vertical-slice", "single-building", "v0"]
+  "tags": [
+    "vertical-slice",
+    "single-building",
+    "v0"
+  ]
 }

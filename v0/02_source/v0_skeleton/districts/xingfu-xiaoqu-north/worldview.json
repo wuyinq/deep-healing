@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0.0",
+  "pack_id": "xingfu-xiaoqu-north",
+  "tone": {
+    "surface": { "light_k": 4300, "ambient_ratio": 0.45, "saturation_pct": 26 },
+    "underneath": { "light_k": 3400, "ambient_ratio": 0.16, "saturation_pct": 15 }
+  },
+  "anomalies": [
+    {
+      "id": "anom-01",
+      "at_entity": "room-102",
+      "kind": "still_running",
+      "surface_read": "北区二楼的水声一直没停",
+      "underneath_read": "水在响，人不在：这一层今天没人用过洗手池",
+      "reveal_at_tick": 70
+    },
+    {
+      "id": "anom-02",
+      "at_entity": "courtyard-01",
+      "kind": "silent_absence",
+      "surface_read": "中庭的长椅今天空着",
+      "underneath_read": "空着的不是长椅，是每天固定在这里坐着的那个位置",
+      "reveal_at_tick": 150
+    }
+  ],
+  "fault_lines": [
+    {
+      "id": "fault-01",
+      "about": "npc-003",
+      "kind": "isolation",
+      "repair_via": "task-001",
+      "repaired_state": "settled"
+    }
+  ]
+}

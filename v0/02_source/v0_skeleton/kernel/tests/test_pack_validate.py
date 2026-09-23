@@ -401,6 +401,49 @@ def test_pack_docstring_matches_implementation():
     assert source.count("_validate_schema(") == 4, source.count("_validate_schema(")  # 定义 1 + 调用 3
 
 
+def test_pack_rejects_symlinked_directory(tmp_path):
+    """**R2 / R-M2-3 收口（F6）**：pack 内的**目录**符号链接必须被显式报告 / 拒收，不得静默跳过。
+
+    修复前（继承 M1 R16/R18）：`rglob('*')` 不递归进目录链接、`is_file()` 对目录链接为 `False`
+    ⇒ 该子树**既不被 hash、也不报 undeclared_file** ⇒ 工具侧 `verify_pack: OK`（假绿）。
+    """
+    pack = _copy_pack(tmp_path / "dirsym" / "xingfu-xiaoqu")
+    outside = tmp_path / "dirsym" / "outside-subtree"
+    outside.mkdir(parents=True)
+    (outside / "smuggled.json").write_text('{"smuggled": true}\n', encoding="utf-8")
+    link = pack / "smuggled-dir"
+    link.symlink_to(outside, target_is_directory=True)
+    assert link.is_symlink() and link.resolve().is_dir()
+
+    verify_tool = _load_module("verify_pack_reference", WS_ROOT / "02_source" / "v0_skeleton" / "tools" / "verify_pack.py")
+    sign_tool = _load_module("pack_sign_dir_reference", WS_ROOT / "02_source" / "v0_skeleton" / "tools" / "pack_sign.py")
+
+    # ① 读侧工具必须拒收（且不得输出 OK）
+    proc = subprocess.run([sys.executable, str(verify_tool.__file__), str(pack)],
+                          capture_output=True, text=True, env=_ENV)
+    assert proc.returncode == 1, proc.stdout + proc.stderr
+    assert "symlinked directory in content pack" in (proc.stdout + proc.stderr), proc.stdout + proc.stderr
+    assert "verify_pack: OK" not in proc.stdout
+
+    # ② 写侧工具必须拒绝对它签名（否则 `pack.sig` 会漏掉整棵被跳过的子树）
+    with pytest.raises(SystemExit) as caught:
+        sign_tool.build_signature(pack)
+    assert "symlinked directory" in str(caught.value), str(caught.value)
+
+    # ③ 漂移守卫：两侧的目录链接枚举必须逐项一致
+    assert ([str(item) for item in verify_tool.symlinked_directories(pack)]
+            == [str(item) for item in sign_tool.symlinked_directories(pack)]
+            == [str(link)])
+
+    # ④ 阳性对照：移除目录链接 ⇒ 必须恢复 OK（证明该判据不是「恒红」）
+    link.unlink()
+    proc2 = subprocess.run([sys.executable, str(verify_tool.__file__), str(pack)],
+                           capture_output=True, text=True, env=_ENV)
+    assert proc2.returncode == 0, proc2.stdout + proc2.stderr
+    assert "verify_pack: OK" in proc2.stdout
+    sign_tool.build_signature(pack)  # 不得抛
+
+
 def test_pack_sign_and_verify_use_same_executable_criteria(tmp_path):
     """漂移守卫：三处可执行判据常量必须逐条一致 —— `pack.py` / `tools/verify_pack.py` /
     `tools/pack_sign.py`（**M2 / P-5 扩展**：写侧原先只按后缀名，判据漂移面从 2 处变 3 处）。

@@ -63,7 +63,7 @@
     },
     "impact_budget": {
       "type": "object",
-      "description": "会话级影响预算。耗尽后后续介入降级为「观察 + 记入待办」（E_BUDGET_EXHAUSTED）。",
+      "description": "会话级影响预算。耗尽后后续介入降级为「观察 + **作废待应用队列**」（E_BUDGET_EXHAUSTED）：降级只影响**新**上行；此前已 `intent_ack{status:'queued'}` 的意图在降级时逐条补发 `intent.rejected{E_BUDGET_EXHAUSTED}`（会话层 ack + 内核事件）并清空队列 —— **禁止静默作废**。",
       "additionalProperties": false,
       "required": ["per_session", "per_window", "window_ticks", "cost_table", "on_exhausted"],
       "properties": {
@@ -75,7 +75,7 @@
           "description": "各通道/动作的影响成本（数据驱动）。",
           "additionalProperties": { "type": "number", "minimum": 0 }
         },
-        "on_exhausted": { "type": "string", "enum": ["observe_and_queue", "reject"] }
+        "on_exhausted": { "type": "string", "enum": ["observe_and_drop_queued", "reject"] }
       }
     },
     "forbidden_actions": {

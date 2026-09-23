@@ -4,19 +4,33 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>DeepHealing · 幸福小区（V0 垂直切片）</title>
+    <link rel="icon" href="data:," />
     <style>
       :root { color-scheme: light; }
       html, body { margin: 0; height: 100%; background: #f3efe8; color: #3b3630; font-family: system-ui, sans-serif; }
-      #scene { position: absolute; inset: 0; }
-      #hud { position: absolute; left: 16px; top: 16px; padding: 12px 16px; background: rgba(255,255,255,.72); border-radius: 10px; }
-      #mode-badge { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; opacity: .7; }
+      /* R3 / G1：`#scene` 是 replaced element —— 只写 `inset:0` 时 `right/bottom` 会被忽略，
+         画布退回**固有尺寸 300×150**。显式宽高 + `display:block` 才能让它铺满视口。 */
+      #scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
+      /* HUD 只占左上角一块（`max-height` 兜住矮视口），**不得**整块盖住场景。 */
+      #hud { position: absolute; left: 16px; top: 16px; max-width: 22rem; max-height: calc(100% - 32px); overflow: auto; padding: 12px 16px; background: rgba(255,255,255,.78); border-radius: 10px; font-size: 13px; line-height: 1.5; z-index: 1; }
+      #mode-badge, #reading-badge { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; opacity: .75; }
+      #event-stream { max-height: 8rem; overflow: auto; margin: 6px 0 0; padding-left: 1rem; }
+      #anomaly-read { white-space: pre-line; margin-top: 8px; opacity: .9; }
+      #intervention-host { margin-top: 8px; }
+      @media (max-width: 430px) { #hud { left: 8px; right: 8px; top: 8px; max-width: none; font-size: 12px; } }
     </style>
   </head>
   <body>
     <canvas id="scene"></canvas>
     <div id="hud">
       <div id="mode-badge">observe</div>
+      <div id="reading-badge">surface</div>
       <div id="tick">tick 0</div>
+      <div id="controls">
+        <button id="toggle-reading" type="button">切换读法</button>
+        <button id="toggle-mode" type="button">切换模式</button>
+      </div>
+      <div id="intervention-host"></div>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

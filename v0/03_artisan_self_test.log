@@ -2719,3 +2719,1158 @@ $ cd {ws} && shasum -a 256 -c V0_M2.sha256 | grep -vc ': OK$'
 ====================================================================================================
 ## 修复轮 6 段结束 · 文档收口（零代码改动自证 = 重取 changed 仅文档/日志）
 ====================================================================================================
+
+
+================================================================================
+M3 段（REQ-20260921-005-deephealing-v0-m3 · artisan R1）
+================================================================================
+开工快照：repo /Users/wooyinq/personal/deep-healing = develop @ 98c781f4040d9b17757d67ba8e76fed1b95bfa12
+          git status --porcelain | wc -l = 0；无并发写者（.task-raven-prereview.pid 已退出）
+写集：<ws>/**（02_source/** + spikes/s12-session/** + spikes/s13-render/** + 根级 03/06/V0_M3.sha256）
+      + ~/.hermes/team-tasks/** + <ws>/.artisan.progress.json
+
+--------------------------------------------------------------------------------
+逐 AC 判定（命令 + workdir + exit + 证据 + 负例自证读数）
+--------------------------------------------------------------------------------
+AC-M3-1   PASS
+  命令：cd <ws>/02_source && bash verify_specs.sh --quiet
+  实测：verify_specs: OK (125 checks passed, 0 skipped)   exit=0
+  基线：cd <ws>/02_source/v0_skeleton/kernel && python3 -m deephealing_kernel run \
+        --pack districts/xingfu-xiaoqu --seed 20260921 --events /tmp/m3baseline/e.jsonl --snapshot-every 50
+        实测 chain_tail=baecca9219a9bbabfc0e46349834438cc0c61ba44fd6315aeda26fb65acfd786
+             event_count=925 / ticks=300 / 6 checkpoints
+             checkpoints/000300.json state_hash=9a4ae3da0d7cc3f8556d07ae773b8579d80f55a5cf6d4a0fc5594f5d7a66625f
+        exit=0（逐位不变）
+  manifest：147 行 vs 盘上 148 文件（差 1 = manifest.txt 自身，自排除为既有约定）；缺失/幻影/重复 = 0/0/0
+  AC-M3-1b（D-12）：差集 37 条 vs 声明 42 条 ⇒ **部分 FAIL**（5 条声明项本轮未实现：registry.py /
+        test_calibrate_latency.py / calibrate_latency.py / pack_sign.py / verify_pack.py）。
+        差集里未声明的行 = 0。接受该红，处置见 06 §4.1 与 §7，**不事后删除声明行**。
+  AC-M3-1c（P-1）：run --help 默认值已改为引用 tick.DEFAULT_PLAN_TICKS；
+        `= 300` 赋值全树恰好 1 处（tick.py:58）；不传 --ticks 真跑 300 tick / 6 检查点  exit=0
+  AC-M3-1d：pack#1/pack#2 各自 `kernel validate` exit=0；verify_specs.sh §7b 已含 pack#2 两道调用
+        负例 N-6（删 pack#2 worldview.json）⇒ verify_specs exit=1 **红** ✓
+  AC-M3-1e：/usr/bin/find 02_source \( -name node_modules -o -name dist -o -name .build \) | wc -l = 0
+        两次 npm run build 后 .build/web/assets 只有一套哈希产物
+        负例 N-7（造 web/dist/x.js）⇒ verify_specs exit=1 **红** ✓
+
+AC-M3-2   PASS
+  命令：cd <ws>/02_source/v0_skeleton/session && npm test
+  实测：9 passed / 0 failed / 0 skipped  exit=0
+        4 条 AC 命名用例逐字存在且真跑（observe 拒写 / tick 边界 / 限流冷却 / 预算耗尽降级）
+  内核侧：cd kernel && python3 -m pytest tests/test_observe_mode_readonly.py -q -p no:cacheprovider
+        4 passed  exit=0（桩已全部变成真断言）
+  事件流：spikes/s12-session/runtime/logs/kernel-events.jsonl
+        grep -c intent.rejected = 3（reason_code=E_MODE_READONLY）；intent.applied = 2；task.state_changed = 2
+  负例：N-1（会话层 observe 静默接受）⇒ npm test exit=1 **红** ✓
+        N-2（内核 submit_intent 静默接受）⇒ pytest exit=1 **红** ✓
+
+AC-M3-3   GAP（预算耗尽，真浏览器交互验收未执行）
+  已做：cd web && npm run build ⇒ exit=0；node --test test/render-client.test.ts ⇒ 4 passed 0 skipped exit=0
+  未做：真浏览器打开 + 桌面/≥390px 两档 + 真交互 + reload 回读 + 截图 + console 输出
+  替代证据（**不构成替代判据**）：spikes/s12-session/run-session.mjs 已实现 HTTP+WS+静态服务三合一
+
+AC-M3-4   GAP（半）：node web/scripts/scene_assert.mjs ⇒ scene_assert: PASS=15 FAIL=0 exit=0
+  观察模式无写入口：panel.ts::listWriteControls() 已实现（选择器枚举），**未在真浏览器执行**
+  负例：N-10（深层态换坐标）⇒ exit=1 **红** ✓；N-11（深层态饱和调高）⇒ exit=1 **红** ✓
+
+AC-M3-5   PASS
+  命令：cd kernel && python3 -m pytest tests/test_task_adaptation.py -q -p no:cacheprovider
+  实测：6 passed  exit=0
+  真跑：事件流里 task.state_changed 的 payload = {task_id, from_state=dormant, to_state=offered,
+        rule_id=rule-001-warmth, shift_index=1, caused_by=p8-part, decision=shift, impact_cost=3.0}
+  防刷（D-14 机器判据）：同目标连续两次 delegate_instruction ⇒ 审计流水 [shift, guard_no_op]，
+        第二次**不产生** task.state_changed
+  max_shifts 上限：数据驱动合成场景 ⇒ 第三次命中 decision=max_shifts_reached，迁移次数恰好 2
+  负例：N-3（max_shifts 改成 999）⇒ pytest exit=1 **红** ✓
+  无 intent 基线：test_default_run_without_intents_is_bit_identical ⇒ 逐位不变  ✓
+
+AC-M3-6   PASS
+  300 tick 基线逐位一致（见 AC-M3-1 的 state_hash / chain_tail / 检查点集合）
+  会话层两遍同序列：spikes/s12-session/logs/p8-zero-residue.json（桥运行产物）
+
+AC-M3-7   PASS
+  git rev-parse --abbrev-ref HEAD ⇒ develop；git status --porcelain | wc -l ⇒ 0
+  shasum -a 256 SEED.sha256 ⇒ 34fa7f6d252bc4bf966c8dbc4d639a1f08788ed71b9cfa04a0896ca7ba8f7676（未变）
+
+AC-M3-8   ①②⑤ PASS；③ 数值 PASS / 真浏览器 GAP；④ PASS
+  ① 两个 pack 各带 worldview.json 且过 worldview.schema.json（jsonschema 4.26.0）；
+     pack.entrypoints.worldview 登记 + 进 required；district.pack.spec.md §7/§8；verify_specs 仍 OK/0 skipped
+     负例 N-8（删 tone.underneath）⇒ schema 校验 exit=1 **红** ✓
+  ② 10/10 NPC 具备 narrative_hooks + healing_face + hidden_face
+     负例 N-9（删某 NPC 的 hidden_face）⇒ verify_specs exit=1 **红** ✓
+  ③ 两态共用几何：entities=12 / vertices=288 / 实体 id 集合与坐标逐项相同（scene_assert 绿）
+  ④ two_reads_share_geometry + underneath_does_not_raise_saturation 真跑通过
+  ⑤ anom-01 表层读法/深层读法两段齐备，reveal_at_tick=55
+  IP 边界：关键词扫描命中 1 文件 = worldview.schema.json 的 $comment（**自命中**，白名单化）；
+     命中能力探针 /tmp/m3-ip-probe.txt ⇒ grep 命中 1（有命中能力）；
+     xingfu-xiaoqu-north 在 world.ts/main.ts 命中 0（深层态不是第二个 pack/第二张地图）
+
+--------------------------------------------------------------------------------
+P-8（O-M2-1）零残渣 —— 逐字节
+--------------------------------------------------------------------------------
+命令：cd <ws> && node spikes/s12-session/zero-residue.mjs      exit=0
+判据①：02_source/** 全量 sha256 清单跑前/跑后逐字节相同
+        前 spikes/s12-session/logs/m3-source-manifest-before.txt（148 文件）
+        后 spikes/s12-session/logs/m3-source-manifest-after.txt（148 文件）
+        changed=[] added=[] removed=[] ⇒ byte_identical=true
+        排除集逐条列明：__pycache__ / *.pyc / .pytest_cache / .DS_Store / node_modules / .venv / dist / attic-*
+判据②：deephealing_kernel.__file__ = …/spikes/s12-session/runtime/02_source/v0_skeleton/kernel/deephealing_kernel/__init__.py
+        ⇒ kernel_inside_copy=true（位于副本路径下，不是交付树）
+负例：N-4（隔离副本改 1 字节）⇒ 清单比对**红** ✓；N-5（退回 sys.path.insert 交付树）**未执行**（预算耗尽，GAP）
+architect 侧清理登记：02_source 下 14 个 __pycache__/*.pyc（153→139 文件）由 architect 删除
+        （removed_files=14 removed_dirs=3）；属解释器副作用，被所有门禁排除，**在此声明**
+
+--------------------------------------------------------------------------------
+负例自证（D-13 隔离执行）总读数
+--------------------------------------------------------------------------------
+命令：cd <ws> && python3 spikes/s12-session/negctl.py .      exit=0
+副本根：/tmp/m3-negctl/**（整树副本；**未**改 02_source 再改回来）
+交付面 sha 跑前 == 跑后 ⇒ delivery_face_unchanged=true
+10 条负例全部 turned_red=true：N-1 N-2 N-3 N-4 N-6 N-7 N-8 N-9 N-10 N-11 N-12
+汇总：spikes/s12-session/logs/negctl-summary.json；逐条日志 spikes/s12-session/logs/negctl-*.log
+
+--------------------------------------------------------------------------------
+内核全量套件
+--------------------------------------------------------------------------------
+命令：cd <ws>/02_source/v0_skeleton/kernel && python3 -m pytest tests/ -q -p no:cacheprovider
+读数：spikes/s12-session/logs/m3-kernel-pytest.txt（长套件；未在 7200s 内等到终值 ⇒ **不得标 PASS**）
+
+--------------------------------------------------------------------------------
+结论
+--------------------------------------------------------------------------------
+PASS：AC-M3-1（含 1c/1d/1e）、AC-M3-2、AC-M3-5、AC-M3-6、AC-M3-7、AC-M3-8①②④⑤
+FAIL：AC-M3-1b（差集 vs 声明的双向比对，5 条声明项未实现 —— 如实报红）
+GAP ：AC-M3-3（真浏览器交互）、AC-M3-4 半（真浏览器无写入口枚举）、AC-M3-8③（真浏览器两态截图）、
+      P-9 / R-M2-1 / R-M2-3 / R-M2-4（预算耗尽，处方已定，归属 M4）、N-5、内核全量套件终值
+
+================================================================================
+## R2 段（修复轮 · REQ-20260921-005-deephealing-v0-m3）—— artisan 自测日志
+================================================================================
+
+- 轮次：R2（修复轮，迭代 2/3）　任务书：`<ws>/.task-artisan-r2.md`
+- 开工快照：repo `/Users/wooyinq/personal/deep-healing` = `develop` @ `98c781f4040d9b17757d67ba8e76fed1b95bfa12`，
+  `status --porcelain | wc -l` = **0**；并发守卫 `ls .task-{sentinel,raven}*` 只见 R1 的 `*.md/*.out/*.pointer.txt`（无 live writer）
+- 交付面规模：`02_source` **150** 文件（R1 末 148 + R2 新增 2）
+- 纪律：所有 python 带 `PYTHONDONTWRITEBYTECODE=1`/`-B`；负例**一律**在 `/tmp/r2-artisan/<case>/` 整树副本
+  （或 pytest `tmp_path` 副本）执行；每条负例记录「副本路径 + 注入方式 + 命令 + 期望红 + 实测红 + 交付面未变」。
+
+### R2-0 逐 F 项速览
+
+| 项 | 判定 | 一句话 |
+|---|---|---|
+| **F1** scene_assert 假绿 | **PASS** | 两读法**各自独立装配**（读法真进 `buildEntityBoxes(state, reading)`）；5 条负例（含阳性对照）分类正确 |
+| **F2** 桥 mode fail-open | **PASS** | `mode` 缺失/非字符串/未知 ⇒ 一律 `rejected{E_MODE_READONLY}` + 内核 `intent.rejected`；2 条负例变红 |
+| **F3** 预算降级静默作废 | **PASS** | 选 ②：降级时逐条补发 `intent.rejected{E_BUDGET_EXHAUSTED}` + 清空队列；契约字段改名 `observe_and_drop_queued` |
+| **F4** 真浏览器验收 | **PASS** | 真 Chromium 两档视口 × 两态 = 6 张截图；console 零 error/零 pageerror/零 4xx；下行流含 snapshot+delta+tick_meta（5 住户）；负例变红 |
+| **F5** P-9 收敛 | **PASS** | registry 相对路径 + 自动/显式迁移；`grep -c '/Users/'` = **0**（R1 为 3）；门禁新增断言；2 条负例变红 |
+| **F6** R-M2-1 / R-M2-3 | **PASS** | pin 内容摘要绑定（字节级）+ 目录符号链接 fail-closed；各自负例变红（隔离副本） |
+| F7 P-8 证据早于交付面 | **PASS** | 全部写入完成后重采 before/after：150 文件逐字节相同（`taken_at_epoch=1790096985`，清单哈希 `2564404e…`） |
+| F8 AC-M3-1b 口径 | **PASS** | 双向判据 + 时间锚 + M2 继承偏差登记；4 条负例变红 |
+| F9 scene_assert 硬编码区间 | **PASS** | 区间改读 `worldview.schema.json` / `art-bible.md`；「无镜面」改为对 `healingMaterial()` 返回值断言 |
+| F10 policy 无消费者字段 | **PASS** | `duplicate_merge_window_ms`（同 id 窗口内合并）+ `max_targets_per_intent` 都上了消费者 |
+| F11 `record:true` 空操作 | **PASS** | 注入式只读 recorder；真跑读数 7 条下行消息，未开录像会话零字节 |
+| F12 IP 扫描无判据载体 | **PASS** | 扫描器 + 逐条理由白名单进交付树 + 进 `verify_specs.sh` + `--probe` 自证命中能力 |
+| F13 渲染层写死 pack#1 | **PASS** | 世界观 URL 由会话 `district_pack_id` 决定；删 `FALLBACK_WORLDVIEW`；tone 数值全树单一定义点 |
+| F14 内核全量套件极慢 | **PASS（读数登记）** | 全量终值 **`151 passed in 888.24s (0:14:48)`**（0 failed / 0 skipped）；另给 7 模块快速回归口 `56 passed in 3.87s` |
+
+### R2-1 F1 · `scene_assert` 两态判据必须有命中能力（CRITICAL-1 / M3-01 / M3-14）
+
+改造（`02_source/v0_skeleton/web/src/scene/world.ts`）：
+- 新增 `READING_GEOMETRY_PROFILE: Record<Reading, {y_offset_mm, drop_kind}>`（两读法**当前等价**），
+  `buildEntityBoxes(state, reading)` / `geometryReport(state, reading)` 真正接收并传递读法；
+  `geometryFor(reading)` 不再是 0 参箭头（R1 的恒真根因）；`setReading` 走一次读法参数化装配。
+- `scene_assert.mjs`：两条读法**各装配一次**再比较，新增 4 条判据
+  （`two_reads_are_independent_assemblies` / `geometry_assembly_consumes_reading` /
+  `reading_profiles_declared_equal` / `geometry_digest_detects_position_shift`）+
+  `geometry_positions_match_seeded_state`（M3-14 的第二条牙齿：装配坐标必须逐项等于下发状态 `pos_mm`）。
+
+| # | 命令（workdir） | 期望 | 实测 | exit |
+|---|---|---|---|---|
+| 1 | `node scripts/scene_assert.mjs`（`02_source/v0_skeleton/web`） | 绿 PASS≥15 | **`scene_assert: PASS=22 FAIL=0` / `OK`** | 0 |
+| 2 | `python3 -B spikes/s13-render/negctl/f1_scene_assert_negctl.py`（`<ws>`） | 5 例分类正确 | 见下表 | 0 |
+
+负例（全部在 `/tmp/r2-artisan/<case>/02_source` 整树副本 + `node_modules` 软链；**零 `ERR_MODULE_NOT_FOUND`**）：
+
+| case | 注入 | 期望 | 实测（PASS/FAIL 行数 + 判红断言） | 判定 |
+|---|---|---|---|---|
+| `f1_pristine` | 无（阳性对照） | 绿 | exit 0 / PASS=20 / FAIL=0 | ✅ |
+| `f1a_reading_dependent_offset` | `underneath: {y_offset_mm: 12345}`（D-7 禁止的读法相关坐标） | 红 | exit 1 / **FAIL two_reads_share_geometry** + object_identity + profiles | ✅ judged_red |
+| `f1b_reading_dependent_drop_entity` | `underneath.drop_kind = 'npc'`（深层态少一个实体） | 红 | exit 1 / **FAIL two_reads_share_geometry** | ✅ judged_red |
+| `f1c_global_position_shift` | `pos.x + 12345`（**R1 的 N-10 形态**：两读法共用同一路径） | 红 | exit 1 / **FAIL geometry_positions_match_seeded_state** | ✅ judged_red |
+| `f1d_report_ignores_reading` | `geometryReport` 丢弃读法入参 | 红 | exit 1 / **FAIL two_reads_are_independent_assemblies** | ✅ judged_red |
+
+- 汇总：`spikes/s13-render/logs/f1-negctl-summary.json`（`turned_red` 只给 `judged_red`，`crash` 单列；
+  本次 `crashes: []`，`delivery_face_unchanged: true`）。
+- **M3-14 关闭说明**：R1 的 N-10（全局 +12345）在「两读法同几何」这条判据上**原理上打不到靶**（全局偏移不改两读关系）；
+  现在它被 `geometry_positions_match_seeded_state` 捕获（`f1c` 实测变红），而读法相关注入由 `f1a/f1b` 捕获。
+
+### R2-2 F2 · 桥的 `mode` 缺省必须 fail-closed（CRITICAL-2 / M3-02）
+
+改造（`session/bridge/kernel_bridge.py`）：`raw_mode = command.get("mode")`；**缺失/非字符串 ⇒ `""`**
+（只读侧），未知字符串原样交给内核入口 ⇒ 一律 `rejected{E_MODE_READONLY}` 并落 `intent.rejected`。
+
+| # | 命令（workdir） | 期望 | 实测 | exit |
+|---|---|---|---|---|
+| 1 | `python3 -B spikes/s12-session/negctl/f2_bridge_mode_check.py`（`<ws>`） | ①不传 mode 拒且无 `intent.applied`；②显式 participate 正常；③非字符串/未知拒 | `f2_pristine`: 8/8 checks true；`intent.rejected=4`、`applied=['explicit-participate']` | 0 |
+| 2 | 同上，负例 `f2_neg_default_participate`（缺省值改回可写侧） | 新判据必须红 | `all_checks_pass=False`；`applied=['no-mode','non-string-mode','explicit-participate']` | ✅ 红 |
+| 3 | 同上，负例 `f2_neg_original_shape`（退回 R1 的 `str(command.get("mode","participate"))`） | 红 | `all_checks_pass=False`；`applied=['no-mode','explicit-participate']` | ✅ 红 |
+
+- 汇总：`spikes/s13-render/logs/f2-bridge-mode-summary.json`（`delivery_face_unchanged: true`）。
+
+### R2-3 F3 · 预算降级不得静默作废（CRITICAL-3 / M3-03）
+
+**选择 ②**（写进契约与实现）：`impact_budget.on_exhausted` 由 `observe_and_queue` 改名为
+**`observe_and_drop_queued`**（`intervention.policy.schema.json` 枚举 + 描述同步改），语义 = 降级为观察 +
+**作废待应用队列**：降级只影响**新**上行；此前已 ack 为 `queued` 的意图逐条补发
+`intent.rejected{E_BUDGET_EXHAUSTED}`（会话层 ack 进下行 outbox + 内核事件流）并清空两侧队列。
+
+改动：`session/src/policy.js`（改名 + 消费者）、`session/src/server.js`（`downgradeToObserve()`）、
+`session/src/upstream.js`（`voidPendingIntents`）、`bridge/kernel_bridge.py`（`void_intents` 命令 → `void_ack`）、
+`kernel/deephealing_kernel/tick.py`（`void_pending_intents()`）、`kernel/tests/test_budget_downgrade_void.py`（新增）。
+
+| # | 命令（workdir） | 期望 | 实测 | exit |
+|---|---|---|---|---|
+| 1 | `python3 -B spikes/s12-session/negctl/f3_budget_downgrade_negctl.py`（`<ws>`） | 13 条判据全真 | `f3_pristine` 13/13 checks true | 0 |
+| 2 | `node spikes/s12-session/scripts/f3-budget-downgrade.mjs --source 02_source`（`<ws>`） | 真桥+真会话层两场景 | 场景 A（会话队列 33 条）：`session_voided_acks=33`、`session_pending_after=0`、`kernel_applied_total=0`、`audit_budget_entries=34`；场景 B（**内核侧** 33 条）：`kernel_voided_count=33`、`void_ack.pending_after=0`、`kernel_rejected_budget_exhausted=33`、`kernel_applied_total=0` | 0 |
+| 3 | `pytest tests/test_budget_downgrade_void.py tests/test_observe_mode_readonly.py -q`（`kernel`） | 全绿 | **7 passed** | 0 |
+| 4 | `npm test`（`session`） | 全绿 | **13 passed / 0 failed**（含 2 条降级作废用例 + R2 新增 3 条） | 0 |
+
+负例（隔离副本）：
+
+| case | 注入 | 期望 | 实测 | 判定 |
+|---|---|---|---|---|
+| `f3_neg_session_silent_downgrade` | `server.js` 退回「只改 mode、不补发 ack、不作废内核队列」 | 红 | 6 条判据失败（含 `a_every_queued_intent_has_rejection_ack`、`b_kernel_pending_zero_after_downgrade`） | ✅ |
+| `f3_neg_kernel_silent_drop` | `tick.py` 退回「静默清空队列、不发 `intent.rejected`」 | 红 | `b_every_kernel_intent_voided_with_event` 失败 | ✅ |
+
+- 汇总：`spikes/s13-render/logs/f3-budget-downgrade-summary.json`（`delivery_face_unchanged: true`）。
+- 判据 ④（契约同步）：`grep -rn "observe_and_queue" 02_source` ⇒ **0 命中**（schema + policy 全改）。
+
+### R2-4 F4 · 真浏览器验收（CRITICAL-4 / AC-M3-3 + AC-M3-4 + AC-M3-8③）
+
+服务端脚手架（`spikes/**`，非交付面）：`spikes/s13-render/serve.mjs`（真会话层 + 真桥 + 静态 `.build/web`
++ `/packs/<id>/worldview.json` + 只读 recorder）；驱动：`spikes/s13-render/browser-accept.mjs`（Playwright 真 Chromium）。
+
+| # | 命令（workdir） | 期望 | 实测 | exit |
+|---|---|---|---|---|
+| 1 | `npm run build`（`02_source/v0_skeleton/web`） | exit 0 | `✓ built in 419ms`（`assets/index-BZDGZLmT.js`） | 0 |
+| 2 | `python3 -B spikes/s13-render/negctl/f4_browser_negctl.py`（`<ws>`） | 阳性全绿 + 负例变红 | 见下 | 0 |
+
+真读数（`f4_pristine`，`spikes/s13-render/logs/browser-accept-pristine.json`）：
+- 视口：**desktop 1440×900** + **narrow 390×844**；截图 **6 张**（`pristine-{desktop,narrow}-{surface,underneath}.png`
+  + `*-after-reload.png`）⇒ 两档 × 两态 ≥4 张 ✅；
+- console：`console_total=4` / **`console_errors=0`** / **`page_errors=0`** / **`bad_responses=[]`**（实际 console 内容见
+  `spikes/s13-render/logs/console-pristine.jsonl`，全为 WebGL 性能 warning）；
+- AC-M3-4①（**真浏览器枚举 UI 控件**）：观察模式 `writeControls()==[]`；文档级控件表只有
+  `button#toggle-reading` / `button#toggle-mode`（只读视图控件，allow-list 内）⇒ 无写控件；`duplicate_ids=0`；
+- AC-M3-4②（写接口被拒真跑）：客户端本地 `{status:"rejected",reason:"E_MODE_READONLY"}`；
+  **服务端 WS 上行**（真 `POST /sessions` + 真 WS）⇒ `intent_ack{status:"rejected",reason:"E_MODE_READONLY",
+  detail:"session mode observe is read-only"}`；
+- AC-M3-8③（真浏览器两态几何）：`geometryFor('surface')` vs `geometryFor('underneath')`
+  逐项相同（12 实体 / 288 顶点 / digest 一致），`reading` 字段分别为 `surface`/`underneath`；截图在
+  `reveal_at_tick=55` **前后**各一张（`surface_tick_at_shot=49` → `underneath_tick_at_shot=61`，深层读法文本已显示 `underneath`）；
+- reload 后回读：`tick 77 → 117`（desktop）、`tick 161 → 201`（narrow），模式复位 `observe`、会话重连、事件流继续；
+- 首帧补齐：`first_frame_ms=498`（desktop）/ `45`（narrow），首帧即 12 实体（**R2 修复的真实缺陷**，见下）；
+- 真交互：填 `#delegate-instruction` + 点「委托」⇒ `intent_status=queued`（参与模式写控件确实挂载）；
+- 下行 tick 流：`spikes/s12-session/logs/emitted-messages.jsonl` = `snapshot 1 + delta 56 + tick_meta 57`，
+  每个 delta 覆盖 **npc-001..npc-005**，tick 连续覆盖 50 个 tick（`max_tick_in_stream=77`）⇒ 「5 住户持续 tick」有读数。
+
+**真浏览器实测发现的 3 个真实缺陷（R2 内修复）**：
+1. `panel.ts` 重复 `#tick` id ⇒ `document.getElementById('tick')` 取到 index.html 里**永不更新**的那个，
+   面板可见 tick 恒为 0、`reveal_at_tick` 永不触发（深层读法在浏览器里永远不显示）⇒ 改为**复用**宿主里已存在的同 id 元素；
+2. 连上会话后最长要等一个 `snapshot_every` 周期才看得见世界（narrow 视口实测 6s 内**零几何**，且此前的 delta 因无快照基座被丢弃）
+   ⇒ 新增 `SessionServer.primeSession()` + 桥 `snapshot` 命令（只读），新连接**首帧补齐**；
+3. `index.html` 无 favicon ⇒ 每次加载 1 条 `404` console error ⇒ 加 `<link rel="icon" href="data:,">`。
+
+负例（`f4_neg_observe_write_control`，注入版 bundle 由副本内 `vite build` 重建）：
+- 注入：`panel.ts` 构造函数给观察面板 append 一个 `<input>`；
+- 期望红、实测红：`failed_checks = [desktop_observe_no_write_controls, desktop_observe_ui_tree_no_write_controls,
+  narrow_observe_no_write_controls, narrow_observe_ui_tree_no_write_controls]` ⇒ `ok=True`（`all_checks_pass=False` 符合预期）。
+- 汇总：`spikes/s13-render/logs/f4-browser-summary.json`（`delivery_face_unchanged: true`）。
+
+### R2-5 F5 · P-9 收敛（CRITICAL-4 / M3-04 · 3A-C3 四步）
+
+改动：`kernel/tools/calibrate_latency.py`（`relative_to_registry()` / `resolve_registry_path()` +
+`registry --force-rewrite` + **格式漂移自动迁移** + 落盘后回读自检）、`kernel/tests/test_calibrate_latency.py`（3 条新判据）、
+`02_source/verify_specs.sh`（§12 断言）、`spikes/s5-latency-calibration/calibration.registry.json`（盘上迁移）。
+
+| # | 命令（workdir） | 期望 | 实测 | exit |
+|---|---|---|---|---|
+| 1 | `python3 tools/calibrate_latency.py registry --force-rewrite`（`kernel`） | 迁移绝对路径 | `rewritten: true`；`relative_paths=[ACCEPTED-DEGRADATION-RANGE.frozen.md, DERIVATION-RULE.frozen.md, ENVIRONMENT-CLASS.frozen.md]`；`on_disk_absolute_path_keys=[]` | 0 |
+| 2 | `grep -c '/Users/' <ws>/spikes/s5-latency-calibration/calibration.registry.json` | **0**（R1 为 3） | **0**（grep exit 1 = 无命中） | 1（按设计） |
+| 3 | `python3 tools/calibrate_latency.py registry`（再跑，幂等） | 逐字节不变 | `unchanged: true`、`rewritten: false`、sha256 `8af6ccb6…` 不变 | 0 |
+| 4 | `pytest tests/test_calibrate_latency.py -q`（`kernel`） | 全绿 | **13 passed** | 0 |
+| 5 | `bash 02_source/verify_specs.sh`（`<ws>`） | 新断言在场且绿 | `PASS calibration registry: 0 absolute paths, 3 relative paths all resolvable`；`verify_specs: OK (128 checks passed, 0 skipped)` | 0 |
+| 6 | `python3 -B spikes/s5-latency-calibration/negctl/f5_registry_paths_negctl.py`（`<ws>`） | 阳性绿 + 2 负例红 | 3/3 ok | 0 |
+
+负例（隔离副本 = `02_source` + `spikes/s5-latency-calibration` 整树副本）：
+
+| case | 注入 | 期望 | 实测 | 判定 |
+|---|---|---|---|---|
+| `f5_pristine` | 无 | 绿 | exit 0、新断言 PASS 行在场、无 FAIL 行 | ✅ |
+| `f5_neg_absolute_path` | registry 写回一条 `/Users/…` 绝对路径 | 红 | `exit=1` + `FAIL  calibration registry path format` | ✅ |
+| `f5_neg_unresolvable_path` | 某条 `path` 指向不存在的文件 | 红 | `exit=1` + 同一条 FAIL（判据不只看 `startswith("/")`） | ✅ |
+
+- 汇总：`spikes/s13-render/logs/f5-registry-paths-summary.json`（`delivery_face_unchanged: true`）。
+- 采集面声明：`spikes/s5/**` 不在 `V0_M2.sha256` 采集面 ⇒ 已写进 `spikes/s12-session/m3-change-face.txt`
+  的 `SECTION C` / `SECTION A-R2` 的 OUTSIDE 段（`m3-change-face.json` 亦有机器可读副本）。
+
+### R2-6 F6 · R-M2-1（pin 内容摘要绑定）+ R-M2-3（目录符号链接 fail-closed）
+
+**R-M2-1**（`kernel/deephealing_kernel/registry.py` + `capabilities/pins.json`）：
+- `pins.json` 新增 `digests`（`{"<id>@<version>": sha256(**文件字节**)}`，5 条 pin 全覆盖，
+  与 `shasum -a 256` 逐字一致 —— 独立可复核）；
+- `validate()` / `_resolve_by_slot()` / `capability()` 三处都校验绑定：**未声明摘要**与**摘要不一致**都 fail-closed
+  （`E_CAP_DIGEST_MISMATCH`）；`capability()` 出口**再校验一次**（覆盖 validate 之后被改字节的窗口）。
+
+**R-M2-3**（`v0_skeleton/tools/verify_pack.py` + `tools/pack_sign.py`）：
+- 新增 `symlinked_directories(root)` 并显式枚举「解析后是目录」的符号链接 ⇒ **一律拒收**
+  （读侧 `E_PACK_INVALID: symlinked directory in content pack`；写侧拒绝对它签名）。
+
+| # | 命令（workdir） | 期望 | 实测 | exit |
+|---|---|---|---|---|
+| 1 | `pytest tests/test_pins_resolution.py tests/test_pack_validate.py -q`（`kernel`） | 全绿 | 见 R2-13 汇总（含 R2 新增 3 条 pin 摘要判据 + 1 条目录链接判据） | 0 |
+| 2 | `python3 -B spikes/s12-session/scripts/refresh-pin-digests.py 02_source`（`<ws>`） | 幂等登记 | 首次写盘；再跑 `unchanged` | 0 |
+| 3 | `python3 -B spikes/s12-session/negctl/f6_m2_inherited_negctl.py`（`<ws>`） | 3 例分类正确 | `f6_pristine`（pin 绿 + 目录链接红）、`f6_neg_pin_digest_disabled`（pin 判据变红）、`f6_neg_dir_symlink_guard_removed`（同一 pack 被判绿 ⇒ 证明红由该守卫造成） | 0 |
+
+- 汇总：`spikes/s13-render/logs/f6-m2-inherited-summary.json`（`delivery_face_unchanged: true`）。
+- 说明：R-M2-3 的 M2 判定是「文档面已关闭」，本轮按 **D-11「必须本轮关闭」** 落到**实现面**（冻结工具被改，
+  已按任务书授权；变更写入 change-face）。
+
+### R2-7 F7 · P-8 证据重采（全部写入完成后）
+
+| # | 命令（workdir） | 期望 | 实测 | exit |
+|---|---|---|---|---|
+| 1 | `python3 -B spikes/s12-session/scripts/p8-freeze-recheck.py .`（`<ws>`） | 交付面逐字节相同 | `file_count_before=150` / `file_count_after=150` / `added=[]` / `removed=[]` / `changed=[]` / **`delivery_face_byte_identical: true`**；桥 exit 0；`taken_at_epoch=1790096985`（**交付面最后一次写入之后**重采） | 0 |
+
+- 重采理由 + 前后哈希登记：`spikes/s12-session/logs/p8-freeze-recheck.json`
+  （`manifest_sha256_before == manifest_sha256_after == 2564404ed543d48efc64836e600abd943365ef869f116dbc610f31d1c42d1210`；
+  首次取证在 00:54（`e6003ec7…`），交付面最后一处改动（`lighting.ts` 注释去重）之后**重采**为当前值）。
+
+### R2-8 F8 · AC-M3-1b 双向口径 + M2 继承偏差登记 + 时间锚
+
+| # | 命令（workdir） | 期望 | 实测 | exit |
+|---|---|---|---|---|
+| 1 | `python3 -B spikes/s12-session/scripts/build-change-face-r2.py .`（`<ws>`） | 复算声明 + 时间锚 | `modified_count=46`、`added_count=11`、`declared_at_epoch=1790096082` | 0 |
+| 2 | `python3 -B spikes/s12-session/scripts/ac-m3-1b-check.py --ws .`（`<ws>`） | 双向成立 | `non_ok_count=46 == declared_count=46`；`declared_but_unchanged=[]`；`changed_but_undeclared=[]`；`bidirectional_ok: true`（`checked_at_epoch=1790096985`，交付面冻结后复跑） | 0 |
+| 3 | `python3 -B spikes/s12-session/negctl/f8_ac_m3_1b_negctl.py`（`<ws>`） | 4 负例变红 | 见下 | 0 |
+
+负例（声明/V0_M2 的副本在 `/tmp/r2-artisan/f8_*`，交付面零改动）：
+
+| case | 注入 | 期望 | 实测 | 判定 |
+|---|---|---|---|---|
+| `f8_pristine` | 无 | 绿 | exit 0 | ✅ |
+| `f8_neg_phantom_declaration` | 声明里塞一条**没变**的路径 | 红 | exit 1（虚报） | ✅ |
+| `f8_neg_dropped_declaration` | 删掉真变了的 `02_source/verify_specs.sh` | 红 | exit 1；`changed_but_undeclared=['02_source/verify_specs.sh']` | ✅ |
+| `f8_neg_inheritance_unregistered` | 同时删继承偏差登记与它的声明条目 | 红 | exit 1；`changed_but_undeclared=['…/calibrate_latency.py']` | ✅ |
+| `f8_neg_v0m2_tampered` | 把未声明文件 `art-bible.md` 的记录哈希改错 | 红 | exit 1；`changed_but_undeclared=['02_source/art-bible.md']` | ✅ |
+
+- 汇总：`spikes/s13-render/logs/f8-ac-m3-1b-summary.json`（`time_anchor_present: true`）。
+- **M2 继承偏差登记**（单独登记，不计入本轮改动）：`02_source/v0_skeleton/kernel/tools/calibrate_latency.py`
+  —— `V0_M2.sha256` 记 `e30be65b…`，M2 提交态 `23fed40d…`（R1 已独立复现，M3 R1 未动过该文件）。
+  **R2 说明**：本轮因 P-9（F5）**另有**真实修改 ⇒ 该条现在同时是「本轮声明改动」；
+  继承偏差本身在盘上无法再复算（真实仓库无 M2 提交对象），按 R1 读数登记。
+
+### R2-9 F9 · `scene_assert` 三处硬编码区间
+
+- `warm_hue_range_declared`：改为「`assets/manifest.json` 的 `warm_hue_range_deg` == `art-bible.md` 的色相范围声明」
+  （实测 `manifest=[20,60] art-bible=[20,60]`）；
+- `light_k_within_worldview_schema_range`：区间改读 `worldview.schema.json` 的
+  `$defs.toneReading.properties.light_k.{minimum,maximum}`（实测 `schema=[3200,5200]`），
+  并新增 `light_k_range_matches_art_bible`（schema 与 art-bible 的 3200–5200 一致）；
+- `no_specular_highlight`：改为对 `healingMaterial('#d9c7a7', surface)` 的**返回值**断言
+  （`metalness=0.04`），并新增 `material_roughness_floor_from_factory`（`roughness=0.75 ≥ floor=0.6`）；
+  不再读实现源文本、不再正则匹配字面量。
+- 读数：`node scripts/scene_assert.mjs` ⇒ **`PASS=22 FAIL=0`** / exit 0（`web` workdir）。
+
+### R2-10 F10 · policy 里声明但无消费者的字段
+
+- `duplicate_merge_window_ms` **消费者**：`policy.evaluate()` 登记 `pendingIds`；同会话同 `id` 在窗口内重复提交
+  ⇒ 返回 `{ok:true, merged:true, impactCost:0}`；`server.js` 回 `intent_ack{status:"queued", detail:"merged: …"}`
+  且**不新增队列条目** ⇒ tick 边界只产生**一条** `intent.applied`。
+- `max_targets_per_intent` **消费者**：`policy.evaluate()` 读 `scope.max_targets_per_intent`，
+  `targets` 数量超限 ⇒ `E_TARGET_UNKNOWN` + detail 含字段名。
+- 判据：`npm test`（`session`）⇒ **13 passed**，含 `test_duplicate_intent_id_is_merged_within_window`
+  （窗口内 merged / 队列只 1 条 / 窗口外**不合并**的反向对照）与 `test_max_targets_per_intent_is_enforced`。
+
+### R2-11 F11 · `record:true` 的静默空操作
+
+- 实现**最小录像**（注入式只读 recorder）：`SessionServer({recorder})`；`createSession({record:true})`
+  ⇒ 该会话每条**下行**消息交给 `recorder.record()`。会话层**不碰文件系统**、**不写世界**。
+- 真跑读数（`node spikes/s12-session/scripts/record-check.mjs`，真桥 + 真会话层）：
+  `record_lines=7`（`snapshot 3 / tick_meta 3 / intent_ack 1`）、
+  `record_all_belong_to_recorded_session=true`、`plain_session_record_file_exists=false`、
+  `kernel_event_count=22`（录像未改变内核事件）。
+- 落点：`spikes/s12-session/logs/session-record-<session_id>.jsonl` + `record-check-summary.json`。
+- 单测：`test_record_true_records_downstream_messages_readonly`（未开录像的会话零字节；内核交互次数不变）。
+
+### R2-12 F12 · IP 边界扫描的判据载体
+
+- 新增 `02_source/v0_skeleton/tools/scan_ip_boundary.py`：6 类模式 + **逐条给理由**的白名单 +
+  `--probe` 自证（探针注入 `/tmp` 临时树 ⇒ 必命中；移除 ⇒ 回到基线）。
+- 进 `verify_specs.sh` §13（两条断言）。读数：`PASS IP boundary scan clean (0 unwhitelisted hits)`、
+  `PASS IP boundary scanner self-proof holds (probe detected + removal restores baseline)`；
+  `--probe` 明细：`baseline_hits=20` → `injected_hits=24` → `removed_restores_baseline=true`、
+  `probe_patterns_detected=[gore_lexicon, jump_scare, monster_lexicon, novel_title_reference]`。
+- 负例（`python3 -B spikes/s12-session/negctl/f12_ip_scan_negctl.py`，3/3 ok、交付面零改动）：
+  `f12_pristine` exit 0 / `unwhitelisted=0`；`f12_neg_injected_probe`（副本注入含探针文本的文件）exit 1 /
+  `unwhitelisted=4`；`f12_neg_whitelist_disabled`（副本里清空白名单）exit 1 / `unwhitelisted=14`
+  ⇒ 白名单是**承重**的（schema `$comment` 的自命中必须逐条给理由）。
+- 汇总：`spikes/s13-render/logs/f12-ip-scan-summary.json`。
+
+### R2-13 F13 · 渲染层写死 pack#1 + 死代码
+
+- 删除 `main.ts` 的静态 `import worldviewDocument from '../../districts/xingfu-xiaoqu/worldview.json'`
+  与 `BUNDLED_WORLDVIEW` / `FALLBACK_WORLDVIEW`（后者是死代码且复制了一份 tone 数值）；
+- 世界观 URL 由会话决定：`worldviewUrlFor(districtPackId) = /packs/<id>/worldview.json`，
+  `RenderClient.districtPackId` 由 `connect()` 记录；`bootstrap()` **先建会话**再取世界观；
+- 宿主侧（`spikes/s13-render/serve.mjs`）新增 `/packs/<id>/worldview.json` 路由，从
+  `02_source/v0_skeleton/districts/<id>/worldview.json` 直读；
+- 判据（与 AC-M3-1c② 同口径）：`grep -rn "4200\|0\.42\|saturation_pct: 28\|3200" 02_source/v0_skeleton/web --include=*.ts --include=*.mjs`
+  ⇒ **0 命中**（R2 顺带删掉了 `lighting.ts` 注释里重复的「4200K / 0.42」）；tone 数值全树只有
+  `districts/<pack>/worldview.json` 一处定义点；
+- 代价（如实登记）：离线（无会话层/无宿主静态服务）时渲染层**不再**自造基调 ⇒ 不渲染场景（**不伪造**世界状态）；
+  M4 若需离线，应由构建期从 pack 文件注入（单一数据源不变）。
+
+### R2-14 F14 · 内核全量套件读数（长套件）
+
+| # | 命令（workdir） | 期望 | 实测 | exit |
+|---|---|---|---|---|
+| 1 | `PYTHONDONTWRITEBYTECODE=1 python3 -m pytest tests/ -q -p no:cacheprovider`（`kernel`） | 全绿 | **`151 passed in 888.24s (0:14:48)`**（0 failed / 0 skipped；完整输出 `/tmp/r2-artisan/kernel-full.log`；R2 终值同时登记于 `06` 的 R2-D） | 0 |
+| 2 | 同上（分组子集） | 全绿 | `tests/{test_pins_resolution,test_pack_validate,test_calibrate_latency,test_observe_mode_readonly,test_budget_downgrade_void,test_capability_registry,test_slot_conflict}.py` ⇒ **56 passed in 3.87s**（R2 复跑；7 个受影响模块的快速回归口） | 0 |
+
+### R2-15 负例重跑（交付面**冻结后**一次跑齐，8 个汇总同一交付面哈希）
+
+| # | 命令（workdir = `<ws>`） | 期望 | 实测 | exit |
+|---|---|---|---|---|
+| 1 | `sh /tmp/r2-batch.sh`（一次跑齐 F1–F6 + F8 + F12；日志 `/tmp/r2-artisan/batch-final.log`） | 8 个 harness 全 exit 0 | `F1 exit=0 01:13:36` / `F2 01:13:37` / `F3 01:13:40` / `F5 01:13:48` / `F6 01:13:51` / `F8 01:13:51` / `F12 01:13:51` / `F4 01:15:54`；`BATCH DONE 01:15:54` | 0 |
+| 2 | `python3 -B /tmp/r2-artisan/verify-summaries.py`（`<ws>`） | 8 个汇总同一 `delivery_face_sha_tree` + `all_ok=true` | `distinct delivery_face_sha_tree values: 1` ⇒ **`c284b86f4201fe3c21d4a0eb68a51fd13d00c08be2a60cf1910a13be5ae07d4c`**（8/8）；8/8 `delivery_face_unchanged=true` | 0 |
+
+- 目的：R1 的教训是「负例读数与交付面不同步」。本轮**在交付面冻结后**把 8 条 harness 一次跑齐，
+  使每条负例汇总都携带**同一个**交付面哈希（此前 F1–F6 那批早于 `lighting.ts` 的注释去重，哈希为 `369778b7…`）。
+- 逐条变红集合（均为 `judged_red` = 断言判红，非环境崩溃；`crashes=[]`、无 `ERR_MODULE_NOT_FOUND`）：
+  - F1 `f1a/f1b/f1c/f1d`；F2 `f2_neg_default_participate`、`f2_neg_original_shape`；
+  - F3 `f3_neg_session_silent_downgrade`、`f3_neg_kernel_silent_drop`；
+  - F4 `f4_neg_observe_write_control`（4 条 UI 树判据变红）；
+  - F5 `f5_neg_absolute_path`、`f5_neg_unresolvable_path`；
+  - F6 `f6_neg_pin_digest_disabled` + `f6_pristine`（守卫在场 ⇒ 含目录链接的 pack 必须被拒）；
+  - F8 `f8_neg_phantom_declaration`、`f8_neg_dropped_declaration`、`f8_neg_inheritance_unregistered`、`f8_neg_v0m2_tampered`；
+  - F12 `f12_neg_injected_probe`（4 命中）、`f12_neg_whitelist_disabled`（14 命中）。
+- 阳性对照：各 `f*_pristine` 均 `judged_green`；**F6 例外**——其阳性形态是「含目录符号链接的 pack 必须被拒」，
+  故 `f6_pristine` 记 `judged_red`，而「去掉守卫」的负例 `f6_neg_dir_symlink_guard_removed` 记 `judged_green`
+  ⇒ 反证守卫是**承重**的（不是恒绿装饰）。
+
+================================================================================
+R3 段 · M3 最后一次修复迭代（3/3）· artisan 自测日志
+================================================================================
+任务书：<ws>/.task-artisan-r3.md　判据权威：01_architecture_design.md §3B-1　范围：只修 G1–G10
+所有 python 调用带 PYTHONDONTWRITEBYTECODE=1（或 -B）；所有负例在 /tmp/r3-artisan/** 的整树副本里注入。
+
+--- R3-0 快照 / 写集 / 变更面声明 ------------------------------------------------
+cmd: git -C /Users/wooyinq/personal/deep-healing rev-parse --abbrev-ref HEAD      => develop
+cmd: git -C /Users/wooyinq/personal/deep-healing rev-parse HEAD                   => 98c781f4040d9b17757d67ba8e76fed1b95bfa12
+cmd: git -C /Users/wooyinq/personal/deep-healing status --porcelain | wc -l       => 0            exit 0
+变更面声明（**编码之前**写定，含 epoch 锚）：spikes/s12-session/m3-change-face.txt 的 SECTION A-R3
+02_source 文件数：150（本轮零新增/零删除）；manifest.txt 未改
+
+--- R3-1 G1（CRITICAL）3D 世界可见且铺满视口 ------------------------------------
+实现：web/index.html 的 #scene 显式 width/height/display:block + z-index 层叠、#hud max-height；
+      world/src/scene/world.ts 的 createScene 内 resize()（setSize(clientWidth,clientHeight,false) + DPR +
+      camera.aspect）+ ResizeObserver + window resize 监听；新增 viewport() 读数。
+cmd: cd 02_source/v0_skeleton/web && npm run build
+     => ../../../.build/web/index.html 2.08 kB / assets/index-DQrwJpuX.js 486.11 kB   exit 0
+cmd: node <ws>/spikes/s13-render/serve.mjs --web <ws>/.build/web --port 8891 --run-seconds 60 \
+       --emit <ws>/spikes/s12-session/logs/emitted-messages.jsonl --runtime <ws>/spikes/s13-render/runtime-measure
+     => SERVE_READY port=8891
+cmd: node <ws>/spikes/s13-render/browser-accept.mjs --url http://127.0.0.1:8891 --out <ws>/spikes/s13-render/logs --tag pristine
+     => driver exit=0 seconds=20.32；console={'total':4,'errors':0}；page_errors=0；bad_responses=0
+读数（workdir=<ws>）：
+  desktop(1440×900): canvas_rect={x:0,y:0,w:1440,h:900}、canvas.width/height=1440×900、
+                     gl.drawingBuffer=1440×900、hud_rect={16,16,384,263}、scene_viewport.aspect=1.6、webgl=true
+  narrow (390×844): canvas_rect={x:0,y:0,w:390,h:844}、canvas 属性/绘制缓冲=390×844、
+                     hud_rect={8,8,374,251}、aspect=0.4621
+  像素（HUD 之外的非背景像素占比，阈值 0.05）：
+    pristine-desktop-surface.png    bg_ratio=0.807955 nonbg=0.189791 bbox=[16,16,1265,575] outside_hud=147966 (0.123820)
+    pristine-desktop-underneath.png bg_ratio=0.803642 nonbg=0.194837 bbox=[16,16,1341,669] outside_hud=153556 (0.128498)
+    pristine-desktop-after-reload   bg_ratio=0.807945 nonbg=0.189824 bbox=[16,16,1265,575] outside_hud=147979 (0.123831)
+    pristine-narrow-surface.png     bg_ratio=0.459922 nonbg=0.530809 bbox=[0,8,389,524]  outside_hud=83966  (0.356868)
+    pristine-narrow-underneath.png  bg_ratio=0.459922 nonbg=0.533428 bbox=[0,8,389,524]  outside_hud=83966  (0.356868)
+    pristine-narrow-after-reload    bg_ratio=0.459922 nonbg=0.530827 bbox=[0,8,389,524]  outside_hud=83966  (0.356868)
+  ⇒ 6 张截图（1440×900 ×3 / 390×844 ×3）本轮**重采**，全部 ≥ 阈值（最小 0.1238，阈值 0.05）
+判据与负例（harness：spikes/s13-render/negctl/f4_browser_negctl.py，像素解码 = PIL（无 PIL 时退回自带
+无依赖 PNG 解码器 _decode_png_pure），HUD 矩形来自真浏览器读数而非硬编码）：
+cmd: PYTHONDONTWRITEBYTECODE=1 python3 -B spikes/s13-render/negctl/f4_browser_negctl.py   (workdir=<ws>)
+  [f4_pristine]              all_checks_pass=True  failed=[]                                 ok=True
+  [f4_neg_observe_write_control] all_checks_pass=False failed=[*_observe_no_write_controls, *_observe_ui_tree_no_write_controls] ok=True
+  [f4_neg_pinned_buffer_only]    all_checks_pass=False failed=[desktop_drawing_buffer_follows_canvas, narrow_drawing_buffer_follows_canvas] ok=True
+  [f4_neg_fixed_canvas]          all_checks_pass=False failed=[canvas_rect_differs_across_viewports,
+        desktop_canvas_rect_fills_viewport, narrow_canvas_rect_fills_viewport, *_world_visible_outside_hud ×6] ok=True
+  => summary=spikes/s13-render/logs/f4-browser-summary.json  delivery_face_unchanged=True  all_ok=True
+负例 A（只把 setSize 退回固定 300×150，CSS 仍显式）：
+  副本 /tmp/r3-artisan/f4_neg_pinned_buffer_only/（world.ts 注入 setSize(300,150,false)）
+  => canvas_rect=1440×900 但 canvas.width/height = gl.drawingBuffer = **300×150** ⇒ *_drawing_buffer_follows_canvas 红
+     （像素判据仍绿：CSS 把 300×150 拉伸铺满 ⇒ **单退一处不足以复现旧缺陷**，这条负例只打缓冲判据）
+负例 B（连同 #scene 显式尺寸一起退回 R3 之前形态）：
+  副本 /tmp/r3-artisan/f4_neg_fixed_canvas/（world.ts 注入 setSize(300,150,false) + index.html 退回 inset:0）
+  => canvas_rect = 300×150（两档视口同值）、6 张截图 outside_hud_nonbg_ratio = **0.0**、
+     bg_ratio = 0.922127（桌面）/ 0.715014（窄屏）、bbox = (16,16)-(399,278) / (8,8)-(381,258)
+     —— 与 architect §3B 的亲验读数**逐值吻合**（0.922 / 0.715 / 同包围盒）⇒ 负例真的复现了旧缺陷
+  期望红 vs 实测红：`*_canvas_rect_fills_viewport` + `*_world_visible_outside_hud` 均**红** ✓
+交付面未变：f4-browser-summary.json 的 delivery_face_unchanged=True（sha_tree 前=后=ed2994a53c96b746…）
+
+--- R3-2 G2（CRITICAL）真形状指纹 + 经应用装配路径取数 ---------------------------
+实现：world.ts 新增 EntityShape（size + geometry.parameters + position_attribute_digest）并进 geometry_digest；
+      新增 assemblyReport()（从**场景图 mesh 层**读回装配结果）与 viewport()；createScene 在无 WebGL 环境
+      退化为空渲染器（**只影响光栅化**，装配语义不变）；scene_assert.mjs 改为经 createScene() 句柄取数。
+cmd: cd 02_source/v0_skeleton/web && node scripts/scene_assert.mjs
+  => scene_assert: PASS=27 FAIL=0 / OK    exit 0
+     （新增判据：assembly_path_via_createScene_handle、viewport_follows_canvas_box、
+       geometry_digest_detects_size_change（顶点数不变而 digest 必变）、two_reads_share_rendered_geometry、
+       assembly_report_stable_after_reading_round_trip）
+判据与负例（harness：spikes/s13-render/negctl/f1_scene_assert_negctl.py；NEGCTL_ROOT=/tmp/r3-artisan）
+cmd: PYTHONDONTWRITEBYTECODE=1 python3 -B spikes/s13-render/negctl/f1_scene_assert_negctl.py   (workdir=<ws>)
+  [f1_pristine]                    verdict=judged_green exit=0 PASS=27 FAIL=0
+  [f1a_reading_dependent_offset]   verdict=judged_red  exit=1 FAIL=3 (含 two_reads_share_geometry)
+  [f1b_reading_dependent_drop_entity] verdict=judged_red exit=1 FAIL=4
+  [f1c_global_position_shift]      verdict=judged_red  exit=1 FAIL=1 (geometry_positions_match_seeded_state)
+  [f1d_report_ignores_reading]     verdict=judged_red  exit=1 FAIL=1 (two_reads_are_independent_assemblies)
+  [f1e_reading_dependent_size]     verdict=judged_red  exit=1 FAIL=3  <== G2③a 新增：读法相关**尺寸**
+  [f1f_violation_in_rebuild]       verdict=judged_red  exit=1 FAIL=1 (two_reads_share_rendered_geometry)  <== G2③b 新增
+  [f1g_mesh_layer_after_assembly]  verdict=judged_red  exit=1 FAIL=1 (two_reads_share_rendered_geometry)  <== G2③c 新增（= Raven a5）
+  => summary=spikes/s13-render/logs/f1-negctl-summary.json  delivery_face_unchanged=True  crashes=[]  all_ok=True
+注入配方（副本路径 + 注入方式，全部整树副本 + node_modules 软链）：
+  f1e: /tmp/r3-artisan/f1e_reading_dependent_size/02_source/v0_skeleton/web/src/scene/world.ts
+       `const size = sizeFor(entity.kind);` -> `const baseSize = ...; const size = (reading==='underneath' ?
+       baseSize.map(v => v*0.35) : baseSize) as [number,number,number];`
+  f1f: 同文件 `const boxes = buildEntityBoxes(state, currentReading);` -> 追加
+       `if (currentReading === 'underneath') { boxes.forEach((box) => { box.position[1] += 2; }); }`
+  f1g: 同文件 `meshes.set(box.id, mesh); }); }` -> 追加
+       `if (currentReading === 'underneath') { for (const mesh of meshes.values()) { (mesh.geometry as
+       THREE.BoxGeometry).scale(3, 3, 3); } }`（**装配之后**在网格层再分叉）
+静态判据（G2④）：verify_specs.sh §12c 机器判据
+  => PASS  scene_assert drives the application assembly path (createScene=8 geometryFor=8 setReading=6 assemblyReport=7)
+真浏览器侧的装配读数（G2 补充）：f4_pristine 两档视口 assembly_surface/assembly_underneath 的
+  entity_ids / shape_digests / geometry_digest **逐项相同**（判据 *_assembly_two_reads_same_geometry +
+  *_assembly_shape_fingerprint_present 全绿；跨 tick 的世界坐标合法变化故不参与比较）
+
+--- R3-3 G3（MEDIUM）交付面不并存两套互斥结论 -----------------------------------
+cmd: grep -c '^FAIL' <superseded>/negctl-scene-assert.log                 => 0
+cmd: grep -c ERR_MODULE_NOT_FOUND <superseded>/negctl-scene-assert.log    => 3
+cmd: grep -c '^PASS' <superseded>/negctl-scene-assert.log                 => 0
+  （saturation 版同：FAIL=0 / ERR_MODULE_NOT_FOUND=3 / PASS=0 ⇒ **崩溃型假红**，非断言判红）
+cmd: mv spikes/s12-session/logs/{negctl-scene-assert.log,negctl-scene-assert-saturation.log,negctl-summary.json} \
+        spikes/s12-session/logs/superseded/                                exit 0
+新增 spikes/s12-session/logs/superseded/README.md（取代关系 + 「不得再引用」+ 迁移不改字节）
+06 就地作废标注：§5 首部（新增 8 行，指向原 198–216 行）
+V0_M3.sha256 排除项新增 superseded/**（见 R3-12）
+
+--- R3-4 G4（MEDIUM）IP 扫描白名单不得整份豁免 -----------------------------------
+实现：WHITELIST（文件 × 模式）-> DECLARATION_SITES（站点）+ PROHIBITION_LINE（**同一行**必须含禁令词）的
+      行级豁免；扫描器自身改由 _is_scanner_copy() 自排除（文件名 + 自身独有标记，副本同样成立）。
+cmd: cd 02_source && PYTHONDONTWRITEBYTECODE=1 python3 -B v0_skeleton/tools/scan_ip_boundary.py --root .
+  => {"total_hits": 20, "whitelisted_hits": 20, "unwhitelisted_hits": 0}   exit 0
+判据与负例（harness：spikes/s12-session/negctl/f12_ip_scan_negctl.py）
+cmd: PYTHONDONTWRITEBYTECODE=1 python3 -B spikes/s12-session/negctl/f12_ip_scan_negctl.py   (workdir=<ws>)
+  [f12_pristine]                    exit=0 unwhitelisted=0  ok=True
+  [f12_neg_injected_probe]          exit=1 unwhitelisted=4  ok=True
+  [f12_neg_whitelist_disabled]      exit=1 unwhitelisted=3  ok=True
+  [f12_neg_art_bible_out_of_bounds] exit=1 unwhitelisted=3  ok=True   <== G4 新增负例
+  => summary=spikes/s13-render/logs/f12-ip-scan-summary.json  delivery_face_unchanged=True  all_ok=True
+负例配方：副本 /tmp/r3-artisan/f12_neg_art_bible_out_of_bounds/02_source/art-bible.md 追加
+  「场景参考：第 3 章，主角被怪物肢解，血腥特写，配合 Jump Scare。」（**不含**任何禁令词）
+  期望红：exit 1 + 3 条未豁免命中；实测红：unwhitelisted_hits=3 / exit 1 ✓（修复前该形态 exit 0）
+
+--- R3-5 G5（MEDIUM）合并窗口不得产生「已 ack 为 queued 却永不应用」 -----------------
+实现：policy.js 的合并三条件（同 id + 窗口内 + **被合并条目仍在队列** + **同 target**）；
+      新增 markIntentLeavesQueue() / pendingMergeCount()；server.js 在 onTickBoundary 与
+      downgradeToObserve 里落出队登记；新增 pendingIntentCount()。
+cmd: cd 02_source/v0_skeleton/session && npm test
+  => tests 16 / pass 16 / fail 0   exit 0   （R3 新增 3 条用例真跑）
+判据与负例（harness：spikes/s12-session/negctl/g5_merge_window_negctl.py + g5_merge_window_driver.mjs）
+cmd: PYTHONDONTWRITEBYTECODE=1 python3 -B spikes/s12-session/negctl/g5_merge_window_negctl.py   (workdir=<ws>)
+  [g5_pristine] exit=0
+    reading: ack2=queued+merged(队列仍 1 条) / 出队后同 id 再提交 ack3=rejected(E_COOLDOWN) 且
+             pending_after_third=2 / 同 id 不同 target ⇒ ack_target2_detail=null、两条各占一个条目
+             criterion_holds=true、swallowed_by_merge=false、target_key_holds=true
+  [g5_neg_revert_to_r2_merge] exit=1
+    reading: ack3=queued+merged 但 pending_after_third=1、swallowed_by_merge=**true**、criterion_holds=**false**
+             ack_target2_detail=merged(target=npc-005) ⇒ 判据**红** ✓
+  => summary=spikes/s13-render/logs/g5-merge-window-summary.json  delivery_face_unchanged=True  all_ok=True
+负例配方：副本 /tmp/r3-artisan/g5_neg_revert_to_r2_merge/02_source/v0_skeleton/session/src/policy.js
+  把合并条件退回 R2 形态（`previous.pending === true && previous.target === target` 两段删掉）
+
+--- R3-6 G6（MEDIUM）三份冻结物的内容锚覆盖要齐 ----------------------------------
+实现：FROZEN_ENVCLASS_SHA256 = 962cba083c61752c263e2399aaa62cba67b534cb9641b1d9453fa27bd30a6ada
+      （与另两份同形）+ 三条锚的单一定义点 FROZEN_ANCHORS（registry/check 共用）；
+      verify_specs.sh §12b：三条冻结物的「工具内锚 == 盘上实算 == registry 登记」。
+cmd: cd 02_source && bash verify_specs.sh
+  => PASS  calibration frozen anchors: 3/3 (tool anchor == on-disk sha256 == registry entry)     exit 0
+判据与负例（harness：spikes/s12-session/negctl/g6_frozen_anchor_negctl.py）
+cmd: PYTHONDONTWRITEBYTECODE=1 python3 -B spikes/s12-session/negctl/g6_frozen_anchor_negctl.py   (workdir=<ws>)
+  [g6_pristine]                    exit=0 rewritten=False                      ok=True
+  [g6_neg_envclass_tampered]       exit=1 E_FROZEN_MISMATCH=True               ok=True  <== G6 要求的负例
+  [g6_neg_range_tampered]          exit=1 E_FROZEN_MISMATCH=True               ok=True  （对照）
+  [g6_neg_registry_sha_tampered]   §12b 判据红=True（只改 registry 登记值）     ok=True
+  [g6_neg_tool_anchor_tampered]    §12b 判据红=True（只改工具内锚）             ok=True
+  [g6_pristine_gate]               §12b 判据绿=True（非恒红）                  ok=True
+  => summary=spikes/s13-render/logs/g6-frozen-anchor-summary.json  delivery_face_unchanged=True  all_ok=True
+负例配方（均为整树副本，布局镜像工作区 `<root>/02_source` + `<root>/spikes/s5-latency-calibration`）：
+  g6_neg_envclass_tampered: 向 ENVIRONMENT-CLASS.frozen.md 追加 "TAMPER\n"
+    => 期望 `E_FROZEN_MISMATCH` + exit≠0（修复前 `{"rewritten":true}` / exit 0）；实测 exit=1 ✓
+  g6_neg_registry_sha_tampered: registry 的 environment_class_rule.sha256 -> 64 个 0（冻结物未动）
+  g6_neg_tool_anchor_tampered: 工具内 FROZEN_ENVCLASS_SHA256 前 8 位 -> 00000000
+
+--- R3-7 G7（MEDIUM, fail-closed 方向）桥侧作废失败时不得无条件宣告作废 ---------------
+实现：server.js 的 downgradeToObserve 先**重试一次**桥侧作废；仍未确认（bridge != 'ok' 或
+      pending_after > 0）⇒ **保留**会话队列 + ack 降级为 rejected/E_KERNEL_UNAVAILABLE +
+      detail `rejected_pending_kernel` + 额外 error 事件 + `downgrade_void_incomplete` 审计（voidIncomplete）。
+cmd: cd 02_source/v0_skeleton/session && npm test（含新增用例 test_downgrade_with_unconfirmed_bridge_void_does_not_declare_void）
+  => 16/16 pass   exit 0
+判据与负例（harness：spikes/s12-session/negctl/g7_void_failclosed_negctl.py + g7_void_failclosed_driver.mjs）
+cmd: PYTHONDONTWRITEBYTECODE=1 python3 -B spikes/s12-session/negctl/g7_void_failclosed_negctl.py   (workdir=<ws>)
+  [g7_pristine] exit=0
+    reading: void_declarations=0 / honest_acks=33 / error_events=1 / retained_in_queue=33 /
+             void_incomplete_records=1 / audit_incomplete_entries=1 / bridge_void_attempts=2 / criterion_holds=true
+  [g7_neg_unconditional_void] exit=1
+    reading: void_declarations=**33** / honest_acks=0 / error_events=0 / retained_in_queue=0 /
+             criterion_holds=**false** ⇒ 判据**红** ✓
+  => summary=spikes/s13-render/logs/g7-void-failclosed-summary.json  delivery_face_unchanged=True  all_ok=True
+负例配方：副本 /tmp/r3-artisan/g7_neg_unconditional_void/02_source/v0_skeleton/session/src/server.js
+  把 #voidConfirmed 的返回改成恒 `true`（= 退回「无条件宣告作废」）
+
+--- R3-8 G8（MEDIUM）void_intents 只能作废本会话 + 边界声明 -------------------------
+实现：kernel/deephealing_kernel/tick.py 的 void_pending_intents 的 session_id **必填**
+      （缺失/空 ⇒ ValueError，零作废）；bridge/kernel_bridge.py 的 void_intents 对
+      缺/空/非字符串 session_id ⇒ 回 `refused=E_SESSION_UNKNOWN` + 零作废。
+判据与负例（harness：spikes/s12-session/negctl/g8_void_ownership_negctl.py + g8_void_ownership_driver.py）
+cmd: PYTHONDONTWRITEBYTECODE=1 python3 -B spikes/s12-session/negctl/g8_void_ownership_negctl.py   (workdir=<ws>)
+  [g8_pristine_kernel] exit=0
+    reading: pending_before=2 / voided_sess_b=["i-b-1"] pending_after_sess_b=1 /
+             no_session_refused=true（ValueError）pending_after_no_session_call=1 /
+             voided_sess_a=["i-a-1"] pending_after_sess_a=0 / criterion_holds=true
+  [g8_pristine_bridge] exit=0（真桥 + stdin 6 条命令）
+    reading: void(sess_b) -> voided=["i-b-1"] pending_after=1
+             void(**无 session_id**) -> refused=E_SESSION_UNKNOWN voided=[] pending_after=1
+             void(sess_a) -> voided=["i-a-1"] pending_after=0
+  [g8_neg_cross_session_void_kernel] exit=1（退回 R2 过滤+校验）⇒ pending_after_no_session_call=0 ⇒ 红 ✓
+  [g8_neg_cross_session_void_bridge] exit=1（退回 R2 桥形态）⇒ 无归属请求 voided 非空 ⇒ 红 ✓
+  => summary=spikes/s13-render/logs/g8-void-ownership-summary.json  delivery_face_unchanged=True  all_ok=True
+边界声明：06 的 R3-H 节（「桥 = 本地驱动，不是安全边界」+ M4 接 WS 监听 ⇒ 升 CRITICAL）
+
+--- R3-9 G9 / G10（措辞与声称）--------------------------------------------------
+G9（就地）：06 的 R2-A 表 F6 行追加「R3 / G9 措辞更正：该声称收缩为「防单侧漂移」—— 不读成「防篡改」」
+G10（就地）：06 的 R2-E 段更正为「**可复算**」+ 命令；R3 亲跑复算：
+cmd: git -C /Users/wooyinq/personal/deep-healing cat-file -e 98c781f4040d9b17757d67ba8e76fed1b95bfa12^{commit}
+  => exit 0（提交对象仍在）
+cmd: git -C /Users/wooyinq/personal/deep-healing show 98c781f4040d9b17757d67ba8e76fed1b95bfa12:v0/02_source/v0_skeleton/kernel/tools/calibrate_latency.py | shasum -a 256
+  => 23fed40d564e7ba0b21024accbd760b55e665a5e44cf0f8be08b996a970a00f2  exit 0（= R1 读数）
+
+--- R3-10 回归读数（本轮亲跑）----------------------------------------------------
+1) cd 02_source && bash verify_specs.sh --quiet
+   => verify_specs: OK (129 checks passed, 0 skipped)                              exit 0
+2) cd 02_source/v0_skeleton/session && npm test
+   => tests 16 / pass 16 / fail 0 / skipped 0                                      exit 0
+3) cd 02_source/v0_skeleton/web && npm test
+   => tests 4 / pass 4 / fail 0                                                    exit 0
+4) cd 02_source/v0_skeleton/web && node scripts/scene_assert.mjs
+   => scene_assert: PASS=27 FAIL=0 / OK                                            exit 0
+5) cd 02_source/v0_skeleton/kernel && PYTHONDONTWRITEBYTECODE=1 python3 -B -m pytest \
+     tests/test_budget_downgrade_void.py tests/test_observe_mode_readonly.py tests/test_task_adaptation.py \
+     tests/test_e2e_run_verify.py tests/test_calibrate_latency.py -q -p no:cacheprovider
+   => 41 passed in 7.73s                                                           exit 0
+6) 300 tick 基线 ×2（不传 --ticks；产物 /tmp/r3-artisan/m3base{,2}）
+   => chain_tail=baecca9219a9bbabfc0e46349834438cc0c61ba44fd6315aeda26fb65acfd786
+      event_count=925  ticks=300  000300.json state_hash=9a4ae3da0d7cc3f8556d07ae773b8579d80f55a5cf6d4a0fc5594f5d7a66625f
+      cmp 两份 e.jsonl => EVENTS_BYTE_IDENTICAL=true（925 行）                        exit 0 / 0
+      （tick.py 本轮有改动 ⇒ 该条是**必须**的回归判据；三条读数与 R2/F-4 逐位一致）
+7) git -C /Users/wooyinq/personal/deep-healing status --porcelain | wc -l => 0      exit 0
+8) 02_source 内 node_modules/dist/.build/__pycache__/*.pyc 扫描 => 0 条
+注：内核**全量**套件本轮未重跑（只跑受影响子集 41 passed）；R2 的 151 passed / 888.24s 为最近一次全量读数（旁证）。
+
+--- R3-11 负例汇总（judged_red 与 crash 严格区分）---------------------------------
+harness 汇总（全部 delivery_face_unchanged=True）：
+  spikes/s13-render/logs/f1-negctl-summary.json     turned_red=[f1a,f1b,f1c,f1d,f1e,f1f,f1g]  crashes=[]
+  spikes/s13-render/logs/f4-browser-summary.json    红=[neg-write-control, neg-pinned-buffer, neg-fixed-canvas]  crashes=[]
+  spikes/s12-session/logs/g5-merge-window-summary.json     红=[g5_neg_revert_to_r2_merge]
+  spikes/s13-render/logs/g6-frozen-anchor-summary.json     红=[g6_neg_envclass_tampered, g6_neg_range_tampered,
+                                                              g6_neg_registry_sha_tampered, g6_neg_tool_anchor_tampered]
+  spikes/s13-render/logs/g7-void-failclosed-summary.json   红=[g7_neg_unconditional_void]
+  spikes/s13-render/logs/g8-void-ownership-summary.json    红=[g8_neg_cross_session_void_kernel, g8_neg_cross_session_void_bridge]
+  spikes/s13-render/logs/f12-ip-scan-summary.json          红=[f12_neg_injected_probe, f12_neg_whitelist_disabled,
+                                                              f12_neg_art_bible_out_of_bounds]
+  全部 = `judged_red`（断言/判据真判红）；`crash` 计数 = 0（无 ERR_MODULE_NOT_FOUND / 无环境崩溃）
+
+--- R3-12 收尾重取（V0_M3.sha256，最后一步）-------------------------------------
+重取理由 / 变更清单 / 前后哈希 / 排除项新增 superseded/** 见 06 的 R3-E 段；
+终值与重取链登记在采集面外的 <ws>/V0_M3.sha256.retake.json。
+cmd: shasum -a 256 -c V0_M3.sha256（workdir=<ws>）=> 全 OK（0 条非 OK）
+
+================================================================================
+R4 段 · M3 **有界补丁轮**（关闭 `R3-C1`，**判据层**；`--max-iteration 1`）· artisan 自测日志
+================================================================================
+任务书：<ws>/.task-artisan-r4.md　判据权威：01_architecture_design.md §3C　约束：<ws>/.round4-constraint.txt
+范围铁律：**只**关闭 `R3-C1`（判据层）。未新增 AC、未改 AC 口径、未放宽既有判据、未删既有负例、未改实现语义。
+所有 python 调用带 PYTHONDONTWRITEBYTECODE=1（或 -B）；所有负例在 /tmp/r4-artisan/** 的整树副本里注入。
+
+--- R4-0 快照 / 写集 / 变更面声明 ------------------------------------------------
+cmd: git -C /Users/wooyinq/personal/deep-healing rev-parse --abbrev-ref HEAD      => develop
+cmd: git -C /Users/wooyinq/personal/deep-healing rev-parse --short HEAD           => 98c781f
+cmd: git -C /Users/wooyinq/personal/deep-healing status --porcelain | wc -l       => 0            exit 0
+变更面声明（**编码之前**写定，含 epoch 锚 1790102600）：spikes/s12-session/m3-change-face.txt 的 SECTION A-R4
+02_source 文件数：150（本轮**零新增/零删除**）；manifest.txt 未改；真实仓库**零字节改动**
+
+--- R4-1 根因定位（机制性说明；不是「判据覆盖不足」这种结论句）------------------
+缺陷不是「实现有问题」，而是**判据的比较面比它的名字窄**。逐条机制：
+(1) `two_reads_share_rendered_geometry`（R3 版）比较 `entity_ids` / `shape_digests` / `mesh_positions` /
+    `geometry_digest`；而 R3 的 `shape_digests` 由 `shapeDigestString()` 生成，只拼
+    `id : size : geometry.parameters : position_attribute_digest`；`assemblyReport()` 又只从 mesh 读回
+    `position`。⇒ **mesh 的 `scale` 与 `rotation/quaternion` 从头到尾不在任何比较面内**：
+    `mesh.scale.set(3,3,3)` 只改 `mesh.scale`（不动 geometry 的 `position` attribute、不动 `mesh.position`），
+    `mesh.rotation.y = π/2` 只改 `mesh.quaternion`（同上）⇒ 两条注入**在比较面的补集里**，必然逃逸。
+(2) 相机：`scene_assert.mjs` 全树**没有任何**相机读数取数点（`createScene` 句柄不暴露相机，
+    `ViewportReport.aspect` 只暴露 aspect 且 `aspect` 由 `resize()` 从视口推导、与相机位姿无关）
+    ⇒ D-7 的「禁止换相机」那半句**零判据**：`camera.position.set(40,40,40)` 对任何既有断言都不可见。
+(3) 对照 `mesh.position.x += 5` 有牙，恰恰因为 `mesh_positions` **在**比较面内 ⇒ 证明注入方式本身有效，
+    逃逸的成因是覆盖面缺口，不是注入没生效。
+⇒ 封堵方向：把「装配变换」也变成**被断言的量**（进形状指纹 + 从 mesh 层读回 + 逐项暴露），
+   并新增相机一致性判据。实现语义一字不改（默认 `scale=(1,1,1)`、`quaternion=(0,0,0,1)`）。
+
+--- R4-2 RED（**加宽前**在整树副本上复现三种逃逸；先有真红）--------------------
+harness（本轮新增载体，复用 negctl_lib，`NEGCTL_ROOT=/tmp/r4-artisan`）：
+  spikes/s13-render/negctl/f5_r4_judgement_negctl.py
+cmd: PYTHONDONTWRITEBYTECODE=1 python3 -B spikes/s13-render/negctl/f5_r4_judgement_negctl.py red
+     (workdir=<ws>)                                                          exit 1
+读数（副本内 `node scripts/scene_assert.mjs`；副本 = /tmp/r4-artisan/<case>/02_source）：
+  [r4_pristine]            verdict=judged_green exit=0 PASS=27 FAIL=0 fail_names=[]                 （基线绿）
+  [r4_neg_mesh_scale]      verdict=judged_green exit=0 PASS=27 FAIL=0 fail_names=[]  ⇒ **逃逸**
+  [r4_neg_mesh_rotation]   verdict=judged_green exit=0 PASS=27 FAIL=0 fail_names=[]  ⇒ **逃逸**
+  [r4_neg_camera_switch]   verdict=judged_green exit=0 PASS=27 FAIL=0 fail_names=[]  ⇒ **逃逸（零判据）**
+  [r4_ctl_position_shift]  verdict=judged_red   exit=1 PASS=26 FAIL=1 fail_names=['two_reads_share_rendered_geometry'] ⇒ 判据有牙
+  escapes=['r4_neg_camera_switch','r4_neg_mesh_rotation','r4_neg_mesh_scale']  crashes=[]  all_ok=false
+  （加宽前副本内 `two_reads_share_camera` 不存在 ⇒ 逐 case `camera_judgement_present_in_copy=False`）
+汇总：spikes/s13-render/logs/f5-r4-negctl-summary-red.json ＋ 文本 spikes/s13-render/logs/r4-red-before-widening.log
+⇒ **逐项复现** PM 的读数 B/C/D（`PASS=27 FAIL=0` exit 0）与对照 E（`PASS=26 FAIL=1` exit 1），不采信、不转述。
+
+--- R4-3 R4-A 判据加宽（world.ts 形状指纹 + mesh 层读回）------------------------
+实现（`02_source/v0_skeleton/web/src/scene/world.ts`）：
+  * `EntityBox` 增 `scale:[3]`（默认 `[1,1,1]`）与 `quaternion:[4]`（默认 `[0,0,0,1]`）=「装配时打算写入 mesh 的变换」；
+  * `EntityShape` / `shapeOf()` / `shapeDigestString()` 把 `scale`（三分量，6 位小数）+ `quaternion`（四分量，6 位小数）
+    纳入摘要 ⇒ `geometryReport().shape_digests` 与 `geometry_digest` 自动覆盖；
+  * `rebuild()` 把 `box.scale` / `box.quaternion` **真写入** mesh（`mesh.scale.set` / `mesh.quaternion.set`）；
+  * `assemblyReport()` 从 mesh 读回 `mesh.scale` / `mesh.quaternion`，纳入 `shape_digests[id]` 与 `geometry_digest`，
+    并新增可逐项比较的 `mesh_scales` / `mesh_rotations`。
+取数仍一律经 `createScene()` 句柄（`setReading` / `geometryFor` / `entityIds` / `assemblyReport`）。
+语义不变（硬）：默认装配下 `scale=(1,1,1)`、`quaternion=(0,0,0,1)`；两态仍共用同一几何。
+
+--- R4-4 R4-B 相机一致性判据（scene_assert.mjs）---------------------------------
+实现：`SceneHandle` 增 `cameraReport()`（**从 `THREE.Camera` 实例读回** `position[3]` / `quaternion[4]` /
+`fov` / `near` / `far` / `aspect`；不读实现源文本、不硬编码字面量）。
+判据（`scene_assert.mjs`）：
+  * 新增 `scene_handle_camera_report_is_live`：分量形状 + 有限数 + `cameraReport().aspect` 必须与
+    `viewport().aspect` 一致（**命中能力自证**：读数真的来自活相机，不是字面量）；
+  * 新增 `two_reads_share_camera`：**同一视口下**两态相机读数逐项相同（`position` / `quaternion` /
+    `fov` / `near` / `far`）；两次读法之间**不做 resize**。口径：`aspect` 是视口派生量 ⇒ **信息性**读数、
+    **不参与**相等断言（视口尺寸由 `viewport_follows_canvas_box` 覆盖）—— 见 06 的 R4-D。
+  * `two_reads_share_rendered_geometry` 比较面扩到 ids / shape_digests / mesh_positions / **mesh_scales** /
+    **mesh_rotations** / geometry_digest；`assembly_report_stable_after_reading_round_trip` 同步纳入
+    `mesh_scales` / `mesh_rotations`（**只加强，不放宽**；既有 27 条一条未删、未改口径）。
+
+--- R4-5 R4-C 负例（整树副本，4 条；turned_red 只给 judged_red）-----------------
+载体二选一：**选了「新增 `f5_r4_judgement_negctl.py` 复用同库」**（未改 `f1_*` 的既有 CASES，避免动既有负例）。
+配方（锚点 = `rebuild()` 的 forEach 尾部 `      meshes.set(box.id, mesh);\n    });\n  }`，已证明唯一命中；
+相机 case 锚点 = `    const boxes = buildEntityBoxes(state, currentReading);`）：
+  r4_neg_mesh_scale     `if (currentReading === 'underneath') { mesh.scale.set(3, 3, 3); }`
+  r4_neg_mesh_rotation  `if (currentReading === 'underneath') { mesh.rotation.y = Math.PI / 2; }`
+  r4_neg_camera_switch  `if (currentReading === 'underneath') { camera.position.set(40, 40, 40); }`
+  r4_ctl_position_shift `if (currentReading === 'underneath') { mesh.position.x += 5; }`
+逐 case 交付面 sha256 跑前/跑后比对 ⇒ `delivery_face_unchanged` 是**逐 case 实测**（不是全局自述）。
+命令：`PYTHONDONTWRITEBYTECODE=1 python3 -B spikes/s13-render/negctl/f5_r4_judgement_negctl.py`（workdir=<ws>）
+
+--- R4-6 V0 基线 + 负例实测（**加宽后**）----------------------------------------
+cmd: cd 02_source/v0_skeleton/web && node scripts/scene_assert.mjs                exit 0
+  => scene_assert: PASS=29 FAIL=0 / OK   （旧 27 条**一条未掉**；新增 2 条 = 相机 2 条判据）
+     关键行：PASS two_reads_share_rendered_geometry (mesh=12/12 ids=12/12 scales=12 rotations=12)
+             PASS two_reads_share_camera (position=[18,14,24] fov=45 near=0.1 far=500 aspect(info)=1.6000)
+             PASS scene_handle_camera_report_is_live
+cmd: PYTHONDONTWRITEBYTECODE=1 python3 -B spikes/s13-render/negctl/f5_r4_judgement_negctl.py (workdir=<ws>) exit 0
+  [r4_pristine]            verdict=judged_green exit=0 PASS=29 FAIL=0 fail_names=[]
+  [r4_neg_mesh_scale]      verdict=judged_red   exit=1 PASS=28 FAIL=1 fail_names=['two_reads_share_rendered_geometry']
+  [r4_neg_mesh_rotation]   verdict=judged_red   exit=1 PASS=28 FAIL=1 fail_names=['two_reads_share_rendered_geometry']
+  [r4_neg_camera_switch]   verdict=judged_red   exit=1 PASS=28 FAIL=1 fail_names=['two_reads_share_camera']
+  [r4_ctl_position_shift]  verdict=judged_red   exit=1 PASS=28 FAIL=1 fail_names=['two_reads_share_rendered_geometry']
+  turned_red=[4/4]  crashes=[]  escapes=[]  all_delivery_face_unchanged=True  all_ok=True
+  ⇒ 3 条新增**全部真变红**且 `fail_names` 命中期望；对照负例**仍红**（未因加宽而失效）
+汇总：spikes/s13-render/logs/f5-r4-negctl-summary.json ＋ spikes/s13-render/logs/r4-green-after-widening.log
+逐 case 日志：spikes/s13-render/logs/negctl-r4_{pristine,neg_mesh_scale,neg_mesh_rotation,neg_camera_switch,ctl_position_shift}.log
+
+--- R4-7 复读 diff 与自审（含**自审抓到的假红风险**与修正）----------------------
+复读：`diff -u` 对照**逐字节**的修复前基线（`/tmp/r3-artisan/f1_pristine/02_source`，其两文件 sha256
+      与 R3 清单 `eee667eb…` / `2ecdca90…` **逐字节相同**）⇒ 全文落
+      spikes/s13-render/logs/r4-diff-review.log（20251 B）
+      world.ts +87/-8、scene_assert.mjs +48/-7（含注释）；改动面**只**这两文件 + 声明面，无顺手重构。
+自审（正确性 / 兼容性 / 安全 / 错误路径 / 并发资源边界）：
+  * 兼容性：既有 27 条判据**一条未改口径**；新增字段是**追加**（`mesh_scales`/`mesh_rotations`/`cameraReport`），
+    旧消费方（`main.ts` 只透传 `assemblyReport()`）零改动；`package.json` 依赖表未动、零新增依赖。
+  * 负例锚点兼容：`f1a`–`f1g` 的全部注入锚点在改后仍**唯一命中**（f1 系列本轮未跑，但锚点文本逐字保留；
+    `f5` 的 4 条 case 真跑通过即证明装配面锚点仍有效）。
+  * **自审抓到并修掉一个自己引入的假红风险（如实登记）**：第一版把 `mesh_positions` 也拼进了
+    `assemblyReport().geometry_digest`。Node 侧（静态状态）无感，但**真浏览器**里跨 tick 的合法位移会让
+    该摘要抖动 ⇒ 首次 f4 复跑出现 `*_assembly_two_reads_same_geometry` **假红**（4 个负例 case 全中，pristine 侥幸未中）。
+    诊断脚本 /tmp/r4-artisan/inspect_assembly.py 逐项比对 `browser-accept-neg-write-control.json` 证实差异**只在坐标**
+    （`npc-001` S=6.002000 / U=5.979000，`shape_digests` 逐项相同）。修正 = 恢复 R3 的 **tick 稳定口径**：
+    装配 `geometry_digest` **不含**世界坐标（坐标由 `mesh_positions` 单独逐项比较；缩放/旋转恒定故进摘要安全）。
+    修正后 f4 复跑：4 个 case 的失败集合**只剩期望 pattern**（见 R4-9）。⇒ 这条不是「为绿放宽」：
+    被断言的量一个没减，只是把**合法抖动量**移出摘要。
+  * 安全/错误路径：`cameraReport()` 只读、无副作用；`scene_handle_camera_report_is_live` 对
+    `typeof scene.cameraReport !== 'function'` 先判后调（不抛异常）；无新增外部输入、无凭据、无网络。
+  * 并发/资源：无新增定时器/监听器/GPU 资源；`rebuild()` 仍复用 `box.geometry`。
+
+--- R4-8 R4-D 边界声明（覆盖 / 不覆盖；**不是防篡改**）--------------------------
+见 06_v0_m3_self_test.md 的 R4-D 段（逐字照 §3C-5 口径）。要点：本判据是**一致性判据**，
+**不是**防篡改 / 完整性机制 —— **不得**读成「防篡改」（参照 G9 处置口径）。
+
+--- R4-9 R4-E 回归守卫（world.ts 有改动 ⇒ 复跑官方门禁驱动）----------------------
+cmd: PYTHONDONTWRITEBYTECODE=1 python3 -B spikes/s13-render/negctl/f4_browser_negctl.py (workdir=<ws>)
+  第 1 次（自审修正前，**失败集合含假红**）：
+    [f4_pristine] all_checks_pass=True failed=[]  ok=True
+    [f4_neg_observe_write_control] failed=[*_assembly_two_reads_same_geometry, *_observe_no_write_controls,
+                                          *_observe_ui_tree_no_write_controls]  ← 前两条为**假红**（见 R4-7）
+    [f4_neg_pinned_buffer_only]    failed=[*_assembly_two_reads_same_geometry, *_drawing_buffer_follows_canvas]
+    [f4_neg_fixed_canvas]          failed=[canvas_rect_differs_across_viewports, *_assembly_two_reads_same_geometry,
+                                          *_canvas_rect_fills_viewport, *_world_visible_outside_hud ×3]
+  第 2 次（修正 `geometry_digest` 口径后 ⇒ **本轮终值**）：exit 0
+    [f4_pristine] all_checks_pass=True  driver_exit=0 failed=[] ok=True
+    [f4_neg_observe_write_control] all_checks_pass=False failed=[*_observe_no_write_controls, *_observe_ui_tree_no_write_controls]
+                                  patterns={'observe_no_write_controls': True} ok=True
+    [f4_neg_pinned_buffer_only]    all_checks_pass=False failed=[*_drawing_buffer_follows_canvas]
+                                  patterns={'drawing_buffer_follows_canvas': True} ok=True
+    [f4_neg_fixed_canvas]          all_checks_pass=False failed=[canvas_rect_differs_across_viewports,
+                                  *_canvas_rect_fills_viewport, *_world_visible_outside_hud ×3]
+                                  patterns={'canvas_rect_fills_viewport': True, 'world_visible_outside_hud': True} ok=True
+    => summary=spikes/s13-render/logs/f4-browser-summary.json  delivery_face_unchanged=True  all_ok=True
+  ⇒ pristine `judged_green`、3 条负例全 `judged_red` 且 pattern 命中、交付面 sha_tree 前=后。
+
+--- R4-10 回归读数（本轮亲跑）---------------------------------------------------
+1) cd 02_source && bash verify_specs.sh --quiet
+   => verify_specs: OK (130 checks passed, 0 skipped)                              exit 0
+2) cd 02_source/v0_skeleton/session && npm test
+   => tests 16 / pass 16 / fail 0 / skipped 0                                      exit 0
+3) cd 02_source/v0_skeleton/web && npm test
+   => tests 4 / pass 4 / fail 0                                                    exit 0
+4) cd 02_source/v0_skeleton/web && node scripts/scene_assert.mjs
+   => scene_assert: PASS=29 FAIL=0 / OK                                            exit 0
+5) 内核受影响子集（**本轮未触及内核侧**，仍亲跑作回归旁证）
+   cd 02_source/v0_skeleton/kernel && PYTHONDONTWRITEBYTECODE=1 python3 -B -m pytest \
+     tests/test_budget_downgrade_void.py tests/test_observe_mode_readonly.py tests/test_task_adaptation.py \
+     tests/test_e2e_run_verify.py tests/test_calibrate_latency.py -q -p no:cacheprovider
+   => 41 passed in 7.39s                                                           exit 0
+   注：`02_source` 内核侧**零文件**出现在 `shasum -c` 的差集里 ⇒ 内核侧逐字节未变（「未触及内核」）。
+6) 300 tick 基线（`run` 不传 `--ticks`；产物 /tmp/r4-artisan/m3base）
+   cd 02_source/v0_skeleton/kernel && PYTHONDONTWRITEBYTECODE=1 python3 -B -m deephealing_kernel run \
+     --pack districts/xingfu-xiaoqu --seed 20260921 --events /tmp/r4-artisan/m3base/e.jsonl --snapshot-every 50
+   => chain_tail=baecca9219a9bbabfc0e46349834438cc0c61ba44fd6315aeda26fb65acfd786   exit 0
+      event_count=925  ticks=300  6 checkpoints  000300.json state_hash=9a4ae3da0d7cc3f8556d07ae773b8579d80f55a5cf6d4a0fc5594f5d7a66625f
+      ⇒ 三条读数与 F-4 / R3 基线**逐位相同**
+7) git -C /Users/wooyinq/personal/deep-healing status --porcelain | wc -l => 0（develop @ 98c781f）exit 0
+8) 02_source 文件数 => **150**；生成残渣（node_modules/dist/.build/__pycache__/*.pyc/.pytest_cache）=> **0** 条
+   全树 `*.pyc`（除 /tmp）=> 0 条（全程 PYTHONDONTWRITEBYTECODE=1 / -B）
+
+--- R4-11 冻结面差集（**开工时实测 vs 本轮声明面**；如实登记一条 R3 遗留漂移）------
+cmd: shasum -a 256 -c V0_M3.sha256   (workdir=<ws>)
+  开工后实测（含本轮 3 条声明面改动）：262 OK / 37 非 OK。逐条分类（mtime 为证）：
+    * 34 条 = `spikes/s13-render/logs/**` 的 R3 时代 f4 产物（截图 / browser-accept JSON / console jsonl /
+      serve-summary / negctl-f4_*.log）+ `spikes/s12-session/logs/emitted-messages.jsonl`，
+      mtime **02:28:02–02:32:06**，**晚于** R3 清单重取时刻 **02:08:35**（V0_M3.sha256 mtime）
+      ⇒ 这是 **R3 遗留漂移**（清单定格后又有一次真浏览器 f4 跑重写了产物），**不是本轮引入**；
+      与 `.round4-constraint.txt` §0 记的「299 OK / 0 FAILED」**不一致**（该读数在本轮无法复现，如实记录）。
+    * 3 条 = 本轮声明面：`02_source/.../world.ts`、`02_source/.../scene_assert.mjs`、`spikes/s12-session/m3-change-face.txt`。
+  ⇒ 上述 37 条 + 本轮新增文件（f5 驱动 / R4 日志 / 汇总）全部在 SECTION A-R4 声明面内；
+    由 R4-12 的重取**一次性归零**（重取是最后一步，故此后 `shasum -c` 应全 OK）。
+
+--- R4-12 收尾重取（V0_M3.sha256，最后一步）------------------------------------
+重取理由 / 变更清单 / 前后哈希 / 条目数登记在 06 的 R4-E 段；
+终值与重取链登记在采集面外的 <ws>/V0_M3.sha256.retake.json。
+cmd: shasum -a 256 -c V0_M3.sha256   (workdir=<ws>)  => 见 06 R4-E 的「重取后自校验」行。
+
+================================================================================
+R5 段（**终局有界轮** · 判据闭式化 + 去过度声称 + 冻结面口径修正 · `--max-iteration 1`）
+================================================================================
+计划：REQ-20260921-005-deephealing-v0-m3
+约束权威：<ws>/.round5-constraint.txt（PM 对 R4-C1 / R4-C2 / R4-M1 / R4-M4 的裁决）
+设计输入：<ws>/.r5-architect-design.md
+**编码前 epoch 锚：1790104852**（2026-09-23 03:20:52 CST）—— 早于 R5 的第一次代码改动，也早于
+  spikes/s12-session/m3-change-face.txt 的第一次追加（该声明见其 SECTION A-R5）
+<ws> = /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-005-deephealing-v0-m3
+
+--------------------------------------------------------------------------------
+R5-0 快照核对（开工第一件事；命令 + workdir + exit + 读数）
+--------------------------------------------------------------------------------
+$ git -C /Users/wooyinq/personal/deep-healing rev-parse --abbrev-ref HEAD
+  => develop                                                                    exit 0
+$ git -C /Users/wooyinq/personal/deep-healing rev-parse --short HEAD
+  => 98c781f                                                                    exit 0
+$ git -C /Users/wooyinq/personal/deep-healing status --porcelain | wc -l
+  => 0                                                                          exit 0
+（与任务书 §2 基线逐位一致；无同写集并发写入者；R4 的 reviewer 进程已退出）
+
+$ cd <ws>/02_source/v0_skeleton/web && node scripts/scene_assert.mjs
+  => scene_assert: PASS=29 FAIL=0 / OK                                          exit 0
+  （R4 基线复跑确认；证据 /tmp/r5-artisan-baseline-r4.txt）
+$ cd <ws> && shasum -a 256 -c V0_M3.sha256
+  => OK=311 / FAILED=0（02_source OK=150）                                      exit 0
+  （R4 收尾重取态；证据 /tmp/r5-artisan-shasum-baseline.txt）
+$ cd <ws> && find 02_source -type f | wc -l  => 150；残渣扫描 => 0
+$ cd <ws>/02_source && bash verify_specs.sh --quiet
+  => verify_specs: OK (130 checks passed, 0 skipped)                            exit 0
+  **加宽前的整树副本已冻结**：cp -a 02_source /tmp/r5-pristine/02_source（150 文件）
+  ⇒ RED 相位必须打在**这一份**上（不在交付面注入）
+
+--------------------------------------------------------------------------------
+R5-1 根因定位（三处，逐条）
+--------------------------------------------------------------------------------
+(a) 判据「打地鼠」：`two_reads_share_rendered_geometry` 的比较面是**逐字段白名单**
+    （ids / shape_digests / mesh_positions / mesh_scales / mesh_rotations / geometry_digest）
+    ⇒ 同族的**结构性**篡改可逃逸：几何拓扑（`geometry.setIndex`）、相机投影面
+    （`camera.zoom` / 手改 `projectionMatrix` / `setViewOffset`）、世界根与父级变换
+    （`root.position` / 父级 Group / `matrixAutoUpdate`）、对象面（`visible` / `layers.mask` /
+    `renderOrder`）、第二相机。
+    触发条件：任何「只在 underneath 读法下改写结构性状态」的代码路径。
+    为何闭式面能封堵：比较面 = 对**结构性场景状态**的遍历式摘要（几何 index/groups/attributes +
+    每对象 matrixWorld 16 分量/visible/layers.mask/renderOrder + 根子树身份与父子关系）+
+    相机结构面 + `renderer.render()` 的**入参身份** ⇒ 新增结构性字段会被摘要**自动**捕获。
+(b) 过度声称：断言名里的 `rendered` 声称覆盖「渲染后几何」，实际只覆盖白名单字段；
+    `06` R4-A/R4-B 有绝对措辞（「本轮才真正成立」「唯一失败点即该判据」）。
+(c) 冻结面口径缺陷（`R4-M4`）：`V0_M3.sha256` 把**可重生成的运行产物**钉进哈希面 ⇒
+    出口前任何一次真浏览器复跑都会让 `shasum -c` 变红，被误读成「交付面被改」。
+
+--------------------------------------------------------------------------------
+R5-2 RED（加宽**前**必须绿 = 逃逸；负例侧证据）
+--------------------------------------------------------------------------------
+$ cd <ws> && PYTHONDONTWRITEBYTECODE=1 python3 -B spikes/s13-render/negctl/f6_r5_structure_negctl.py red
+  （workdir <ws>；source=/tmp/r5-pristine/02_source；NEGCTL_ROOT=/tmp/r5-artisan-red）
+  => 23 条 case 全跑；**加宽前真逃逸 13 条**：
+     B×4  r5_b_camera_zoom / r5_b_camera_zoom_bare / r5_b_projection_matrix / r5_b_view_offset
+     C×1  r5_c_geometry_index
+     D×3  r5_d_root_offset / r5_d_parent_group_offset / r5_d_matrix_auto_update
+     E×3  r5_e_visible / r5_e_layers_mask / r5_e_render_order
+     G×2  r5_g_root_offset_other_value / r5_g_camera_zoom_other_value
+     （另有阳性对照 r5_pristine 判绿 = 副本 + 依赖软链可用，不是环境假红）
+     A 组 8 条 + G 的 scale 变体在**加宽前也仍红**（R4 面已抓，逐条 fail name =
+     `two_reads_share_rendered_geometry`）；`turned_red=9`、`crashes=[]`、
+     逐 case `delivery_face_unchanged=True`、`all_ok=True`                                exit 0
+  ⇒ 逐条复现 PM 的 `R4-C1` / `R4-C2` / `R4-M1`（冲突取高口径）与对象面逃逸。
+  证据（绝对路径）：
+    <ws>/spikes/s13-render/logs/f6-r5-negctl-red-summary.json
+    <ws>/spikes/s13-render/logs/negctl-r5-red-closed-form.log
+    <ws>/spikes/s13-render/logs/negctl-r5_*.log（逐 case：注入 + exit + stdout/stderr + 判据在场情况）
+  相位证据：副本内 `judgement_present_in_copy` ⇒ 加宽前 `old_rendered=True, structure=False,
+    render_camera=False`；加宽后 `structure=True, render_camera=True`。
+
+--------------------------------------------------------------------------------
+R5-3 最小 GREEN（只做让闭式面成立的最小改动；实现语义未改）
+--------------------------------------------------------------------------------
+改动 1：<ws>/02_source/v0_skeleton/web/src/scene/world.ts
+  - 新增 `structureReport()`：`scene.updateMatrixWorld(true)` 后遍历式取
+    几何结构（`index` / `groups` / `attributes`：至少 position/normal/uv，缺失显式 `null`）+
+    每对象（`matrixWorld` 16 分量量化 1e-6 / `visible` / `layers.mask` / `renderOrder`）+
+    根子树身份与父子关系（稳定身份 = `name`，无名字时 `类型#序号`）
+  - 渲染器包装器：**唯一**的 `renderer.render(scene, camera)` 调用点 `renderFrame()`，
+    包装器逐次记录**实际入参**（`类型#uuid`）；新增 `renderOnce()` / `renderCameraReport()`
+  - `cameraReport()` 扩面：`matrixWorld` / `projectionMatrix`（各 16）/ `zoom` /
+    `view_offset`（three 0.180 的 `PerspectiveCamera.view`，未设置 ⇒ 显式 `null`）/ `fov` / `near` / `far`
+  - **未改**：装配路径、`READING_GEOMETRY_PROFILE`、两态共用同一几何与相机、默认单位变换、
+    `rebuild()` 的写入语义、文件数（仍 150）
+改动 2：<ws>/02_source/v0_skeleton/web/scripts/scene_assert.mjs
+  - `two_reads_share_rendered_geometry` **改名并加宽** → `two_reads_share_scene_structure`
+    （R4 面 + 闭式结构面；名字即比较面）
+  - `two_reads_share_camera` 扩面（含 zoom / projectionMatrix / view_offset / matrixWorld）
+  - 新增 `two_reads_use_same_render_camera` + `scene_handle_structure_report_is_live`
+  - 失败 detail 给**分区首个差异点**（objects_first_diff / geometry_first_diff / camera_first_diff）
+  - 既有 27 条一条未掉
+中途读数（每一步都真跑）：
+  $ cd <ws>/02_source/v0_skeleton/web && node scripts/scene_assert.mjs
+    改 world.ts 之后（assert 未动）=> PASS=29 FAIL=0 exit 0（**语义未变**的自证）
+    改完两个文件之后        => PASS=31 FAIL=0 exit 0（条数 29 → 31，**未下降**）
+  证据：/tmp/r5-artisan-after-world.txt、/tmp/r5-artisan-green2.txt
+
+--------------------------------------------------------------------------------
+R5-4 V0（语法 + 受影响测试 + 根因复现用例）
+--------------------------------------------------------------------------------
+$ cd <ws>/02_source/v0_skeleton/web && node scripts/scene_assert.mjs
+  => scene_assert: PASS=31 FAIL=0 / OK                                          exit 0
+$ cd <ws>/02_source && bash verify_specs.sh --quiet
+  => verify_specs: OK (130 checks passed, 0 skipped)                            exit 0
+$ cd <ws>/02_source/v0_skeleton/web && PYTHONDONTWRITEBYTECODE=1 npm test
+  => tests 4 / pass 4 / fail 0                                                  exit 0
+$ cd <ws>/02_source/v0_skeleton/session && PYTHONDONTWRITEBYTECODE=1 npm test
+  => tests 16 / pass 16 / fail 0                                                exit 0
+$ cd <ws>/02_source/v0_skeleton/kernel && PYTHONDONTWRITEBYTECODE=1 python3 -B -m pytest \
+    tests/test_budget_downgrade_void.py tests/test_observe_mode_readonly.py \
+    tests/test_task_adaptation.py tests/test_e2e_run_verify.py tests/test_calibrate_latency.py \
+    -q -p no:cacheprovider
+  => 41 passed in 7.42s                                                         exit 0
+（语法：`node scripts/scene_assert.mjs` 真跑通过 = Node 类型剥离下模块可加载；
+  产物构建面由 `verify_specs` 的零残渣 + f4 的真 vite build 覆盖）
+
+--------------------------------------------------------------------------------
+R5-5 负例矩阵（GREEN 相位 = 本轮判据面；30 条真跑，逐条读数）
+--------------------------------------------------------------------------------
+$ cd <ws> && PYTHONDONTWRITEBYTECODE=1 python3 -B spikes/s13-render/negctl/f6_r5_structure_negctl.py green
+  （workdir <ws>；source=<ws>/02_source（交付面）；NEGCTL_ROOT=/tmp/r5-artisan）
+  => turned_red=23 / escapes=[] / crashes=[] / 逐 case delivery_face_unchanged=True / all_ok=True
+                                                                                exit 0
+  逐条读数（组 / case / exit / PASS / FAIL / fail name / delivery_face_unchanged）：
+    0  r5_pristine                 exit=0 PASS=31 FAIL=0  —                             True
+    A  r5_a_mesh_scale             exit=1 PASS=30 FAIL=1  two_reads_share_scene_structure True
+    A  r5_a_mesh_rotation          exit=1 PASS=30 FAIL=1  two_reads_share_scene_structure True
+    A  r5_a_camera_position        exit=1 PASS=30 FAIL=1  two_reads_share_camera          True
+    A  r5_a_ctl_position_shift     exit=1 PASS=30 FAIL=1  two_reads_share_scene_structure True
+    A  r5_a_mesh_scale_tiny        exit=1 PASS=30 FAIL=1  two_reads_share_scene_structure True
+    A  r5_a_mesh_quaternion        exit=1 PASS=30 FAIL=1  two_reads_share_scene_structure True
+    A  r5_a_single_box             exit=1 PASS=30 FAIL=1  two_reads_share_scene_structure True
+    A  r5_a_mesh_scale_nonuniform  exit=1 PASS=30 FAIL=1  two_reads_share_scene_structure True
+    B  r5_b_camera_zoom            exit=1 PASS=30 FAIL=1  two_reads_share_camera          True
+    B  r5_b_camera_zoom_bare       exit=1 PASS=30 FAIL=1  two_reads_share_camera          True
+    B  r5_b_projection_matrix      exit=1 PASS=30 FAIL=1  two_reads_share_camera          True
+    B  r5_b_view_offset            exit=1 PASS=30 FAIL=1  two_reads_share_camera          True
+    C  r5_c_geometry_index         exit=1 PASS=30 FAIL=1  two_reads_share_scene_structure True
+    D  r5_d_root_offset            exit=1 PASS=30 FAIL=1  two_reads_share_scene_structure True
+    D  r5_d_parent_group_offset    exit=1 PASS=30 FAIL=1  two_reads_share_scene_structure True
+    D  r5_d_matrix_auto_update     exit=1 PASS=30 FAIL=1  two_reads_share_scene_structure True
+    E  r5_e_visible                exit=1 PASS=30 FAIL=1  two_reads_share_scene_structure True
+    E  r5_e_layers_mask            exit=1 PASS=30 FAIL=1  two_reads_share_scene_structure True
+    E  r5_e_render_order           exit=1 PASS=30 FAIL=1  two_reads_share_scene_structure True
+    F  r5_f_second_render_camera   exit=1 PASS=30 FAIL=1  two_reads_use_same_render_camera True
+    G  r5_g_scale_other_values     exit=1 PASS=30 FAIL=1  two_reads_share_scene_structure True
+    G  r5_g_root_offset_other_value exit=1 PASS=30 FAIL=1 two_reads_share_scene_structure True
+    G  r5_g_camera_zoom_other_value exit=1 PASS=30 FAIL=1 two_reads_share_camera          True
+    H  r5_h_legal_resize_idempotent    exit=0 PASS=31 FAIL=0  —（期望绿）               True
+    H  r5_h_legal_resize_outside_window exit=0 PASS=31 FAIL=0 —（期望绿）               True
+    H  r5_h_legal_delta                exit=0 PASS=31 FAIL=0  —（期望绿）               True
+    I  r5_i_pinned_geometry_digest  exit=0 PASS=31 FAIL=0  —（反向注入 ⇒ **变绿**）     True
+    I  r5_i_pinned_objects_digest   exit=0 PASS=31 FAIL=0  —（反向注入 ⇒ **变绿**）     True
+    I  r5_i_camera_same_read_twice  exit=0 PASS=31 FAIL=0  —（反向注入 ⇒ **变绿**）     True
+  证据（绝对路径）：
+    <ws>/spikes/s13-render/logs/f6-r5-negctl-summary.json
+    <ws>/spikes/s13-render/logs/negctl-r5-green-closed-form.log
+    <ws>/spikes/s13-render/logs/negctl-r5_*.log（逐 case 全文，含注入串与 stdout/stderr）
+  控制组读法：H 组 = 「不得假红」（合法 resize/delta 仍绿）；I 组 = 「不得恒真 / 不得自命中」
+    （把结构摘要读回值钉成常量 ⇒ 对应负例**变绿**；把相机判据改成比较同一读数两次 ⇒ 相机负例**变绿**
+     ⇒ 证明判据**真在比较两态**，不是恒真）。
+
+--------------------------------------------------------------------------------
+R5-6 回归守卫（world.ts 有改动 ⇒ 官方门禁必须复跑）
+--------------------------------------------------------------------------------
+$ cd <ws> && PYTHONDONTWRITEBYTECODE=1 python3 -B spikes/s13-render/negctl/f4_browser_negctl.py
+  => [f4_pristine] all_checks_pass=True failed=[]
+     [f4_neg_observe_write_control] patterns={'observe_no_write_controls': True} ok=True
+     [f4_neg_pinned_buffer_only]   patterns={'drawing_buffer_follows_canvas': True} ok=True
+     [f4_neg_fixed_canvas]         patterns={'canvas_rect_fills_viewport': True,
+                                             'world_visible_outside_hud': True} ok=True
+     summary: delivery_face_unchanged=True all_ok=True                          exit 0
+  （真 Chromium / 两档视口 / 两态读法 / 6 张截图 ×4 case；证据 /tmp/r5-f4-run1.txt）
+$ cd <ws>/02_source/v0_skeleton/kernel && PYTHONDONTWRITEBYTECODE=1 python3 -B -m deephealing_kernel run \
+    --pack districts/xingfu-xiaoqu --seed 20260921 --events /tmp/r5-artisan/m3base/e.jsonl --snapshot-every 50
+  => chain_tail=baecca9219a9bbabfc0e46349834438cc0c61ba44fd6315aeda26fb65acfd786   exit 0
+     event_count=925 / ticks=300 / 6 checkpoints
+     checkpoints/000300.json state_hash=9a4ae3da0d7cc3f8556d07ae773b8579d80f55a5cf6d4a0fc5594f5d7a66625f
+  ⇒ 三条读数**逐位不变**（F-4 基线）                                             exit 0
+$ cd <ws> && find 02_source -type f | wc -l  => 150
+$ cd <ws> && find 02_source \( -name node_modules -o -name dist -o -name .build -o -name __pycache__ \
+    -o -name '*.pyc' -o -name .pytest_cache -o -name '.DS_Store' \) | wc -l  => 0
+$ cd <ws> && git -C /Users/wooyinq/personal/deep-healing status --porcelain | wc -l => 0
+
+--------------------------------------------------------------------------------
+R5-7 自审（复读 diff + 断言体零字面量 + detail 定位注入点）
+--------------------------------------------------------------------------------
+1) 复读 diff：`shasum -a 256 -c V0_M3.sha256`（R4 清单）⇒ 308 OK / **3 FAILED**，失配**恰好**
+   是声明过的三处：`02_source/.../scene/world.ts`、`02_source/.../scripts/scene_assert.mjs`、
+   `spikes/s12-session/m3-change-face.txt` ⇒ **无夹带、无越界写**（写集白名单之外零改动）。
+2) 断言体**零字面量**：`two_reads_share_scene_structure` / `two_reads_share_camera` /
+   `two_reads_use_same_render_camera` 的判定只做「两态读数互相比较」（无期望常量），
+   `scene_handle_structure_report_is_live` 只做**形状/在场性**自证（不比较数值）⇒ 无自命中。
+3) detail **定位注入点**（逐条核对，节选）：
+     setIndex          => `geometry_first_diff=bench-01/index`
+     visible           => `objects_first_diff=#1:bench-01/visible`
+     renderOrder       => `objects_first_diff=#1:bench-01/render_order`
+     layers.mask       => `objects_first_diff=#1:bench-01/layers_mask`
+     父级 Group 偏移    => `objects_first_diff=#1:bench-01/id`（父链被改写）
+     根变换 / scale / matrixAutoUpdate => `objects_first_diff=#0:world-root/matrix_world` /
+                                          `#1:bench-01/matrix_world`
+     camera.zoom / 手改 projectionMatrix => `camera_first_diff=projection_matrix`
+     setViewOffset     => `view_offset={"enabled":true,"full_width":100,...}` + `projection_matrix`
+     第二相机           => `surface=PerspectiveCamera#cd7ce061… underneath=PerspectiveCamera#88530bdf…`
+4) 并发/资源边界：负例一律整树副本（交付面零注入）；逐 case 自算 `delivery_face_unchanged`；
+   `renderOnce()` 不引入渲染循环（Node 下底层仍是空渲染器）；`updateMatrixWorld(true)` 只在**读数前**
+   对齐派生矩阵（浏览器里 `render()` 每帧本就如此），不改几何/相机/装配语义。
+
+--------------------------------------------------------------------------------
+R5-8 冻结面口径（R4-M4）：复现 → 修正 → 过宽/过窄控制
+--------------------------------------------------------------------------------
+(a) **复现（RED）**：一次 f4 真浏览器复跑**之后**，对 R4 清单跑 `shasum -a 256 -c V0_M3.sha256`
+    => OK=282 / **FAILED=29**（exit 1）；其中 **26 条是可重生成的运行产物**
+    （`emitted-messages.jsonl` 1 / `browser-accept-*.json` 4 / `console-*.jsonl` 4 /
+     `f4-browser-summary.json` 1 / `*.png` 8 / `negctl-f4_*.log` 4 / `serve-summary-*.json` 4），
+    另 3 条是本轮声明的交付面改动 ⇒ **逐条复现** PM 的 `R4-M4`。
+    证据：/tmp/r5-shasum-after-f4.txt
+(b) **修正**：`spikes/s12-session/scripts/retake-v0-m3.py`（architect 授权扩展）
+    `EXCLUDE_SUBPATHS`（前缀 → 整路径 glob）+ 其唯一消费行（`startswith` → `fnmatch.fnmatch`）+
+    `HEADER`（显式声明「运行产物 = 可重生成，不入哈希面；其判据结论由门禁退出码与 06 登记承担」）。
+    排除模式（逐条）：`spikes/{s12-session,s13-render}/logs/` 下的 `*.png` / `browser-accept-*.json` /
+    `console-*.jsonl` / `negctl-*.log` / `*-summary.json` / `emitted-messages.jsonl`
+    **+ R5-POST 定向补齐** `spikes/s13-render/logs/serve-summary-*.json`（理由见 06 R5-G①）。
+(c) **过宽控制**：`--dry-run` ⇒ `entries=202 previous_entries=311`、`added=[f6_r5_structure_negctl.py]`、
+    `removed=` **110** 条；逐条核对 ⇒ 110/110 命中声明模式、110/110 在 `spikes/*/logs/` 子树内、
+    110/110 是可重生成运行产物（`UNCLASSIFIED=[]`）；定向保留 15 条**全部仍在**采集面
+    （`must_stay_missing_from_collection_face=[]`）。证据：/tmp/r5-retake-dryrun.txt、
+    /tmp/r5-exclusion-verify.txt、/tmp/r5-fate.txt
+(d) **过窄控制（硬）**：对**仍在采集面内**的全部 202 条逐文件 sha256 ⇒ f4 复跑**前后差异为空**
+    （FINGERPRINT_UNCHANGED=YES）⇒ 排除集合对 f4 复跑**完备**。
+    证据：/tmp/r5-fp-before.txt、/tmp/r5-fp-after.txt、/tmp/r5-f4-run2.txt
+(e) **最后一步重取** + 更新 `V0_M3.sha256.retake.json`（新增 `retake_chain_r5`：理由 + 前后哈希 +
+    条目数 + 排除项变更）⇒ 见文件本身与 06 的 R5-F 段。
+(f) **重取之后**再跑一次真浏览器复跑，**之后** `shasum -a 256 -c V0_M3.sha256` ⇒ 见 R5-11 收尾读数。
+
+--------------------------------------------------------------------------------
+R5-9 逐 AC 回填（PASS | FAIL | GAP + evidence 绝对路径 + 精确命令 + exit）
+--------------------------------------------------------------------------------
+[PASS] AC-M3-8③（同一几何两态；本轮判据落点）
+  evidence: <ws>/06_v0_m3_self_test.md 的 R5-A/R5-B/R5-C/R5-E 段；
+            <ws>/spikes/s13-render/logs/f6-r5-negctl-summary.json；
+            <ws>/spikes/s13-render/logs/f6-r5-negctl-red-summary.json
+  command:  cd <ws>/02_source/v0_skeleton/web && node scripts/scene_assert.mjs        exit 0（PASS=31 FAIL=0）
+            cd <ws> && PYTHONDONTWRITEBYTECODE=1 python3 -B \
+              spikes/s13-render/negctl/f6_r5_structure_negctl.py green                  exit 0（all_ok=True）
+            cd <ws> && PYTHONDONTWRITEBYTECODE=1 python3 -B \
+              spikes/s13-render/negctl/f6_r5_structure_negctl.py red                    exit 0（13 条逃逸）
+[PASS] R4-C1 / R4-C2 / R4-M1（PM 裁决的三类逃逸，判据层闭合）
+  evidence: 同上（GREEN 相位 B/C/D 组逐条真红；RED 相位逐条真逃逸）
+  command:  同上 green/red 两条
+[PASS] R4-M4（冻结面口径修正）
+  evidence: <ws>/V0_M3.sha256 头部声明；<ws>/V0_M3.sha256.retake.json；06 的 R5-F 段
+  command:  cd <ws> && python3 -B spikes/s12-session/scripts/retake-v0-m3.py . --dry-run   exit 0
+            cd <ws> && shasum -a 256 -c V0_M3.sha256（复跑后）                          exit 0（全 OK）
+[PASS] AC-M3-1 / 1c / 1d / 1e / 2 / 3 / 4 / 5 / 6 / 7 / 8①②④⑤（回归，读数见 R5-4 / R5-6）
+  evidence: <ws>/spikes/s13-render/logs/f4-browser-summary.json；/tmp/r5-verify-specs.txt；
+            /tmp/r5-session-test.txt；/tmp/r5-web-test.txt；/tmp/r5-kernel-subset.txt；/tmp/r5-300tick.txt
+  command:  cd <ws>/02_source && bash verify_specs.sh --quiet                          exit 0
+            cd <ws>/02_source/v0_skeleton/{web,session} && npm test                     exit 0 / exit 0
+            cd <ws>/02_source/v0_skeleton/kernel && python3 -B -m pytest ... -q          exit 0（41 passed）
+            cd <ws> && python3 -B spikes/s13-render/negctl/f4_browser_negctl.py          exit 0
+[GAP] AC-M3-8③⑤ 的「双读证据文件名」`worldview-two-reads.*`（任务书 §7.2 点名）
+  事实：全树 `rglob('*worldview-two-reads*')` **0 命中**（该文件不存在）。
+  已做的替代核验：① 稳定证据（`f4_browser_negctl.py` 驱动本体 / `r4-*.log` /
+    `f5-r4-negctl-summary-red.json` / `06` 登记）**仍在**哈希面内（`must_stay_missing=[]`）；
+    ② 运行产物类（`browser-accept-*.json` 的两态读数 + 截图）按 §1.3 移出哈希面，结论由门禁退出码 +
+    `06` 登记承担。⇒ 登记为**任务书笔误**（GAP，非本轮可闭合项；归属 M4 文档口径）。
+  证据：/tmp/r5-exclusion-verify.txt（`worldview-two-reads_actual_files=[]`）
+
+--------------------------------------------------------------------------------
+R5-10 已知未覆盖项 / 风险（如实）
+--------------------------------------------------------------------------------
+1. 光照 / 材质色相明度（两态**按设计**必须不同）、光栅化 / GPU 层结果、摘要取完之后的时序篡改、
+   DOM / HUD 层、`aspect`（视口派生量）⇒ 均**不在**闭式面内（逐条理由见 06 的 R5-C）。
+2. 两读**窗口内**的合法视口变化会让相机面变红（口径边界，见 06 的 R5-C⑥；H 组给两种合法 resize 读数）。
+3. 本判据是**一致性判据**，**不是**防篡改 / 完整性机制（G9 口径）。
+4. R4 登记的非阻断项（Raven R4-M2/M3、Sentinel MEDIUM-R4-1 等）本轮只接续登记，处置归属 M4。
+5. 约束 §1.3 的字面枚举缺 `serve-summary-*.json` ⇒ 已按**意图**定向补齐并如实登记（06 的 R5-G①）；
+   `06` 的 R3 段仍含同类绝对措辞（§6 授权只覆盖 R4-A/R4-B）⇒ 未动，登记归属 M4（06 的 R5-D）。

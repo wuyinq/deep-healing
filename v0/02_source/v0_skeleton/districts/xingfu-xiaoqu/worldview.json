@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0.0",
+  "pack_id": "xingfu-xiaoqu",
+  "tone": {
+    "surface": { "light_k": 4200, "ambient_ratio": 0.42, "saturation_pct": 28 },
+    "underneath": { "light_k": 3200, "ambient_ratio": 0.12, "saturation_pct": 14 }
+  },
+  "anomalies": [
+    {
+      "id": "anom-01",
+      "at_entity": "room-101",
+      "kind": "still_lit",
+      "surface_read": "清晨的窗户是唯一还亮着的灯",
+      "underneath_read": "他一夜没关灯：这一层的走廊，整晚只有这一扇窗是醒着的",
+      "reveal_at_tick": 55
+    },
+    {
+      "id": "anom-02",
+      "at_entity": "laundry-01",
+      "kind": "repeating_trace",
+      "surface_read": "有人在洗衣房站着发了一会儿呆",
+      "underneath_read": "同一台机器今天第三次转到同一格；站着的人没有把衣服拿出来",
+      "reveal_at_tick": 120
+    },
+    {
+      "id": "anom-03",
+      "at_entity": "bench-01",
+      "kind": "unattended",
+      "surface_read": "长椅上留着一只没人认领的杯子",
+      "underneath_read": "杯子是两只一套里的那只；另一只从没在小区里出现过",
+      "reveal_at_tick": 200
+    }
+  ],
+  "fault_lines": [
+    {
+      "id": "fault-01",
+      "about": "npc-001",
+      "kind": "grief_unspoken",
+      "repair_via": "task-001",
+      "repaired_state": "settled"
+    },
+    {
+      "id": "fault-02",
+      "about": "npc-004",
+      "kind": "overload",
+      "repair_via": "task-001",
+      "repaired_state": "settled"
+    }
+  ]
+}

@@ -19,6 +19,9 @@
 「逃逸 pack」判绿（U11）。现在：pack 内任一文件解析后越出 pack 根 ⇒ `E_PACK_INVALID` + exit 1；
 `pack.sig` 自身是越界符号链接 ⇒ 同样拒收（它原先是唯一未被守卫的读取点）。
 包**内**目标的符号链接仍然合法（与 `deephealing_kernel/pack.py` 同一口径）。
+**目录符号链接（R2 / R-M2-3 收口）**：`rglob` **不递归进目录链接**、`is_file()` 对目录链接为
+`False` ⇒ 该子树既不被 hash 也不报 undeclared_file。现在显式枚举并一律拒收（`symlinked
+directory in content pack`），与 `tools/pack_sign.py` 写侧同一判据。
 退出码约定与输出格式**逐字不变**。
 
 对应设计：district.pack.spec.md §2 第 5 步；`kernel validate --pack <dir>` 的签名校验部分。
@@ -72,6 +75,21 @@ def symlink_escape(path: Path, root: Path) -> str | None:
     return None
 
 
+def symlinked_directories(root: Path) -> list[Path]:
+    """**目录符号链接守卫（R2 / R-M2-3 收口）**：枚举 pack 内所有「解析后是目录」的符号链接。
+
+    为什么必须**显式枚举**：`rglob('*')` **不会**递归进目录符号链接，且 `is_file()` 对目录链接为
+    `False` ⇒ 该子树**既不被 hash、也不报 `undeclared_file`**（M1 R16/R18 残余：P-5 守卫只覆盖
+    **文件**链接，`verify_pack: OK` 因此**不等于**「pack 无逃逸」）。
+
+    口径：**任何**目录符号链接一律拒收（不区分目标是否在 pack 内）——
+      - 目标在包外 ⇒ 包外子树被静默跳过（逃逸）；
+      - 目标在包内 ⇒ 同一批文件会以两个相对路径出现（重复计数）或形成环。
+    两种形态都让「pack 的文件清单」不再唯一 ⇒ 不允许静默跳过，必须报出来。
+    """
+    return sorted(path for path in root.rglob("*") if path.is_symlink() and path.resolve().is_dir())
+
+
 def sha256_of(path: Path) -> tuple[str, int]:
     digest = hashlib.sha256()
     size = 0
@@ -95,6 +113,15 @@ def main(argv: list[str]) -> int:
     escaped_sig = symlink_escape(sig_path, pack_dir)
     if escaped_sig:
         print(f"E_PACK_INVALID: symlink escape: {escaped_sig}", file=sys.stderr)
+        return 1
+
+    # **目录符号链接守卫（R2 / R-M2-3 收口）**：`rglob` 不递归进目录链接 ⇒ 子树被静默跳过。
+    # 必须显式枚举并 fail-closed（不得「既不被 hash、也不报 undeclared_file」）。
+    dir_links = symlinked_directories(pack_dir)
+    if dir_links:
+        for path in dir_links:
+            print(f"E_PACK_INVALID: symlinked directory in content pack: {path} -> {path.resolve()}",
+                  file=sys.stderr)
         return 1
 
     signature = json.loads(sig_path.read_text(encoding="utf-8"))

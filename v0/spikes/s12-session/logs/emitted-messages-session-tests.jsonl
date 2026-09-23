@@ -1,0 +1,299 @@
+{"t":"intent_ack","tick":0,"seq":1,"id":"i-obs-1","status":"rejected","reason":"E_MODE_READONLY","detail":"session mode observe is read-only"}
+{"t":"intent_ack","tick":0,"seq":1,"id":"i-part-1","status":"queued","impact_budget_remaining":97}
+{"t":"intent_ack","tick":0,"seq":1,"id":"i-rl-1","status":"queued","impact_budget_remaining":97}
+{"t":"intent_ack","tick":0,"seq":2,"id":"i-rl-2","status":"rejected","reason":"E_COOLDOWN","detail":"per_target_ms=5000 for npc-001","impact_budget_remaining":97}
+{"t":"intent_ack","tick":0,"seq":3,"id":"i-rl-3","status":"queued","impact_budget_remaining":94}
+{"t":"intent_ack","tick":0,"seq":4,"id":"i-rl-4","status":"queued","impact_budget_remaining":91}
+{"t":"intent_ack","tick":0,"seq":5,"id":"i-rl-5","status":"rejected","reason":"E_RATE_LIMITED","detail":"per_target_max_intents=2 for npc-001","impact_budget_remaining":91}
+{"t":"intent_ack","tick":0,"seq":6,"id":"i-rl-6","status":"rejected","reason":"E_COOLDOWN","detail":"global_ms=1000","impact_budget_remaining":91}
+{"t":"intent_ack","tick":0,"seq":1,"id":"i-rl-1","status":"queued","impact_budget_remaining":97}
+{"t":"intent_ack","tick":0,"seq":2,"id":"i-rl-2","status":"rejected","reason":"E_COOLDOWN","detail":"per_target_ms=5000 for npc-001","impact_budget_remaining":97}
+{"t":"intent_ack","tick":0,"seq":3,"id":"i-rl-3","status":"queued","impact_budget_remaining":94}
+{"t":"intent_ack","tick":0,"seq":4,"id":"i-rl-4","status":"queued","impact_budget_remaining":91}
+{"t":"intent_ack","tick":0,"seq":5,"id":"i-rl-5","status":"rejected","reason":"E_RATE_LIMITED","detail":"per_target_max_intents=2 for npc-001","impact_budget_remaining":91}
+{"t":"intent_ack","tick":0,"seq":6,"id":"i-rl-6","status":"rejected","reason":"E_COOLDOWN","detail":"global_ms=1000","impact_budget_remaining":91}
+{"t":"intent_ack","tick":0,"seq":1,"id":"i-budget-0","status":"queued","impact_budget_remaining":97}
+{"t":"intent_ack","tick":0,"seq":2,"id":"i-budget-1","status":"queued","impact_budget_remaining":94}
+{"t":"intent_ack","tick":0,"seq":3,"id":"i-budget-2","status":"queued","impact_budget_remaining":91}
+{"t":"intent_ack","tick":0,"seq":4,"id":"i-budget-3","status":"queued","impact_budget_remaining":88}
+{"t":"intent_ack","tick":0,"seq":5,"id":"i-budget-4","status":"queued","impact_budget_remaining":85}
+{"t":"intent_ack","tick":0,"seq":6,"id":"i-budget-5","status":"queued","impact_budget_remaining":82}
+{"t":"intent_ack","tick":0,"seq":7,"id":"i-budget-6","status":"queued","impact_budget_remaining":79}
+{"t":"intent_ack","tick":0,"seq":8,"id":"i-budget-7","status":"queued","impact_budget_remaining":76}
+{"t":"intent_ack","tick":0,"seq":9,"id":"i-budget-8","status":"queued","impact_budget_remaining":73}
+{"t":"intent_ack","tick":0,"seq":10,"id":"i-budget-9","status":"queued","impact_budget_remaining":70}
+{"t":"intent_ack","tick":0,"seq":11,"id":"i-budget-10","status":"queued","impact_budget_remaining":67}
+{"t":"intent_ack","tick":0,"seq":12,"id":"i-budget-11","status":"queued","impact_budget_remaining":64}
+{"t":"intent_ack","tick":0,"seq":13,"id":"i-budget-12","status":"queued","impact_budget_remaining":61}
+{"t":"intent_ack","tick":0,"seq":14,"id":"i-budget-13","status":"queued","impact_budget_remaining":58}
+{"t":"intent_ack","tick":0,"seq":15,"id":"i-budget-14","status":"queued","impact_budget_remaining":55}
+{"t":"intent_ack","tick":0,"seq":16,"id":"i-budget-15","status":"queued","impact_budget_remaining":52}
+{"t":"intent_ack","tick":0,"seq":17,"id":"i-budget-16","status":"queued","impact_budget_remaining":49}
+{"t":"intent_ack","tick":0,"seq":18,"id":"i-budget-17","status":"queued","impact_budget_remaining":46}
+{"t":"intent_ack","tick":0,"seq":19,"id":"i-budget-18","status":"queued","impact_budget_remaining":43}
+{"t":"intent_ack","tick":0,"seq":20,"id":"i-budget-19","status":"queued","impact_budget_remaining":40}
+{"t":"intent_ack","tick":0,"seq":21,"id":"i-budget-20","status":"queued","impact_budget_remaining":37}
+{"t":"intent_ack","tick":0,"seq":22,"id":"i-budget-21","status":"queued","impact_budget_remaining":34}
+{"t":"intent_ack","tick":0,"seq":23,"id":"i-budget-22","status":"queued","impact_budget_remaining":31}
+{"t":"intent_ack","tick":0,"seq":24,"id":"i-budget-23","status":"queued","impact_budget_remaining":28}
+{"t":"intent_ack","tick":0,"seq":25,"id":"i-budget-24","status":"queued","impact_budget_remaining":25}
+{"t":"intent_ack","tick":0,"seq":26,"id":"i-budget-25","status":"queued","impact_budget_remaining":22}
+{"t":"intent_ack","tick":0,"seq":27,"id":"i-budget-26","status":"queued","impact_budget_remaining":19}
+{"t":"intent_ack","tick":0,"seq":28,"id":"i-budget-27","status":"queued","impact_budget_remaining":16}
+{"t":"intent_ack","tick":0,"seq":29,"id":"i-budget-28","status":"queued","impact_budget_remaining":13}
+{"t":"intent_ack","tick":0,"seq":30,"id":"i-budget-29","status":"queued","impact_budget_remaining":10}
+{"t":"intent_ack","tick":0,"seq":31,"id":"i-budget-30","status":"queued","impact_budget_remaining":7}
+{"t":"intent_ack","tick":0,"seq":32,"id":"i-budget-31","status":"queued","impact_budget_remaining":4}
+{"t":"intent_ack","tick":0,"seq":33,"id":"i-budget-32","status":"queued","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":67,"id":"i-budget-33","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"cost=3 remaining=1","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":1,"id":"i-budget-0","status":"queued","impact_budget_remaining":97}
+{"t":"intent_ack","tick":0,"seq":2,"id":"i-budget-1","status":"queued","impact_budget_remaining":94}
+{"t":"intent_ack","tick":0,"seq":3,"id":"i-budget-2","status":"queued","impact_budget_remaining":91}
+{"t":"intent_ack","tick":0,"seq":4,"id":"i-budget-3","status":"queued","impact_budget_remaining":88}
+{"t":"intent_ack","tick":0,"seq":5,"id":"i-budget-4","status":"queued","impact_budget_remaining":85}
+{"t":"intent_ack","tick":0,"seq":6,"id":"i-budget-5","status":"queued","impact_budget_remaining":82}
+{"t":"intent_ack","tick":0,"seq":7,"id":"i-budget-6","status":"queued","impact_budget_remaining":79}
+{"t":"intent_ack","tick":0,"seq":8,"id":"i-budget-7","status":"queued","impact_budget_remaining":76}
+{"t":"intent_ack","tick":0,"seq":9,"id":"i-budget-8","status":"queued","impact_budget_remaining":73}
+{"t":"intent_ack","tick":0,"seq":10,"id":"i-budget-9","status":"queued","impact_budget_remaining":70}
+{"t":"intent_ack","tick":0,"seq":11,"id":"i-budget-10","status":"queued","impact_budget_remaining":67}
+{"t":"intent_ack","tick":0,"seq":12,"id":"i-budget-11","status":"queued","impact_budget_remaining":64}
+{"t":"intent_ack","tick":0,"seq":13,"id":"i-budget-12","status":"queued","impact_budget_remaining":61}
+{"t":"intent_ack","tick":0,"seq":14,"id":"i-budget-13","status":"queued","impact_budget_remaining":58}
+{"t":"intent_ack","tick":0,"seq":15,"id":"i-budget-14","status":"queued","impact_budget_remaining":55}
+{"t":"intent_ack","tick":0,"seq":16,"id":"i-budget-15","status":"queued","impact_budget_remaining":52}
+{"t":"intent_ack","tick":0,"seq":17,"id":"i-budget-16","status":"queued","impact_budget_remaining":49}
+{"t":"intent_ack","tick":0,"seq":18,"id":"i-budget-17","status":"queued","impact_budget_remaining":46}
+{"t":"intent_ack","tick":0,"seq":19,"id":"i-budget-18","status":"queued","impact_budget_remaining":43}
+{"t":"intent_ack","tick":0,"seq":20,"id":"i-budget-19","status":"queued","impact_budget_remaining":40}
+{"t":"intent_ack","tick":0,"seq":21,"id":"i-budget-20","status":"queued","impact_budget_remaining":37}
+{"t":"intent_ack","tick":0,"seq":22,"id":"i-budget-21","status":"queued","impact_budget_remaining":34}
+{"t":"intent_ack","tick":0,"seq":23,"id":"i-budget-22","status":"queued","impact_budget_remaining":31}
+{"t":"intent_ack","tick":0,"seq":24,"id":"i-budget-23","status":"queued","impact_budget_remaining":28}
+{"t":"intent_ack","tick":0,"seq":25,"id":"i-budget-24","status":"queued","impact_budget_remaining":25}
+{"t":"intent_ack","tick":0,"seq":26,"id":"i-budget-25","status":"queued","impact_budget_remaining":22}
+{"t":"intent_ack","tick":0,"seq":27,"id":"i-budget-26","status":"queued","impact_budget_remaining":19}
+{"t":"intent_ack","tick":0,"seq":28,"id":"i-budget-27","status":"queued","impact_budget_remaining":16}
+{"t":"intent_ack","tick":0,"seq":29,"id":"i-budget-28","status":"queued","impact_budget_remaining":13}
+{"t":"intent_ack","tick":0,"seq":30,"id":"i-budget-29","status":"queued","impact_budget_remaining":10}
+{"t":"intent_ack","tick":0,"seq":31,"id":"i-budget-30","status":"queued","impact_budget_remaining":7}
+{"t":"intent_ack","tick":0,"seq":32,"id":"i-budget-31","status":"queued","impact_budget_remaining":4}
+{"t":"intent_ack","tick":0,"seq":33,"id":"i-budget-32","status":"queued","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":34,"id":"i-budget-0","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":35,"id":"i-budget-1","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":36,"id":"i-budget-2","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":37,"id":"i-budget-3","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":38,"id":"i-budget-4","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":39,"id":"i-budget-5","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":40,"id":"i-budget-6","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":41,"id":"i-budget-7","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":42,"id":"i-budget-8","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":43,"id":"i-budget-9","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":44,"id":"i-budget-10","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":45,"id":"i-budget-11","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":46,"id":"i-budget-12","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":47,"id":"i-budget-13","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":48,"id":"i-budget-14","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":49,"id":"i-budget-15","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":50,"id":"i-budget-16","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":51,"id":"i-budget-17","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":52,"id":"i-budget-18","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":53,"id":"i-budget-19","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":54,"id":"i-budget-20","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":55,"id":"i-budget-21","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":56,"id":"i-budget-22","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":57,"id":"i-budget-23","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":58,"id":"i-budget-24","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":59,"id":"i-budget-25","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":60,"id":"i-budget-26","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":61,"id":"i-budget-27","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":62,"id":"i-budget-28","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":63,"id":"i-budget-29","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":64,"id":"i-budget-30","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":65,"id":"i-budget-31","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":66,"id":"i-budget-32","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"voided on budget downgrade: cost=3 queued_tick=0","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":67,"id":"i-budget-33","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"cost=3 remaining=1","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":68,"id":"i-budget-after","status":"rejected","reason":"E_MODE_READONLY","detail":"session mode observe is read-only"}
+{"t":"intent_ack","tick":0,"seq":1,"id":"i-kv-0","status":"queued","impact_budget_remaining":97}
+{"t":"intent_ack","tick":0,"seq":2,"id":"i-kv-1","status":"queued","impact_budget_remaining":94}
+{"t":"intent_ack","tick":0,"seq":3,"id":"i-kv-2","status":"queued","impact_budget_remaining":91}
+{"t":"intent_ack","tick":0,"seq":4,"id":"i-kv-3","status":"queued","impact_budget_remaining":88}
+{"t":"intent_ack","tick":0,"seq":5,"id":"i-kv-4","status":"queued","impact_budget_remaining":85}
+{"t":"intent_ack","tick":0,"seq":6,"id":"i-kv-5","status":"queued","impact_budget_remaining":82}
+{"t":"intent_ack","tick":0,"seq":7,"id":"i-kv-6","status":"queued","impact_budget_remaining":79}
+{"t":"intent_ack","tick":0,"seq":8,"id":"i-kv-7","status":"queued","impact_budget_remaining":76}
+{"t":"intent_ack","tick":0,"seq":9,"id":"i-kv-8","status":"queued","impact_budget_remaining":73}
+{"t":"intent_ack","tick":0,"seq":10,"id":"i-kv-9","status":"queued","impact_budget_remaining":70}
+{"t":"intent_ack","tick":0,"seq":11,"id":"i-kv-10","status":"queued","impact_budget_remaining":67}
+{"t":"intent_ack","tick":0,"seq":12,"id":"i-kv-11","status":"queued","impact_budget_remaining":64}
+{"t":"intent_ack","tick":0,"seq":13,"id":"i-kv-12","status":"queued","impact_budget_remaining":61}
+{"t":"intent_ack","tick":0,"seq":14,"id":"i-kv-13","status":"queued","impact_budget_remaining":58}
+{"t":"intent_ack","tick":0,"seq":15,"id":"i-kv-14","status":"queued","impact_budget_remaining":55}
+{"t":"intent_ack","tick":0,"seq":16,"id":"i-kv-15","status":"queued","impact_budget_remaining":52}
+{"t":"intent_ack","tick":0,"seq":17,"id":"i-kv-16","status":"queued","impact_budget_remaining":49}
+{"t":"intent_ack","tick":0,"seq":18,"id":"i-kv-17","status":"queued","impact_budget_remaining":46}
+{"t":"intent_ack","tick":0,"seq":19,"id":"i-kv-18","status":"queued","impact_budget_remaining":43}
+{"t":"intent_ack","tick":0,"seq":20,"id":"i-kv-19","status":"queued","impact_budget_remaining":40}
+{"t":"intent_ack","tick":0,"seq":21,"id":"i-kv-20","status":"queued","impact_budget_remaining":37}
+{"t":"intent_ack","tick":0,"seq":22,"id":"i-kv-21","status":"queued","impact_budget_remaining":34}
+{"t":"intent_ack","tick":0,"seq":23,"id":"i-kv-22","status":"queued","impact_budget_remaining":31}
+{"t":"intent_ack","tick":0,"seq":24,"id":"i-kv-23","status":"queued","impact_budget_remaining":28}
+{"t":"intent_ack","tick":0,"seq":25,"id":"i-kv-24","status":"queued","impact_budget_remaining":25}
+{"t":"intent_ack","tick":0,"seq":26,"id":"i-kv-25","status":"queued","impact_budget_remaining":22}
+{"t":"intent_ack","tick":0,"seq":27,"id":"i-kv-26","status":"queued","impact_budget_remaining":19}
+{"t":"intent_ack","tick":0,"seq":28,"id":"i-kv-27","status":"queued","impact_budget_remaining":16}
+{"t":"intent_ack","tick":0,"seq":29,"id":"i-kv-28","status":"queued","impact_budget_remaining":13}
+{"t":"intent_ack","tick":0,"seq":30,"id":"i-kv-29","status":"queued","impact_budget_remaining":10}
+{"t":"intent_ack","tick":0,"seq":31,"id":"i-kv-30","status":"queued","impact_budget_remaining":7}
+{"t":"intent_ack","tick":0,"seq":32,"id":"i-kv-31","status":"queued","impact_budget_remaining":4}
+{"t":"intent_ack","tick":0,"seq":33,"id":"i-kv-32","status":"queued","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":1,"id":"i-kv-0","status":"queued","impact_budget_remaining":97}
+{"t":"intent_ack","tick":0,"seq":2,"id":"i-kv-1","status":"queued","impact_budget_remaining":94}
+{"t":"intent_ack","tick":0,"seq":3,"id":"i-kv-2","status":"queued","impact_budget_remaining":91}
+{"t":"intent_ack","tick":0,"seq":4,"id":"i-kv-3","status":"queued","impact_budget_remaining":88}
+{"t":"intent_ack","tick":0,"seq":5,"id":"i-kv-4","status":"queued","impact_budget_remaining":85}
+{"t":"intent_ack","tick":0,"seq":6,"id":"i-kv-5","status":"queued","impact_budget_remaining":82}
+{"t":"intent_ack","tick":0,"seq":7,"id":"i-kv-6","status":"queued","impact_budget_remaining":79}
+{"t":"intent_ack","tick":0,"seq":8,"id":"i-kv-7","status":"queued","impact_budget_remaining":76}
+{"t":"intent_ack","tick":0,"seq":9,"id":"i-kv-8","status":"queued","impact_budget_remaining":73}
+{"t":"intent_ack","tick":0,"seq":10,"id":"i-kv-9","status":"queued","impact_budget_remaining":70}
+{"t":"intent_ack","tick":0,"seq":11,"id":"i-kv-10","status":"queued","impact_budget_remaining":67}
+{"t":"intent_ack","tick":0,"seq":12,"id":"i-kv-11","status":"queued","impact_budget_remaining":64}
+{"t":"intent_ack","tick":0,"seq":13,"id":"i-kv-12","status":"queued","impact_budget_remaining":61}
+{"t":"intent_ack","tick":0,"seq":14,"id":"i-kv-13","status":"queued","impact_budget_remaining":58}
+{"t":"intent_ack","tick":0,"seq":15,"id":"i-kv-14","status":"queued","impact_budget_remaining":55}
+{"t":"intent_ack","tick":0,"seq":16,"id":"i-kv-15","status":"queued","impact_budget_remaining":52}
+{"t":"intent_ack","tick":0,"seq":17,"id":"i-kv-16","status":"queued","impact_budget_remaining":49}
+{"t":"intent_ack","tick":0,"seq":18,"id":"i-kv-17","status":"queued","impact_budget_remaining":46}
+{"t":"intent_ack","tick":0,"seq":19,"id":"i-kv-18","status":"queued","impact_budget_remaining":43}
+{"t":"intent_ack","tick":0,"seq":20,"id":"i-kv-19","status":"queued","impact_budget_remaining":40}
+{"t":"intent_ack","tick":0,"seq":21,"id":"i-kv-20","status":"queued","impact_budget_remaining":37}
+{"t":"intent_ack","tick":0,"seq":22,"id":"i-kv-21","status":"queued","impact_budget_remaining":34}
+{"t":"intent_ack","tick":0,"seq":23,"id":"i-kv-22","status":"queued","impact_budget_remaining":31}
+{"t":"intent_ack","tick":0,"seq":24,"id":"i-kv-23","status":"queued","impact_budget_remaining":28}
+{"t":"intent_ack","tick":0,"seq":25,"id":"i-kv-24","status":"queued","impact_budget_remaining":25}
+{"t":"intent_ack","tick":0,"seq":26,"id":"i-kv-25","status":"queued","impact_budget_remaining":22}
+{"t":"intent_ack","tick":0,"seq":27,"id":"i-kv-26","status":"queued","impact_budget_remaining":19}
+{"t":"intent_ack","tick":0,"seq":28,"id":"i-kv-27","status":"queued","impact_budget_remaining":16}
+{"t":"intent_ack","tick":0,"seq":29,"id":"i-kv-28","status":"queued","impact_budget_remaining":13}
+{"t":"intent_ack","tick":0,"seq":30,"id":"i-kv-29","status":"queued","impact_budget_remaining":10}
+{"t":"intent_ack","tick":0,"seq":31,"id":"i-kv-30","status":"queued","impact_budget_remaining":7}
+{"t":"intent_ack","tick":0,"seq":32,"id":"i-kv-31","status":"queued","impact_budget_remaining":4}
+{"t":"intent_ack","tick":0,"seq":33,"id":"i-kv-32","status":"queued","impact_budget_remaining":1}
+{"t":"intent_ack","tick":1,"seq":34,"id":"i-kv-33","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"cost=3 remaining=1","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":1,"id":"i-dup","status":"queued","impact_budget_remaining":97}
+{"t":"intent_ack","tick":0,"seq":2,"id":"i-dup","status":"queued","detail":"merged: duplicate intent id within duplicate_merge_window_ms=3000 (target=npc-001, still queued)","impact_budget_remaining":97}
+{"t":"intent_ack","tick":1,"seq":3,"id":"i-dup","status":"queued","impact_budget_remaining":94}
+{"t":"intent_ack","tick":0,"seq":1,"id":"i-ghost_hand","status":"rejected","reason":"E_SCHEMA_INVALID","detail":"channel ghost_hand is not implemented in V0"}
+{"t":"intent_ack","tick":0,"seq":2,"id":"i-avatar","status":"rejected","reason":"E_SCHEMA_INVALID","detail":"channel avatar is not implemented in V0"}
+{"t":"intent_ack","tick":0,"seq":3,"id":"i-extra","status":"rejected","reason":"E_SCHEMA_INVALID","detail":"unexpected field(s): surprise"}
+{"t":"intent_ack","tick":0,"seq":4,"id":"i-tick","status":"rejected","reason":"E_SCHEMA_INVALID","detail":"client_tick must be an integer >= 0"}
+{"t":"error","tick":0,"seq":0,"reason":"E_SESSION_UNKNOWN","detail":"sess_missing"}
+{"t":"intent_ack","tick":0,"seq":1,"id":"i-g5","status":"queued","impact_budget_remaining":97}
+{"t":"intent_ack","tick":0,"seq":2,"id":"i-g5","status":"queued","detail":"merged: duplicate intent id within duplicate_merge_window_ms=3000 (target=npc-001, still queued)","impact_budget_remaining":97}
+{"t":"intent_ack","tick":1,"seq":3,"id":"i-g5","status":"rejected","reason":"E_COOLDOWN","detail":"global_ms=1000","impact_budget_remaining":97}
+{"t":"intent_ack","tick":1,"seq":4,"id":"i-g5","status":"queued","impact_budget_remaining":94}
+{"t":"intent_ack","tick":0,"seq":1,"id":"i-g5t","status":"queued","impact_budget_remaining":97}
+{"t":"intent_ack","tick":0,"seq":2,"id":"i-g5t","status":"queued","impact_budget_remaining":94}
+{"t":"intent_ack","tick":0,"seq":1,"id":"i-g7-0","status":"queued","impact_budget_remaining":97}
+{"t":"intent_ack","tick":0,"seq":2,"id":"i-g7-1","status":"queued","impact_budget_remaining":94}
+{"t":"intent_ack","tick":0,"seq":3,"id":"i-g7-2","status":"queued","impact_budget_remaining":91}
+{"t":"intent_ack","tick":0,"seq":4,"id":"i-g7-3","status":"queued","impact_budget_remaining":88}
+{"t":"intent_ack","tick":0,"seq":5,"id":"i-g7-4","status":"queued","impact_budget_remaining":85}
+{"t":"intent_ack","tick":0,"seq":6,"id":"i-g7-5","status":"queued","impact_budget_remaining":82}
+{"t":"intent_ack","tick":0,"seq":7,"id":"i-g7-6","status":"queued","impact_budget_remaining":79}
+{"t":"intent_ack","tick":0,"seq":8,"id":"i-g7-7","status":"queued","impact_budget_remaining":76}
+{"t":"intent_ack","tick":0,"seq":9,"id":"i-g7-8","status":"queued","impact_budget_remaining":73}
+{"t":"intent_ack","tick":0,"seq":10,"id":"i-g7-9","status":"queued","impact_budget_remaining":70}
+{"t":"intent_ack","tick":0,"seq":11,"id":"i-g7-10","status":"queued","impact_budget_remaining":67}
+{"t":"intent_ack","tick":0,"seq":12,"id":"i-g7-11","status":"queued","impact_budget_remaining":64}
+{"t":"intent_ack","tick":0,"seq":13,"id":"i-g7-12","status":"queued","impact_budget_remaining":61}
+{"t":"intent_ack","tick":0,"seq":14,"id":"i-g7-13","status":"queued","impact_budget_remaining":58}
+{"t":"intent_ack","tick":0,"seq":15,"id":"i-g7-14","status":"queued","impact_budget_remaining":55}
+{"t":"intent_ack","tick":0,"seq":16,"id":"i-g7-15","status":"queued","impact_budget_remaining":52}
+{"t":"intent_ack","tick":0,"seq":17,"id":"i-g7-16","status":"queued","impact_budget_remaining":49}
+{"t":"intent_ack","tick":0,"seq":18,"id":"i-g7-17","status":"queued","impact_budget_remaining":46}
+{"t":"intent_ack","tick":0,"seq":19,"id":"i-g7-18","status":"queued","impact_budget_remaining":43}
+{"t":"intent_ack","tick":0,"seq":20,"id":"i-g7-19","status":"queued","impact_budget_remaining":40}
+{"t":"intent_ack","tick":0,"seq":21,"id":"i-g7-20","status":"queued","impact_budget_remaining":37}
+{"t":"intent_ack","tick":0,"seq":22,"id":"i-g7-21","status":"queued","impact_budget_remaining":34}
+{"t":"intent_ack","tick":0,"seq":23,"id":"i-g7-22","status":"queued","impact_budget_remaining":31}
+{"t":"intent_ack","tick":0,"seq":24,"id":"i-g7-23","status":"queued","impact_budget_remaining":28}
+{"t":"intent_ack","tick":0,"seq":25,"id":"i-g7-24","status":"queued","impact_budget_remaining":25}
+{"t":"intent_ack","tick":0,"seq":26,"id":"i-g7-25","status":"queued","impact_budget_remaining":22}
+{"t":"intent_ack","tick":0,"seq":27,"id":"i-g7-26","status":"queued","impact_budget_remaining":19}
+{"t":"intent_ack","tick":0,"seq":28,"id":"i-g7-27","status":"queued","impact_budget_remaining":16}
+{"t":"intent_ack","tick":0,"seq":29,"id":"i-g7-28","status":"queued","impact_budget_remaining":13}
+{"t":"intent_ack","tick":0,"seq":30,"id":"i-g7-29","status":"queued","impact_budget_remaining":10}
+{"t":"intent_ack","tick":0,"seq":31,"id":"i-g7-30","status":"queued","impact_budget_remaining":7}
+{"t":"intent_ack","tick":0,"seq":32,"id":"i-g7-31","status":"queued","impact_budget_remaining":4}
+{"t":"intent_ack","tick":0,"seq":33,"id":"i-g7-32","status":"queued","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":68,"id":"i-g7-33","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"cost=3 remaining=1","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":1,"id":"i-g7-0","status":"queued","impact_budget_remaining":97}
+{"t":"intent_ack","tick":0,"seq":2,"id":"i-g7-1","status":"queued","impact_budget_remaining":94}
+{"t":"intent_ack","tick":0,"seq":3,"id":"i-g7-2","status":"queued","impact_budget_remaining":91}
+{"t":"intent_ack","tick":0,"seq":4,"id":"i-g7-3","status":"queued","impact_budget_remaining":88}
+{"t":"intent_ack","tick":0,"seq":5,"id":"i-g7-4","status":"queued","impact_budget_remaining":85}
+{"t":"intent_ack","tick":0,"seq":6,"id":"i-g7-5","status":"queued","impact_budget_remaining":82}
+{"t":"intent_ack","tick":0,"seq":7,"id":"i-g7-6","status":"queued","impact_budget_remaining":79}
+{"t":"intent_ack","tick":0,"seq":8,"id":"i-g7-7","status":"queued","impact_budget_remaining":76}
+{"t":"intent_ack","tick":0,"seq":9,"id":"i-g7-8","status":"queued","impact_budget_remaining":73}
+{"t":"intent_ack","tick":0,"seq":10,"id":"i-g7-9","status":"queued","impact_budget_remaining":70}
+{"t":"intent_ack","tick":0,"seq":11,"id":"i-g7-10","status":"queued","impact_budget_remaining":67}
+{"t":"intent_ack","tick":0,"seq":12,"id":"i-g7-11","status":"queued","impact_budget_remaining":64}
+{"t":"intent_ack","tick":0,"seq":13,"id":"i-g7-12","status":"queued","impact_budget_remaining":61}
+{"t":"intent_ack","tick":0,"seq":14,"id":"i-g7-13","status":"queued","impact_budget_remaining":58}
+{"t":"intent_ack","tick":0,"seq":15,"id":"i-g7-14","status":"queued","impact_budget_remaining":55}
+{"t":"intent_ack","tick":0,"seq":16,"id":"i-g7-15","status":"queued","impact_budget_remaining":52}
+{"t":"intent_ack","tick":0,"seq":17,"id":"i-g7-16","status":"queued","impact_budget_remaining":49}
+{"t":"intent_ack","tick":0,"seq":18,"id":"i-g7-17","status":"queued","impact_budget_remaining":46}
+{"t":"intent_ack","tick":0,"seq":19,"id":"i-g7-18","status":"queued","impact_budget_remaining":43}
+{"t":"intent_ack","tick":0,"seq":20,"id":"i-g7-19","status":"queued","impact_budget_remaining":40}
+{"t":"intent_ack","tick":0,"seq":21,"id":"i-g7-20","status":"queued","impact_budget_remaining":37}
+{"t":"intent_ack","tick":0,"seq":22,"id":"i-g7-21","status":"queued","impact_budget_remaining":34}
+{"t":"intent_ack","tick":0,"seq":23,"id":"i-g7-22","status":"queued","impact_budget_remaining":31}
+{"t":"intent_ack","tick":0,"seq":24,"id":"i-g7-23","status":"queued","impact_budget_remaining":28}
+{"t":"intent_ack","tick":0,"seq":25,"id":"i-g7-24","status":"queued","impact_budget_remaining":25}
+{"t":"intent_ack","tick":0,"seq":26,"id":"i-g7-25","status":"queued","impact_budget_remaining":22}
+{"t":"intent_ack","tick":0,"seq":27,"id":"i-g7-26","status":"queued","impact_budget_remaining":19}
+{"t":"intent_ack","tick":0,"seq":28,"id":"i-g7-27","status":"queued","impact_budget_remaining":16}
+{"t":"intent_ack","tick":0,"seq":29,"id":"i-g7-28","status":"queued","impact_budget_remaining":13}
+{"t":"intent_ack","tick":0,"seq":30,"id":"i-g7-29","status":"queued","impact_budget_remaining":10}
+{"t":"intent_ack","tick":0,"seq":31,"id":"i-g7-30","status":"queued","impact_budget_remaining":7}
+{"t":"intent_ack","tick":0,"seq":32,"id":"i-g7-31","status":"queued","impact_budget_remaining":4}
+{"t":"intent_ack","tick":0,"seq":33,"id":"i-g7-32","status":"queued","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":34,"id":"i-g7-0","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":35,"id":"i-g7-1","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":36,"id":"i-g7-2","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":37,"id":"i-g7-3","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":38,"id":"i-g7-4","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":39,"id":"i-g7-5","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":40,"id":"i-g7-6","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":41,"id":"i-g7-7","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":42,"id":"i-g7-8","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":43,"id":"i-g7-9","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":44,"id":"i-g7-10","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":45,"id":"i-g7-11","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":46,"id":"i-g7-12","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":47,"id":"i-g7-13","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":48,"id":"i-g7-14","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":49,"id":"i-g7-15","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":50,"id":"i-g7-16","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":51,"id":"i-g7-17","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":52,"id":"i-g7-18","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":53,"id":"i-g7-19","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":54,"id":"i-g7-20","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":55,"id":"i-g7-21","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":56,"id":"i-g7-22","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":57,"id":"i-g7-23","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":58,"id":"i-g7-24","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":59,"id":"i-g7-25","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":60,"id":"i-g7-26","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":61,"id":"i-g7-27","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":62,"id":"i-g7-28","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":63,"id":"i-g7-29","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":64,"id":"i-g7-30","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":65,"id":"i-g7-31","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"intent_ack","tick":0,"seq":66,"id":"i-g7-32","status":"rejected","reason":"E_KERNEL_UNAVAILABLE","detail":"rejected_pending_kernel: bridge=timeout pending_after=null（桥侧作废未确认 ⇒ **未**宣告作废）","impact_budget_remaining":1}
+{"t":"error","tick":0,"seq":67,"reason":"E_KERNEL_UNAVAILABLE","detail":"downgrade_void_incomplete: bridge=timeout pending_after=null retained=33"}
+{"t":"intent_ack","tick":0,"seq":68,"id":"i-g7-33","status":"rejected","reason":"E_BUDGET_EXHAUSTED","detail":"cost=3 remaining=1","impact_budget_remaining":1}

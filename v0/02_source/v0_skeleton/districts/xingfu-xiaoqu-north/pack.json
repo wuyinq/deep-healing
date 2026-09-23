@@ -17,7 +17,8 @@
     "npcs_glob": "npcs/*.json",
     "tasks_glob": "tasks/*.json",
     "schedules_glob": "schedules/*.json",
-    "assets_manifest": "assets/manifest.json"
+    "assets_manifest": "assets/manifest.json",
+    "worldview": "worldview.json"
   },
   "portals": [
     {

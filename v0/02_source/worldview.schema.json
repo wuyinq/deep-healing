@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deephealing.local/schemas/worldview.schema.json",
+  "title": "DeepHealing District Worldview (healing core + suspense shell)",
+  "description": "内容包世界观契约（ADR-016）。基调写成**可检查数值**（light_k / ambient_ratio / saturation_pct），**禁止形容词字段**：本 schema 的每个对象都 additionalProperties:false，任何形容词键都会被拒。深层态 = 同一色板**降明度**（saturation_pct 不升）。落点：`districts/<pack>/worldview.json`，经 `pack.json.entrypoints.worldview` 登记。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "pack_id", "tone", "anomalies", "fault_lines"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0.0" },
+    "pack_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{1,47}$",
+      "description": "必须与 pack.json.id / 目录名一致（由 tests 断言）。"
+    },
+    "tone": {
+      "type": "object",
+      "description": "两态基调。**同一几何两态**：两态共用同一份几何数据，差异只在光照/环境比/材质亮度。",
+      "additionalProperties": false,
+      "required": ["surface", "underneath"],
+      "properties": {
+        "surface": { "$ref": "#/$defs/toneReading" },
+        "underneath": { "$ref": "#/$defs/toneReading" }
+      }
+    },
+    "anomalies": {
+      "type": "array",
+      "minItems": 1,
+      "description": "异常锚点：小区里「不对」的固定位置。每条必须有**表层读法 / 深层读法**两段可核验文本与 reveal_at_tick。",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "at_entity", "kind", "surface_read", "underneath_read", "reveal_at_tick"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,47}$" },
+          "at_entity": { "type": "string", "pattern": "^[a-z][a-z0-9_.-]{1,63}$" },
+          "kind": {
+            "type": "string",
+            "enum": ["still_lit", "still_running", "unattended", "repeating_trace", "silent_absence"],
+            "description": "「不对」的类型（枚举冻结，禁止自创）。"
+          },
+          "surface_read": { "type": "string", "minLength": 1 },
+          "underneath_read": { "type": "string", "minLength": 1 },
+          "reveal_at_tick": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "fault_lines": {
+      "type": "array",
+      "description": "系统性故障：**可被玩家介入修理**的对象（与 task 状态机数据驱动联动）。",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "about", "kind", "repair_via", "repaired_state"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,47}$" },
+          "about": { "type": "string", "pattern": "^[a-z][a-z0-9_.-]{1,63}$" },
+          "kind": {
+            "type": "string",
+            "enum": ["isolation", "overload", "neglect", "disrepair", "grief_unspoken"],
+            "description": "故障类型（枚举冻结）。"
+          },
+          "repair_via": { "type": "string", "description": "修复它的 task id（必须存在于本 pack 的 tasks/*.json）。" },
+          "repaired_state": { "type": "string", "description": "修复后的 task 终态（必须在该 task 的 states 里）。" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "toneReading": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["light_k", "ambient_ratio", "saturation_pct"],
+      "properties": {
+        "light_k": {
+          "type": "integer",
+          "minimum": 3200,
+          "maximum": 5200,
+          "description": "主光色温（开尔文）。暖区，art-bible 的色相约束在渲染侧由本值派生。"
+        },
+        "ambient_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 0.6,
+          "description": "环境光占比。表层 ≥0.25（art-bible）；深层态 = 同一光源被抽走 ⇒ 更低。"
+        },
+        "saturation_pct": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 45,
+          "description": "饱和度百分比上限 45（art-bible 硬约束）。深层态**不得高于**表层。"
+        }
+      }
+    }
+  },
+  "$comment": "IP 边界：id / 命名 / 文本全部自研；不引用小说人名、章节、台词；零血腥 / 怪物 / Jump Scare。深层态**不是**第二张地图或第二个 pack。"
+}

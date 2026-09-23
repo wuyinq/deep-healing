@@ -8,6 +8,13 @@
     "embed.text": "1.0.0",
     "relation.infer": "1.0.0"
   },
+  "digests": {
+    "embed.text@1.0.0": "e4564b5394671458eefd821069574fcb35391a6cfcb5494f3032f4b4a47431f1",
+    "emotion.appraise@1.0.0": "bbf0c85006c0301dd3713b33bdbf6d631f98dd51c1adf8f8947ac4c9ee36eaab",
+    "intent.plan@1.0.0": "1408887cf9454b4114d427a8b4bb74ad7f212184b3f562f0e66e2f1baf128005",
+    "memory.reflect@1.0.0": "38e0ee12eed8de64d2634327248590691666a3243feb4cb8cfb8fb4f129c5d03",
+    "relation.infer@1.0.0": "1023f63a8598796de4b944634fc00ea212d830e5b864dec941a41721655b2986"
+  },
   "provider_overrides": {
     "note": "会话/回放模式下的 provider 强制覆盖（数据驱动）。",
     "replay": {

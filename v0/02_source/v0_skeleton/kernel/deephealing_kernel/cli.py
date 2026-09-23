@@ -126,7 +126,7 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--ws-port", type=int, default=8787)
     run.add_argument("--replay", action="store_true", help="回放模式：能力强制走 cassette_replay 且 fail-closed")
     run.add_argument("--ticks", type=int, default=DEFAULT_PLAN_TICKS,
-                     help="[加法扩展] 推进的 tick 数上界（默认 300）；冻结命令面本无终止参数")
+                     help="[加法扩展] 推进的 tick 数上界（默认值见 tick.DEFAULT_PLAN_TICKS）；冻结命令面本无终止参数")
     run.add_argument("--cognition", action="store_true",
                      help="[M2/W3~W6] 认知层驱动入口（**形态定死**，设计 §3.4b(2)）："
                           "tick 循环之后跑一次认知循环，产物落 <out>/cognition/**（不写世界状态）")

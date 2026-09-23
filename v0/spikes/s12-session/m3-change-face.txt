@@ -1,0 +1,442 @@
+M3 CHANGE FACE DECLARATION — REQ-20260921-005-deephealing-v0-m3
+===============================================================
+Written by: artisan   Written at: BEFORE any coding starts (D-12 / 3A-M6).
+Basis: task book §5.3 (kernel change face) + §5.4 (content-layer change face) +
+       §2 delivery list.  NOT derived from `shasum -c` output (that would be circular).
+
+Collection face of V0_M2.sha256 (238 lines, read off disk):
+  02_source/**  +  spikes/{s8-registry,s9-rules,s10-memory,s11-pack2}/**  +  root 03_artisan_self_test.log
+  + root 06_v0_m2_self_test.md
+NOTE: spikes/s5-latency-calibration/** is NOT in that collection face
+      (`grep -c 'spikes/s5' V0_M2.sha256` = 0) -> its change is declared in section C below.
+
+--------------------------------------------------------------------------------
+SECTION A — MODIFIED files (present in V0_M2.sha256; expected to be `FAILED`)
+--------------------------------------------------------------------------------
+02_source/07_adr.md
+02_source/district.pack.schema.json
+02_source/district.pack.spec.md
+02_source/manifest.txt
+02_source/verify_specs.sh
+02_source/v0_skeleton/districts/xingfu-xiaoqu/pack.json
+02_source/v0_skeleton/districts/xingfu-xiaoqu/pack.sig
+02_source/v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-001.json
+02_source/v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-002.json
+02_source/v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-003.json
+02_source/v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-004.json
+02_source/v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-005.json
+02_source/v0_skeleton/districts/xingfu-xiaoqu-north/pack.json
+02_source/v0_skeleton/districts/xingfu-xiaoqu-north/pack.sig
+02_source/v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-001.json
+02_source/v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-002.json
+02_source/v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-003.json
+02_source/v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-004.json
+02_source/v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-005.json
+02_source/v0_skeleton/kernel/deephealing_kernel/cli.py
+02_source/v0_skeleton/kernel/deephealing_kernel/registry.py
+02_source/v0_skeleton/kernel/deephealing_kernel/tick.py
+02_source/v0_skeleton/kernel/tests/test_observe_mode_readonly.py
+02_source/v0_skeleton/kernel/tests/test_calibrate_latency.py
+02_source/v0_skeleton/kernel/tools/calibrate_latency.py
+02_source/v0_skeleton/tools/pack_sign.py
+02_source/v0_skeleton/tools/verify_pack.py
+02_source/v0_skeleton/session/src/mode.js
+02_source/v0_skeleton/session/src/policy.js
+02_source/v0_skeleton/session/src/server.js
+02_source/v0_skeleton/session/src/upstream.js
+02_source/v0_skeleton/session/test/session.test.js
+02_source/v0_skeleton/web/index.html
+02_source/v0_skeleton/web/package.json
+02_source/v0_skeleton/web/vite.config.ts
+02_source/v0_skeleton/web/src/main.ts
+02_source/v0_skeleton/web/src/net/client.ts
+02_source/v0_skeleton/web/src/scene/lighting.ts
+02_source/v0_skeleton/web/src/scene/world.ts
+02_source/v0_skeleton/web/src/ui/observe/panel.ts
+02_source/v0_skeleton/web/src/ui/participate/intervention.ts
+03_artisan_self_test.log
+
+SECTION A count = 42
+
+--------------------------------------------------------------------------------
+SECTION B — ADDED files (NOT in V0_M2.sha256; therefore invisible to `shasum -c`)
+--------------------------------------------------------------------------------
+02_source/worldview.schema.json
+02_source/v0_skeleton/districts/xingfu-xiaoqu/worldview.json
+02_source/v0_skeleton/districts/xingfu-xiaoqu-north/worldview.json
+02_source/v0_skeleton/kernel/deephealing_kernel/rules/adaptation.py
+02_source/v0_skeleton/kernel/tests/test_task_adaptation.py
+02_source/v0_skeleton/session/src/protocol.js
+02_source/v0_skeleton/session/bridge/kernel_bridge.py
+02_source/v0_skeleton/web/test/render-client.test.ts
+02_source/v0_skeleton/web/scripts/scene_assert.mjs
+
+SECTION B count = 9
+
+--------------------------------------------------------------------------------
+SECTION C — declared changes OUTSIDE the V0_M2.sha256 collection face
+--------------------------------------------------------------------------------
+spikes/s5-latency-calibration/calibration.registry.json      (D-10: absolute paths removed)
+02_source/v0_skeleton/kernel/tests/test_calibrate_latency.py is in section A.
+
+--------------------------------------------------------------------------------
+SECTION D — explicitly NOT changed (byte-identical, proven separately)
+--------------------------------------------------------------------------------
+06_v0_m1_self_test.md, 06_v0_m2_self_test.md, V0_M1.sha256, V0_M2.sha256, SEED.sha256
+refs/**, 01_architecture_design.md, 01_m3_design.md, .raven_prereview-m3.md
+spikes/{kernel-baseline,s8-registry,s9-rules,s10-memory,s11-pack2}/**
+
+--------------------------------------------------------------------------------
+Bidirectional criterion (AC-M3-1b)
+--------------------------------------------------------------------------------
+  read 1:  FAILED set of `shasum -a 256 -c V0_M2.sha256`  ==  SECTION A   (both directions)
+  read 2:  newly added files under 02_source  ==  SECTION B                (both directions)
+  read 3:  spikes/s5 registry change is declared (SECTION C) although absent from read 1/2
+  Negative control (both directions) is executed on an isolated tree copy.
+
+
+--------------------------------------------------------------------------------
+SECTION E — POST-HOC AMENDMENT (written AFTER coding; disclosed as post-hoc)
+--------------------------------------------------------------------------------
+Execution result: 37 of the 42 SECTION A lines actually changed; the 5 that did NOT change are
+  the carry-over items that were NOT implemented this round (budget exhausted):
+    registry.py, kernel/tests/test_calibrate_latency.py, kernel/tools/calibrate_latency.py,
+    tools/pack_sign.py, tools/verify_pack.py
+This amendment is recorded for transparency ONLY. The declaration is NOT retro-edited to match
+the diff (that would be the circular "generate the declaration from shasum -c" move forbidden by
+3A-M6). The bidirectional criterion therefore reports: declared-not-in-diff = 5 (RED, accepted),
+diff-not-declared = 0. Verdict: AC-M3-1b = FAIL(partial). See 06_v0_m3_self_test.md §4.1.
+
+--------------------------------------------------------------------------------
+SECTION A-R2 — R2 AMENDMENT
+--------------------------------------------------------------------------------
+Written at epoch 1790096082 (2026-09-23T00:54:42+0800).
+复算口径：`shasum -a 256 -c V0_M2.sha256` 的非 OK 集合 + `02_source` 全树 vs 采集面差集。
+machine-readable: spikes/s12-session/m3-change-face.json（含时间锚与 shasum 原始输出）
+
+MODIFIED (in V0_M2 face; expected FAILED) count = 46
+02_source/07_adr.md
+02_source/district.pack.schema.json
+02_source/district.pack.spec.md
+02_source/intervention.policy.schema.json
+02_source/manifest.txt
+02_source/v0_skeleton/capabilities/pins.json
+02_source/v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-001.json
+02_source/v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-002.json
+02_source/v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-003.json
+02_source/v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-004.json
+02_source/v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-005.json
+02_source/v0_skeleton/districts/xingfu-xiaoqu-north/pack.json
+02_source/v0_skeleton/districts/xingfu-xiaoqu-north/pack.sig
+02_source/v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-001.json
+02_source/v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-002.json
+02_source/v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-003.json
+02_source/v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-004.json
+02_source/v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-005.json
+02_source/v0_skeleton/districts/xingfu-xiaoqu/pack.json
+02_source/v0_skeleton/districts/xingfu-xiaoqu/pack.sig
+02_source/v0_skeleton/kernel/deephealing_kernel/cli.py
+02_source/v0_skeleton/kernel/deephealing_kernel/registry.py
+02_source/v0_skeleton/kernel/deephealing_kernel/tick.py
+02_source/v0_skeleton/kernel/tests/test_calibrate_latency.py
+02_source/v0_skeleton/kernel/tests/test_observe_mode_readonly.py
+02_source/v0_skeleton/kernel/tests/test_pack_validate.py
+02_source/v0_skeleton/kernel/tests/test_pins_resolution.py
+02_source/v0_skeleton/kernel/tools/calibrate_latency.py
+02_source/v0_skeleton/session/src/mode.js
+02_source/v0_skeleton/session/src/policy.js
+02_source/v0_skeleton/session/src/server.js
+02_source/v0_skeleton/session/src/upstream.js
+02_source/v0_skeleton/session/test/session.test.js
+02_source/v0_skeleton/tools/pack_sign.py
+02_source/v0_skeleton/tools/verify_pack.py
+02_source/v0_skeleton/web/index.html
+02_source/v0_skeleton/web/package.json
+02_source/v0_skeleton/web/src/main.ts
+02_source/v0_skeleton/web/src/net/client.ts
+02_source/v0_skeleton/web/src/scene/lighting.ts
+02_source/v0_skeleton/web/src/scene/world.ts
+02_source/v0_skeleton/web/src/ui/observe/panel.ts
+02_source/v0_skeleton/web/src/ui/participate/intervention.ts
+02_source/v0_skeleton/web/vite.config.ts
+02_source/verify_specs.sh
+03_artisan_self_test.log
+
+ADDED (not in V0_M2 face) count = 11
+02_source/v0_skeleton/districts/xingfu-xiaoqu/worldview.json
+02_source/v0_skeleton/districts/xingfu-xiaoqu-north/worldview.json
+02_source/v0_skeleton/kernel/deephealing_kernel/rules/adaptation.py
+02_source/v0_skeleton/kernel/tests/test_budget_downgrade_void.py
+02_source/v0_skeleton/kernel/tests/test_task_adaptation.py
+02_source/v0_skeleton/session/bridge/kernel_bridge.py
+02_source/v0_skeleton/session/src/protocol.js
+02_source/v0_skeleton/tools/scan_ip_boundary.py
+02_source/v0_skeleton/web/scripts/scene_assert.mjs
+02_source/v0_skeleton/web/test/render-client.test.ts
+02_source/worldview.schema.json
+
+OUTSIDE THE V0_M2 COLLECTION FACE (declared explicitly)
+spikes/s5-latency-calibration/calibration.registry.json   (P-9 / 3A-C3：绝对路径 → 相对路径迁移（本文件不在 V0_M2.sha256 采集面内）)
+spikes/s5-latency-calibration/negctl/**   (R2 新增：registry 路径格式判据的负例载体（采集面外）)
+spikes/s12-session/**   (R2 新增/改写：负例套件、判据驱动、变更声明（M3 采集面 = V0_M3.sha256，非 V0_M2）)
+spikes/s13-render/**   (R2 新增：真浏览器验收驱动 + 截图 + 日志（M3 采集面 = V0_M3.sha256，非 V0_M2）)
+
+INHERITED M2 DEVIATION (registered separately, per F8)
+02_source/v0_skeleton/kernel/tools/calibrate_latency.py   V0_M2 记 e30be65b… / M2 提交态 23fed40d…（M2 继承缺陷；R1 已独立复现，R2 因 P-9 另有本轮修改）
+
+--------------------------------------------------------------------------------
+SECTION A-R3 — R3 AMENDMENT (declared BEFORE the first R3 edit)
+--------------------------------------------------------------------------------
+Written at epoch 1790099100 (2026-09-23) — BEFORE any R3 coding (D-12 / 3A-M6).
+Basis: task book `.task-artisan-r3.md` §2 (G1–G10) + `01_architecture_design.md` §3B-1.
+Round scope: **only** G1–G10 (two CRITICAL first: G1 3D visibility, G2 real shape fingerprint
+through the application assembly path). No drive-by refactors.
+
+MODIFIED under 02_source (delivery face):
+02_source/v0_skeleton/web/index.html                       (G1: #scene 显式尺寸/层叠)
+02_source/v0_skeleton/web/src/scene/world.ts               (G1 resize+DPR; G2 shape digest + assembly path)
+02_source/v0_skeleton/web/src/main.ts                      (G1 resize 接线 + G2 暴露装配读数)
+02_source/v0_skeleton/web/scripts/scene_assert.mjs         (G2 判据改为经 createScene/geometryFor/setReading 取数)
+02_source/verify_specs.sh                                  (G6 registry 三条锚判据 + G2 静态判据)
+02_source/v0_skeleton/tools/scan_ip_boundary.py            (G4 白名单降为行/文本级 + 扫描器自排除)
+02_source/v0_skeleton/session/src/policy.js                (G5 合并键含 target + 已离队不入合并)
+02_source/v0_skeleton/session/src/server.js                (G5 出队登记 + G7 桥失败不得宣告作废)
+02_source/v0_skeleton/session/test/session.test.js         (G5/G7 判据真跑)
+02_source/v0_skeleton/session/bridge/kernel_bridge.py      (G8 void_intents 必须带 session_id)
+02_source/v0_skeleton/kernel/deephealing_kernel/tick.py    (G8 void_pending_intents 归属校验必填)
+02_source/v0_skeleton/kernel/tools/calibrate_latency.py    (G6 ENVIRONMENT-CLASS 硬编码 sha256 锚)
+
+MODIFIED / ADDED outside 02_source (M3 collection face = V0_M3.sha256):
+spikes/s13-render/browser-accept.mjs                       (G1 canvas/pixel 读数; G2 装配读数)
+spikes/s13-render/negctl/negctl_lib.py                     (R3 负例根 /tmp/r3-artisan + 无依赖 PNG 解码)
+spikes/s13-render/negctl/f4_browser_negctl.py              (G1 像素判据 + 固定 300x150 负例; G2 装配断言)
+spikes/s13-render/negctl/f1_scene_assert_negctl.py         (G2 三条新负例: 尺寸 / rebuild 路径 / 网格层)
+spikes/s12-session/negctl/f12_ip_scan_negctl.py            (G4 新负例: art-bible 追加真越界)
+spikes/s12-session/negctl/g5_merge_window_negctl.py        (G5 新增)
+spikes/s12-session/negctl/g6_frozen_anchor_negctl.py       (G6 新增)
+spikes/s12-session/negctl/g7_void_failclosed_negctl.py     (G7 新增)
+spikes/s12-session/negctl/g8_void_ownership_negctl.py      (G8 新增)
+spikes/s12-session/logs/superseded/**                      (G3 R1 崩溃型假红移入并作废)
+03_artisan_self_test.log / 06_v0_m3_self_test.md           (R3 段追加)
+V0_M3.sha256 (+ V0_M3.sha256.retake.json 在采集面外)        (收尾重取)
+
+NOT changed (byte-identical): 01_*, 04_sentinel_test_report.md, 05_raven_risk_report.md,
+refs/**, pm_business/**, SEED.sha256, V0_M1.sha256, V0_M2.sha256, 06_v0_m1_*, 06_v0_m2_*,
+/Users/wooyinq/personal/deep-healing (read-only).
+
+--------------------------------------------------------------------------------
+SECTION A-R4 — R4 AMENDMENT (declared BEFORE the first R4 edit)
+--------------------------------------------------------------------------------
+Written at epoch 1790102600 (2026-09-23 02:43 CST) — BEFORE any R4 coding (3C-7 / 3A-M6).
+Basis: task book `.task-artisan-r4.md` §3 (R4-A..R4-E) + `01_architecture_design.md` §3C + `.round4-constraint.txt`.
+Round scope: **only** close `R3-C1` at the **judgement layer** (`--max-iteration 1`): widen the
+two-state geometry judgement (scale/quaternion into the shape fingerprint + mesh-layer read-back) and
+add a camera-consistency judgement. No drive-by refactors, no AC changes, no relaxed assertions.
+
+MODIFIED under 02_source (delivery face) — expected `FAILED` in the R3 `V0_M3.sha256`:
+02_source/v0_skeleton/web/src/scene/world.ts          (EntityBox/EntityShape + shapeDigestString +
+                                                       assemblyReport mesh-layer scale/quaternion +
+                                                       rebuild applies box transform + cameraReport())
+02_source/v0_skeleton/web/scripts/scene_assert.mjs    (two_reads_share_rendered_geometry widened to
+                                                       mesh_scales/mesh_rotations + new
+                                                       two_reads_share_camera + handle cameraReport check)
+
+ADDED / MODIFIED outside 02_source (M3 collection face = V0_M3.sha256):
+spikes/s13-render/negctl/f5_r4_judgement_negctl.py         (R4 carrier: 4 cases, reuses negctl_lib,
+                                                            NEGCTL_ROOT=/tmp/r4-artisan)
+spikes/s13-render/logs/negctl-r4_*.log                     (per-case logs)
+spikes/s13-render/logs/f5-r4-negctl-summary.json           (per-case judged_red + fail_names +
+                                                            delivery_face_unchanged)
+spikes/s13-render/logs/r4-red-before-widening.log          (RED evidence: 3 escapes on the UNWIDENED tree)
+03_artisan_self_test.log / 06_v0_m3_self_test.md           (R4 section appended)
+V0_M3.sha256 (+ V0_M3.sha256.retake.json, outside the collection face)  (final-step retake)
+
+NOT changed (byte-identical): 01_*, 04_sentinel_test_report.md, 05_raven_risk_report.md,
+refs/**, pm_business/**, SEED.sha256, V0_M1.sha256, V0_M2.sha256, 06_v0_m1_*, 06_v0_m2_*,
+02_source/v0_skeleton/web/src/main.ts (NOT in the R4 write set), package.json dependency tables,
+/Users/wooyinq/personal/deep-healing (read-only).
+
+--------------------------------------------------------------------------------
+SECTION A-R4-POST — POST-HOC AMENDMENT (written AFTER coding; disclosed as post-hoc)
+--------------------------------------------------------------------------------
+Two items were NOT foreseen in SECTION A-R4 and are declared here as post-hoc (no silent drift):
+spikes/s12-session/scripts/retake-v0-m3.py   (manifest HEADER gains one `# 重取（R4 / 有界补丁轮 …）`
+                                              comment line so the frozen manifest stays self-describing;
+                                              collector face / exclusion rules are byte-for-byte unchanged)
+spikes/s13-render/logs/f5-r4-negctl-summary-red.json + r4-green-after-widening.log + r4-f4-run.log
+                                             (RED-phase summary + GREEN-phase text log + f4 gate stdout capture;
+                                              already implied by "spikes/s13-render/logs/negctl-r4_*" /
+                                              "f5-r4-negctl-summary.json" but listed explicitly here)
+
+--------------------------------------------------------------------------------
+SECTION A-R5 — R5 AMENDMENT (declared BEFORE the first R5 edit)
+--------------------------------------------------------------------------------
+Written at epoch 1790104852 (2026-09-23 03:20:52 CST) — BEFORE any R5 coding.
+Basis: task book `.task-artisan-r5.md` §3-§7 + `.round5-constraint.txt` (PM ruling on R4-C1 / R4-C2 /
+R4-M1 / R4-M4) + `.r5-architect-design.md` §3 / §4 / §5.
+Round scope (FINAL bounded round, `--max-iteration 1`): (1) closed-form structural comparison face
+(geometry / object / camera structure + render-camera identity), (2) de-over-claiming (assert rename +
+`06` wording), (3) frozen-face wording fix (regenerable runtime artifacts out of the hash face).
+
+MODIFIED under 02_source (delivery face) — expected `FAILED` in the R4 `V0_M3.sha256`:
+02_source/v0_skeleton/web/src/scene/world.ts
+    (new `structureReport()` closed-form summary: geometry `index`/`groups`/`attributes`
+     (position/normal/uv, absent => explicit null), per-mesh `matrixWorld` 16 items / `visible` /
+     `layers.mask` / `renderOrder`, scene root-subtree identity + parent chain; `cameraReport()`
+     widened to `matrixWorld` / `projectionMatrix` / `zoom` / `view_offset` (three 0.180 `view`) /
+     `fov` / `near` / `far`; the renderer is wrapped so every `renderer.render(scene, camera)` call
+     records the ACTUAL camera argument (render-camera identity); new handle methods
+     `structureReport()` / `renderOnce()` / `renderCameraReport()`; assembly semantics unchanged
+     (two readings still share one geometry + one camera; `scale`/`quaternion` still unit transforms))
+02_source/v0_skeleton/web/scripts/scene_assert.mjs
+    (`two_reads_share_rendered_geometry` RENAMED to `two_reads_share_scene_structure` and widened to the
+     closed-form structure face; `two_reads_share_camera` widened to the camera structure face; new
+     `two_reads_use_same_render_camera` + `scene_handle_structure_report_is_live`; the existing 27
+     checks are kept — baseline count must not drop (R4 = 29))
+
+ADDED / MODIFIED outside 02_source (M3 collection face = V0_M3.sha256):
+spikes/s13-render/negctl/f6_r5_structure_negctl.py   (R5 carrier: A..I matrix, NEGCTL_ROOT=/tmp/r5-artisan)
+spikes/s13-render/logs/negctl-r5_*.log               (per-case logs; RUNTIME ARTIFACT => excluded in R5)
+spikes/s13-render/logs/f6-r5-negctl-summary*.json    (per-case readings; RUNTIME ARTIFACT => excluded)
+03_artisan_self_test.log / 06_v0_m3_self_test.md     (R5 section appended; `06` also carries the §6
+                                                      architect-authorized in-place correction of the
+                                                      R4-A / R4-B absolute wording — declared here per
+                                                      §6(b); `04` / `05` round content NOT touched)
+V0_M3.sha256 (+ V0_M3.sha256.retake.json, outside the collection face)  (FINAL-STEP retake)
+
+EXCLUSION-FACE CHANGE (constraint §1.3 / design §5) — artifacts moved OUT of the hash face:
+under spikes/s12-session/logs/** and spikes/s13-render/logs/**, limited to the REGENERABLE RUNTIME
+ARTIFACTS: `*.png` / `browser-accept-*.json` / `console-*.jsonl` / `negctl-*.log` / `*-summary.json` /
+`emitted-messages.jsonl`.
+Declared reason (also written into the manifest HEADER): runtime artifacts are regenerable and must not
+pin the frozen face; their JUDGEMENT CONCLUSION is carried by the gate exit code + the `06` registration.
+Explicitly NOT excluded (kept IN the face): every other file under those two log dirs (session records,
+kernel pytest text, p8 readings, m3-source-manifest-*, r4-*.log, f5-r4-negctl-summary-red.json, ...).
+
+architect-authorized write-set extension (design §5; conflict disclosed, non-blocking):
+spikes/s12-session/scripts/retake-v0-m3.py  (MINIMAL: `EXCLUDE_SUBPATHS` + `HEADER` only; the collector
+                                             face and the exclusion RULES are not relaxed — this tool is
+                                             not itself under judgement). Reason: §1.3 mandates the
+                                             exclusion change and this manifest can only be produced by
+                                             this tool.
+Also written: .artisan.progress.json + the role-task ledger (progress only; architect owns start/done/step).
+
+NOT changed (byte-identical): 01_architecture_design.md, 04_sentinel_test_report.md (R4 section untouched),
+05_raven_risk_report.md (R4 section untouched), refs/**, pm_business/**, REQ-*, SEED.sha256, V0_M1.sha256,
+V0_M2.sha256, 06_v0_m1_*, 06_v0_m2_*, 02_source file count (stays 150; manifest.txt untouched),
+package.json dependency tables, /Users/wooyinq/personal/deep-healing (read-only).
+
+--------------------------------------------------------------------------------
+SECTION A-R5-POST — POST-HOC AMENDMENT (written AFTER coding; disclosed as post-hoc)
+--------------------------------------------------------------------------------
+Items NOT foreseen in SECTION A-R5 (or declared more narrowly there) and declared here instead
+(no silent drift):
+
+1. spikes/s12-session/scripts/retake-v0-m3.py — SECTION A-R5 declared the change as
+   "EXCLUDE_SUBPATHS + HEADER only". In fact the ONE consuming line of EXCLUDE_SUBPATHS also changed:
+   `rel.startswith(prefix)` -> `fnmatch.fnmatch(rel, pattern)` (+ `import fnmatch`), because prefix
+   matching cannot express the required per-directory glob patterns. The collector FACE (which roots are
+   walked, the runtime*/attic-* rules, ROOT_FILES, self-exclusion) is byte-for-byte unchanged, and no
+   exclusion RULE was relaxed. Declared post-hoc so the coding-before statement stays honest.
+
+2. spikes/s13-render/logs/serve-summary-*.json — an ADDITIONAL exclusion pattern beyond the literal list
+   in constraint §1.3. Evidence: the literal pattern `*-summary.json` does NOT match
+   `serve-summary-<tag>.json` (its suffix is `-summary-<tag>.json`), yet that file IS rewritten by every
+   f4 re-run (4 of the 29 FAILED entries in the R4 manifest after one f4 re-run were exactly these).
+   Without it the §1.3 hard acceptance ("after any number of real-browser re-runs, `shasum -c` must still
+   be all OK") cannot hold. Applied per the INTENT of §1.3 (regenerable f4 runtime artifacts out of the
+   hash face), targeted to `spikes/s13-render/logs/` only. Registered in `06` R5-G① and in the summary.
+
+3. R5 negctl output names — the per-case logs are `spikes/s13-render/logs/negctl-r5_*.log`, the phase
+   text logs are `negctl-r5-{green,red}-closed-form.log` and the summaries are
+   `f6-r5-negctl-summary.json` / `f6-r5-negctl-red-summary.json`. They are deliberately named to fall
+   INSIDE the declared exclusion patterns (`negctl-*.log` / `*-summary.json`) so that re-running the R5
+   carrier can never make `shasum -c` red (their readings are registered in `03` / `06` instead).
+   Two earlier files (`r5-green-after-closed-form.log` / `r5-red-before-closed-form.log`) were created
+   with names that did NOT match any exclusion pattern; they were moved OUT of the workspace to
+   /tmp/r5-attic/ and are superseded by the `negctl-r5-*.log` pair.
+
+4. 06_v0_m3_self_test.md — the §6-authorized in-place correction of the R4-A / R4-B absolute wording
+   (two loci), plus the R5-D declaration pointing at the corrected originals, the quotation marker and
+   the registration of the R3-section wording left untouched (out of the §6 authorization scope).
+   Declared in SECTION A-R5 already; repeated here for completeness.
+
+
+--------------------------------------------------------------------------------
+SECTION A-R5-FIX — POST-HOC AMENDMENT (R5 declaration-fix round; disclosed as post-hoc)
+--------------------------------------------------------------------------------
+Epoch anchor: 1790108410 (2026-09-23 04:20:10 CST). This section is written AFTER the changes it
+describes (the R5-FIX round is a **declaration/registration** round; a pre-coding declaration is
+therefore structurally impossible) — hence it is explicitly labelled post-hoc, with no silent drift.
+
+ROUND POSITION: continuation of R5 (`--max-iteration 1` unchanged). NOT a new iteration, NOT a
+judgement/implementation fix. Trigger = the two gates' **declaration-layer** gaps:
+Sentinel 0 CRITICAL / 0 MEDIUM / 4 LOW / 1 GAP (`04` M3-r5 section); Raven 4 MEDIUM + 3 LOW on the
+`06` declaration layer (`05` M3-r5 section). PM constraint §1.1 ("state what is still NOT covered,
+item by item with reasons") + §1.2 ("no absolute wording in the R5 section") make writing those gaps
+into the declaration the completion of this round.
+
+CHANGED (declaration / registration only):
+1. 06_v0_m3_self_test.md — R5 section:
+   - R5-C "not covered" list: 7 -> 13 items (new: ⑧ quantization boundary 1e-6; ⑨ render-related
+     state scene.fog/background/renderer.sortObjects/mesh.frustumCulled; ⑩ camera's own Object3D-layer
+     state camera.layers.mask; ⑪ material layer roughness/metalness/map; ⑫ the matrixAutoUpdate flag
+     itself; ⑬ judgement read-out pinned / cached / self-compared), each with reasons + measured
+     evidence; plus the architect's 6-point ruling (`R5-RAV-C1` = MEDIUM declaration gap, NOT CRITICAL).
+   - R5-C item 12 also carries the in-place QUALIFICATION of R5-B item 2 (matrixWorld covers the
+     EFFECT of matrixAutoUpdate, not the flag value).
+   - R5-C item 5 (`aspect`): qualified — field-level not compared, but projectionMatrix (aspect-derived)
+     IS in the face => indirectly sensitive to in-window viewport changes.
+   - R5-C item 7 + R5-A + R5-B item 5: "实际用于渲染的相机身份" qualified to "**渲染入参身份**"
+     (= the wrapper's self-reported renderer.render() argument; NOT the camera the renderer internally
+     uses; counter-example Raven r2a).
+   - R5-E: reading qualifications — (i) the I group's semantics restated (pinning the read-out makes
+     the negative go GREEN => proves sensitivity to the read-out, NOT non-tautology; non-tautology is
+     carried by A–G "world really changed => really red") + the 2 previously missing forms
+     (cameraReport() first-call caching, render-argument record forged; Raven r1c/r1d);
+     (ii) wording fix "断言体零字面量" -> "**被比较的结构量**零期望常量", with the two frozen loci
+     (scene_assert.mjs line 277 comment; 03 R5-7 item 2 at line 3788) registered for M4.
+   - R5-E RED bullet (former line 792): count/口径 fixed to "13 real escapes + 1 positive control
+     (the field includes the control; the same field is [] in the GREEN summary)"; the task book's
+     premise ("RED summary field is []") is recorded as WRONG (Sentinel LOW-R5-1 disproved it) and
+     Sentinel's reading is adopted.
+   - R5-J: absolute wording removed (R5-B heading "全部牙齿" -> "覆盖清单 = 比较面的全部条目; 不覆盖项
+     见 R5-C 的 13 条"; R5-A "实现语义一字未改" -> "渲染与装配语义未变 (R5 只增读数与包装, 逐条列出)");
+     new row for the pinned-read-out ruling; G9 side-note added ("取数点被钉常量/缓存/自比 => 判据变绿",
+     "本判据不防护判据侧改写, 判据侧改写由冻结清单发现").
+   - New subsection **R5-FIX** (F1..F10 registration, incl. the F9 verification readings and the
+     explicit "what was NOT changed" statement).
+2. spikes/s12-session/scripts/retake-v0-m3.py — declaration <-> implementation alignment ONLY
+   (Raven M4 (a)(b)(c)(d)); the COLLECTION FACE and every EXCLUSION RULE are unchanged:
+   (a) runtime* prefix tightened to exactly the declared `spikes/*/runtime*/**` (it previously dropped
+       any path component starting with "runtime" ANYWHERE, silently excluding 02_source/**);
+   (b) s12 side gains the declared `serve-summary-*.json` pattern (header declared both logs trees);
+   (c) three-way alignment (header / docstring / implementation) on "V0_M3.sha256 itself is NOT in the
+       list" (the manifest is still NOT self-hashed);
+   (d) two new header declaration sentences: ① acceptance = f4 real-browser re-run; non-f4 drivers
+       (f5/f6/f1...) rewrite their own artifacts, some of which remain in the face => handle per the
+       retake rules (register M4); ② exclusion is by NAME PATTERN only => excluded paths must not carry
+       judgement conclusions; conclusions live in the gate exit code + 06/03 registration.
+3. V0_M3.sha256 (final-step retake, F8) + V0_M3.sha256.retake.json (retake_chain_r5 gains an entry
+   for this declaration-fix round) + this SECTION A-R5-FIX + .artisan.progress.json + ledger (progress).
+
+HARD-REQUIREMENT READINGS (F7(a), the "stop and report if added != []" gate):
+  `python3 -B spikes/s12-session/scripts/retake-v0-m3.py . --dry-run`
+  => entries=202 previous_entries=202, **added=[]**, removed=[]  (exit 0; evidence /tmp/r5fix-dryrun.txt)
+  Positive/negative side check on a minimal fake ws: `python3 -B /tmp/r5fix-f7a.py` => mismatches=[] (exit 0)
+  => 02_source/runtime-notes.md and 02_source/v0_skeleton/web/runtime-snapshot.json are NOW collected;
+     spikes/s13-render/runtime-x/** and spikes/s12-session/runtime/** remain excluded.
+
+NOT CHANGED (byte-identical) — the hard boundary of this round:
+  02_source/** (ZERO bytes): world.ts = 07c42b82cdea8dab2f4552cf520440264450e12b4f01920fc9b3342feb464347
+  and scene_assert.mjs = faec656cee9feb918a6ff266eb3cb55a80cd70c7fee78fb2d65eb50cf88ebb0a — identical
+  before/after FIX (/tmp/r5fix-pre-sha-live.txt); whole delivery-face fingerprint
+  find 02_source -type f -exec shasum -a 256 {} \; | sort | shasum -a 256
+  = 43120274228b27d980febab0b9066af9ed8968a4fafd71fa945b6a92ccb83f47 (identical before/after).
+  => NO code, NO judgement, NO negative control, NO implementation-semantics change.
+  Also untouched: 01_architecture_design.md, 03_artisan_self_test.log, 04_sentinel_test_report.md
+  (M3-r5 section), 05_raven_risk_report.md (M3-r5 section), 07_*, 08_*, refs/**, pm_business/**, REQ-*,
+  SEED.sha256, V0_M1.sha256, V0_M2.sha256, 06_v0_m1_*, 06_v0_m2_*, 02_source file count (still 150),
+  dependency tables, /Users/wooyinq/personal/deep-healing (read-only).
+  No git write operations; no relaxed judgement; no deleted negative control; no new AC/dependency;
+  no negative control injected into the delivery face. No new round opened; no self-downgrade.

@@ -1,0 +1,3 @@
+{"cmd":"step","n":2}
+{"cmd":"intent","mode":"observe","intent":{"id":"probe-obs","kind":"delegate_instruction","target":"npc-001","session_id":"sess_probe1"}}
+{"cmd":"stop"}

@@ -54,14 +54,19 @@
           "type": "object",
           "description": "数据入口（相对 pack 根目录）。全部为数据文件，内核按 glob 加载。",
           "additionalProperties": false,
-          "required": ["world_seed", "buildings_glob", "npcs_glob", "tasks_glob", "schedules_glob", "assets_manifest"],
+          "required": ["world_seed", "buildings_glob", "npcs_glob", "tasks_glob", "schedules_glob", "assets_manifest", "worldview"],
           "properties": {
             "world_seed": { "type": "string", "const": "world.seed.json" },
             "buildings_glob": { "type": "string", "const": "buildings/*.json" },
             "npcs_glob": { "type": "string", "const": "npcs/*.json" },
             "tasks_glob": { "type": "string", "const": "tasks/*.json" },
             "schedules_glob": { "type": "string", "const": "schedules/*.json" },
-            "assets_manifest": { "type": "string", "const": "assets/manifest.json" }
+            "assets_manifest": { "type": "string", "const": "assets/manifest.json" },
+            "worldview": {
+              "type": "string",
+              "const": "worldview.json",
+              "description": "M3 新增（ADR-016）：pack 根的世界观契约文件（治愈内核 + 悬疑外壳）。必须过 `worldview.schema.json`；**两个 pack 都要有**。"
+            }
           }
         },
         "portals": {

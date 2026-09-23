@@ -1,0 +1,236 @@
+# V0_M3.sha256 — M3 冻结面自校验（采集面与排除项**显式声明**）
+#
+# 采集面：02_source/**（除生成残渣与运行期副本）+ spikes/s12-session/** + spikes/s13-render/**
+#         + 根级 03_artisan_self_test.log / 06_v0_m3_self_test.md
+#         （**V0_M3.sha256 自身不入清单** —— 不可自哈希；V0_M3.sha256.retake.json 亦不在面内。R5-FIX/F7(c)）
+# 排除项：__pycache__ / *.pyc / .pytest_cache / .DS_Store / node_modules / .venv / dist / .build / attic-*
+#         + spikes/*/runtime*/**（运行期副本：桥把 02_source 整树复制到运行目录，生成物；R1 已排除
+#           spikes/s12-session/runtime/**，R2 按同一规则覆盖 spikes/s13-render/runtime*）
+#         + spikes/s12-session/logs/superseded/**（R3 / G3：R1 崩溃型假红的**作废证据集**，不得作为判据）
+#         + **运行产物（R5 / PM 裁决 `R4-M4`）**：`spikes/s12-session/logs/**` 与 `spikes/s13-render/logs/**`
+#           下的 `*.png` / `browser-accept-*.json` / `console-*.jsonl` / `negctl-*.log` / `*-summary.json` /
+#           `serve-summary-*.json`（f4 每个 case 的 serve 摘要；**字面模式 `*-summary.json` 不覆盖它**，
+#           R5-POST 按同一口径定向补齐）/ `emitted-messages.jsonl`
+# 语义：本清单是 M3 **时点快照**（与 V0_M2.sha256 同口径）；M4 增删文件后 `shasum -c` 按设计会红，
+#       届时按「重取登记」规则（理由 + 变更清单 + 前后哈希）重取，**不得**静默改写。
+# 运行产物口径（R5 显式声明）：**运行产物 = 可重生成，不入哈希面**；其**判据结论**由门禁退出码
+#       与 `06` 的登记承担（f4 真浏览器每复跑一次都会重写它们 ⇒ 若钉进哈希面，出口前任何一次复跑
+#       都会让 `shasum -c` 变红，被误读成「交付面被改」）。
+# 验收口径（R5-FIX / F7(d)①）：**验收口径 = f4 真浏览器复跑**（`spikes/s13-render/negctl/f4_browser_negctl.py`）。
+#       **非 f4 驱动**（f5 / f6 / f1 …）复跑会重写它们**自己的**产物，其中部分**仍在**哈希面内
+#       （如 `spikes/s13-render/logs/f5-r4-negctl-summary-red.json`、`r4-*-widening.log`）⇒ 复跑这些驱动后
+#       若 `shasum -c` 变红，须按本清单的「重取登记」规则处理（理由 + 变更清单 + 前后哈希），**不得**静默改写。
+#       ⇒ **登记 M4**（是否把这些非 f4 驱动产物一并纳入排除项，属 M4 决策；R5-FIX 未扩张排除范围）。
+# 排除语义边界（R5-FIX / F7(d)②，Raven `M3`）：排除**仅按名字模式**（`fnmatch`，`*` 可跨 `/`）⇒
+#       **被排除路径不得承载判据性结论**；判据结论必须落在**门禁退出码**与 `06` / `03` 的登记上。
+#       （已知残余：AC-M3-8③⑤ 的**原始**双读运行读数已随运行产物外置，只能靠复跑 f4 复现 ⇒ 登记 M4。）
+# 重取（R2 / 修复轮）：理由与前后哈希见 `06_v0_m3_self_test.md` 的 R2 段「重取登记」。
+# 重取（R3 / 最后一次修复迭代 3/3）：理由、变更清单与排除项变更见 `06` 的 R3-E 段。
+# 重取（R4 / **有界补丁轮** · 关闭 `R3-C1`）：理由、变更清单与条目数见 `06` 的 R4-E 段。
+# 重取（R5 / **终局有界轮** · 关闭 `R4-C1`/`R4-C2`/`R4-M1` 的**判据层** + `R4-M4` 冻结面口径）：
+#       理由、变更清单与排除项变更见 `06` 的 R5-E 段。
+# 重取（R5-FIX / **声明修正轮** · 两名门禁指出的**声明层**缺口）：理由与逐条改动面见 `06` 的
+#       `R5-FIX` 段（采集面与排除**范围未变**；仅「声明 ↔ 实现」一致性对齐）。
+# 条目数：202
+d7dcb05d54d57988567edffb7fbdb4668be8304ce9104c02c38d73e2bf9f68a3  02_source/07_adr.md
+ddddc46864a7cfdfa3e9ec99cafb1e5798f937adf643c77427253a1d30932785  02_source/art-bible.md
+6b5da9bae8058034a29905dc07907d6503e821d17e035a41c90beeb9f2ff4e51  02_source/asset.license.table.data.json
+b21f3e011fbe8ef52d6095b5fed8be09b8a961f7f9693bef0f6f9c627fdb7a66  02_source/asset.license.table.json
+f2a31e6cd21f0e884620b460a95670dc1fec519659bb9a6ae11c3e3083e89ae0  02_source/asset.manifest.schema.json
+e2c1eeebff563382f07d80eaee6801efc41b2ad9341df1ee90a0feaa2b22ffb5  02_source/capability.registry.sample.json
+9ca50d21b873dd0582d6fa46ca9c51c98cbcdbaab03c7b2c1f47e5b83ea87a3a  02_source/capability.schema.json
+50c828cb76fa6aece3b6d9b46a86b4a77763e031df4220e8ebade80879cf2e90  02_source/capability.time-budget.spec.md
+ea5041f745ce741ef130681be603a76a0d389c357678a820556958658de0922c  02_source/cassette.format.md
+56bfc10b67db86845a9a252d40fff1118b6082f415d3b927d8c68e3a624ab223  02_source/cassette.schema.json
+77e27a3cb9354e4c8a2d9ae12c1c07dcb14278cfa692a5bdea0e9476a1666845  02_source/content-pipeline.spec.md
+dd2876c6af700348bf8fdd5cf2a04ab2f87cf9b65f26f695c5f6c29ed811b4e3  02_source/district.pack.schema.json
+65352a4001f50a65a5295c455b1ee5ffb978f91710664ef7a799fd95e169c3de  02_source/district.pack.spec.md
+7b1bc2b30699adc13fb41d3823eae4cccbdf98592d7e35763a226324a21cdbf8  02_source/events.schema.json
+adca95a4ea59f354f1c4cda412779140aa9c0d6a224ed3da21fcb22b1e604ec0  02_source/intervention.policy.schema.json
+57ab499003f62de9c9612985b987a8fb3b8c58b6b6d5860a798c77cbacec4dde  02_source/manifest.txt
+672141dd131e1ece4aa3a139a0e5e0b22cfb24d04703bee1670b6cb1135aa740  02_source/session.protocol.schema.json
+2355de35ba9ce30f23c94d9779c62271b1091715da0c17229c88d4c0f6e25a4b  02_source/snapshot.schema.json
+f563803f486dff17d424cc3ab05b545243519aba874a8aa20c8537b8ca4ae5b5  02_source/v0_skeleton/README.md
+0466b970e7d8bc9d82ff5c321a565f743457cdf6b1bb1415f10187ccf04b44ac  02_source/v0_skeleton/assets-sample/asset.manifest.sample.json
+5899ec8ef300acee0f226313e0e8134f67605d012a5fbaf4cf8aff512b163bc7  02_source/v0_skeleton/assets-sample/placeholder-001.png
+1a5a1efe67b86c1e98ed2a582d71275304d2881bbe86e36ddccd86fb381c8722  02_source/v0_skeleton/assets-sample/workflows/procedural-placeholder.json
+e4564b5394671458eefd821069574fcb35391a6cfcb5494f3032f4b4a47431f1  02_source/v0_skeleton/capabilities/embed.text@1.0.0.capability.json
+bbf0c85006c0301dd3713b33bdbf6d631f98dd51c1adf8f8947ac4c9ee36eaab  02_source/v0_skeleton/capabilities/emotion.appraise@1.0.0.capability.json
+b9fe3611883e1eeb5731fc33461eff572a83d2ba1242b90a2134854f9931ef7b  02_source/v0_skeleton/capabilities/imagine.predict@1.0.0.capability.json
+1408887cf9454b4114d427a8b4bb74ad7f212184b3f562f0e66e2f1baf128005  02_source/v0_skeleton/capabilities/intent.plan@1.0.0.capability.json
+38e0ee12eed8de64d2634327248590691666a3243feb4cb8cfb8fb4f129c5d03  02_source/v0_skeleton/capabilities/memory.reflect@1.0.0.capability.json
+cffa481ff822ae9e8e54c75fb55f99fdf7973169d2da4bd8ba3409073b7ea345  02_source/v0_skeleton/capabilities/pins.json
+1023f63a8598796de4b944634fc00ea212d830e5b864dec941a41721655b2986  02_source/v0_skeleton/capabilities/relation.infer@1.0.0.capability.json
+cf01b33f390e521a3a6964e66dbbd989663dcd3a7ed51ca7729f308ec8276f40  02_source/v0_skeleton/districts/xingfu-xiaoqu-north/assets/manifest.json
+fc7c1897599d4c6d89e7b5a1da48fcca3e68b75788c12c4b392e89696f48d0ec  02_source/v0_skeleton/districts/xingfu-xiaoqu-north/buildings/b1-building.json
+2ec10ff894e53dd76fc0c34c9b9ce880c0220523d476a1a58552f17e01b164c0  02_source/v0_skeleton/districts/xingfu-xiaoqu-north/buildings/courtyard-01.json
+ced990d70fde6119b8eedc4a6779c2e63ec50e6ddb73c9ace64d9d68eb17b678  02_source/v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-001.json
+19ff55c2da63d7f01d87258a4e00c068228688a75a44cc15334c0a76151b7724  02_source/v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-002.json
+67dcf6004b390182feb27e14100d5f950d2af83e3dd6bc6f7be8bc35da754361  02_source/v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-003.json
+66785a910b8def6769d73faad9bfea00082c948f48d00fc8453ea17035560962  02_source/v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-004.json
+5203991b3e6d7a36fcb8bb3ef383b0fd67cfa16af977a4c6128341bcf00e483a  02_source/v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-005.json
+f7856a49f0db086271dfc34a53bc67e4ee592ade83b510b686ad3dec06d8d314  02_source/v0_skeleton/districts/xingfu-xiaoqu-north/pack.json
+12a4d923ec7179f78acaff81ff96161c652ebaee73b890699dc7cc2f3f170302  02_source/v0_skeleton/districts/xingfu-xiaoqu-north/pack.sig
+7850bbcc5e015a96d442752f4e98c470803f10793c98d1cd115f8035f37fcebe  02_source/v0_skeleton/districts/xingfu-xiaoqu-north/schedules/weekday.json
+2f0d7f911ea35db7587a43af1a2d1d68e9dea86a062ae8a0a8b5833ae7c7769e  02_source/v0_skeleton/districts/xingfu-xiaoqu-north/tasks/task-001.json
+aa55572c27974021ed2893b250fe506df3a0ed12b8af0855ab5a05c50e4ec2b2  02_source/v0_skeleton/districts/xingfu-xiaoqu-north/tasks/task-002.json
+804293b5d8a0a58106c21271620e94e55f80f0d121f1c6baa29b435abb69cc75  02_source/v0_skeleton/districts/xingfu-xiaoqu-north/world.seed.json
+4e6da123da1d53c9ca5b49d31951f93d0e72d760ce400598833f5f5cf857735a  02_source/v0_skeleton/districts/xingfu-xiaoqu-north/worldview.json
+cf01b33f390e521a3a6964e66dbbd989663dcd3a7ed51ca7729f308ec8276f40  02_source/v0_skeleton/districts/xingfu-xiaoqu/assets/manifest.json
+fc7c1897599d4c6d89e7b5a1da48fcca3e68b75788c12c4b392e89696f48d0ec  02_source/v0_skeleton/districts/xingfu-xiaoqu/buildings/b1-building.json
+2ec10ff894e53dd76fc0c34c9b9ce880c0220523d476a1a58552f17e01b164c0  02_source/v0_skeleton/districts/xingfu-xiaoqu/buildings/courtyard-01.json
+ced990d70fde6119b8eedc4a6779c2e63ec50e6ddb73c9ace64d9d68eb17b678  02_source/v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-001.json
+19ff55c2da63d7f01d87258a4e00c068228688a75a44cc15334c0a76151b7724  02_source/v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-002.json
+67dcf6004b390182feb27e14100d5f950d2af83e3dd6bc6f7be8bc35da754361  02_source/v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-003.json
+66785a910b8def6769d73faad9bfea00082c948f48d00fc8453ea17035560962  02_source/v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-004.json
+5203991b3e6d7a36fcb8bb3ef383b0fd67cfa16af977a4c6128341bcf00e483a  02_source/v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-005.json
+87b48a98bc6b5f848961a5d61d09af8ccc6b375505da5ae1576dd20b5dea2a4a  02_source/v0_skeleton/districts/xingfu-xiaoqu/pack.json
+844f7606d5b548517a1af3a052bf882b7e38563297a644bcd70e1bd3dafcb87b  02_source/v0_skeleton/districts/xingfu-xiaoqu/pack.sig
+7850bbcc5e015a96d442752f4e98c470803f10793c98d1cd115f8035f37fcebe  02_source/v0_skeleton/districts/xingfu-xiaoqu/schedules/weekday.json
+2f0d7f911ea35db7587a43af1a2d1d68e9dea86a062ae8a0a8b5833ae7c7769e  02_source/v0_skeleton/districts/xingfu-xiaoqu/tasks/task-001.json
+aa55572c27974021ed2893b250fe506df3a0ed12b8af0855ab5a05c50e4ec2b2  02_source/v0_skeleton/districts/xingfu-xiaoqu/tasks/task-002.json
+804293b5d8a0a58106c21271620e94e55f80f0d121f1c6baa29b435abb69cc75  02_source/v0_skeleton/districts/xingfu-xiaoqu/world.seed.json
+4b4d0b2cf506e02a3a043297488823cde9eb174342df22d2bea4f847041ab3a7  02_source/v0_skeleton/districts/xingfu-xiaoqu/worldview.json
+2c1ea587112f5df2e843e44779dd52f87f622fce04a093341348fd03bc08fbc6  02_source/v0_skeleton/kernel/conftest.py
+be76cf0ce2a24d7ea1ce85c0ca7d1ca7b9af190c8f4380cbb63e7b4ebcedd74a  02_source/v0_skeleton/kernel/deephealing_kernel/__init__.py
+94a6b85fcce9151350a01c91d08ca37178f6f01d94524bf07d501c56ce7c736c  02_source/v0_skeleton/kernel/deephealing_kernel/__main__.py
+92d1711cd7896dabd021f0e5d966add4b2fbc54bd5254e064867d12b552c5875  02_source/v0_skeleton/kernel/deephealing_kernel/adapters/__init__.py
+3f694b3622b98d77cd64838835d165dfd11c1203e3710f1b88b146e6b3f908ba  02_source/v0_skeleton/kernel/deephealing_kernel/adapters/determinism_probe.py
+9bbc1b8e102bd0b663a2e84413ca244cd0fdaa5ce0b5fdd681fad35e0f0b4e29  02_source/v0_skeleton/kernel/deephealing_kernel/budget.py
+e3480524dbcf18d8487f5348e59a42c546860fe608653d726ef5e178afd443c5  02_source/v0_skeleton/kernel/deephealing_kernel/bus.py
+72973872727f5efcb792ab6192a143becef8ce337c0fc8d2d4868819d5abd63b  02_source/v0_skeleton/kernel/deephealing_kernel/cli.py
+56ee50ec3f73cee116f421f848494d07ed62b9004dd791b0bc145868e672c9eb  02_source/v0_skeleton/kernel/deephealing_kernel/ecs.py
+4306268fec3fe0cb56d73b0af80c04504c96c1542c0c61e67293ed8eecca33a3  02_source/v0_skeleton/kernel/deephealing_kernel/events.py
+8bd77748187f8133c27bad5d2a0c9d408672dd64da9fe96cf8a4aa8419a0ffac  02_source/v0_skeleton/kernel/deephealing_kernel/memory/__init__.py
+ab3310851400256e781d4db4e121015195e36da32de83f9fd164895dbc1a8898  02_source/v0_skeleton/kernel/deephealing_kernel/memory/retrieve.py
+a14d3223ea9ca52c58d4b94f4b1a4e15fad6f7b3590fdec56ff11b69d23d4f99  02_source/v0_skeleton/kernel/deephealing_kernel/memory/store.py
+4b0fb469a4c8865ebd0095898303fea91adce20f96d1b580c0e35a30a139ca5d  02_source/v0_skeleton/kernel/deephealing_kernel/pack.py
+abf59d4243d7a03bc951be47b1b76ed22cf518ca759b8ad5bc6831e5978aa6cc  02_source/v0_skeleton/kernel/deephealing_kernel/providers/__init__.py
+c5655d874392a3444583a7c1ff7297c8bc82af7da411fcf9c4728da34eff61a1  02_source/v0_skeleton/kernel/deephealing_kernel/providers/adapters/__init__.py
+d7894a464f61cfe8e0b96c289092505dd54ed32087d00a37365abbce60fc9055  02_source/v0_skeleton/kernel/deephealing_kernel/providers/adapters/relation_infer.py
+ccb79d651fc95bcde0a433bacf69b6fd239202891620c8afc242ddcf2ee0fb89  02_source/v0_skeleton/kernel/deephealing_kernel/providers/cassette.py
+d70ea77045a76ef4efb046aec231b55adf522d112a5344d1221b7454bf9485af  02_source/v0_skeleton/kernel/deephealing_kernel/providers/deterministic_rule.py
+9498ef5c2bd4a9816a1f5f25160095390668040d765384be6841b4a0b070dca7  02_source/v0_skeleton/kernel/deephealing_kernel/providers/local_model.py
+56e2c67740fe162fd4a453c1b019f53cc55d10a98f1f3a51ade6e5c67ea05666  02_source/v0_skeleton/kernel/deephealing_kernel/providers/remote_api.py
+ed76144b077e2f327b69655dbbe257d5be4cc2791bc045e86d4f468f9446b7a1  02_source/v0_skeleton/kernel/deephealing_kernel/registry.py
+cf47f38c05ac50d0f476d3689c20886909fd0d44e16139d8fdac47456336a707  02_source/v0_skeleton/kernel/deephealing_kernel/rng.py
+a7dc2dd35d9b695f3b19719f4e493b4cae5b2e4e239cc7673b98e4996b4a4aad  02_source/v0_skeleton/kernel/deephealing_kernel/rules/__init__.py
+797793304f19ddadc0c79a0f9bdaa96e2c756b346ce750ba0e17b042e2fc3ac4  02_source/v0_skeleton/kernel/deephealing_kernel/rules/adaptation.py
+08aec7f8f63fd1f55f7f230613fd76f7c37e9b559043573be7e5197d3995138a  02_source/v0_skeleton/kernel/deephealing_kernel/rules/behaviour_tree.py
+4193e41775b6b0a680c676f55afa70bd485aa60bda82c49e8a4f6fac5ac43da3  02_source/v0_skeleton/kernel/deephealing_kernel/rules/requirement.py
+eac557411deebd341b9c14f43db173ba99001810f6b33b5b191948ec16db4c12  02_source/v0_skeleton/kernel/deephealing_kernel/rules/utility.py
+5726585864514c9df53f48840ff6e8d934e381a12a169950ecf2e15b47c83b42  02_source/v0_skeleton/kernel/deephealing_kernel/snapshot.py
+222d29ba5c5259b9a2251edc76e5e45b13da0622b4712beabb5b276132db7d3f  02_source/v0_skeleton/kernel/deephealing_kernel/tick.py
+767dccac6551921b7845b6347362a9a741789dc62ab8e30dbf1d635b4c310070  02_source/v0_skeleton/kernel/pyproject.toml
+f93cfb90c65e8b6967cd47ba8e35adbe417a76263d4e566d3bc77f4a4e9f1531  02_source/v0_skeleton/kernel/tests/test_budget_downgrade_void.py
+8a460271baabf94815075d518b355e566d8f9114996cf591325318a4b38cf3aa  02_source/v0_skeleton/kernel/tests/test_budget_ledger.py
+22e1f230fda54f7cfcc0f18224a35377afa94ef1fdf624a7db30873577710a67  02_source/v0_skeleton/kernel/tests/test_bus_and_ecs_invariants.py
+466db8409f893cc4836a234630b4a56cb367a97e28528aaa4d8fac9eb852543b  02_source/v0_skeleton/kernel/tests/test_calibrate_latency.py
+44044abfb0eba9a77239e52e2d89a1da5730ae39393dc734d15383c7cbe42030  02_source/v0_skeleton/kernel/tests/test_canonical_contract.py
+8de4fd6634e5eb80ece6f1e517593f101c7755a1482940621aaf1ebc31cac2ac  02_source/v0_skeleton/kernel/tests/test_capability_registry.py
+8eb05ed2c6f5fb352e09a3cd8aee5a01d8d733215c58b793272cb539cddea2b5  02_source/v0_skeleton/kernel/tests/test_cassette_miss_cli.py
+12fb522086f928f7a91d5a565c6be8189a1e84ea6d5f359cd79b70a05388a77d  02_source/v0_skeleton/kernel/tests/test_cassette_no_backfill_r5.py
+1da4f48849fca747e337644c43dd34b5fbdecc8404b4d30696ff0864603e006c  02_source/v0_skeleton/kernel/tests/test_cassette_tamper_cli.py
+f715413582442cab568fbcc13d5ab4e5e39431012076bcd7ef0a827fe26ce33e  02_source/v0_skeleton/kernel/tests/test_determinism_replay.py
+70051172ecb4bedfa26500fba7ee83bb7dc19cb236958eb68389fe868faaa64f  02_source/v0_skeleton/kernel/tests/test_e2e_run_verify.py
+674ea3e2bbf47edc2c7193d73c901679a4e6929689fc3c1bd134b38e2c92ca84  02_source/v0_skeleton/kernel/tests/test_events_snapshot_invariants.py
+5065e81320ffe80b1da15b66126b807e6d8fbfea3c88e0a72baf1860e5baabfe  02_source/v0_skeleton/kernel/tests/test_evidence_scan.py
+87291fe1873f02c4d881dda709239a9852bb3cf9e69a326b7240f8c77322189f  02_source/v0_skeleton/kernel/tests/test_io_shape_guards.py
+db73c444beb389118dad8f7aa537644c04fca3a311e2ee60ea64868f61bfdfa5  02_source/v0_skeleton/kernel/tests/test_kernel_digest.py
+7a4a25a347e9e1b50a53f66fc5c379becaf32a9fd9d26e12239a5ba44cf03ecd  02_source/v0_skeleton/kernel/tests/test_memory_layers.py
+adc2cfaecd55b7bef6f58060f54084df70b60ff2723672315dab049524016e27  02_source/v0_skeleton/kernel/tests/test_observe_mode_readonly.py
+0bac91370c738702dcabfe7b5f69d85375ae68c138067d57304b91176e2443c3  02_source/v0_skeleton/kernel/tests/test_pack_validate.py
+96e4919edd6434087ad9d032b37283b50c102a2bdb33bfee9a2fa87ab09fa034  02_source/v0_skeleton/kernel/tests/test_pins_resolution.py
+aa533168597cd362dc6eb83c4d055c1861f6e53582921bcf44e9e6949e67e7c6  02_source/v0_skeleton/kernel/tests/test_rules_layer.py
+2b36263500fe61f4e77a60bdf1e91c4b92da5741bffc3c262fe65bb8ed29d1b9  02_source/v0_skeleton/kernel/tests/test_slot_conflict.py
+4245341b1ddcbffa56d4349c916aef78d74eab957f9ee936b28f1142776c3fe2  02_source/v0_skeleton/kernel/tests/test_task_adaptation.py
+97571141bc4b7c10a1edd6df3a908bb00125a895e68ac4ee933e6c1a680446c6  02_source/v0_skeleton/kernel/tools/calibrate_latency.py
+3c4976a89987b2eb24218b91d0b5f5ab56cccd52839eaa81a1fb86b6c0e91c86  02_source/v0_skeleton/kernel/tools/kernel_digest.py
+fe81f07ac943b6e96442c440752dbbed4a322a4650e2d2d459edb377b4e0e8e7  02_source/v0_skeleton/session/bridge/kernel_bridge.py
+23b3e927430eadd21d4b1ea2ffd5883ba9e48e6d162fcfc56bff4f87df55150a  02_source/v0_skeleton/session/package.json
+4f66746aa807389cb177108f73484ee103b137909f3cd245125b9c5723f2df68  02_source/v0_skeleton/session/src/mode.js
+5cd4794c244b17ed3f427c7ba7dc7eb827332a5b722135bf66ca7aad0b8ed90c  02_source/v0_skeleton/session/src/policy.js
+50cb57f50eeefeb5ac91044b732ac89f09dd9b257fcc9eddc2057e260a7f1628  02_source/v0_skeleton/session/src/protocol.js
+082662fde13aa850a837743284fd67026a76c37aa7bd00363ffc5c1057bb6f11  02_source/v0_skeleton/session/src/server.js
+cad6b9a9a64054045deb56c61fba2c0d3756be1a1b59360f4600f35c7ba3895e  02_source/v0_skeleton/session/src/upstream.js
+04d8a874647e65b35391297fe285d459ab959946d491d12d6a7fe577542e4404  02_source/v0_skeleton/session/test/session.test.js
+33af0f3ec5c5192f1c6c9263cb829646d1b23151b25ead99baa03a475f762f58  02_source/v0_skeleton/tools/aesthetic_check.py
+58d57172eba595508dac19bd4a9ee1a6e2597507c34ac50fa78d0eb885a7685c  02_source/v0_skeleton/tools/canonical_json.py
+d8214f1a9262c9ad6a5180022d047b9ae27e40dbba1c9cd15152e7bf3ceb1056  02_source/v0_skeleton/tools/determinism_probe_worker.py
+4e0acfe1a1c78a6a725e3ac91f4387c70b4656bdd685e41a086220a6e1cc2d50  02_source/v0_skeleton/tools/duckdb_queries.sql
+cb5871e5f8368fb2251f69e71b1fcc3cb3817e4a142c10158e58f12d06c37e95  02_source/v0_skeleton/tools/make_placeholder_asset.py
+1e7fb2f4b53f9a04c351d947dfbd8e43cf69dbb84d4e5d7f7cc4ab8b5907eb19  02_source/v0_skeleton/tools/pack_sign.py
+99efe10b25c2c6064a9721e48642f3b61f43688a71f39c500e05b5a03905fd27  02_source/v0_skeleton/tools/scan_ip_boundary.py
+b5e0eb3f0374f729f1d3c92e7217062e0d8517e2c00463dfb8b4b76b88c6af92  02_source/v0_skeleton/tools/schema_validate.py
+a9f119188a93c76723449c1bf122b26b4ab79c032840d567da575d43ee01a822  02_source/v0_skeleton/tools/validate_capability_schema.py
+5cddb34e8147204fe8f11e016a9e3e8094910a785e551b8928f1382d0e5b7a94  02_source/v0_skeleton/tools/verify_asset_pack.py
+293b1025718382d2fae8318616864b22d8d18ebf16c076e1f3ae10f7d217a689  02_source/v0_skeleton/tools/verify_capability_binding.py
+e763a9fc9fcfbce7b77ded2be4ebfbbb2f68be7a2e6e4735f4e4637a51859a21  02_source/v0_skeleton/tools/verify_pack.py
+ce28f516c329c5868b7e61ba2d0b4f8bb2dc86bee5ddc25dd23fe97041ab1a2d  02_source/v0_skeleton/web/index.html
+559e9255dc2d103980639220828d972d68b562358920b0b5b34208c483918e8e  02_source/v0_skeleton/web/package.json
+faec656cee9feb918a6ff266eb3cb55a80cd70c7fee78fb2d65eb50cf88ebb0a  02_source/v0_skeleton/web/scripts/scene_assert.mjs
+6fecb5bbd85ac25817258c012d105d5ae281af0e9ab7da58d5ea3f29d579a5ea  02_source/v0_skeleton/web/src/main.ts
+ee728510a06e6ad0221574af3905137fc301b2913a6c0f8f3e633c90fc31f210  02_source/v0_skeleton/web/src/net/client.ts
+608dcb5d165500d7d9c6b7634fa4a59c99fbb15c507150152142c6fb74b41aa3  02_source/v0_skeleton/web/src/scene/lighting.ts
+07c42b82cdea8dab2f4552cf520440264450e12b4f01920fc9b3342feb464347  02_source/v0_skeleton/web/src/scene/world.ts
+fe6b2299021f65e9476c259fb20e6b53295b86007900dd4c9be18b1d4f6328ff  02_source/v0_skeleton/web/src/ui/observe/panel.ts
+c94797a8aebc13b40c44ef1d88b29316233703219406d0f1708cc6af2b76d422  02_source/v0_skeleton/web/src/ui/participate/intervention.ts
+e82e72aae75932b4b26d6330c3d00f806480994049972f9730132b7872eee7a7  02_source/v0_skeleton/web/test/render-client.test.ts
+57a1519eae875502a30805ed35003756e2078020220d7267005cf1224da82102  02_source/v0_skeleton/web/tsconfig.json
+e204023476859166a329ecf523f8ddbff4294633de8af658f02a95ebcec7f0c3  02_source/v0_skeleton/web/vite.config.ts
+025506d4000b0b2316a5b4a3671b30ae1af3aae730d63d616b99d2cad50ed31a  02_source/verify_specs.sh
+5f0b6e162f4e3cdcf841e4d971b77ed880c4545fada1d3ee80d079fc636a8e3c  02_source/world.schema.json
+b55af7dbff395af95b2aa1ae4aaaaf01c61ca7563c6f32637d1e3fb46685aca4  02_source/worldmodel.adapter.spec.md
+2d13798b8a35ea9871df1a1af86e4f12d5957376daf03aba955261cb4340327c  02_source/worldview.schema.json
+e9b496f36c11825d9cd3a39fefdb0d7ccbe90489e34820ab055502848e898673  03_artisan_self_test.log
+f85a2147e0b7066a81c3d54ba3965d0e8079768a240c48f18cd684bcd8947cf3  06_v0_m3_self_test.md
+943a875a191bb9b1a297db2e4fa4aff8b6ad9fbea789bf5c50026f21b86c21ee  spikes/s12-session/logs/emitted-messages-session-tests.jsonl
+5d3334d667d59908522939b8675f484d2355ffad5cb53c1a4e0ea03a3ea009e5  spikes/s12-session/logs/f3-budget-downgrade.json
+42be2a0d1bf51a669660204ad215cd00aec023da6bb66276b9c20fb1ecb2a2e2  spikes/s12-session/logs/m3-kernel-pytest.txt
+49066cd07fa8b8df78c7c531f4412f1c6c8dbd0c7a7befa114dc26b387ca278c  spikes/s12-session/logs/m3-source-manifest-after.txt
+49066cd07fa8b8df78c7c531f4412f1c6c8dbd0c7a7befa114dc26b387ca278c  spikes/s12-session/logs/m3-source-manifest-before.txt
+2564404ed543d48efc64836e600abd943365ef869f116dbc610f31d1c42d1210  spikes/s12-session/logs/p8-after-r2.txt
+2564404ed543d48efc64836e600abd943365ef869f116dbc610f31d1c42d1210  spikes/s12-session/logs/p8-before-r2.txt
+8906ab5b335cd62a573e4c5c6b8ed275807657dc436f27270a9a7ad7090f9cec  spikes/s12-session/logs/p8-freeze-recheck.json
+533162de829ece2db00eab4541c8f6289873e3e549aa47d4200ed53649f956b9  spikes/s12-session/logs/p8-zero-residue.json
+8e02ce289026bfa59466f0879d94d8729c8cd520c31a010f54a8080f9bf036ae  spikes/s12-session/logs/probe-stdin.jsonl
+6514556e66d774628b91f0df9d2fc771eb05774da676139741b9bdefed05a179  spikes/s12-session/logs/session-record-sess_62d1ae8c07f64327.jsonl
+83df4f0f33889403fa00d3b440d806f6d289b97f02c2ba150a8913e67e012d64  spikes/s12-session/m3-change-face.json
+0ce3b7f11f0b0b153e920562635073fdf2d92740c8b465186e042b2d8783f45f  spikes/s12-session/m3-change-face.txt
+185c856656b3991992882252dd04ef83bfcdab9dfee1bb6923982cbdac453ecd  spikes/s12-session/negctl.py
+209f394b6e3aab770dc138484f39f64a0c7be260eb0e29f5b99a0d2bd9964f69  spikes/s12-session/negctl/f12_ip_scan_negctl.py
+84203429a17790e67807049522213d29dc7aafc1c649ab606c38c7a2b06c8df2  spikes/s12-session/negctl/f2_bridge_mode_check.py
+a82c2f3abd27c35200000f0c342989ac4030e2bf4d1bf267c8417e8dcc315412  spikes/s12-session/negctl/f3_budget_downgrade_negctl.py
+966c310df047d89ca6c8fe578d559e26785264e937429ebabf8284b4f8db2e85  spikes/s12-session/negctl/f6_m2_inherited_negctl.py
+a67b655f64b252baf5ead91dd1af4b075d1bf59f835a525150689b78950bf337  spikes/s12-session/negctl/f8_ac_m3_1b_negctl.py
+4bb41b06a564b16298fe868a388cccb9a30492e69b55c06110a4886a3953f700  spikes/s12-session/negctl/g5_merge_window_driver.mjs
+4364ad81edc342ef0dfff392df8c988a6360f71c0beade462b1c0dda7b608a29  spikes/s12-session/negctl/g5_merge_window_negctl.py
+563dd5319c4a6ebb6ead4e51db27756789e65c236f94bfd927b9826fce86aabc  spikes/s12-session/negctl/g6_frozen_anchor_negctl.py
+ceff1d292bf40e1d92f66bf8be7aa6bd2e9f29b27116385b864e8b257bde9454  spikes/s12-session/negctl/g7_void_failclosed_driver.mjs
+e07ff06a3c0986fea7c7337468d39d456ae45d9a4e469a5ebed7d8a79b5413a7  spikes/s12-session/negctl/g7_void_failclosed_negctl.py
+cb858e52d735df445a0189426ff1089f24abb2af4c4d8c4447af042c584a87ab  spikes/s12-session/negctl/g8_void_ownership_driver.py
+801fb5b2605b45bfc532e9e07a60fff2d09de22593c5e3f3d760204552dd40f2  spikes/s12-session/negctl/g8_void_ownership_negctl.py
+aaa06d2b4f097cf62d1038340f6097bf0ed1c978afb85e09cf974e78f709bfec  spikes/s12-session/run-session.mjs
+c2ca62d0b4169f1e5ee855f2561ac78409a41fd16c754266f2031cbf83eecf43  spikes/s12-session/scripts/ac-m3-1b-check.py
+e2787bf91b44d007fcb7cf935fbb1834f9d2ed7eb5bb88cb2e17e3d2058c458c  spikes/s12-session/scripts/apply-content.py
+eb0d786362b7ccc1b8f88119f93416ee5c83772b7d07f99c4f4ca6ce52af4469  spikes/s12-session/scripts/build-change-face-r2.py
+bc811668426a5b67dfcbf65d54a767f2713a9d1ea4089153911b763e2040576f  spikes/s12-session/scripts/f3-budget-downgrade.mjs
+56a76e7260fb4bd70e4bbac710aeba98c19d319a2f70833d32cd176188ee009a  spikes/s12-session/scripts/finalize.py
+188bdf4ff6bae48df46004d3429b9ef826635e506721b5e5f9397702d8d65aa5  spikes/s12-session/scripts/p8-freeze-recheck.py
+d161050abf26297c9ae5bde9407ee56aa449f2e07d81882f7684ae5b99f37701  spikes/s12-session/scripts/record-check.mjs
+14b598512f459bb7c237ba547aaf3bbe769950d54891af1ff8896ea920a1be9a  spikes/s12-session/scripts/refresh-pin-digests.py
+047999076e8bfa92429ddebadbf0e58d7419cbe9a7279013edb1a7b8c57e6f18  spikes/s12-session/scripts/register-manifest.py
+bdfa7ed807844a7dfcffb65144caceaadba8078327bcf76a805a36f8ac9bf967  spikes/s12-session/scripts/retake-v0-m3.py
+cd5e896841af354ce83b8c17012f937716b1b736ad13fde743db80fe6120873d  spikes/s12-session/zero-residue.mjs
+9f1365bfc93128e43ef4776d9b3f3423df14bd418aa72d18bcc68177f75a3b15  spikes/s13-render/browser-accept.mjs
+083773ad5b0978d8084c02ab071d6f75a3091cc284be11f14a71310c883757c4  spikes/s13-render/logs/f5-r4-negctl-summary-red.json
+6269abccbe152ba44911ede836f6f97f7cb7c6f45c1e147a3a642b97d426bfcc  spikes/s13-render/logs/r4-diff-review.log
+60429e0a701a525df1aee55fbc589d3befcdec4918b5ec1b7369f691d9a5e639  spikes/s13-render/logs/r4-f4-run.log
+eb63acf205ddc30f56844e82e575c5fecf4e6d5c5a5349c3dacd44088301f2fa  spikes/s13-render/logs/r4-green-after-widening.log
+fd730e56641517320e2067cf8ba92def910e8a77d181c6482ca7a97a998ecfd1  spikes/s13-render/logs/r4-red-before-widening.log
+3a5fe10b2963d157dbc50de515046f8280007fdf4c7cf06027c322d50d3b85ae  spikes/s13-render/negctl/f1_scene_assert_negctl.py
+ea9666d7085551f7fc7c09fa3f70ae035c732921559a73c9a368c02f6bb493d1  spikes/s13-render/negctl/f4_browser_negctl.py
+74c39bdf8cd5ca7f475240970245729c013c22e30b2e547f0eecffc88508819d  spikes/s13-render/negctl/f5_r4_judgement_negctl.py
+fc0b8d965b4f6cc4101c2ec4a74e2e181b1e02427d15db40fac056fe7dfc7bb9  spikes/s13-render/negctl/f6_r5_structure_negctl.py
+516e36fa2719d9e8acb9efb6befe3252eeec2c2fb76813739dd05cc53ca15c6a  spikes/s13-render/negctl/negctl_lib.py
+6fdb9f86c23d078cb20fa078589640c6119209b7f0a0e16a2db5a110a45d3a1e  spikes/s13-render/serve.mjs

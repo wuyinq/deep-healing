@@ -16,6 +16,9 @@
 #  11) round 3 新增：许可枚举一致性（asset.license.table.json ↔ asset.manifest.schema.json）
 #  12) round 3 · 修复迭代 2 新增：能力清单的**真** JSON-Schema 校验 + 自证反例
 #      （tools/validate_capability_schema.py，引擎 = jsonschema 库；G3 / Raven N-3）
+#  13) R2 新增：标定 registry 零绝对路径（P-9 / 3A-C3）—— 相对路径 + 运行时解析
+#  14) R3 新增：三份冻结物的内容锚（工具内锚 == 盘上实算 == registry 登记）—— G6 / Raven R2-M2
+#  15) R3 新增：几何判据必须经**应用装配路径**取数（createScene/geometryFor/setReading/assemblyReport）—— G2④
 #
 # 退出码：0 全通过；1 有失败项；2 用法/环境错误。
 # 用法：bash verify_specs.sh [--quiet]
@@ -53,6 +56,7 @@ for tool in jq python3; do
 done
 
 PACK_DIR="v0_skeleton/districts/xingfu-xiaoqu"
+PACK_DIR_2="v0_skeleton/districts/xingfu-xiaoqu-north"
 ASSET_SAMPLE="v0_skeleton/assets-sample"
 
 # ---------- 1) 必需文件 ----------
@@ -169,7 +173,7 @@ if [ -s manifest.txt ]; then
       EXCLUDED=$((EXCLUDED + 1))
       continue
     fi
-    if ! grep -q -F "$rel | " manifest.txt; then
+    if ! awk -v p="$rel" 'index($0, p " | ")==1 {found=1} END{exit !found}' manifest.txt; then
       bad "manifest.txt does not cover file: $rel"
       MISSING=$((MISSING + 1))
     fi
@@ -278,6 +282,82 @@ else
   bad "pack.sig verification failed for $PACK_DIR"
 fi
 
+# ---------- 7b) 第二街区**必须**进门禁（M3 / 3A-M2 / AC-M3-1d） ----------
+# 理由（Raven 预审 M2）：`xingfu-xiaoqu-north` 原先不被任何门禁或测试加载 ⇒
+# pack#2 缺 `worldview.json`、或 `pack.sig` 未重签、或 `pack.json` 未登记 `worldview`，门禁**照样全绿**。
+if python3 v0_skeleton/tools/verify_pack.py "$PACK_DIR_2"; then
+  ok "pack.sig verified for $PACK_DIR_2 (second district is gated)"
+else
+  bad "pack.sig verification failed for $PACK_DIR_2"
+fi
+if PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=v0_skeleton/kernel python3 -m deephealing_kernel validate --pack "$PACK_DIR_2" >/dev/null 2>&1; then
+  ok "kernel validate --pack $PACK_DIR_2"
+else
+  bad "kernel validate failed for $PACK_DIR_2"
+fi
+if PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=v0_skeleton/kernel python3 -m deephealing_kernel validate --pack "$PACK_DIR" >/dev/null 2>&1; then
+  ok "kernel validate --pack $PACK_DIR"
+else
+  bad "kernel validate failed for $PACK_DIR"
+fi
+
+# ---------- 7c) 世界观契约（M3 / ADR-016 / AC-M3-8①） ----------
+# 两个 pack **各自**必须有 `worldview.json`，且真过 `worldview.schema.json`（引擎 jsonschema）。
+WORLDVIEW_MISSING=0
+for pack in "$PACK_DIR" "$PACK_DIR_2"; do
+  if [ ! -s "$pack/worldview.json" ]; then
+    bad "worldview.json missing for $pack (ADR-016 要求每个 pack 都携带)"
+    WORLDVIEW_MISSING=$((WORLDVIEW_MISSING + 1))
+    continue
+  fi
+  if python3 v0_skeleton/tools/schema_validate.py worldview.schema.json "$pack/worldview.json" >/dev/null 2>&1; then
+    ok "worldview.schema.json validated: $pack/worldview.json"
+  else
+    bad "worldview.json fails worldview.schema.json: $pack/worldview.json"
+  fi
+  registered=$(jq -r '.entrypoints.worldview // ""' "$pack/pack.json")
+  if [ "$registered" = "worldview.json" ]; then
+    ok "pack.entrypoints.worldview registered: $pack"
+  else
+    bad "pack.entrypoints.worldview not registered (got '$registered'): $pack"
+  fi
+  # 数值纪律：深层态**不升饱和**；禁止形容词字段由 schema 的 additionalProperties:false 守
+  if jq -e '(.tone.underneath.saturation_pct <= .tone.surface.saturation_pct)
+            and (.tone.surface.saturation_pct <= 45)
+            and (.tone.underneath.light_k < .tone.surface.light_k)' "$pack/worldview.json" >/dev/null 2>&1; then
+    ok "worldview two-reading numerics hold: $pack"
+  else
+    bad "worldview two-reading numerics violated (underneath must be same palette, lower luminance): $pack"
+  fi
+done
+if [ "$WORLDVIEW_MISSING" -eq 0 ]; then ok "every pack carries worldview.json"; fi
+
+# ---------- 7d) narrative_hooks 拆两面（M3 / ADR-016 / AC-M3-8②） ----------
+# **加字段不删字段**：旧 `narrative_hooks` 必须在；新增两面必须非空。
+NPC_FACE_BAD=0
+NPC_FACE_TOTAL=0
+while IFS= read -r npc; do
+  NPC_FACE_TOTAL=$((NPC_FACE_TOTAL + 1))
+  if ! jq -e '(.narrative_hooks | type == "array" and length >= 1)
+              and (.healing_face | type == "array" and length >= 1)
+              and (.hidden_face | type == "array" and length >= 1)' "$npc" >/dev/null 2>&1; then
+    bad "npc missing narrative_hooks / healing_face / hidden_face: $npc"
+    NPC_FACE_BAD=$((NPC_FACE_BAD + 1))
+  fi
+done < <(/usr/bin/find v0_skeleton/districts -path '*/npcs/*.json' -type f | sort)
+if [ "$NPC_FACE_BAD" -eq 0 ] && [ "$NPC_FACE_TOTAL" -ge 10 ]; then
+  ok "every NPC carries narrative_hooks + healing_face + hidden_face ($NPC_FACE_TOTAL npcs)"
+fi
+
+# ---------- 7e) 构建/依赖产物零残渣（M3 / 3A-M3 / AC-M3-1e） ----------
+# 理由：`GENERATED_PATTERNS` 把 `*/dist/*`、`*/node_modules/*` 排除在覆盖比对之外 ⇒ 残渣天然不可见。
+RESIDUE=$(/usr/bin/find . \( -name node_modules -o -name dist -o -name .build \) | wc -l | tr -d ' ')
+if [ "$RESIDUE" -eq 0 ]; then
+  ok "no node_modules / dist / .build residue under 02_source"
+else
+  bad "build/dependency residue found under 02_source (count=$RESIDUE)"
+fi
+
 # ---------- 8) 美学数值校验 ----------
 if python3 v0_skeleton/tools/aesthetic_check.py "$PACK_DIR/assets/manifest.json"; then
   ok "aesthetic constraints satisfied"
@@ -329,6 +409,101 @@ if [ "$TABLE_DATA_ENUM" = "$SCHEMA_ENUM" ] && [ "$TABLE_SCHEMA_ENUM" = "$SCHEMA_
   ok "license enum identical across asset.license.table.data.json / asset.license.table.json / asset.manifest.schema.json"
 else
   bad "license enum mismatch: data=$TABLE_DATA_ENUM table_schema=$TABLE_SCHEMA_ENUM manifest_schema=$SCHEMA_ENUM"
+fi
+
+# ---------- 12) 标定 registry 零绝对路径（R2 / P-9 / 3A-C3） ----------
+# 理由：registry 登记的是**本工作区内**的三份冻结物。写绝对路径会把「某台机器的检出位置」
+# 烙进交付产物 —— 换机 / 克隆后 `path` 立即失效，且泄漏本地目录结构。
+# 判据：① 所有 `path` 字段都不是绝对路径；② 每条都能**相对 registry 目录**解析到真实文件。
+REGISTRY_FILE="$HERE/../spikes/s5-latency-calibration/calibration.registry.json"
+if [ ! -f "$REGISTRY_FILE" ]; then
+  bad "calibration registry missing: $REGISTRY_FILE"
+else
+  REG_TOTAL=$(jq -r '[.. | objects | select(has("path")) | .path] | length' "$REGISTRY_FILE" 2>/dev/null || printf '0')
+  REG_ABS=$(jq -r '[.. | objects | select(has("path")) | .path | select(startswith("/"))] | length' "$REGISTRY_FILE" 2>/dev/null || printf '1')
+  REG_UNRESOLVED=0
+  while IFS= read -r reg_path; do
+    [ -z "$reg_path" ] && continue
+    case "$reg_path" in
+      /*) REG_UNRESOLVED=$((REG_UNRESOLVED + 1)) ;;
+      *) if [ ! -f "$(dirname "$REGISTRY_FILE")/$reg_path" ]; then REG_UNRESOLVED=$((REG_UNRESOLVED + 1)); fi ;;
+    esac
+  done < <(jq -r '.. | objects | select(has("path")) | .path' "$REGISTRY_FILE" 2>/dev/null)
+  if [ "${REG_ABS:-1}" = "0" ] && [ "${REG_TOTAL:-0}" -ge 3 ] && [ "$REG_UNRESOLVED" -eq 0 ]; then
+    ok "calibration registry: 0 absolute paths, $REG_TOTAL relative paths all resolvable"
+  else
+    bad "calibration registry path format (absolute=$REG_ABS total=$REG_TOTAL unresolved=$REG_UNRESOLVED)"
+  fi
+fi
+
+# ---------- 12b) 三份冻结物的内容锚：工具内锚 == 盘上实算 == registry 登记（R3 / G6） ----------
+# 理由（Raven r2 R2-M2）：`registry` 登记三份冻结物的 sha256，但 `ENVIRONMENT-CLASS.frozen.md`
+# 此前**没有**硬编码锚 ⇒ 篡改它后跑**普通** `registry` 会静默把新摘要写进 registry（exit 0）。
+# 判据：① 工具内三条锚 == 盘上文件实算；② registry 里登记的三条 sha256 == 盘上实算。
+sha256_of() {
+  if command -v shasum >/dev/null 2>&1; then shasum -a 256 "$1" | awk '{print $1}'
+  elif command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | awk '{print $1}'
+  else printf ''
+  fi
+}
+ANCHOR_TOOL="v0_skeleton/kernel/tools/calibrate_latency.py"
+if [ ! -f "$ANCHOR_TOOL" ]; then
+  bad "calibration anchor tool missing: $ANCHOR_TOOL"
+else
+  S5_DIR="$(cd "$(dirname "$REGISTRY_FILE")" && pwd)"
+  ANCHOR_MISMATCH=0
+  REG_MISMATCH=0
+  for pair in "FROZEN_RULE_SHA256:DERIVATION-RULE.frozen.md:frozen_rule" \
+              "FROZEN_RANGE_SHA256:ACCEPTED-DEGRADATION-RANGE.frozen.md:accepted_degradation_range" \
+              "FROZEN_ENVCLASS_SHA256:ENVIRONMENT-CLASS.frozen.md:environment_class_rule"; do
+    ANCHOR_NAME="${pair%%:*}"
+    REST="${pair#*:}"
+    FILE_NAME="${REST%%:*}"
+    REG_KEY="${REST#*:}"
+    TOOL_SHA=$(awk -F'"' -v n="$ANCHOR_NAME" '$0 ~ ("^" n " = ") {print $2; exit}' "$ANCHOR_TOOL")
+    DISK_SHA=$(sha256_of "$S5_DIR/$FILE_NAME")
+    REG_SHA=$(jq -r --arg k "$REG_KEY" '.[$k].sha256' "$REGISTRY_FILE" 2>/dev/null || printf '')
+    if [ -z "$TOOL_SHA" ] || [ "$TOOL_SHA" != "$DISK_SHA" ]; then ANCHOR_MISMATCH=$((ANCHOR_MISMATCH + 1)); fi
+    if [ -z "$REG_SHA" ] || [ "$REG_SHA" != "$DISK_SHA" ]; then REG_MISMATCH=$((REG_MISMATCH + 1)); fi
+  done
+  if [ "$ANCHOR_MISMATCH" -eq 0 ] && [ "$REG_MISMATCH" -eq 0 ]; then
+    ok "calibration frozen anchors: 3/3 (tool anchor == on-disk sha256 == registry entry)"
+  else
+    bad "calibration frozen anchors (tool!=disk:$ANCHOR_MISMATCH registry!=disk:$REG_MISMATCH)"
+  fi
+fi
+
+# ---------- 12c) 几何判据必须经**应用装配路径**取数（R3 / G2④） ----------
+# 理由（Raven r2 R2-C1）：判据此前只打自由函数 `buildEntityBoxes/geometryReport`，从不经过
+# `createScene()` 的 `setReading/geometryFor/assemblyReport` ⇒ 装配路径上的 D-7 违规无判据。
+SCENE_ASSERT="v0_skeleton/web/scripts/scene_assert.mjs"
+if [ ! -f "$SCENE_ASSERT" ]; then
+  bad "scene_assert missing: $SCENE_ASSERT"
+else
+  SA_CREATE=$(grep -c 'createScene' "$SCENE_ASSERT" || true)
+  SA_GEOMFOR=$(grep -c 'geometryFor' "$SCENE_ASSERT" || true)
+  SA_SETREAD=$(grep -c 'setReading' "$SCENE_ASSERT" || true)
+  SA_ASM=$(grep -c 'assemblyReport' "$SCENE_ASSERT" || true)
+  if [ "${SA_CREATE:-0}" -ge 1 ] && [ "${SA_GEOMFOR:-0}" -ge 1 ] && [ "${SA_SETREAD:-0}" -ge 1 ] && [ "${SA_ASM:-0}" -ge 1 ]; then
+    ok "scene_assert drives the application assembly path (createScene=$SA_CREATE geometryFor=$SA_GEOMFOR setReading=$SA_SETREAD assemblyReport=$SA_ASM)"
+  else
+    bad "scene_assert does not reference the assembly path (createScene=$SA_CREATE geometryFor=$SA_GEOMFOR setReading=$SA_SETREAD assemblyReport=$SA_ASM)"
+  fi
+fi
+
+# ---------- 13) IP 边界扫描（R2 / F12） ----------
+# 理由（Raven M3 观察）：R1 的 IP 探针只活在 `/tmp`，交付树里**没有判据载体** ——
+# 唯一命中是 schema `$comment` 的**自命中**（那条 $comment 自己逐字列了 IP 禁令词）。
+# 现在：扫描器 + 白名单（逐条给理由）进交付树，并用 `--probe` 自证**命中能力**。
+if python3 v0_skeleton/tools/scan_ip_boundary.py --root . >/dev/null; then
+  ok "IP boundary scan clean (0 unwhitelisted hits)"
+else
+  bad "IP boundary scan found unwhitelisted hits"
+fi
+if python3 v0_skeleton/tools/scan_ip_boundary.py --root . --probe >/dev/null; then
+  ok "IP boundary scanner self-proof holds (probe detected + removal restores baseline)"
+else
+  bad "IP boundary scanner self-proof failed (scanner may be a zero-hit green command)"
 fi
 
 # ---------- 汇总 ----------

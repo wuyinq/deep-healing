@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import shutil
 from pathlib import Path
@@ -198,6 +199,76 @@ def test_pinned_version_actually_served_by_invoke(tmp_path):
                                                 "observations": [], "existing_relations": {}})
     assert result.ok
     assert seen == ["1.0.0"], seen
+
+
+# --------------------------------------------------------------------------- R2 收口：pin 的内容摘要绑定
+def test_pin_content_digest_binding_rejects_byte_tamper(tmp_path):
+    """**R2 / R-M2-1 收口（F6）**：pin 必须绑定**内容摘要** —— 钉住某版本后改其文件字节 ⇒ 解析必须拒。
+
+    三条都要真跑：
+      ① 基线：摘要与盘上文件一致 ⇒ 零错误、解析正常；
+      ② 负例 A：改**文件字节**（追加一个换行 —— 解析后的 JSON 语义不变）⇒ `validate()` 报
+         `E_CAP_DIGEST_MISMATCH` 且 `capability()` 拒；
+      ③ 负例 B：**删掉** `digests` 条目（未声明摘要）⇒ 同样必须拒（不得当成通过）；
+      ④ 阳性对照：把声明改成篡改后的真实摘要 ⇒ 必须重新绿（证明判据不是「恒红」）。
+    """
+    caps = _isolated_caps(tmp_path)
+    registry = _registry(caps)
+    assert registry.validate() == [], "基线：pins.json 的 digests 必须与盘上产物逐字节一致"
+    assert registry.capability("relation.infer")["version"] == "1.0.0"
+
+    target = caps / "relation.infer@1.0.0.capability.json"
+    original_bytes = target.read_bytes()
+    target.write_bytes(original_bytes + b"\n")
+    tampered = _registry(caps)
+    errors = tampered.validate()
+    assert any(item.startswith("E_CAP_DIGEST_MISMATCH") for item in errors), errors
+    with pytest.raises(Exception) as caught:
+        tampered.capability("relation.infer")
+    assert "E_CAP_DIGEST_MISMATCH" in str(caught.value), str(caught.value)
+
+    # ③ 未声明摘要 ⇒ 同样拒
+    caps2 = _isolated_caps(tmp_path / "caps2")
+    pins2 = caps2 / "pins.json"
+    document2 = json.loads(pins2.read_text(encoding="utf-8"))
+    document2["digests"].pop("relation.infer@1.0.0")
+    pins2.write_text(json.dumps(document2, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    errors2 = _registry(caps2).validate()
+    assert any(item.startswith("E_CAP_DIGEST_MISMATCH") for item in errors2), errors2
+
+    # ④ 阳性对照：按篡改后的真实摘要重新声明 ⇒ 必须重新绿
+    caps3 = _isolated_caps(tmp_path / "caps3")
+    target3 = caps3 / "relation.infer@1.0.0.capability.json"
+    target3.write_bytes(target3.read_bytes() + b"\n")
+    pins3 = caps3 / "pins.json"
+    document3 = json.loads(pins3.read_text(encoding="utf-8"))
+    document3["digests"]["relation.infer@1.0.0"] = hashlib.sha256(target3.read_bytes()).hexdigest()
+    pins3.write_text(json.dumps(document3, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    assert _registry(caps3).validate() == []
+
+
+def test_pin_digest_is_rechecked_at_resolution_time(tmp_path):
+    """解析出口**再校验**：`validate()` 之后、使用之前被改字节 ⇒ `capability()` 仍必须拒。"""
+    caps = _isolated_caps(tmp_path)
+    registry = _registry(caps)
+    assert registry.validate() == [], "先通过校验"
+    target = caps / "embed.text@1.0.0.capability.json"
+    target.write_bytes(target.read_bytes() + b"\n")   # 校验之后才被改
+    with pytest.raises(Exception) as caught:
+        registry.capability("embed.text")
+    assert "E_CAP_DIGEST_MISMATCH" in str(caught.value), str(caught.value)
+
+
+def test_pin_digests_cover_every_pin_and_match_shasum(tmp_path):
+    """盘上 `pins.json` 的 `digests` 必须**覆盖每一条 pin**，且与 `shasum -a 256` 逐字一致。"""
+    pins = json.loads((CAPS_DIR / "pins.json").read_text(encoding="utf-8"))
+    digests = pins["digests"]
+    for capability_id, version in sorted(pins["pins"].items()):
+        key = f"{capability_id}@{version}"
+        assert key in digests, f"pins.json 缺少 {key} 的内容摘要声明"
+        actual = hashlib.sha256((CAPS_DIR / f"{key}.capability.json").read_bytes()).hexdigest()
+        assert digests[key] == actual, f"{key} 声明摘要与盘上文件不一致"
+    assert _registry(_isolated_caps(tmp_path)).validate() == []
 
 
 if __name__ == "__main__":  # pragma: no cover

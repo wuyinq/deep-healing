@@ -1,0 +1,13 @@
+# R4 / F5 negative controls — label=green
+# neg_root=/tmp/r4-artisan
+# summary=/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-005-deephealing-v0-m3/spikes/s13-render/logs/f5-r4-negctl-summary.json
+[r4_pristine] verdict=judged_green exit=0 PASS=29 FAIL=0 fail_names=[] camera_judgement=True delivery_face_unchanged=True ok=True
+[r4_neg_mesh_scale] verdict=judged_red exit=1 PASS=28 FAIL=1 fail_names=['two_reads_share_rendered_geometry'] camera_judgement=True delivery_face_unchanged=True ok=True
+[r4_neg_mesh_rotation] verdict=judged_red exit=1 PASS=28 FAIL=1 fail_names=['two_reads_share_rendered_geometry'] camera_judgement=True delivery_face_unchanged=True ok=True
+[r4_neg_camera_switch] verdict=judged_red exit=1 PASS=28 FAIL=1 fail_names=['two_reads_share_camera'] camera_judgement=True delivery_face_unchanged=True ok=True
+[r4_ctl_position_shift] verdict=judged_red exit=1 PASS=28 FAIL=1 fail_names=['two_reads_share_rendered_geometry'] camera_judgement=True delivery_face_unchanged=True ok=True
+# turned_red=['r4_ctl_position_shift', 'r4_neg_camera_switch', 'r4_neg_mesh_rotation', 'r4_neg_mesh_scale']
+# crashes=[]
+# escapes(expect red but judged green)=[]
+# all_delivery_face_unchanged=True
+# all_ok=True

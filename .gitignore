@@ -5,3 +5,9 @@ __pycache__/
 
 # 运行产物（内核 run/verify 的输出目录）
 v0/out/
+
+# Node（M3 起）：依赖提升在 <工作区根>/node_modules，不进交付面
+# （AC-M3-1e 要求 02_source 内零 node_modules / 零 dist / 零 .build）
+node_modules/
+v0/02_source/v0_skeleton/web/dist/
+v0/02_source/v0_skeleton/web/.build/

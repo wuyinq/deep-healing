@@ -10,7 +10,8 @@
 
 **拒绝码（逐类给 reason code，AC-M2-2 负例）**：
   `E_CAP_SCHEMA` / `E_CAP_UNREGISTERED` / `E_CAP_VERSION_CONFLICT` /
-  `E_CAP_DUPLICATE_ID` / `E_CAP_PROVIDER_UNRESOLVED`。
+  `E_CAP_DUPLICATE_ID` / `E_CAP_PROVIDER_UNRESOLVED` / `E_CAP_SLOT_CONFLICT` /
+  `E_CAP_DIGEST_MISMATCH`（pin 与内容摘要不一致 / 未声明摘要）。
 
 **确定性边界（设计 §3.4b）**：本模块**不写世界状态**、不碰 tick 阶段、不用 wall-clock
 参与任何决策；路由与降级链全部是**显式排序 + 数据驱动**的（`sorted()` / `priority` 升序 /
@@ -19,6 +20,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import importlib
 import json
 from dataclasses import dataclass, field
@@ -45,9 +47,24 @@ REASON_DUPLICATE_ID = "E_CAP_DUPLICATE_ID"
 REASON_PROVIDER_UNRESOLVED = "E_CAP_PROVIDER_UNRESOLVED"
 # **修-5（R2-M1，收口轮）**：同一 slot 被多个不同 id 声明 ⇒ fail-closed（防 pins 语义被第三维度旁路）。
 REASON_SLOT_CONFLICT = "E_CAP_SLOT_CONFLICT"
+# **R2 / R-M2-1 收口**：pin 必须绑定**内容摘要**（pins.json 的 `digests`）——
+# 「回滚到这一份产物」的语义只有在「钉住的版本的文件字节没被改」时才成立。
+REASON_DIGEST_MISMATCH = "E_CAP_DIGEST_MISMATCH"
 
 SOURCE_ROOT = Path(__file__).resolve().parents[3]          # <02_source>
 CAPABILITY_SCHEMA = SOURCE_ROOT / "capability.schema.json"
+
+
+def file_digest(path: Path) -> str:
+    """能力产物的**内容摘要** = 文件字节的 sha256。
+
+    为什么是字节级而不是「解析后的 canonical JSON」（R-M2-1 收口口径）：
+      - pin 的语义是「回滚到**这一份**产物」，判据必须能被独立复跑的人用
+        `shasum -a 256 <file>` 逐字复核；
+      - canonical JSON 对格式/空白不敏感 ⇒ 「钉住版本的文件字节被改」这类篡改会被放过
+        （正是任务书 F6 的负例形态：「钉住某版本后改其文件字节 ⇒ 解析必须拒」）。
+    """
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 class CapabilityError(Exception):
@@ -101,6 +118,10 @@ class CapabilityRegistry:
         self._files: dict[str, _Capability] = {}
         # pins.json 解析缓存（validate() 时刷新；修-1：pin 参与 capability 解析）
         self._pins: dict[str, str] = self._load_pins()
+        # pin 的**内容摘要**绑定（R2 / R-M2-1 收口）：`{"<id>@<version>": sha256(file bytes)}`
+        self._pin_digests: dict[str, str] = self._load_pin_digests()
+        # 摘要绑定失败的 pin（非空 ⇒ `capability()` 对该 slot fail-closed）
+        self._digest_rejections: dict[str, dict] = {}
         # slot 冲突登记（validate() 时刷新；修-5：非空 ⇒ capability()/slots() fail-closed）
         self._slot_conflicts: dict[str, dict[str, str]] = {}
         # 只追加的审计流水（fallback / 降级 / 拒绝），顺序确定 ⇒ 可回放
@@ -190,6 +211,8 @@ class CapabilityRegistry:
                     errors.append(f"{REASON_UNREGISTERED}: {identity} impl shape not allowed: {impl!r}")
 
         pins = self._load_pins()
+        self._pin_digests = self._load_pin_digests()
+        digest_rejections: dict[str, dict] = {}
         for capability_id in sorted(by_id):
             versions = sorted(by_id[capability_id])
             pinned = pins.get(capability_id)
@@ -203,6 +226,14 @@ class CapabilityRegistry:
                     f"{REASON_VERSION_CONFLICT}: {capability_id} has multiple versions {versions} "
                     "and no pins.json entry"
                 )
+            elif pinned is not None:
+                # **R2 / R-M2-1 收口**：pin 必须绑定**内容摘要** —— 「未声明摘要」与
+                # 「摘要不一致」都 fail-closed（钉住后改文件字节必须被拒）。
+                problem = self._digest_problem(capability_id, pinned)
+                if problem is not None:
+                    errors.append(problem)
+                    digest_rejections[capability_id] = {"version": pinned, "problem": problem}
+        self._digest_rejections = digest_rejections
 
         # **修-5（R2-M1，收口轮）**：同一 `slot` 被多个**不同** `id` 声明 ⇒ fail-closed。
         # 机制（Raven 实证）：`_resolve_by_slot` 按 `id` 聚合版本、pin 按 `id` 查找，
@@ -256,6 +287,13 @@ class CapabilityRegistry:
             versions = by_id[capability_id]
             pinned = str(pins.get(capability_id)) if capability_id in pins else None
             if pinned is not None and pinned in versions:
+                # **R2 / R-M2-1 收口**：摘要绑定不成立 ⇒ 该能力**不装载**（fail-closed，
+                # 绝不静默返回一份未通过内容校验的产物）。
+                problem = self._digest_problem(capability_id, pinned)
+                if problem is not None:
+                    self._digest_rejections.setdefault(capability_id,
+                                                        {"version": pinned, "problem": problem})
+                    continue
                 document = versions[pinned]
             elif len(versions) == 1:
                 document = next(iter(versions.values()))
@@ -276,6 +314,48 @@ class CapabilityRegistry:
             return {}
         pins = document.get("pins")
         return {str(key): str(value) for key, value in pins.items()} if isinstance(pins, dict) else {}
+
+    def _load_pin_digests(self) -> dict[str, str]:
+        """读 `pins.json` 的 `digests`（`{"<id>@<version>": "<sha256 of file bytes>"}`）。
+
+        R2 / R-M2-1 收口：pin 只做「存在性校验」不够 —— 必须把「钉住的那一份产物」的
+        内容摘要一并声明并在解析时校验，否则「钉住后改文件字节」不会被发现。
+        """
+        if self._pins_path is None or not self._pins_path.is_file():
+            return {}
+        try:
+            document = json.loads(self._pins_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return {}
+        digests = document.get("digests")
+        return {str(key): str(value) for key, value in digests.items()} if isinstance(digests, dict) else {}
+
+    def _file_for(self, capability_id: str, version: str) -> _Capability | None:
+        key = f"{capability_id}@{version}"
+        for item in self._files.values():
+            if item.key == key:
+                return item
+        return None
+
+    def _digest_problem(self, capability_id: str, version: str) -> str | None:
+        """返回该 pin 的摘要问题描述（None = 绑定成立）。
+
+        两类问题都算 fail-closed：
+          ① pins.json **未声明**该 pin 的内容摘要（无从校验 ⇒ 不得当成通过）；
+          ② 声明的摘要与盘上文件字节的 sha256 不一致（钉住的产物被改）。
+        """
+        item = self._file_for(capability_id, version)
+        if item is None:
+            return None
+        declared = self._pin_digests.get(f"{capability_id}@{version}")
+        actual = file_digest(item.path)
+        if declared is None:
+            return (f"{REASON_DIGEST_MISMATCH}: pins.json pins {capability_id}@{version} but declares no "
+                    f"content digest for it (digests[{capability_id}@{version}] is mandatory; actual={actual})")
+        if declared != actual:
+            return (f"{REASON_DIGEST_MISMATCH}: {capability_id}@{version} content digest declared={declared} "
+                    f"actual={actual} (file: {item.path})")
+        return None
 
     # ------------------------------------------------------------------ 适配器
     def register_adapter(self, provider_class: str, adapter: ProviderAdapter) -> None:
@@ -324,6 +404,12 @@ class CapabilityRegistry:
             if not self._files:
                 self.discover()
             if self.validate():
+                if self._digest_rejections:
+                    detail = "; ".join(f"{cid}@{info['version']}" for cid, info in
+                                       sorted(self._digest_rejections.items()))
+                    raise CapabilityError(
+                        REASON_DIGEST_MISMATCH,
+                        f"capability resolution blocked by pin content-digest mismatch: {detail}")
                 # 校验失败即 fail-closed（不静默返回半装载的注册表）
                 raise CapabilityError(REASON_SCHEMA, f"capability validation failed for slot {slot!r}")
         if self._slot_conflicts:
@@ -339,6 +425,15 @@ class CapabilityRegistry:
         document = self._by_slot.get(slot)
         if document is None:
             raise CapabilityError(REASON_PROVIDER_UNRESOLVED, f"unknown capability slot {slot!r}")
+        # **R2 / R-M2-1 收口**：解析出口**再校验一次** pin 的内容摘要 —— 覆盖
+        # 「validate() 之后、使用之前被改字节」的窗口（「钉住后改文件字节 ⇒ 解析必须拒」）。
+        capability_id = str(document.get("id"))
+        pinned = self._pins.get(capability_id)
+        if pinned is not None:
+            problem = self._digest_problem(capability_id, pinned)
+            if problem is not None:
+                self._digest_rejections.setdefault(capability_id, {"version": pinned, "problem": problem})
+                raise CapabilityError(REASON_DIGEST_MISMATCH, problem)
         return document
 
     # ------------------------------------------------------------------ 调用
