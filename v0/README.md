@@ -1,4 +1,4 @@
-# v0 —— DeepHealing V0 垂直切片（里程碑 M1 + M2 + M3 + M4）
+# v0 —— DeepHealing V0 垂直切片（里程碑 M1 + M2 + M3 + M4 + M5.1 + M5.2）
 
 本目录是 V0 的**可验证交付单元**。里程碑在**同一棵树上继续生长**（不另起目录）。
 
@@ -6,30 +6,42 @@
 
 ```
 v0/
-  02_source/                      产品源（规格 + 骨架代码，150 文件）
+  02_source/                      产品源（规格 + 骨架代码，**200 文件**）
     *.schema.json / *.spec.md     冻结契约（M3 新增 worldview.schema.json）
-    07_adr.md                     架构决策记录：冻结 12 条 ADR 逐字 + ADR-13/14/15（M2）+ M3 新增
+    07_adr.md                     架构决策记录：冻结 12 条 ADR 逐字 + ADR-13/14/15（M2）+ M3 新增 + ADR-018/019/020（M5.2）
     verify_specs.sh               契约与交付面自校验（自定位，可在任意路径运行）
     manifest.txt                  02_source 下每个文件的清单（覆盖检查的判据）
+    fidelity/                     **M5.1 新增**：原著保真六册（出处表）+ `tools/`（fidelity_lint / redline_scan / extract_facts）
     v0_skeleton/
       kernel/                     确定性内核 + 能力注册表 + 四类 provider + 规则层 + 预算 + 记忆层 + 任务演进
       districts/xingfu-xiaoqu/    幸福小区内容包（M3 新增 worldview.json：治愈内核 + 悬疑外壳两态）
       districts/xingfu-xiaoqu-north/   第二街区（M2 新增：纯数据驱动，零内核改动）
+      districts/xingfu-xiaoqu-xuqin/  **M5.2 新增**：徐琴提案包（独立 `pack_id`，**未并入主包**）
       capabilities/               原子能力声明（含 relation.infer@1.0.0）
-      tools/                      校验与标定工具
+      tools/                      校验与标定工具（M5.2 新增行为多样性判据 / 对照场景 / 探针族）
       session/                    L2 会话传输层（M3：双模式权限 / 增量同步 / 意图上行；Node）
       web/                        L1 渲染层（M3：three.js，只消费快照，零业务逻辑）
       assets-sample/
+  refs/original-source/           **M5.1 新增**：L1 官方元数据锚点（章号/标题/URL/首发时间/字数/行区间，**不含原著正文**）
+  docs/                           **M5.1 新增**：架构与契约文档（`architecture/` + `specs/`）
+  fidelity/POINTER.md             **M5.1 新增**：出处表权威落点指针（`02_source/fidelity/`）
   spikes/                         内核测试套件依赖的产物 + 里程碑真跑证据
     kernel-baseline/              内核源码指纹基线（实现前快照）
     s5-latency-calibration/       时间预算标定产物 + 三份冻结物
     s8-registry/ s9-rules/ s10-memory/ s11-pack2/   M2 真跑 spike（仅 V0_M2 冻结面条目）
     s12-session/ s13-render/      M3 真跑 spike（仅 V0_M3 冻结面条目：38 + 12）
+    s14-observability/ s15-autonomy/ s16-liveworld/   M4 真跑 spike（仅 V0_M4 冻结面条目）
+    m52-ac10/ m52-ac6/ m52-contrast/ m52-evidence/ m52-f7/ m52-frozen/ m52-live/
+                                  **M5.2 新增**：判据性读数 + F7 负载证据 + AC-5 截图/录屏/回读（仅 V0_M52 冻结面条目）
   06_v0_m1_self_test.md           M1 逐 AC 判定书（内核测试会读取其中的真实调用计数）
   06_v0_m2_self_test.md           M2 逐 AC 判定书
   06_v0_m3_self_test.md           M3 逐 AC 判定书
-  03_artisan_self_test.log        M1 + M2 + M3 实现自测日志
-  V0_M1.sha256 / V0_M2.sha256 / V0_M3.sha256   各里程碑冻结时刻的交付面清单（**证据**，见下）
+  06_v0_m4_self_test.md           M4 逐 AC 判定书
+  06_v0_m52_self_test.md          **M5.2 逐 AC 判定书**（r1 / r2 / r3 三段 + 更正块）
+  03_artisan_self_test.log        M1~M5.2 实现自测日志
+  V0_M1..M4.sha256               各里程碑冻结时刻的交付面清单（**证据**，见下）；**V0_M4 已按 M5.2 重取**
+  V0_M5.sha256                   M5.1 冻结面（**已按 M5.2 重取**）
+  V0_M52.sha256                  **M5.2 权威冻结面**（落盘按此核验）
   SEED.sha256                     起点溯源（从上一里程碑播种时的聚合哈希）
 ```
 
@@ -38,13 +50,14 @@ v0/
 ```bash
 # 1) 契约与交付面自校验
 cd v0/02_source && bash verify_specs.sh --quiet
-#    期望：verify_specs: OK (130 checks passed, 0 skipped)
+#    期望（M5.2 口径）：工作区 exit 0 / verify_specs: OK (162 checks passed, 0 skipped)；
+#    仓库内 exit 0 / PASS=160 FAIL=0 SKIP=1（唯一 SKIP = 红线 L0 比对，L0 全本不在仓库内，按设计 SKIP 不记 PASS）
 
 # 2) 内核测试套件
 cd v0/02_source/v0_skeleton/kernel
 PYTHONDONTWRITEBYTECODE=1 python3 -m pytest tests/ -q -p no:cacheprovider
-#    期望：151 passed, 0 skipped
-#    （M2 口径的 4 条 skip 已在 M3 变成真断言，不再跳过）
+#    期望（M5.2 口径）：216 passed（PM 实测 216 passed in 1001.59s）；已知 1 条环境抖动用例
+#    （test_live_observation::test_pace_is_identical_with_zero_and_two_observers，墙钟容差）偶发假红
 
 # 3) 会话层 / 渲染层（Node >= 22）
 #    ⚠️ 依赖提升在 <工作区根>/node_modules（D-9）：02_source 内零 node_modules / 零 dist / 零 .build。
@@ -61,7 +74,9 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m deephealing_kernel run \
 PYTHONDONTWRITEBYTECODE=1 python3 -m deephealing_kernel verify \
     --events /tmp/dh/e.jsonl --pack districts/xingfu-xiaoqu \
     --expected-hash "$(tail -1 /tmp/dh/e.jsonl | python3 -c 'import json,sys; print(json.load(sys.stdin)["hash"])')"
-#    期望：exit 0；925 事件 / 6 检查点 / chain_tail baecca92… / state_hash 9a4ae3da…
+#    期望（M5.2 口径，PM 实测）：exit 0；**3116 事件 / 6 检查点 / chain_tail c79003ce…**；
+#    `verify` 带锚点 ⇒ exit 0 / `verify: OK (… event stream matches replay)`、problems = 0
+#    （M1 口径的 925 事件 / chain_tail baecca92… 已随 M5.2 行为改动失效；换口径时须清空 out/** 与事件日志）
 ```
 
 > ⚠️ **`verify` 必须带 `--expected-hash`（链外锚点）。**
@@ -139,6 +154,56 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m deephealing_kernel verify \
 8. **诚实边界（不得在总结里弱化）**：M4 **未经 PM 逐 AC 终验**；`04`/`05` 两份门禁报告覆盖的是
    **修复前**的树（mtime 13:19 / 12:49）；修复后的独立重门禁**在途**；**F7 未清**（见「已知限制」）。
 
+## M5.1 / M5.2 落盘口径（重要，审计用）
+
+> **同一棵树继续生长**：M5.1（原著保真）与 M5.2（人物闭环 + 让世界活起来）都在 M4 的树上继续生长。
+> **M5.2 工作区 = M4 仓库 + M5.1 增量 + M5.2 增量**（M5.1 的 `02_source/**` **179 个文件在 M5.2 树里逐字节相同**，
+> PM 实测 2026-09-24）⇒ **本次一笔提交同时落盘 M5.1 与 M5.2**，不另开 M5.1 提交。
+
+1. **落盘范围 = `V0_M52.sha256`（1605 条）∪ `V0_M5.sha256`（227 条）∪ `V0_M4.sha256`（254 条）**
+   ⇒ 去重后 **1658 条** + 三份清单自身。`V0_M52` 是 M5.2 的**权威面**（设计 M-12）；
+   `V0_M4` / `V0_M5` 因本轮改动落在其采集根内而**重取**。生成器 `V0_M52.gen.py` /
+   `spikes/m52-frozen/retake_m4_m5.py` **不入清单、未随仓库提供**。
+2. **PM 补落 `refs/original-source/**`（7 文件，冻结面未含）**：该目录是 M5.1 门禁
+   （`fidelity_lint` 的 `--index`、`redline_scan` 的来源锚）的**唯一锚点来源**，属 M5.1 设计 D-1 声明的
+   「M5.1 增量」之一，但**不在任何冻结清单内**。缺它时仓库内 `verify_specs.sh` **3 条 FAIL**
+   （fidelity lint ×2 + AC-1 侧单测）。该目录**只含 L1 官方元数据**（章号 / 标题 / 章节 URL / 首发时间 /
+   字数 / 本地行区间），**不含原著正文**。⇒ 落盘时由 PM 补入，**清单不覆盖它**（如实登记）。
+3. **落盘时校验读数（PM 侧，2026-09-24，PM 自跑）**：
+   - `shasum -a 256 -c` 三份清单（工作区与仓库各一次）⇒ **0 非 OK**；
+   - `verify_specs.sh`（**工作区**）⇒ exit 0 / **OK (162 checks passed, 0 skipped)**；
+   - `verify_specs.sh`（**仓库内**）⇒ **PASS=160 FAIL=0 SKIP=1**，唯一 SKIP = `redline scan (l0_verbatim):
+     L0 fulltext missing => SKIP (NOT PASS)` —— `L0_PATH` 按 `$HERE/../../..` 定位（结构耦合），
+     仓库里没有 L0 全本 ⇒ **按设计 fail-closed SKIP，不记 PASS**。**不得**把仓库内的
+     `verify_specs: OK` 读成「红线判据也在仓库里跑过了」；
+   - 全量 pytest（workdir `02_source/v0_skeleton/kernel`）⇒ **exit 0 / 216 passed in 1001.59s**；
+   - 端到端 `run --ticks 30 --memory-chain` ⇒ exit 0、`memory.written = 300`（episodic 150 / working 150）、
+     `fetch_episodes` 读回 **30/NPC**；**不带开关** ⇒ `memory.written = 0`、**339 事件**、`chain_tail 1f826bbb…`（与改前树一致）；
+   - AC-10（仓库原包 + 未改动内核，seed 20260921 / 1440 tick）：**RED** `10-a 96.97% / 10-b 97.54% / 10-d-1 0.76% / 10-d-2 0/5`（全红）
+     → **GREEN** `10-a 30.31% / 10-b 24.42% / 10-c 4 / 10-d-1 32.50% / 10-d-2 2/5`（全绿）；
+     逐 NPC 室外占比 **18.75 / 61.81 / 62.85 / 17.01 / 2.08 %**；阈值**逐字未动**；
+     注入探针（`tools/ac10_probe.py`）两条用例各自命中不同判据、`back_to_baseline=true` ⇒ 判据**有牙**；
+   - AC-4 对照场景四条判据全真（A≡B 逐字节 597 条、首个分歧 tick **90**、`|C−B|=0.0385 > |A−B|=0`、无经历臂无自发治愈）；
+   - AC-5：截图 `desktop-1440x900.png` / `narrow-390x844.png`（PNG 头 + 非空内容复核）、录屏
+     `rec/page@9f24fb2d….webm`（**18.12s / 25fps / 1440x900**，容器元数据直读）；
+   - AC-9：真实仓库开工与收尾 `git status --porcelain` = **0**。
+4. **诚实边界（不得在总结里弱化）**：终态 `overall_status = has_medium_low_risk` —— **CRITICAL 全关**
+   （唯一 CRITICAL 经 Sentinel / Raven 两轮**独立复验**关闭），但仍有 **1 条 MEDIUM**
+   （`run --memory-chain` 的产物**不可**用 `verify` 校验、`replay` 静默不重现；**opt-in 路径**，
+   默认路径与改前逐行一致）与 **9 条 LOW / 2 条 GAP** 未修，逐条带关闭判据。
+   **AC-5「实机可复现」门禁不背书**（Sentinel 只核盘上证据与冻结面归属，未重驱动浏览器）。
+5. **AC-5 美术量级**：呈现层仍是**低多边形占位**（`THREE.BoxGeometry` + 程序化占位资产）
+   ⇒ **盒体占位画面不得作为「写实美术已达成」的证据**；本轮按「可体验占位 demo」交付，
+   「写实美术目标量级」已上抛用户裁决（B-4）。
+6. **M5.1 残余**（R-17 / R-18 / R-19 / R-9 / R-11~R-16、L-9~L-17）按 PM 裁决 m5-11 **只登记不修**；
+   **R-18（12-gram 文件级跨界余量仅 2 字）不得写成「已彻底解决」**。
+7. **待用户裁决（上抛项）**：**B-4**（写实美术目标量级）、**B-9**（C1 让 `cognition` 层长跑退化为只调
+   `emotion.appraise`：只登记 / 标定门限 / 改 C1 强度 —— 与「行为多样性」目标存在取舍）。
+   PM 已自行裁决并登记：**B-1**（徐琴**本轮不并入**主包，保持 AC-10 读数可比，可逆）、
+   **B-2**（M5.1 随 M5.2 一笔落盘）、**B-3**（F7 按更严的 CRITICAL-1 判并已关闭）、
+   **B-10**（落盘核验以 `V0_M52.sha256` 为准）、**B-11**（采纳最小改：文档显式声明 + 消除 `replay` 静默，
+   另立小任务，不阻塞本轮）。
+
 ## 已知限制（如实记录，未粉饰）
 
 1. **标定缓存与位置耦合 —— 已修（M1 后置修复，已随本仓库生效）**：
@@ -182,9 +247,9 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m deephealing_kernel verify \
 
 | 项 | 值 |
 |---|---|
-| 需求书 | `REQ-20260921-003`（M1）、`REQ-20260921-004`（M2）、`REQ-20260921-005`（M3，rev5）、`REQ-20260921-006`（M4，rev2）；上游 `REQ-20260921-002` 架构冻结 |
-| 验收 | **M1**：有条件通过（6 PASS / 1 GAP / 1 分列均 PASS，CRITICAL 0）；**M2**：通过（8/8 AC PASS，CRITICAL 0，残留 FAIL 0）；**M3**：**通过**（逐 AC PASS，**CRITICAL 0**，残留 MEDIUM/LOW/GAP 已逐条登记 M4） |
+| 需求书 | `REQ-20260921-003`（M1）、`REQ-20260921-004`（M2）、`REQ-20260921-005`（M3，rev5）、`REQ-20260921-006`（M4，rev2）、`REQ-20260923-001`（M5.1）、`REQ-20260923-002`（M5.2）；上游 `REQ-20260921-002` 架构冻结 |
+| 验收 | **M1**：有条件通过（6 PASS / 1 GAP / 1 分列均 PASS，CRITICAL 0）；**M2**：通过（8/8 AC PASS，CRITICAL 0，残留 FAIL 0）；**M3**：**通过**（逐 AC PASS，**CRITICAL 0**，残留 MEDIUM/LOW/GAP 已逐条登记 M4）；**M5.1**：通过（`aggregate=accepted`；AC-1/AC-2 以现有证据验收，残余按 PM 裁决 m5-11 只登记不修）；**M5.2**：**PM 独立读盘终验**（逐 AC PASS，**CRITICAL 0**，残留 1 MEDIUM + 9 LOW + 2 GAP 逐条登记） |
 | 冻结计划 | `docs/architecture/04-v0-plan.md`（13 工作包 / 4 里程碑 M1~M4） |
 | 契约副本 | `docs/specs/` 是**架构冻结轮**的契约发布视图（冻结时刻快照，**不随里程碑同步**：M1/M2 均未改，现有 5 份与 `02_source` 已漂移）；**可自校验的源**是 `02_source/` |
-| 落盘提交 | 见本目录所在仓库的提交历史（M1 / M2 / M3 各一笔提交；**M4 为「已落盘、未验收」**，按用户 2026-09-23 政策「实现即提交」落盘，**并已直接推远端** `origin/develop` @ `41d3dd5`） |
+| 落盘提交 | 见本目录所在仓库的提交历史（M1 / M2 / M3 各一笔提交；**M4 为「已落盘、未验收」**，按用户 2026-09-23 政策「实现即提交」落盘，**并已直接推远端** `origin/develop` @ `41d3dd5`；**M5.1 + M5.2 一笔提交** `02f0181`（1477 文件 / +619499 / −207），按同一政策**已直接推远端** `origin/develop`，经 `git ls-remote` 服务器直读复核） |
 | M3 终验 | `dev_team_workspace/REQ-20260921-005-deephealing-v0-m3/08_pm_verdict.md` + `08_pm_verdict_r5.md`（工作区，不随仓库提供） |
