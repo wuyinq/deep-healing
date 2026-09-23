@@ -476,3 +476,20 @@ r2/r3/r4 派单归属备案（R7）、**F7 乒乓 PM 介入：r4 为最后一轮
 ### 22.6 下一步
 
 r4 收口 → **detached 重门禁**（sentinel + raven）→ **PM 逐 AC 终验** → 修复轮（若有）→ 再次提交。
+
+### 22.7 推送登记（PM 侧，2026-09-23）
+
+用户 2026-09-23 指示：「**你的提交可以提交到远端的，不用提交到本地**」⇒ 落盘提交**直接推远端**，
+不再停留在本地。**已执行并回读验证**：
+
+| 项 | 读数 |
+|---|---|
+| 推送命令 | `git push origin develop`（远端 `git@github-wuyinq:wuyinq/deep-healing.git`） |
+| 推送结果 | `a9e3a57..41d3dd5  develop -> develop`，exit 0 |
+| **服务器直读复核** | `git ls-remote origin refs/heads/develop` ⇒ **`41d3dd511f4c243b5892b10229b73705f46a96e5`** |
+| 本地 vs 远端 | **逐位相同**；`git rev-list --left-right --count origin/develop...develop` ⇒ **0/0** |
+| 远端树内容抽查 | `git cat-file -s origin/develop:v0/.../live.py` ⇒ 31138 B；`rules/decision.py` ⇒ 21883 B（均在） |
+| 冻结面同一性 | `git cat-file -p origin/develop:v0/V0_M4.sha256 \| shasum -a 256` ⇒ `0db5a290…7c6418`，与本地**逐字节相同** |
+| 工作树 | `git status --porcelain` **空** |
+
+⇒ 验证方式为**直问服务器**（`ls-remote`），非依赖本地远端跟踪引用，避免「本地以为推上去了」的假绿。

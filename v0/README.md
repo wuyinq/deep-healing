@@ -134,7 +134,9 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m deephealing_kernel verify \
    **不得**为保旧基线留着 `stub_decide`。
 6. **`SEED.sha256` 语义（PM 裁决 R4）**：它是**起点溯源文件**，**不是**活的自校验面。
    `shasum -c` 报失配是**合法 M4 改动的预期结果**，不是缺陷。
-7. **诚实边界（不得在总结里弱化）**：M4 **未经 PM 逐 AC 终验**；`04`/`05` 两份门禁报告覆盖的是
+7. **已推远端**：按用户 2026-09-23 指示「提交到远端，不用只提交到本地」，本笔已 `push` 到
+   `origin/develop` @ `41d3dd5`（经 `git ls-remote` 服务器直读复核）。
+8. **诚实边界（不得在总结里弱化）**：M4 **未经 PM 逐 AC 终验**；`04`/`05` 两份门禁报告覆盖的是
    **修复前**的树（mtime 13:19 / 12:49）；修复后的独立重门禁**在途**；**F7 未清**（见「已知限制」）。
 
 ## 已知限制（如实记录，未粉饰）
@@ -184,5 +186,5 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m deephealing_kernel verify \
 | 验收 | **M1**：有条件通过（6 PASS / 1 GAP / 1 分列均 PASS，CRITICAL 0）；**M2**：通过（8/8 AC PASS，CRITICAL 0，残留 FAIL 0）；**M3**：**通过**（逐 AC PASS，**CRITICAL 0**，残留 MEDIUM/LOW/GAP 已逐条登记 M4） |
 | 冻结计划 | `docs/architecture/04-v0-plan.md`（13 工作包 / 4 里程碑 M1~M4） |
 | 契约副本 | `docs/specs/` 是**架构冻结轮**的契约发布视图（冻结时刻快照，**不随里程碑同步**：M1/M2 均未改，现有 5 份与 `02_source` 已漂移）；**可自校验的源**是 `02_source/` |
-| 落盘提交 | 见本目录所在仓库的提交历史（M1 / M2 / M3 各一笔提交；**M4 为「已落盘、未验收」**，按用户 2026-09-23 政策「实现即提交」落盘） |
+| 落盘提交 | 见本目录所在仓库的提交历史（M1 / M2 / M3 各一笔提交；**M4 为「已落盘、未验收」**，按用户 2026-09-23 政策「实现即提交」落盘，**并已直接推远端** `origin/develop` @ `41d3dd5`） |
 | M3 终验 | `dev_team_workspace/REQ-20260921-005-deephealing-v0-m3/08_pm_verdict.md` + `08_pm_verdict_r5.md`（工作区，不随仓库提供） |
