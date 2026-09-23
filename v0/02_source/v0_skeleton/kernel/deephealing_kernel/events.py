@@ -36,6 +36,7 @@ EVENT_TYPES = (
     "intent.applied",
     "intent.rejected",
     "npc.action",
+    "npc.decision",
     "capability.invoked",
     "capability.fallback",
     "task.state_changed",

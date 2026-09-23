@@ -1,0 +1,50 @@
+{
+  "criterion_1": "① 决策路径可观测：真实事件流出现 npc.decision（每 tick 每 NPC 一条）",
+  "decision_events": 1200,
+  "expected": 1200,
+  "npcs": 5,
+  "passed": true,
+  "required_fields_present": [
+    "bt_branch",
+    "chosen_action",
+    "decision_source",
+    "dominant_deficit",
+    "dominant_need",
+    "npc_id",
+    "schedule_is_driver",
+    "schedule_state",
+    "target_entity",
+    "utility_ranking",
+    "utility_score"
+  ],
+  "sample": {
+    "bt_branch": "socialize",
+    "chosen_action": "talk",
+    "decision_source": "behaviour_tree",
+    "dominant_deficit": 0.68,
+    "dominant_need": "belonging",
+    "npc_id": "npc-001",
+    "schedule_is_driver": false,
+    "schedule_state": "idle",
+    "target_entity": "npc-005",
+    "utility_ranking": [
+      {
+        "action": "talk",
+        "need": "belonging",
+        "score": 1.002
+      },
+      {
+        "action": "walk",
+        "need": "self_actualization",
+        "score": 0.65
+      },
+      {
+        "action": "rest",
+        "need": "physiology",
+        "score": 0.428
+      }
+    ],
+    "utility_score": 1.002
+  },
+  "ticks": 240
+}

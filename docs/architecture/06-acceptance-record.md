@@ -1,7 +1,8 @@
 # PM 逐 AC 终验记录
 
 > 本文件按轮次累积：**§1~§6 = REQ-20260921-002（架构冻结轮）**，**§7~§11 = REQ-20260921-003（V0 · M1）**，
-> **§12~§16 = REQ-20260921-004（V0 · M2）**，**§17~§21 = REQ-20260921-005（V0 · M3）**。
+> **§12~§16 = REQ-20260921-004（V0 · M2）**，**§17~§21 = REQ-20260921-005（V0 · M3）**，
+> **§22 = REQ-20260921-006（V0 · M4，已落盘、未验收）**。
 
 ## §0 轮次索引
 
@@ -11,6 +12,7 @@
 | V0 · M1 | `REQ-20260921-003` | 有条件通过（CRITICAL 0；6 PASS / 1 GAP / 1 分列均 PASS） | `v0/` |
 | V0 · M2 | `REQ-20260921-004` | **通过**（8/8 AC PASS，CRITICAL 0，残留 FAIL 0） | `v0/`（同树生长） |
 | V0 · M3 | `REQ-20260921-005` | **通过**（逐 AC PASS，**CRITICAL 0**，残留 MEDIUM/LOW/GAP 已逐条登记 M4） | `v0/`（同树生长） |
+| V0 · M4 | `REQ-20260921-006` | **已落盘、未验收**（CRITICAL 0；**F7 未清**；修复后独立重门禁在途） | `v0/`（同树生长，commit 见下） |
 
 ---
 
@@ -406,3 +408,71 @@ PM 自写 `pm_adversarial_ac3.py`，导入**冻结的** `tools/canonical_json.py
   复现需按 `spikes/s13-render/browser-accept.mjs` 自行真跑（脚本与负控脚本**在**冻结面内）。
 - 「`verify` exit 0」**不等于**「日志未被篡改」——抗改写必须传 `--expected-hash`。
 - 残留 **MEDIUM/LOW/GAP 若干**（0 CRITICAL）已逐条登记 M4（见 §20），**不作「已关闭」处理**。
+
+
+---
+
+# 第五部分 · REQ-20260921-006（V0 · M4）
+
+## 22. M4 落盘登记（**已落盘、未验收** —— 政策变更下的口径）
+
+> **口径与 M1~M3 不同，务必注意**：用户于 2026-09-23 明确
+> 「**不一定是验证完了再提交，可以实现之后就进行提交，然后修复之后再提交**」。
+> 因此 M4 按**实现即提交**落盘，**验收尚未完成**。本段是**落盘登记**，**不是验收结论**。
+
+### 22.1 落盘事实（PM 侧读盘，2026-09-23）
+
+| 项 | 读数 |
+|---|---|
+| 落盘范围 | `V0_M4.sha256` 冻结面 **214 条**（`02_source` 160 + `spikes` 51 + 根级 3 文档 + 1 日志） |
+| 冻结面自校验 | `shasum -a 256 -c V0_M4.sha256` ⇒ **214 OK / 0 FAILED** |
+| 契约门禁 | `verify_specs.sh --quiet` ⇒ **OK (130 checks passed, 0 skipped)**，exit 0 |
+| 端到端 | `run --pack districts/xingfu-xiaoqu --ticks 300` ⇒ exit 0，**2520 事件**，`chain_tail 81669e96…` |
+| 真实仓库前置 | `develop` @ `a9e3a57`，`git status --porcelain` **空** |
+| 交付树 | `02_source` **160 文件 / 0 残渣** |
+
+### 22.2 M4 交付内容
+
+观测层（W9）+ 集成验收（W10）+ **自主决策接入 tick 循环（W11）** + **世界自带时钟（W12）**。
+新增产品文件：`kernel/deephealing_kernel/live.py`、`rules/decision.py`、`world_clock.py`、
+`tools/duckdb_queries.sql` 与 4 个新测试套件（`test_autonomous_decision.py` /
+`test_live_observation.py` / `test_observability.py` / `test_world_clock.py`）。
+
+### 22.3 三条核心能力（实测）
+
+1. **自主决策**：`stub_decide` 退出决策路径，真引擎 `rules/decision.py` 接管。
+   经 architect **独立三态复验**：干净 ⇒ 7 passed；注入项目自有模型出口 ⇒ 1 failed；注入网络 SDK ⇒ 2 failed；复原 ⇒ 7 passed。
+2. **活的世界**：观察者全断开后世界继续推进（`observers: 0` 时世界照走）。
+3. **不是回放**：连入读到**当前** tick（实测跨 65 真实秒：`tick 1674→1675`，墙上钟 `10:55:55`）。
+
+### 22.4 未完成项与诚实边界（**不得在总结里弱化**）
+
+1. **未验收**：PM 逐 AC 终验**未做**。本段只登记落盘事实。
+2. **`04`/`05` 覆盖的是修复前的树**：mtime 13:19 / 12:49，`grep -c regate` = 0/0。
+   其结论**对 r2/r3 之后的树不自动成立**。
+3. **修复后独立重门禁在途**：`sentinel-regate` / `raven-regate` 于 2026-09-23 16:15 由 **PM 侧 detached** 起出
+   （上一轮 architect 把门禁当**自己的后台子进程**跑，通道结束即被 SIGINT —— 根因见 `07_m4_architect_verdict.md` §5）。
+4. **F7 未清（MEDIUM，如实登记）**：fd 高水位越 `ulimit` ⇒ `SIGABRT`，且崩溃面扩散到 `run`。
+   r4 已把根因收窄：**accept 层配额已生效并独立验证**（`http_connections_peak=6` vs cap 32、`rejections=0`），
+   但 fd 仍达 4125-4129、exit 仍 -6；**泄漏的是 TCP `CLOSED` 状态的 IPv4 socket**，~1500/s，
+   并发连接始终只有 6 ⇒ **残留缺陷是「每条连接延迟释放 fd」，不是配额层**。
+   r4 为 F7 最后一轮（PM 裁决 R8）；全量 pytest 预算耗尽仍在跑 ⇒ **记 GAP，不记 PASS**。
+5. **其余未清 MEDIUM 6 条**（逐条在册）：`--allow-remote` 无鉴权（PM 裁决 R2 **接受** + 3 条硬条件）、
+   `run --ws-port` 监听窗口 = 进程存活期、恢复语义 `event_chain_hash` 不同、
+   **行为多样性 `safety` 主导 95.2%**（PM 裁决 R5：登记 MEDIUM + M5 强制量化判据）、
+   duckdb 未真跑、氛围判据只判数值面。
+6. **基线已改写**：`stub_decide` → 真引擎 ⇒ `state_hash` / `chain_tail` 由 M1 基线改写为 M4 基线
+   （`state_hash @300 tick` `9a4ae3da…` → `0d79e5f3…`；`chain_tail` `baecca92…` → `81669e96…`），
+   登记在 `06_v0_m4_self_test.md` §M4-C（C-1..C-17）。
+7. **`SEED.sha256` 是溯源文件，不是自校验面**（PM 裁决 R4）。
+
+### 22.5 PM 裁决（解阻塞，非验收）
+
+见工作区 `.pm_ruling-m4-02-decisions.md`（9 条 R1~R9）：AC-M4-9②③ 口径拆分（R1）、
+`--allow-remote` 无鉴权接受（R2）、P-6 原文缺失为 **PM 播种缺陷已修**（R3）、
+`SEED.sha256` 语义（R4）、行为多样性 MEDIUM + M5 强制判据（R5）、M1 计数以 10 为准（R6）、
+r2/r3/r4 派单归属备案（R7）、**F7 乒乓 PM 介入：r4 为最后一轮**（R8）、流程根因改 detached 派单（R9）。
+
+### 22.6 下一步
+
+r4 收口 → **detached 重门禁**（sentinel + raven）→ **PM 逐 AC 终验** → 修复轮（若有）→ 再次提交。

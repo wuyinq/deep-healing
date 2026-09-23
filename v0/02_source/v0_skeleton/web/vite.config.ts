@@ -12,6 +12,8 @@ export default defineConfig({
     proxy: {
       '/ws': { target: 'ws://127.0.0.1:8787', ws: true },
       '/sessions': { target: 'http://127.0.0.1:8787', changeOrigin: true },
+      // M4 / W12：内核只读实时观察通道（`cli live`，默认 8899）。**只读 GET/SSE**。
+      '/live': { target: 'http://127.0.0.1:8899', changeOrigin: true, ws: false },
     },
   },
   build: {

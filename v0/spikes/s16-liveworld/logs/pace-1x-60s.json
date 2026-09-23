@@ -1,0 +1,9 @@
+{
+  "clock_after": "11:53",
+  "clock_before": "10:53",
+  "criterion": "③ 1× 档：N=60 真实秒 ⇒ tick 增量 60（容差 ≤1）",
+  "max_drift_ms": 74.962,
+  "passed": true,
+  "tick_delta": 60,
+  "window_real_seconds": 60.059
+}

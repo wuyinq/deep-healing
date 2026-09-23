@@ -1,0 +1,12 @@
+{
+  "criterion_4": "④ 退回 stub_decide ⇒ ①②必须变红",
+  "passed": true,
+  "stub_action_decision_source": [
+    "deterministic_stub"
+  ],
+  "stub_action_set": [
+    "hold",
+    "move"
+  ],
+  "stub_decision_events": 0
+}

@@ -50,7 +50,7 @@ def _four_tuple(proc: subprocess.CompletedProcess, log_path: Path) -> dict:
 def _base_log(tmp_path: Path) -> Path:
     base = tmp_path / "base"
     base.mkdir(parents=True, exist_ok=True)
-    proc = _cli("run", "--pack", PACK, "--seed", "20260921", "--events", str(base / "e.jsonl"),
+    proc = _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921", "--events", str(base / "e.jsonl"),
                 "--snapshot-every", "30", "--ticks", "60")
     assert proc.returncode == 0, proc.stdout + proc.stderr
     return base / "e.jsonl"
@@ -91,7 +91,7 @@ def test_m2_run_refuses_read_only_checkpoints(tmp_path):
     checkpoints.mkdir(parents=True, exist_ok=True)
     os.chmod(checkpoints, 0o500)
     try:
-        proc = _cli("run", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
+        proc = _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
                     "--snapshot-every", "30", "--ticks", "60")
         result = _four_tuple(proc, out / "e.jsonl")
     finally:
@@ -100,7 +100,7 @@ def test_m2_run_refuses_read_only_checkpoints(tmp_path):
     assert "E_OUTPUT_NOT_WRITABLE" in (proc.stdout + proc.stderr)
 
     # 反向对照：恢复可写后必须 exit 0
-    clean = _cli("run", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
+    clean = _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
                  "--snapshot-every", "30", "--ticks", "60")
     assert clean.returncode == 0, clean.stdout + clean.stderr
 
@@ -114,7 +114,7 @@ def test_m3_run_refuses_symlinked_checkpoints(tmp_path):
     outside.mkdir(parents=True, exist_ok=True)
     (out / "checkpoints").symlink_to(outside, target_is_directory=True)
 
-    proc = _cli("run", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
+    proc = _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
                 "--snapshot-every", "30", "--ticks", "60")
     result = _four_tuple(proc, out / "e.jsonl")
     _assert_four_tuple(result)
@@ -124,7 +124,7 @@ def test_m3_run_refuses_symlinked_checkpoints(tmp_path):
     # 反向对照：把符号链接换成真实目录 ⇒ 必须 exit 0
     (out / "checkpoints").unlink()
     (out / "checkpoints").mkdir()
-    clean = _cli("run", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
+    clean = _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
                  "--snapshot-every", "30", "--ticks", "60")
     assert clean.returncode == 0, clean.stdout + clean.stderr
 

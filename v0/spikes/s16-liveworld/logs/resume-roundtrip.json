@@ -1,0 +1,20 @@
+{
+  "clock_after_resume": "09:00",
+  "criterion_state": "⑦ 停止前 state_hash == 恢复后同 tick state_hash（逐位相同）",
+  "event_chain_differs": false,
+  "honest_boundary": "恢复后事件日志是**新链**（chain_tail 不同）—— 本判据**不**覆盖事件链连续",
+  "passed_state": true,
+  "resumed": {
+    "event_chain_hash": "dc576c1e80d2a34a7fd9e09d0f3bd25e7534dacefd1fed4ea6414bf53706b831",
+    "state_hash": "71226847432955419f7e544a3a3a4caf54f380ad4296e1adf506f93a051fcd8c",
+    "tick": 120
+  },
+  "stopped": {
+    "event_chain_hash": "dc576c1e80d2a34a7fd9e09d0f3bd25e7534dacefd1fed4ea6414bf53706b831",
+    "pack_id": "xingfu-xiaoqu",
+    "pack_version": "0.1.0",
+    "seed": 20260921,
+    "state_hash": "71226847432955419f7e544a3a3a4caf54f380ad4296e1adf506f93a051fcd8c",
+    "tick": 120
+  }
+}

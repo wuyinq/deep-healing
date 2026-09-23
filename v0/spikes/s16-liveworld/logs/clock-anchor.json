@@ -1,0 +1,15 @@
+{
+  "clock_semantics_raw": "1 tick = 1 世界分钟（600:1 压缩）；tick 0 = 07:00 起床点。",
+  "clock_semantics_source": "districts/xingfu-xiaoqu/schedules/weekday.json#time_scale_note",
+  "criterion": "②a 锚定精度：|世界钟 − 墙上钟| ≤ 1 分钟",
+  "day_ticks": 1440,
+  "delta_minutes": 0,
+  "passed": true,
+  "tick0_minutes": 420,
+  "wall_clock_utc8": "10:53:00",
+  "wall_minutes_into_day": 653,
+  "warmup_formula": "((653) - 420) mod 1440",
+  "warmup_ticks": 233,
+  "world_clock_after_fastforward": "10:53",
+  "world_tick": 233
+}

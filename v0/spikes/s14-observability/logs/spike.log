@@ -1,0 +1,18 @@
+=== 1) run（300 tick / snapshot_every 50 / --ws-port 0）===
+run_exit=0
+{"chain_tail": "81669e9685e5dec845d0d5060321c0eba66939063997941c5be5f2e0d97d8cb6", "checkpoints": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-006-deephealing-v0-m4/spikes/s14-observability/runtime/run/checkpoints", "cognition": null, "command": "run", "event_count": 2520, "events": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-006-deephealing-v0-m4/spikes/s14-observability/runtime/run/events.jsonl", "live_channel": null, "pack_id": "xingfu-xiaoqu", "seed": 20260921, "snapshot_every": 50, "ticks": 300}
+=== 2) replay --checkpoint-every 50（检查点数必须 == ticks/snapshot_every）===
+replay_exit=0
+{"chain_tail": "81669e9685e5dec845d0d5060321c0eba66939063997941c5be5f2e0d97d8cb6", "checkpoint_every": 50, "checkpoints_written": 6, "command": "replay", "out": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-006-deephealing-v0-m4/spikes/s14-observability/runtime/replay", "seed": 20260921, "snapshot_every_from_log": 50, "until": 300}
+checkpoint_count=6
+=== 2b) 负例：--checkpoint-every 100 ⇒ 同一谓词必须变假 ===
+checkpoint_count_other=3
+=== 3) 只读分析（分析前后逐字节 sha256 比对）===
+report_exit=0
+=== 3b) duckdb 可用性（如实登记，不假装跑过）===
+duckdb CLI: not found
+ERROR: Could not find a version that satisfies the requirement duckdb (from versions: none)
+ERROR: No matching distribution found for duckdb
+pip_install_exit=1
+=== 4) 负例：复制日志造一处断链 ⇒ 自检必须非零 ===
+SPIKE_S14_DONE

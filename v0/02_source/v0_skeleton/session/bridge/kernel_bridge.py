@@ -12,7 +12,9 @@
   - stdout 写 per-tick JSONL：`{"tick":..,"seq":..,"kind":"snapshot|delta|event|tick_meta|intent_ack",..}`；
   - **零状态自算**：不解释、不改写状态，只搬运；世界写点只有内核的 `step()`。
 
-`--ws-port` 语义不变：**接受但不监听**（本轮不新增内核 WS 服务）。
+`--ws-port` 语义（M4 修订，D-M4-4/D-M4-14）：**默认 0 = 不监听**；桥**不提供服务** ——
+内核实时只读观察通道由 `cli live`（默认 `--port 8899`）或 `run --ws-port <n>` 提供。
+桥与内核之间的通道是 **stdio 管道**（等价双 fd），**无网络可达路径**。
 
 用法：
     python3 kernel_bridge.py --kernel-src <kernel> --pack-src <pack> --runtime-dir <dir> \
@@ -68,7 +70,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--seed", type=int, default=20260921)
     parser.add_argument("--snapshot-every", type=int, default=50)
     parser.add_argument("--ticks", type=int, default=300)
-    parser.add_argument("--ws-port", type=int, default=8787, help="接受但不监听（冻结语义）")
+    parser.add_argument("--ws-port", type=int, default=0,
+                        help="0（默认）= 桥不提供服务；内核实时只读通道由 `cli live` / `run --ws-port` 提供")
     args = parser.parse_args(argv)
 
     runtime = Path(args.runtime_dir).resolve()
@@ -117,7 +120,9 @@ def main(argv: list[str] | None = None) -> int:
         "source_files": source_files,
         "kernel_files": kernel_files, "pack_files": pack_files,
         "kernel_tree_digest": _tree_digest(kernel_copy),
-        "ws_port_accepted_not_listening": args.ws_port,
+        "ws_port": args.ws_port,
+        "bridge_serves_network": False,
+        "live_channel_provided_by": "cli live (default --port 8899) / run --ws-port <n>",
         "plan_ticks": args.ticks,
         "snapshot_every": args.snapshot_every,
     })

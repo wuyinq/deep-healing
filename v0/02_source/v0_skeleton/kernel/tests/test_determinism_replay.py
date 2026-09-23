@@ -84,10 +84,13 @@ def test_replay_detects_wall_clock_leak(tmp_path):
     assert snapshot_mod.compare_checkpoints(clean_a / "checkpoints", clean_b / "checkpoints") == []
 
     # ② 注入 wall-clock 泄漏：decide 阶段的 need 漂移改用 time.time_ns()
-    original = tick_mod.stub_decide
+    #    **注入点迁移登记（M4 / D-M4-1）**：决策路径已由 `stub_decide` 换成模块级别名
+    #    `autonomous_decide`，故注入点随之迁移。**意图不变**：把非确定性注入**决策阶段** ⇒
+    #    检测器必须变红。签名多了关键字参数 `pack_profiles`（决策层需要 NPC 档案）。
+    original = tick_mod.autonomous_decide
 
-    def leaky(world, rng, tick, ctx):
-        intents = original(world, rng, tick, ctx)
+    def leaky(world, rng, tick, ctx, *, pack_profiles):
+        intents = original(world, rng, tick, ctx, pack_profiles=pack_profiles)
         # 注意：`time.time_ns() % 1000` 在本机**恒为 0**（时钟微秒粒度）⇒ 注入会退化成常量，
         # 负例就变成零命中绿。故取**微秒**分量（实测逐次不同）。
         leaked = int(time.time_ns() // 1000) % 1000 - 500
@@ -95,12 +98,12 @@ def test_replay_detects_wall_clock_leak(tmp_path):
             intent["jitter_mm"] = leaked
         return intents
 
-    tick_mod.stub_decide = leaky
+    tick_mod.autonomous_decide = leaky
     try:
         leaky_a = _run_kernel(tmp_path / "leaky_a")
         leaky_b = _run_kernel(tmp_path / "leaky_b")
     finally:
-        tick_mod.stub_decide = original
+        tick_mod.autonomous_decide = original
 
     diffs = snapshot_mod.compare_checkpoints(leaky_a / "checkpoints", leaky_b / "checkpoints")
     assert diffs, "tick 内引入 wall-clock 后两次产物必须分歧（检测有效性证明）"
@@ -137,10 +140,10 @@ _DRIVER = textwrap.dedent(
     from deephealing_kernel import tick as tick_mod
     from deephealing_kernel.pack import load_pack
 
-    original = tick_mod.stub_decide
+    original = tick_mod.autonomous_decide
 
-    def unordered(world, rng, tick, ctx):
-        intents = original(world, rng, tick, ctx)
+    def unordered(world, rng, tick, ctx, *, pack_profiles):
+        intents = original(world, rng, tick, ctx, pack_profiles=pack_profiles)
         if mode == "strset":
             order = list({"npc-001", "npc-002", "npc-003", "npc-004", "npc-005"})
         elif mode == "intset":
@@ -153,7 +156,7 @@ _DRIVER = textwrap.dedent(
             intent["needs_delta"] = {"esteem": (rank + 1) / 1000.0}
         return intents
 
-    tick_mod.stub_decide = unordered
+    tick_mod.autonomous_decide = unordered
 
     out_dir.mkdir(parents=True, exist_ok=True)
     log = events_mod.EventLog(out_dir / "e.jsonl")

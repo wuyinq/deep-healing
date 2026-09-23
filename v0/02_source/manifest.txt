@@ -147,3 +147,13 @@ v0_skeleton/web/test/render-client.test.ts | 渲染客户端判据：乱序 delt
 v0_skeleton/web/scripts/scene_assert.mjs | 治愈系数值断言 + 两态机器判据（two_reads_share_geometry / underneath_does_not_raise_saturation） | 手工编写（M3 渲染层）
 v0_skeleton/kernel/tests/test_budget_downgrade_void.py | R2/M3-03 判据：预算耗尽降级时内核侧待应用队列**逐条作废**（intent.rejected{E_BUDGET_EXHAUSTED}）+ pending 归零 + 会话维度隔离 + 空队列零副作用 | 手工编写（M3 修复轮 R2）
 v0_skeleton/tools/scan_ip_boundary.py | R2/F12 判据载体：IP 边界扫描器（模式表 + 逐条理由白名单 + `--probe` 自证命中能力），进 verify_specs.sh | 手工编写（M3 修复轮 R2）
+v0_skeleton/kernel/deephealing_kernel/live.py | 活的世界 + 只读实时观察通道（`LiveWorld` 自有推进循环 / `LiveServer` GET+HEAD / SSE） | 手工编写（M4 / 设计 D-M4-4·D-M4-5·D-M4-6）
+v0_skeleton/kernel/deephealing_kernel/world_clock.py | 世界钟：相位从内容包派生（fail-closed）+ 快进算式 + UTC+8 读数 | 手工编写（M4 / 设计 D-M4-3）
+v0_skeleton/kernel/deephealing_kernel/rules/decision.py | 自主决策层：需求→效用→行为树分支→intents（候选动作目录的唯一权威） | 手工编写（M4 / 设计 D-M4-1·D-M4-2）
+v0_skeleton/kernel/tests/test_autonomous_decision.py | W11 判据：决策可观测 / 行为可分辨性 / 确定性 / 负例（退回桩） | 手工编写（M4 / 设计 D-M4-1·D-M4-15）
+v0_skeleton/kernel/tests/test_live_observation.py | W12 判据：此刻读数 / 重连 / 内核直读对账 / 观察者独立性 / 服务边界（Host·CORS·上限·secrets） | 手工编写（M4 / 设计 D-M4-5·D-M4-6·D-M4-16）
+v0_skeleton/kernel/tests/test_observability.py | W9 判据：检查点数 == ticks/snapshot_every / 0 断链 / 只读 / SQL 口径映射 | 手工编写（M4 / 设计 D-M4-8·D-M4-15①⑥）
+v0_skeleton/kernel/tests/test_world_clock.py | W12 判据：内容包派生相位 / 改包反例 / ②a 锚定 / ②b 300 秒节流 / ②c 披露 / ③ 1× 档 | 手工编写（M4 / 设计 D-M4-3·D-M4-13·D-M4-15④）
+v0_skeleton/kernel/tools/duckdb_queries.sql | 观测层只读分析 SQL（哈希链自检 / tick 时间线 / 事件统计 / NPC 行为分布） | 手工编写（M4 / 设计 D-M4-8；本机无 duckdb ⇒ 口径映射到纯 Python 实现）
+v0_skeleton/kernel/tools/observability_report.py | 观测层纯 Python 只读分析（与 SQL 同语义 4 组 + `sql_equivalent` 映射） | 手工编写（M4 / 设计 D-M4-8）
+v0_skeleton/web/src/net/live.ts | 渲染层只读实时通道客户端（SSE；零写路径） | 手工编写（M4 / 设计 D-M4-10；AC-M4-11③）

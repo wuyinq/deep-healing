@@ -44,7 +44,7 @@ def _record_cassettes(tmp_path: Path) -> tuple[Path, Path]:
     cassettes = tmp_path / "cassettes"
     record_dir.mkdir(parents=True, exist_ok=True)
     cassettes.mkdir(parents=True, exist_ok=True)
-    proc = _cli("run", "--pack", PACK, "--seed", "20260921", "--events", str(record_dir / "e.jsonl"),
+    proc = _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921", "--events", str(record_dir / "e.jsonl"),
                 "--snapshot-every", "50", "--ticks", "60", "--cognition", "--memory",
                 "--cassette-dir", str(cassettes))
     assert proc.returncode == 0, proc.stdout + proc.stderr
@@ -82,7 +82,7 @@ def test_tampered_cassette_is_visible_at_command_layer(tmp_path):
     cassettes, _ = _record_cassettes(tmp_path)
     corrupted = _corrupt_one_record(cassettes)
     out = tmp_path / "tamper-out"
-    proc = _cli("run", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
+    proc = _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
                 "--snapshot-every", "50", "--ticks", "60", "--cognition", "--memory", "--replay",
                 "--cassette-dir", str(cassettes))
     combined = proc.stdout + proc.stderr
@@ -108,7 +108,7 @@ def test_tamper_count_matches_journal(tmp_path):
     cassettes, _ = _record_cassettes(tmp_path)
     _corrupt_one_record(cassettes)
     out = tmp_path / "tamper-count"
-    proc = _cli("run", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
+    proc = _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
                 "--snapshot-every", "50", "--ticks", "60", "--cognition", "--memory", "--replay",
                 "--cassette-dir", str(cassettes))
     assert proc.returncode != 0
@@ -122,7 +122,7 @@ def test_tamper_count_matches_journal(tmp_path):
 def test_clean_replay_stays_green(tmp_path):
     cassettes, _ = _record_cassettes(tmp_path)
     out = tmp_path / "clean-out"
-    proc = _cli("run", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
+    proc = _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
                 "--snapshot-every", "50", "--ticks", "60", "--cognition", "--memory", "--replay",
                 "--cassette-dir", str(cassettes))
     combined = proc.stdout + proc.stderr
@@ -139,7 +139,7 @@ def test_miss_regression_unchanged(tmp_path):
     empty = tmp_path / "empty-cassettes"
     empty.mkdir(parents=True, exist_ok=True)
     out = tmp_path / "miss-out"
-    proc = _cli("run", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
+    proc = _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
                 "--snapshot-every", "50", "--ticks", "100", "--cognition", "--replay",
                 "--cassette-dir", str(empty))
     combined = proc.stdout + proc.stderr
@@ -162,7 +162,7 @@ def test_negative_control_tamper_treated_as_warning_makes_criterion_1_red(tmp_pa
     _corrupt_one_record(cassettes)
     out = tmp_path / "neg-out"
     env = dict(ENV, DH_NEGATIVE_TAMPER_AS_WARNING="1")
-    proc = _cli("run", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
+    proc = _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
                 "--snapshot-every", "50", "--ticks", "60", "--cognition", "--memory", "--replay",
                 "--cassette-dir", str(cassettes), env=env)
     combined = proc.stdout + proc.stderr

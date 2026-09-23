@@ -1,0 +1,280 @@
+{
+  "schema_version": "1.0.0",
+  "tag": "live",
+  "pack": "districts/xingfu-xiaoqu",
+  "ambience_source": {
+    "saturation_max_pct": {
+      "path": "districts/xingfu-xiaoqu/assets/manifest.json",
+      "field": "aesthetic_constraints.palette.saturation_max_pct",
+      "root": "skeleton"
+    },
+    "roughness_min": {
+      "path": "districts/xingfu-xiaoqu/assets/manifest.json",
+      "field": "aesthetic_constraints.material.roughness_min",
+      "root": "skeleton"
+    },
+    "ambient_ratio_min": {
+      "path": "districts/xingfu-xiaoqu/assets/manifest.json",
+      "field": "aesthetic_constraints.lighting.ambient_ratio_min",
+      "root": "skeleton"
+    },
+    "shadow_softness_min": {
+      "path": "districts/xingfu-xiaoqu/assets/manifest.json",
+      "field": "aesthetic_constraints.lighting.shadow_softness_min",
+      "root": "skeleton"
+    },
+    "audio_allowed_beds": {
+      "path": "districts/xingfu-xiaoqu/assets/manifest.json",
+      "field": "aesthetic_constraints.audio.allowed_beds",
+      "root": "skeleton"
+    },
+    "courtyard_ambience": {
+      "path": "districts/xingfu-xiaoqu/buildings/courtyard-01.json",
+      "field": "ambience",
+      "root": "skeleton"
+    },
+    "tone": {
+      "path": "districts/xingfu-xiaoqu/worldview.json",
+      "field": "tone.surface|tone.underneath",
+      "root": "skeleton"
+    },
+    "art_bible_saturation": {
+      "path": "art-bible.md",
+      "field": "§美学数值约束 · 饱和度 ≤ 45（HSV 的 S，0–100）",
+      "field_token": "饱和度",
+      "root": "source"
+    },
+    "art_bible_roughness": {
+      "path": "art-bible.md",
+      "field": "§美学数值约束 · 粗糙度 `roughness` 0.55–0.95（镜面高光禁用）",
+      "field_token": "粗糙度",
+      "root": "source"
+    }
+  },
+  "thresholds": {
+    "saturation_max_pct": 45,
+    "roughness_min": 0.6,
+    "ambient_ratio_min": 0.35,
+    "shadow_softness_min": 0.5,
+    "audio_allowed_beds": [
+      "ambient_lowfreq",
+      "none"
+    ]
+  },
+  "subjective_residual": "「氛围达成」仍有主观成分：本判据只判**数值面**（取数源 = 内容包的 ambience / aesthetic_constraints 段 + 真浏览器像素统计），不声称「观感已经精美」。",
+  "reading_boundary": "art-bible「饱和度 ≤ 45」约束的是**主色板声明**（由 tools/aesthetic_check.py 校验），不是逐像素渲染值；underneath 读法的像素 p95 实测高于 45，属**已登记的口径边界**（见 checks 里 browser_two_readings_are_distinguishable:* 的读数），不构成 palette 约束违规。",
+  "checks": [
+    {
+      "name": "ambience_source_declared:saturation_max_pct",
+      "ok": true,
+      "detail": "districts/xingfu-xiaoqu/assets/manifest.json#aesthetic_constraints.palette.saturation_max_pct (file_exists=true field_token_present=true)",
+      "ambience_source": {
+        "path": "districts/xingfu-xiaoqu/assets/manifest.json",
+        "field": "aesthetic_constraints.palette.saturation_max_pct",
+        "root": "skeleton"
+      }
+    },
+    {
+      "name": "ambience_source_declared:roughness_min",
+      "ok": true,
+      "detail": "districts/xingfu-xiaoqu/assets/manifest.json#aesthetic_constraints.material.roughness_min (file_exists=true field_token_present=true)",
+      "ambience_source": {
+        "path": "districts/xingfu-xiaoqu/assets/manifest.json",
+        "field": "aesthetic_constraints.material.roughness_min",
+        "root": "skeleton"
+      }
+    },
+    {
+      "name": "ambience_source_declared:ambient_ratio_min",
+      "ok": true,
+      "detail": "districts/xingfu-xiaoqu/assets/manifest.json#aesthetic_constraints.lighting.ambient_ratio_min (file_exists=true field_token_present=true)",
+      "ambience_source": {
+        "path": "districts/xingfu-xiaoqu/assets/manifest.json",
+        "field": "aesthetic_constraints.lighting.ambient_ratio_min",
+        "root": "skeleton"
+      }
+    },
+    {
+      "name": "ambience_source_declared:shadow_softness_min",
+      "ok": true,
+      "detail": "districts/xingfu-xiaoqu/assets/manifest.json#aesthetic_constraints.lighting.shadow_softness_min (file_exists=true field_token_present=true)",
+      "ambience_source": {
+        "path": "districts/xingfu-xiaoqu/assets/manifest.json",
+        "field": "aesthetic_constraints.lighting.shadow_softness_min",
+        "root": "skeleton"
+      }
+    },
+    {
+      "name": "ambience_source_declared:audio_allowed_beds",
+      "ok": true,
+      "detail": "districts/xingfu-xiaoqu/assets/manifest.json#aesthetic_constraints.audio.allowed_beds (file_exists=true field_token_present=true)",
+      "ambience_source": {
+        "path": "districts/xingfu-xiaoqu/assets/manifest.json",
+        "field": "aesthetic_constraints.audio.allowed_beds",
+        "root": "skeleton"
+      }
+    },
+    {
+      "name": "ambience_source_declared:courtyard_ambience",
+      "ok": true,
+      "detail": "districts/xingfu-xiaoqu/buildings/courtyard-01.json#ambience (file_exists=true field_token_present=true)",
+      "ambience_source": {
+        "path": "districts/xingfu-xiaoqu/buildings/courtyard-01.json",
+        "field": "ambience",
+        "root": "skeleton"
+      }
+    },
+    {
+      "name": "ambience_source_declared:tone",
+      "ok": true,
+      "detail": "districts/xingfu-xiaoqu/worldview.json#tone.surface|tone.underneath (file_exists=true field_token_present=true)",
+      "ambience_source": {
+        "path": "districts/xingfu-xiaoqu/worldview.json",
+        "field": "tone.surface|tone.underneath",
+        "root": "skeleton"
+      }
+    },
+    {
+      "name": "ambience_source_declared:art_bible_saturation",
+      "ok": true,
+      "detail": "art-bible.md#§美学数值约束 · 饱和度 ≤ 45（HSV 的 S，0–100） (file_exists=true field_token_present=true)",
+      "ambience_source": {
+        "path": "art-bible.md",
+        "field": "§美学数值约束 · 饱和度 ≤ 45（HSV 的 S，0–100）",
+        "field_token": "饱和度",
+        "root": "source"
+      }
+    },
+    {
+      "name": "ambience_source_declared:art_bible_roughness",
+      "ok": true,
+      "detail": "art-bible.md#§美学数值约束 · 粗糙度 `roughness` 0.55–0.95（镜面高光禁用） (file_exists=true field_token_present=true)",
+      "ambience_source": {
+        "path": "art-bible.md",
+        "field": "§美学数值约束 · 粗糙度 `roughness` 0.55–0.95（镜面高光禁用）",
+        "field_token": "粗糙度",
+        "root": "source"
+      }
+    },
+    {
+      "name": "runtime_lighting_matches_pack_tone",
+      "ok": true,
+      "detail": "surface saturation=0.28 (pack 0.28) | underneath saturation=0.14 (pack 0.14) | underneath luminanceScale=0.38153846153846155 < surface 0.7430769230769231",
+      "ambience_source": {
+        "path": "districts/xingfu-xiaoqu/worldview.json",
+        "field": "tone.surface|tone.underneath",
+        "root": "skeleton"
+      }
+    },
+    {
+      "name": "runtime_material_respects_aesthetic_constraints",
+      "ok": true,
+      "detail": "roughness=0.6 (floor 0.6) | metalness=0.04 (<0.1 ⇒ 非金属/无镜面) | specular_faces=[]",
+      "ambience_source": {
+        "path": "districts/xingfu-xiaoqu/assets/manifest.json",
+        "field": "aesthetic_constraints.material.roughness_min",
+        "root": "skeleton"
+      }
+    },
+    {
+      "name": "courtyard_ambience_within_constraints",
+      "ok": true,
+      "detail": "ambient_ratio=0.42>=0.35 | shadow_softness=0.62>=0.5 | saturation=28<=45 | audio_bed=ambient_lowfreq",
+      "ambience_source": {
+        "path": "districts/xingfu-xiaoqu/buildings/courtyard-01.json",
+        "field": "ambience",
+        "root": "skeleton"
+      }
+    },
+    {
+      "name": "art_bible_matches_manifest",
+      "ok": true,
+      "detail": "art-bible saturation<=45 vs manifest 45 | manifest roughness floor 0.6 ∈ art-bible 区间 [0.55,0.95]",
+      "ambience_source": {
+        "path": "art-bible.md",
+        "field": "§美学数值约束 · 饱和度 ≤ 45（HSV 的 S，0–100）",
+        "field_token": "饱和度",
+        "root": "source"
+      }
+    },
+    {
+      "name": "browser_readings_available",
+      "ok": true,
+      "detail": "viewports=desktop,narrow",
+      "ambience_source": null
+    },
+    {
+      "name": "browser_pixels_are_not_flat:desktop",
+      "ok": true,
+      "detail": "non_background_ratio=0.127339 pixels=147966 buffer=undefined",
+      "ambience_source": null
+    },
+    {
+      "name": "browser_pixels_saturation_within_limit:desktop",
+      "ok": true,
+      "detail": "p95=35.294 <= 45 (max=35.849)",
+      "ambience_source": {
+        "path": "districts/xingfu-xiaoqu/assets/manifest.json",
+        "field": "aesthetic_constraints.palette.saturation_max_pct",
+        "root": "skeleton"
+      }
+    },
+    {
+      "name": "browser_two_readings_are_distinguishable:desktop",
+      "ok": true,
+      "detail": "surface p95=35.294 vs underneath p95=51.22 (underneath 高于 45 属**像素面**读数，palette 约束按声明面校验 ⇒ 见 subjective_residual 的口径边界)",
+      "ambience_source": null
+    },
+    {
+      "name": "browser_pixels_are_not_flat:narrow",
+      "ok": true,
+      "detail": "non_background_ratio=0.289576 pixels=59469 buffer=undefined",
+      "ambience_source": null
+    },
+    {
+      "name": "browser_pixels_saturation_within_limit:narrow",
+      "ok": true,
+      "detail": "p95=35.294 <= 45 (max=35.294)",
+      "ambience_source": {
+        "path": "districts/xingfu-xiaoqu/assets/manifest.json",
+        "field": "aesthetic_constraints.palette.saturation_max_pct",
+        "root": "skeleton"
+      }
+    },
+    {
+      "name": "browser_two_readings_are_distinguishable:narrow",
+      "ok": true,
+      "detail": "surface p95=35.294 vs underneath p95=51.22 (underneath 高于 45 属**像素面**读数，palette 约束按声明面校验 ⇒ 见 subjective_residual 的口径边界)",
+      "ambience_source": null
+    },
+    {
+      "name": "counter_example_injected_violation_turns_red",
+      "ok": true,
+      "detail": "注入 违规读数 ⇒ 同一判定 false（必须为 false）",
+      "ambience_source": null
+    }
+  ],
+  "failed": []
+}
+PASS  ambience_source_declared:saturation_max_pct (districts/xingfu-xiaoqu/assets/manifest.json#aesthetic_constraints.palette.saturation_max_pct (file_exists=true field_token_present=true))
+PASS  ambience_source_declared:roughness_min (districts/xingfu-xiaoqu/assets/manifest.json#aesthetic_constraints.material.roughness_min (file_exists=true field_token_present=true))
+PASS  ambience_source_declared:ambient_ratio_min (districts/xingfu-xiaoqu/assets/manifest.json#aesthetic_constraints.lighting.ambient_ratio_min (file_exists=true field_token_present=true))
+PASS  ambience_source_declared:shadow_softness_min (districts/xingfu-xiaoqu/assets/manifest.json#aesthetic_constraints.lighting.shadow_softness_min (file_exists=true field_token_present=true))
+PASS  ambience_source_declared:audio_allowed_beds (districts/xingfu-xiaoqu/assets/manifest.json#aesthetic_constraints.audio.allowed_beds (file_exists=true field_token_present=true))
+PASS  ambience_source_declared:courtyard_ambience (districts/xingfu-xiaoqu/buildings/courtyard-01.json#ambience (file_exists=true field_token_present=true))
+PASS  ambience_source_declared:tone (districts/xingfu-xiaoqu/worldview.json#tone.surface|tone.underneath (file_exists=true field_token_present=true))
+PASS  ambience_source_declared:art_bible_saturation (art-bible.md#§美学数值约束 · 饱和度 ≤ 45（HSV 的 S，0–100） (file_exists=true field_token_present=true))
+PASS  ambience_source_declared:art_bible_roughness (art-bible.md#§美学数值约束 · 粗糙度 `roughness` 0.55–0.95（镜面高光禁用） (file_exists=true field_token_present=true))
+PASS  runtime_lighting_matches_pack_tone (surface saturation=0.28 (pack 0.28) | underneath saturation=0.14 (pack 0.14) | underneath luminanceScale=0.38153846153846155 < surface 0.7430769230769231)
+PASS  runtime_material_respects_aesthetic_constraints (roughness=0.6 (floor 0.6) | metalness=0.04 (<0.1 ⇒ 非金属/无镜面) | specular_faces=[])
+PASS  courtyard_ambience_within_constraints (ambient_ratio=0.42>=0.35 | shadow_softness=0.62>=0.5 | saturation=28<=45 | audio_bed=ambient_lowfreq)
+PASS  art_bible_matches_manifest (art-bible saturation<=45 vs manifest 45 | manifest roughness floor 0.6 ∈ art-bible 区间 [0.55,0.95])
+PASS  browser_readings_available (viewports=desktop,narrow)
+PASS  browser_pixels_are_not_flat:desktop (non_background_ratio=0.127339 pixels=147966 buffer=undefined)
+PASS  browser_pixels_saturation_within_limit:desktop (p95=35.294 <= 45 (max=35.849))
+PASS  browser_two_readings_are_distinguishable:desktop (surface p95=35.294 vs underneath p95=51.22 (underneath 高于 45 属**像素面**读数，palette 约束按声明面校验 ⇒ 见 subjective_residual 的口径边界))
+PASS  browser_pixels_are_not_flat:narrow (non_background_ratio=0.289576 pixels=59469 buffer=undefined)
+PASS  browser_pixels_saturation_within_limit:narrow (p95=35.294 <= 45 (max=35.294))
+PASS  browser_two_readings_are_distinguishable:narrow (surface p95=35.294 vs underneath p95=51.22 (underneath 高于 45 属**像素面**读数，palette 约束按声明面校验 ⇒ 见 subjective_residual 的口径边界))
+PASS  counter_example_injected_violation_turns_red (注入 违规读数 ⇒ 同一判定 false（必须为 false）)
+ambience_assert: PASS=21 FAIL=0

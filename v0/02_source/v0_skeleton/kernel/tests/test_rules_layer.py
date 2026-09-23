@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import ast
 from pathlib import Path
 
 import pytest
@@ -21,6 +22,7 @@ import pytest
 KERNEL_ROOT = Path(__file__).resolve().parents[1]
 SKELETON = KERNEL_ROOT.parent
 CAPS_DIR = SKELETON / "capabilities"
+RULES_DIR = KERNEL_ROOT / "deephealing_kernel" / "rules"
 
 from deephealing_kernel.providers.deterministic_rule import DeterministicRuleProvider  # noqa: E402
 from deephealing_kernel.registry import CapabilityRegistry  # noqa: E402
@@ -147,20 +149,127 @@ def test_behaviour_tree_selector_falls_through_on_failure():
                                blackboard, None) == behaviour_tree.FAILURE
 
 
+#: 规则层静态扫描的禁用 token（HTTP/SDK 面；与 AC-M4-4 的 `rg` 命令行**同一口径**）
+FORBIDDEN_NETWORK_TOKENS = ("urllib", "requests", "httpx", "socket", "openai", "instructor")
+
+#: **模型出口面**：这些名字段在规则层**任何**文件里出现 ⇒ 判红（**代码面**判定 ——
+#: 注释与 docstring 天然不在 AST 名字面内）。旧口径只扫 HTTP/SDK token ⇒ 经**项目自身**出口
+#: （`deephealing_kernel/providers/remote_api.py`）发起的模型调用完全看不见（判据面 ≠ 声称面）。
+MODEL_EGRESS_SEGMENTS = frozenset({
+    "remote_api",   # 项目自身远端模型出口：providers/remote_api.py
+    "local_model",  # 项目自身本地模型 provider：providers/local_model.py
+    "urllib", "requests", "httpx", "http", "aiohttp", "socket",
+    "openai", "anthropic", "instructor",
+})
+
+#: **决策路径**（tick 阶段 [3] 的唯一入口）与 provider 层**零接触** —— 比「零模型调用」更严，
+#: 且交付面当前已满足：`rules/decision.py` 不引用 `providers` 包的任何符号。
+#: （否则「借道既有合法 import」就能把模型出口夹带进决策路径。）
+DECISION_MODULE = "decision.py"
+DECISION_MODULE_FORBIDDEN_SEGMENTS = MODEL_EGRESS_SEGMENTS | {"providers"}
+
+#: 动态导入：常量字符串参数也要看（`importlib.import_module("providers.remote_api")`）
+_DYNAMIC_IMPORT_CALLEES = frozenset({"import_module", "__import__"})
+
+
+def _rules_layer_files() -> list[Path]:
+    """规则层**全量**枚举（`rglob` 动态 + **非空断言**；禁止硬编码文件名清单）。
+
+    旧口径是 3 个硬编码文件名（`requirement/utility/behaviour_tree`，**不含 `decision.py`**）
+    ⇒ 把模型出口注入决策模块也照样绿。扫描面为空（目录被搬走 / 后缀变了）**必须判红**，
+    不得退化成「零命中绿」。
+    """
+    files = sorted(RULES_DIR.rglob("*.py"))
+    assert files, f"规则层扫描面为空：{RULES_DIR} 下没有任何 *.py（扫描面失效即判红）"
+    return files
+
+
 def test_call_capability_is_the_only_seam():
-    """规则层不得自己发 HTTP / 用 SDK：源码里不得出现网络客户端。"""
-    forbidden = ("urllib", "requests", "httpx", "socket", "openai", "instructor")
-    for name in ("requirement.py", "utility.py", "behaviour_tree.py"):
-        source = (KERNEL_ROOT / "deephealing_kernel" / "rules" / name).read_text(encoding="utf-8")
+    """规则层不得自己发 HTTP / 用 SDK：**规则层全量**源码里不得出现网络客户端。"""
+    files = _rules_layer_files()
+    names = [path.name for path in files]
+    assert "decision.py" in names, f"扫描面必须覆盖决策模块；实际扫描面={names}"
+    for path in files:
+        source = path.read_text(encoding="utf-8")
         code = [line for line in source.splitlines()
                 if line.strip() and not line.strip().startswith("#")]
-        hits = [line for line in code if any(token in line for token in forbidden)]
-        assert not hits, f"规则层 {name} 出现网络/SDK 调用：{hits}"
+        hits = [line for line in code if any(token in line for token in FORBIDDEN_NETWORK_TOKENS)]
+        assert not hits, f"规则层 {path.name} 出现网络/SDK 调用：{hits}"
 
     # 反向对照：providers/remote_api.py **必须**出现 urllib（证明上面的扫描面不是空转）
     provider_source = (KERNEL_ROOT / "deephealing_kernel" / "providers" / "remote_api.py").read_text(
         encoding="utf-8")
     assert "urllib" in provider_source
+
+
+def _dotted_name(node: ast.AST) -> str | None:
+    """`Name` / `Attribute` 链 ⇒ 点号名（`urllib.request.urlopen` / `remote_api.call`）。"""
+    parts: list[str] = []
+    while isinstance(node, ast.Attribute):
+        parts.append(node.attr)
+        node = node.value
+    if not isinstance(node, ast.Name):
+        return None
+    parts.append(node.id)
+    return ".".join(reversed(parts))
+
+
+def _code_face_references(source: str, filename: str) -> list[tuple[int, str]]:
+    """AST **代码面**引用清单（import / 属性链 / 裸名字 / 动态导入常量）。
+
+    注释不参与（AST 里根本不存在）；docstring 是 `Constant` 节点、不在本函数采集的名字面内
+    ⇒ `rules/decision.py` docstring 里的 `providers.remote_api` 字样**不会**让干净树变红。
+    """
+    tree = ast.parse(source, filename=filename)
+    found: list[tuple[int, str]] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            found += [(node.lineno, alias.name) for alias in node.names]
+        elif isinstance(node, ast.ImportFrom):
+            if node.module:
+                found.append((node.lineno, node.module))
+            found += [(node.lineno, alias.name) for alias in node.names]
+        elif isinstance(node, ast.Attribute):
+            dotted = _dotted_name(node)
+            if dotted:
+                found.append((node.lineno, dotted))
+        elif isinstance(node, ast.Name):
+            found.append((node.lineno, node.id))
+        elif isinstance(node, ast.Call):
+            callee = _dotted_name(node.func) or ""
+            if callee.split(".")[-1] in _DYNAMIC_IMPORT_CALLEES and node.args:
+                first = node.args[0]
+                if isinstance(first, ast.Constant) and isinstance(first.value, str):
+                    found.append((node.lineno, first.value))
+    return found
+
+
+def test_decision_path_has_no_model_seam():
+    """AC-M4-4 的**代码面**判据：决策路径不得引用模型出口（**含项目自身**的 `providers` 包）。
+
+    为什么需要它：`rg` 那条只扫 HTTP/SDK token，而本项目的模型出口是
+    `deephealing_kernel/providers/remote_api.py` ⇒ 「经自身 provider 发起的模型调用」是**盲区**
+    （判据面 ≠ 声称面）。本条走 AST 代码面，两级判定：
+
+      ① 规则层**全量**：不得出现**模型出口面**名字（`remote_api` / `local_model` / 网络与 SDK 根）；
+      ② **决策路径** `decision.py`：与 `providers` 包**零接触**（比「零模型调用」更严）。
+
+    ② 之所以能这样定：盘上 `decision.py` 对 `providers` 包的引用数是 **0**
+    （`rules/behaviour_tree.py:22` 那条 `providers.cassette` 是 **M2 既有**的**异常类型**导入
+    —— `CassetteMiss` 必须原样上抛、不得吞成 FAILURE —— 不是模型调用，也不在决策路径上，
+    故只在 ① 下放行，不进 ②）。
+    """
+    files = _rules_layer_files()
+    assert files, f"规则层扫描面为空：{RULES_DIR}"
+    violations: list[str] = []
+    for path in files:
+        forbidden = (DECISION_MODULE_FORBIDDEN_SEGMENTS if path.name == DECISION_MODULE
+                     else MODEL_EGRESS_SEGMENTS)
+        for lineno, dotted in _code_face_references(path.read_text(encoding="utf-8"), str(path)):
+            if set(dotted.split(".")) & forbidden:
+                violations.append(f"{path.name}:{lineno}: {dotted}")
+    assert not violations, (
+        "决策路径出现模型出口引用（AC-M4-4 要求零模型调用）：\n" + "\n".join(violations))
 
 
 def test_call_capability_rejects_missing_registry():

@@ -1,0 +1,13 @@
+{
+  "chain_tail_300": "81669e9685e5dec845d0d5060321c0eba66939063997941c5be5f2e0d97d8cb6",
+  "criterion_3": "③ 同 seed 同 tick 数两次运行 state_hash / chain_tail 逐位相同",
+  "identical": true,
+  "old_baseline_M1M2": {
+    "chain_tail": "baecca9219a9bbabfc0e46349834438cc0c61ba44fd6315aeda26fb65acfd786",
+    "note": "历史值（M1/M2 口径，不再作断言）；决策路径切换必然改变基线（AC-M4-8⑥）",
+    "state_hash": "9a4ae3da0d7cc3f8556d07ae773b8579d80f55a5cf6d4a0fc5594f5d7a66625f"
+  },
+  "second_chain_tail_300": "81669e9685e5dec845d0d5060321c0eba66939063997941c5be5f2e0d97d8cb6",
+  "second_state_hash_300": "0d79e5f349cad67d8ebc623fb7e49a17082e0170d0b5a5c3de62715ea42a2dca",
+  "state_hash_300": "0d79e5f349cad67d8ebc623fb7e49a17082e0170d0b5a5c3de62715ea42a2dca"
+}

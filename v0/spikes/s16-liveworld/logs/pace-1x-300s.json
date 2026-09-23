@@ -1,0 +1,13 @@
+{
+  "abs_delta_minus_seconds": 0.055611,
+  "clock_after": "15:54",
+  "clock_before": "10:54",
+  "criterion_2b": "②b 跨 ≥300 真实秒：|tick 增量 − 真实秒数| ≤ 1",
+  "criterion_2c": "②c 如实披露：世界钟读数 − 墙上钟读数（1× 档 300 秒约 +295 分钟，**属预期**）",
+  "max_drift_ms": 76.997,
+  "passed_2b": true,
+  "raw_clock_offset_minutes": 295,
+  "tick_delta": 300,
+  "wall_clock_utc8": "10:59:09",
+  "window_real_seconds": 300.056
+}

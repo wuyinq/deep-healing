@@ -1,0 +1,56 @@
+=== [0] 交付面整树摘要（注入前后必须逐位相同）===
+delivery_tree_digest_before=30df286bc33aa24aa04670948ce4f527cc0e0926eb044cebbfad1f869426e2a3  -
+
+=== [1] 隔离镜像（镜像 02_source 根，路径算术依赖它）===
+clean
+inj-remote
+inj-urllib
+mirror_roots=clean inj-remote inj-urllib 
+
+=== [2] 注入 A：providers.remote_api（项目自身模型出口）===
+injected into /tmp/m4r2_ac44/inj-remote/v0_skeleton/kernel/deephealing_kernel/rules/decision.py
+8:  - **零模型调用**：本模块不 import 任何网络/SDK（`providers.remote_api` 是唯一出口）；
+13:命名遮蔽（D-M4-22）：本模块一律 `from ..providers import remote_api
+
+=== [3] 注入 B：urllib（对照，证明判据有命中能力）===
+474:import urllib.request
+
+=== [4] state=DELIVERY（真实交付面，未注入）===
+--- state=DELIVERY workdir=/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-006-deephealing-v0-m4/02_source/v0_skeleton/kernel
+$ rg -n "requests|httpx|openai|urllib|socket\." deephealing_kernel/rules/*.py ; echo exit=$?
+rg_exit=1
+$ PYTHONDONTWRITEBYTECODE=1 python3 -m pytest tests/test_rules_layer.py -q -p no:cacheprovider ; echo exit=$?
+......                                                                   [100%]
+6 passed in 0.14s
+
+=== [5] state=CLEAN-MIRROR（镜像副本，未注入：应与 DELIVERY 同读数）===
+--- state=CLEAN-MIRROR workdir=/tmp/m4r2_ac44/clean/v0_skeleton/kernel
+$ rg -n "requests|httpx|openai|urllib|socket\." deephealing_kernel/rules/*.py ; echo exit=$?
+rg_exit=1
+$ PYTHONDONTWRITEBYTECODE=1 python3 -m pytest tests/test_rules_layer.py -q -p no:cacheprovider ; echo exit=$?
+......                                                                   [100%]
+6 passed in 0.14s
+
+=== [6] state=INJ-REMOTE-API（必须非绿）===
+--- state=INJ-REMOTE-API workdir=/tmp/m4r2_ac44/inj-remote/v0_skeleton/kernel
+$ rg -n "requests|httpx|openai|urllib|socket\." deephealing_kernel/rules/*.py ; echo exit=$?
+rg_exit=1
+$ PYTHONDONTWRITEBYTECODE=1 python3 -m pytest tests/test_rules_layer.py -q -p no:cacheprovider ; echo exit=$?
+......                                                                   [100%]
+6 passed in 0.13s
+
+=== [7] state=INJ-URLLIB（必须非绿）===
+--- state=INJ-URLLIB workdir=/tmp/m4r2_ac44/inj-urllib/v0_skeleton/kernel
+$ rg -n "requests|httpx|openai|urllib|socket\." deephealing_kernel/rules/*.py ; echo exit=$?
+deephealing_kernel/rules/decision.py:474:import urllib.request
+rg_exit=0
+$ PYTHONDONTWRITEBYTECODE=1 python3 -m pytest tests/test_rules_layer.py -q -p no:cacheprovider ; echo exit=$?
+......                                                                   [100%]
+6 passed in 0.13s
+
+=== [8] 交付面摘要复核 ===
+delivery_tree_digest_after =30df286bc33aa24aa04670948ce4f527cc0e0926eb044cebbfad1f869426e2a3  -
+DELIVERY-FACE: byte-identical (OK)
+
+=== [9] 交付面零注入复核 ===
+clean_exit=1（1=零命中）

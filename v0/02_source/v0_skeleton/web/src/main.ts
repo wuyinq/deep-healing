@@ -13,6 +13,7 @@
 
 import { createScene, type SceneHandle } from './scene/world.js';
 import { RenderClient, type ServerMessage } from './net/client.js';
+import { LiveChannel } from './net/live.js';
 import { ObservePanel } from './ui/observe/panel.js';
 import { InterventionPanel } from './ui/participate/intervention.js';
 import type { Reading, Tone } from './scene/lighting.js';
@@ -46,11 +47,12 @@ export interface AppHandle {
   observe: ObservePanel;
   intervene: InterventionPanel;
   worldview: WorldviewDocument;
+  live: LiveChannel;
   setReading(reading: Reading): void;
   setMode(mode: 'observe' | 'participate'): void;
 }
 
-export async function bootstrap(options: { worldviewUrl?: string; autoConnect?: boolean; districtPackId?: string } = {}): Promise<AppHandle> {
+export async function bootstrap(options: { worldviewUrl?: string; autoConnect?: boolean; districtPackId?: string; liveUrl?: string } = {}): Promise<AppHandle> {
   const canvas = document.getElementById('scene') as HTMLCanvasElement | null;
   if (!canvas) throw new Error('missing #scene canvas');
   const hud = document.getElementById('hud') as HTMLElement;
@@ -71,6 +73,8 @@ export async function bootstrap(options: { worldviewUrl?: string; autoConnect?: 
   const scene = createScene(canvas, { worldview: tone });
   const observe = new ObservePanel(hud);
   const intervene = new InterventionPanel(document.getElementById('intervention-host') ?? hud, client);
+  // **M4 / W12**：观察窗接**实时通道**（只读 SSE）——页面显示的是**当前**时刻，不是回放。
+  const live = new LiveChannel(options.liveUrl ?? '/live/stream');
 
   client.onMessage((message: ServerMessage) => {
     scene.apply(message as { t: string; tick: number; state?: never; ops?: never });
@@ -103,7 +107,7 @@ export async function bootstrap(options: { worldviewUrl?: string; autoConnect?: 
 
   // 暴露给真浏览器验收脚本（Playwright）读取，不构成写路径
   (globalThis as unknown as { __deephealing?: unknown }).__deephealing = {
-    scene, client, observe, intervene, worldview, setReading, setMode,
+    scene, client, observe, intervene, worldview, live, setReading, setMode,
     geometry: () => scene.geometry(),
     entityIds: () => scene.entityIds(),
     writeControls: () => observe.listWriteControls(),
@@ -114,11 +118,24 @@ export async function bootstrap(options: { worldviewUrl?: string; autoConnect?: 
     assemblyReport: () => scene.assemblyReport(),
     // R3 / G1：画布尺寸 / 绘制缓冲读数
     viewport: () => scene.viewport(),
+    // **M4 / AC-M4-10③ + AC-M4-11③**：通道读数（当前 tick / 世界钟 / 墙上钟 / observers）
+    liveReadout: () => observe.liveReadout(),
+    liveProjection: () => live.stateProjection(),
   };
 
   setMode('observe');
   setReading('surface');
   scene.startRenderLoop();
+
+  // 实时通道连入（只读；连不上不伪造任何读数，面板显示 offline）
+  live.connect();
+  const liveTimer = setInterval(() => {
+    observe.renderLiveReadout(live.readout());
+  }, 250);
+  if (typeof window !== 'undefined') {
+    window.addEventListener('beforeunload', () => { clearInterval(liveTimer); live.close(); });
+  }
+  observe.renderLiveReadout(live.readout());
 
   if (options.autoConnect !== false) {
     try {
@@ -127,7 +144,7 @@ export async function bootstrap(options: { worldviewUrl?: string; autoConnect?: 
       // 无会话层时仍渲染本地场景（离线可看），但**不**伪造世界状态
     }
   }
-  return { scene, client, observe, intervene, worldview, setReading, setMode };
+  return { scene, client, observe, intervene, worldview, live, setReading, setMode };
 }
 
 function observeTick(panel: ObservePanel): number {

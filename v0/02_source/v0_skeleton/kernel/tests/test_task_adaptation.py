@@ -12,6 +12,7 @@ RED 证据（隔离副本，见 spikes/s12-session/logs/）：本文件在「删
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from deephealing_kernel.events import EventLog
@@ -30,9 +31,21 @@ KERNEL_ROOT = Path(__file__).resolve().parents[1]
 PACK_DIR = KERNEL_ROOT.parent / "districts" / "xingfu-xiaoqu"
 SEED = 20260921
 
-# M1/M2 冻结基线（AC-M3-6；无 intent 时必须逐位不变）
-BASELINE_STATE_HASH_300 = "9a4ae3da0d7cc3f8556d07ae773b8579d80f55a5cf6d4a0fc5594f5d7a66625f"
-BASELINE_CHAIN_TAIL = "baecca9219a9bbabfc0e46349834438cc0c61ba44fd6315aeda26fb65acfd786"
+# ---------------------------------------------------------------------------- 基线口径
+# **M4 判据变更登记（AC-M4-8⑥，必须写进 06 与 V0_SELF_TEST.md）**
+# 决策路径由 M1 班表桩（`stub_decide`）切换为「需求 → 效用 → 行为树」（`rules/decision.py`）
+# ⇒ `state_hash` / `chain_tail` **必然**改变。这是**预期**，不是回归。
+# 旧硬断言（「必须等于旧基线值」）已按 REQ 要求改写为「**确定性自洽**」口径：
+#   ① 同 seed 同 tick 数**两次独立运行**逐位相同；
+#   ② 无 intent 时 `task.state_changed` / `intent.applied` 计数为 0；
+#   ③ 新基线（本轮产出，已登记）作为**回归锚**。
+# 历史值（M1/M2 口径，仅存档，**不再作断言**）：
+#   M1M2_BASELINE_STATE_HASH_300 = "9a4ae3da0d7cc3f8556d07ae773b8579d80f55a5cf6d4a0fc5594f5d7a66625f"
+#   M1M2_BASELINE_CHAIN_TAIL     = "baecca9219a9bbabfc0e46349834438cc0c61ba44fd6315aeda26fb65acfd786"
+# 本轮（M4）新基线：seed 20260921 / 300 tick / pack districts/xingfu-xiaoqu
+#   变更时刻：epoch 1790130629（2026-09-23 10:30:29 +08:00）
+M4_BASELINE_STATE_HASH_300 = "0d79e5f349cad67d8ebc623fb7e49a17082e0170d0b5a5c3de62715ea42a2dca"
+M4_BASELINE_CHAIN_TAIL = "81669e9685e5dec845d0d5060321c0eba66939063997941c5be5f2e0d97d8cb6"
 
 
 def _kernel(tmp_path: Path, *, snapshot_every: int = 0) -> tuple[object, WorldKernel, EventLog]:
@@ -201,18 +214,41 @@ def test_max_shifts_is_a_hard_cap(tmp_path):
 
 # ---------------------------------------------------------------------------- 5. 无 intent 基线
 def test_default_run_without_intents_is_bit_identical(tmp_path):
-    """AC-M3-5 末条 / AC-M3-6：内核默认跑（无 intent）结果**逐位不变**（F-4 红线）。"""
-    _, kernel, log = _kernel(tmp_path, snapshot_every=50)
-    kernel.run(300)
-    checkpoints = sorted((tmp_path / "checkpoints").glob("*.json"))
-    assert [path.name for path in checkpoints] == [
-        "000050.json", "000100.json", "000150.json", "000200.json", "000250.json", "000300.json",
-    ]
-    import json
+    """AC-M3-5 末条 / AC-M3-6 + **M4 口径改写**：无 intent 的默认跑必须
+    「**确定性自洽**」（两次独立运行逐位相同）且与**本轮新基线**一致。
 
-    last = json.loads(checkpoints[-1].read_text(encoding="utf-8"))
-    assert last["tick"] == 300
-    assert last["state_hash"] == BASELINE_STATE_HASH_300
-    assert log.last_hash == BASELINE_CHAIN_TAIL
-    assert _types(log).count("task.state_changed") == 0
-    assert _types(log).count("intent.applied") == 0
+    判据变更登记见文件头：旧值（`9a4ae3da…` / `baecca92…`）**不再作断言**，
+    只作为历史存档；本轮新基线由 M4 产出并登记。
+    """
+    first_dir = tmp_path / "first"
+    second_dir = tmp_path / "second"
+    results = []
+    for out_dir in (first_dir, second_dir):
+        _, kernel, log = _kernel(out_dir, snapshot_every=50)
+        kernel.run(300)
+        checkpoints = sorted((out_dir / "checkpoints").glob("*.json"))
+        assert [path.name for path in checkpoints] == [
+            "000050.json", "000100.json", "000150.json", "000200.json", "000250.json", "000300.json",
+        ]
+        last = json.loads(checkpoints[-1].read_text(encoding="utf-8"))
+        assert last["tick"] == 300
+        assert _types(log).count("task.state_changed") == 0
+        assert _types(log).count("intent.applied") == 0
+        results.append((last["state_hash"], log.last_hash))
+
+    # ① 确定性自洽：两次独立运行逐位相同（判据**机制**，与基线数值无关）
+    assert results[0][0] == results[1][0], f"两次运行的 state_hash 不一致：{results}"
+    assert results[0][1] == results[1][1], f"两次运行的 chain_tail 不一致：{results}"
+    # ② 本轮新基线（M4 产出，已登记）作为回归锚
+    assert results[0][0] == M4_BASELINE_STATE_HASH_300, (
+        f"M4 基线漂移：state_hash {results[0][0]} != 登记的 {M4_BASELINE_STATE_HASH_300}")
+    assert results[0][1] == M4_BASELINE_CHAIN_TAIL, (
+        f"M4 基线漂移：chain_tail {results[0][1]} != 登记的 {M4_BASELINE_CHAIN_TAIL}")
+    # ③ 反例（自证）：换 seed ⇒ 基线必须改变（否则②是恒真判据）
+    other_dir = tmp_path / "other"
+    other_log = EventLog(other_dir / "events.jsonl")
+    other = WorldKernel(pack=load_pack(PACK_DIR), seed=SEED + 1, log=other_log,
+                        snapshot_every=50, checkpoint_dir=other_dir / "checkpoints")
+    other.run(300)
+    assert (other.state_hash(), other_log.last_hash) != results[0], (
+        "换 seed 后基线必须改变 ⇒ 证明②不是恒真判据")

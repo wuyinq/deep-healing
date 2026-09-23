@@ -1,0 +1,4 @@
+{"tag": "obs0", "observers": 0, "exit": 0, "wall_s": 3.0, "fd_peak": 40, "served_200ish": 0, "live_state_json_exists": true, "errno24": false, "fatal_python_error": false, "summary_json_in_stdout": true}
+{"tag": "obs4_run0", "observers": 4, "exit": -6, "wall_s": 10.23, "fd_peak": 4129, "served_200ish": 4680, "live_state_json_exists": false, "errno24": true, "fatal_python_error": true, "summary_json_in_stdout": false}
+{"tag": "obs4_run1", "observers": 4, "exit": -6, "wall_s": 8.73, "fd_peak": 4129, "served_200ish": 4725, "live_state_json_exists": false, "errno24": true, "fatal_python_error": true, "summary_json_in_stdout": false}
+{"tag": "obs4_run2", "observers": 4, "exit": -6, "wall_s": 10.63, "fd_peak": 4127, "served_200ish": 4822, "live_state_json_exists": false, "errno24": true, "fatal_python_error": true, "summary_json_in_stdout": false}

@@ -44,7 +44,7 @@ def _record_cassettes(tmp_path: Path) -> Path:
     cassettes = tmp_path / "cassettes"
     record_dir.mkdir(parents=True, exist_ok=True)
     cassettes.mkdir(parents=True, exist_ok=True)
-    proc = _cli("run", "--pack", PACK, "--seed", "20260921", "--events", str(record_dir / "e.jsonl"),
+    proc = _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921", "--events", str(record_dir / "e.jsonl"),
                 "--snapshot-every", "50", "--ticks", "60", "--cognition", "--memory",
                 "--cassette-dir", str(cassettes))
     assert proc.returncode == 0, proc.stdout + proc.stderr
@@ -62,7 +62,7 @@ def _empty_cassette_dir(tmp_path: Path) -> Path:
 def test_replay_with_missing_cassettes_fails_closed_at_command_layer(tmp_path):
     empty = _empty_cassette_dir(tmp_path)
     out = tmp_path / "miss-out"
-    proc = _cli("run", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
+    proc = _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
                 "--snapshot-every", "50", "--ticks", "100", "--cognition", "--replay",
                 "--cassette-dir", str(empty))
     combined = proc.stdout + proc.stderr
@@ -88,7 +88,7 @@ def test_summary_fail_closed_count_matches_journal(tmp_path):
     """`fail_closed_events` 必须等于 journal 里 `cassette.miss` 条数（不是拍脑袋的 1）。"""
     empty = _empty_cassette_dir(tmp_path)
     out = tmp_path / "miss-out-2"
-    proc = _cli("run", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
+    proc = _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
                 "--snapshot-every", "50", "--ticks", "100", "--cognition", "--replay",
                 "--cassette-dir", str(empty))
     assert proc.returncode != 0
@@ -116,7 +116,7 @@ def test_negative_control_exit_zero_makes_criterion_red(tmp_path, monkeypatch):
     out = tmp_path / "neg-out"
     env = dict(ENV, DH_NEGATIVE_HIDE_CASSETTE_MISS="1")
     proc = subprocess.run(
-        [sys.executable, "-m", "deephealing_kernel", "run", "--pack", PACK, "--seed", "20260921",
+        [sys.executable, "-m", "deephealing_kernel", "run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921",
          "--events", str(out / "e.jsonl"), "--snapshot-every", "50", "--ticks", "100",
          "--cognition", "--replay", "--cassette-dir", str(empty)],
         capture_output=True, text=True, cwd=str(KERNEL_ROOT), env=env,
@@ -136,7 +136,7 @@ def test_negative_control_exit_zero_makes_criterion_red(tmp_path, monkeypatch):
 def test_normal_replay_with_complete_cassettes_stays_green(tmp_path):
     cassettes = _record_cassettes(tmp_path)
     out = tmp_path / "ok-out"
-    proc = _cli("run", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
+    proc = _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
                 "--snapshot-every", "50", "--ticks", "60", "--cognition", "--memory", "--replay",
                 "--cassette-dir", str(cassettes))
     combined = proc.stdout + proc.stderr

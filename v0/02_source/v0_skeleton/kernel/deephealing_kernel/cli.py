@@ -27,8 +27,12 @@
 `FROZEN-CASSETTE-INTEGRITY-1`），且重放与 `run` **共用** `WorldKernel.step` 与 `canonical_json`（自比对）。
 **抗改写必须传 `--expected-hash`**（链外锚点）——两者互补，缺一不可。
 
-`--ws-port` 本轮**接受但不监听**（起服务属 W8）；`--replay` 本轮**接受但无效果**
-（能力强制走 cassette_replay 属 W3，本轮无能力调用）——两者都会在 stdout 显式打印，不留白。
+`--ws-port <n>` 本轮**真的监听**同一个**只读**实时观察端点（`live.py`）；
+**`--ws-port 0`（默认）= 不监听**（最小权限；8787 已是会话侧代理端口）。
+`--replay` 本轮**接受但无效果**（能力强制走 cassette_replay 属 W3，本轮无能力调用）——会在 stdout 显式打印，不留白。
+
+`live` 子命令（M4 新增）是**活的世界**：内核侧自有 UTC+8 世界钟（相位从内容包派生）+
+真实节流（1× = 1 真实秒 = 1 世界分钟）+ 只读观察通道（默认 `--port 8899`，`--ws-port` 为别名）。
 """
 
 from __future__ import annotations
@@ -37,17 +41,32 @@ import argparse
 import importlib.util
 import json
 import os
+import signal
 import sys
 import tempfile
 import time
 from pathlib import Path
 
 from . import KERNEL_CONTRACT_VERSION
+from . import live as live_mod
 from . import snapshot as snapshot_mod
+from . import world_clock
 from .events import EventChainError, EventLog, check_ech_invariants
+from .live import (
+    DEFAULT_BIND,
+    DEFAULT_LIVE_PORT,
+    DEFAULT_WS_PORT,
+    MAX_OBSERVERS_DEFAULT,
+    AddrInUse,
+    BindRefused,
+    LiveServer,
+    LiveWorld,
+    is_loopback,
+)
 from .pack import PackInvalid, build_portal_edges, load_pack
 from .providers.cassette import CassetteMiss, CassetteTampered
 from .registry import CapabilityError
+from .rules.decision import candidate_actions
 from .snapshot import _load_checkpoint_dir, check_checkpoint_integrity, write_checkpoint
 from .tick import DEFAULT_PLAN_TICKS, WorldKernel
 
@@ -123,7 +142,8 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--tick-rate", type=int, default=10)
     run.add_argument("--events", required=True)
     run.add_argument("--snapshot-every", type=int, default=50)
-    run.add_argument("--ws-port", type=int, default=8787)
+    run.add_argument("--ws-port", type=int, default=DEFAULT_WS_PORT,
+                     help="只读实时观察端点端口；**0（默认）= 不监听**；显式给端口则真监听（daemon 线程，进程存活期）")
     run.add_argument("--replay", action="store_true", help="回放模式：能力强制走 cassette_replay 且 fail-closed")
     run.add_argument("--ticks", type=int, default=DEFAULT_PLAN_TICKS,
                      help="[加法扩展] 推进的 tick 数上界（默认值见 tick.DEFAULT_PLAN_TICKS）；冻结命令面本无终止参数")
@@ -152,6 +172,29 @@ def build_parser() -> argparse.ArgumentParser:
 
     validate = sub.add_parser("validate", help="校验内容包（pack.sig + 数据 schema）")
     validate.add_argument("--pack", required=True)
+
+    live = sub.add_parser("live", help="[M4] 活的世界：自有 UTC+8 世界钟 + 真实节流 + 只读实时观察通道")
+    live.add_argument("--pack", required=True)
+    live.add_argument("--seed", type=int, default=None)
+    live.add_argument("--events", default=None, help="事件日志路径（缺省 = <out>/events.jsonl）")
+    live.add_argument("--out", required=True, help="运行产物目录（事件日志 / 检查点 / live_state.json）")
+    live.add_argument("--port", type=int, default=DEFAULT_LIVE_PORT,
+                      help="只读观察通道端口（默认 8899）")
+    live.add_argument("--ws-port", type=int, default=None,
+                      help="`--port` 的别名（字面判据「--ws-port 真的监听」直接可验）")
+    live.add_argument("--bind", default=DEFAULT_BIND, help="绑定地址（默认仅本机 127.0.0.1）")
+    live.add_argument("--allow-remote", action="store_true",
+                      help="允许绑定非 loopback 地址（**无鉴权**，信息面扩大，显式开关）")
+    live.add_argument("--pace", type=float, default=1.0,
+                      help="节流档：每个世界 tick 的真实秒数（1× = 1 真实秒 = 1 世界分钟）")
+    live.add_argument("--ticks", type=int, default=None, help="推进 tick 数上界（缺省 = 不限，靠信号停止）")
+    live.add_argument("--days", type=float, default=None, help="按世界日数换算的 tick 上界（与 --ticks 取先到者）")
+    live.add_argument("--snapshot-every", type=int, default=50)
+    live.add_argument("--resume-tick", type=int, default=None, help="快进复原到该 tick 后继续节流推进")
+    live.add_argument("--resume-state", default=None, help="从 live_state.json 复原（校验 tick/seed/pack 一致）")
+    live.add_argument("--no-warmup", action="store_true", help="不做「快进到当前 UTC+8 时刻」的启动锚定")
+    live.add_argument("--max-observers", type=int, default=MAX_OBSERVERS_DEFAULT,
+                      help="SSE 并发观察者上限（超限 ⇒ 503）")
 
     pack = sub.add_parser("pack", help="内容包工具")
     pack_sub = pack.add_subparsers(dest="pack_command", required=True)
@@ -323,7 +366,46 @@ def cmd_run(args) -> int:
         tick_rate=args.tick_rate,
         plan_ticks=args.ticks,
     )
-    kernel.run(args.ticks)
+    # **F5′（r3）· 只读观察通道必须在 tick 循环之前启动**
+    #
+    # 旧顺序（`kernel.run()` 在 `_start_live_listener()` **之前**）⇒ 监听只在整轮 tick 跑完之后才
+    # bind，随即打印 JSON 并返回、进程退出：真子进程下外部可连窗口不可观测（上界 ≈ 22µs，
+    # 78,898 次阻塞 connect 采样 0 命中），而 `live_channel.listening` 仍自报 `true`
+    # 并被 `AC-M4-9④` 当证据引用。**问题不是「没监听」，是「声明了一个外部无法观测的窗口，
+    # 却把它当可用观察面」** ⇒ 修行为，不改措辞。
+    #
+    # 设计依据：`01_m4_design.md` D-M4-4 原文 =「显式给端口时**真的监听并服务同一只读端点**」
+    # ⇒ 这是实现**自己已冻结的设计**，不是改契约。
+    # 副作用（登记 C-18）：顺序前移后，「时钟语义派生失败」会在**写产物之前** fail-closed
+    # （旧顺序先把 `events.jsonl` / `checkpoints` 写完再 `exit 1`，留半截产物）——
+    # 与 `_refuse_unusable_output_dir` 的「不留下半截日志」同向，**更** fail-closed。
+    # `--ws-port 0`（默认）不进该分支 ⇒ 21 处既有用例零影响。
+    live_channel = None
+    if int(args.ws_port) != 0:
+        try:
+            live_world, live_server = _start_live_listener(
+                kernel, pack, port=int(args.ws_port), bind=DEFAULT_BIND, allow_remote=False)
+        except world_clock.ClockSemanticsError as exc:
+            print(f"{exc.code}: {exc}", file=sys.stderr)
+            return 1
+        except AddrInUse as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        live_channel = {
+            "listening": live_server.listening,
+            "bind": live_server.bind,
+            "port": live_server.port,
+            "read_only": True,
+            "endpoints": ["/live/health", "/live/meta", "/live/state", "/live/stream"],
+            "note": "read-only observation channel; there is no write endpoint",
+        }
+        _LIVE_CHANNELS.append(live_server)
+    try:
+        kernel.run(args.ticks)
+    finally:
+        # **F7（r3）**：观察面现在整段 tick 循环都活着 ⇒ 循环一结束就**显式 stop()**，
+        # 不让 HTTP daemon 线程活到解释器 finalize（那是 `_enter_buffered_busy` ⇒ SIGABRT 的成因）。
+        _stop_live_channels()
     cognition_report = None
     if args.cognition:
         cognition_report = _run_cognition(
@@ -370,11 +452,11 @@ def cmd_run(args) -> int:
     if args.replay:
         print("note: --replay forces the cognition layer onto cassette_replay (fail-closed on miss); "
               "M1's tick path makes no capability calls => no effect there")
-    print(f"note: --ws-port {args.ws_port} accepted but NOT listened on (serving is W8)")
     print(json.dumps({
         "command": "run", "pack_id": pack.manifest["id"], "seed": kernel.seed,
         "ticks": args.ticks, "snapshot_every": kernel.snapshot_every,
         "events": str(events_path), "checkpoints": str(checkpoint_dir),
+        "live_channel": live_channel,
         "chain_tail": kernel.log.last_hash if kernel.log is not None else None,
         "event_count": kernel.log._seq if kernel.log is not None else 0,  # noqa: SLF001 (诊断输出)
         "cognition": None if cognition_report is None else {
@@ -768,16 +850,12 @@ def _capability_caps(capabilities: list[dict]) -> tuple[int, int]:
 
 
 def _candidate_actions(state: str) -> list[dict]:
-    """日程状态 → 候选动作（**数据映射**，无 if 分支按 NPC 特判）。"""
-    table = {
-        "idle": [("rest", "physiology"), ("talk", "belonging"), ("walk", "self_actualization")],
-        "working": [("work", "esteem"), ("talk", "belonging"), ("rest", "physiology")],
-        "socializing": [("talk", "belonging"), ("work", "esteem"), ("rest", "physiology")],
-        "resting": [("rest", "physiology"), ("walk", "self_actualization"), ("talk", "belonging")],
-        "moving": [("walk", "self_actualization"), ("rest", "physiology"), ("talk", "belonging")],
-        "interrupted": [("flee", "safety"), ("rest", "physiology"), ("talk", "belonging")],
-    }
-    return [{"action": action, "need": need, "when_state": state} for action, need in table.get(state, table["idle"])]
+    """日程状态 → 候选动作。
+
+    **唯一权威已迁到 `rules/decision.py`**（`candidate_actions`）：本函数只是**导入别名**，
+    避免「决策层与认知旁路各持一份表」的漂移（设计 §4.1）。
+    """
+    return candidate_actions(state)
 
 
 def _build_cognition_registry(out_dir: Path, *, cassette_root: Path, replay_mode: bool = False) -> tuple[object, dict]:
@@ -996,6 +1074,278 @@ def _run_cognition(pack, kernel, *, out_dir: Path, replay_mode: bool, memory_wri
 
 
 # --------------------------------------------------------------------------- main
+# --------------------------------------------------------------------------- live（M4）
+#: 本进程内已启动的只读观察通道（`run --ws-port <n>` 用；进程退出即随 daemon 线程消失）
+_LIVE_CHANNELS: list = []
+
+
+def _stop_live_channels() -> None:
+    """停掉本进程已启动的只读观察通道（**幂等**）。
+
+    **F7（r3）**：`server.stop()`（`shutdown()` + `server_close()` + 线程 join）必须**显式执行**——
+    让 HTTP daemon 线程活到解释器 finalize，会在 finalize 期争用 `stderr` 锁 ⇒
+    `Fatal Python error: _enter_buffered_busy` ⇒ **SIGABRT**。
+    单条通道停失败**不得**跳过其余通道（收尾路径不因局部异常而扩大影响）。
+    """
+    while _LIVE_CHANNELS:
+        server = _LIVE_CHANNELS.pop()
+        try:
+            server.stop()
+        except Exception as exc:  # noqa: BLE001 — 收尾路径：记录并继续停其余通道，不上抛
+            print(f"E_LIVE_STOP_FAILED: {type(exc).__name__}: {exc}", file=sys.stderr)
+
+
+class _StopFlag:
+    """最小停止标志（`advance_loop(stop_event=...)` 只需要 `is_set()`）。"""
+
+    __slots__ = ("_flag",)
+
+    def __init__(self) -> None:
+        self._flag = False
+
+    def set(self) -> None:
+        self._flag = True
+
+    def is_set(self) -> bool:
+        return self._flag
+
+
+def _start_live_listener(kernel, pack, *, port: int, bind: str = DEFAULT_BIND,
+                         allow_remote: bool = False, pace: float = 1.0, warmup: int = 0,
+                         max_observers: int = MAX_OBSERVERS_DEFAULT):
+    """装配并启动只读观察通道（`run` 与 `live` 共用同一实现）。
+
+    世界钟语义从内容包派生（fail-closed：派生失败 ⇒ `ClockSemanticsError` 上抛，调用方转非 0 退出）。
+    """
+    sem = world_clock.derive_clock_semantics(pack)
+    world = LiveWorld(kernel, sem=sem, pace_s_per_tick=pace, warmup=warmup,
+                      max_observers=max_observers)
+    server = LiveServer(world, bind=bind, port=port, allow_remote=allow_remote)
+    server.start()
+    return world, server
+
+
+def _resume_payload(path: Path) -> dict:
+    """读 `live_state.json`（不存在 / 非法 JSON ⇒ 结构化拒绝）。"""
+    try:
+        document = json.loads(Path(path).read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        raise PackInvalid(f"E_RESUME_STATE_INVALID: no such state file: {Path(path).name}")
+    except (OSError, ValueError):
+        raise PackInvalid("E_RESUME_STATE_INVALID: state file is not readable JSON")
+    if not isinstance(document, dict):
+        raise PackInvalid("E_RESUME_STATE_INVALID: state file must contain a JSON object")
+    return document
+
+
+def cmd_live(args) -> int:
+    """活的世界：启动快进到当前 UTC+8 时刻 ⇒ 按真实时间推进 ⇒ 只读通道可观察。"""
+    try:
+        pack = load_pack(resolve_pack_dir(args.pack))
+    except PackInvalid as exc:
+        print(f"{exc.code}: {exc}", file=sys.stderr)
+        return 1
+
+    # ① 服务边界：非 loopback 绑定必须显式 --allow-remote（**启动前**拒，不监听、不留半截产物）
+    bind = str(args.bind)
+    if not is_loopback(bind) and not args.allow_remote:
+        print(
+            f"E_BIND_REFUSED: refusing to bind {bind!r} without --allow-remote "
+            "(the live channel is loopback-only by default; nothing was started)",
+            file=sys.stderr,
+        )
+        return 2
+
+    port = int(args.ws_port) if args.ws_port is not None else int(args.port)
+
+    try:
+        sem = world_clock.derive_clock_semantics(pack)
+    except world_clock.ClockSemanticsError as exc:
+        print(f"{exc.code}: {exc}", file=sys.stderr)
+        return 1
+
+    out_dir = Path(args.out)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    events_path = Path(args.events) if args.events else out_dir / "events.jsonl"
+    checkpoint_dir = events_path.parent / "checkpoints"
+    try:
+        _refuse_unusable_output_dir(checkpoint_dir, label="live")
+    except PackInvalid as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+
+    seed = int(args.seed) if args.seed is not None else int(pack.world_seed.get("seed", 0))
+
+    # ② 恢复语义（D-M4-18）：`live_state.json` 记 tick + seed + pack_id + pack_version，
+    #    与当前 pack/seed 不匹配 ⇒ **结构化拒绝**（不得用「同 tick 同哈希」当跨 seed 的错觉证据）
+    resume_tick = args.resume_tick
+    if args.resume_state:
+        try:
+            sealed = _resume_payload(Path(args.resume_state))
+        except PackInvalid as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        mismatches = []
+        if int(sealed.get("seed", -1)) != seed:
+            mismatches.append(f"seed {sealed.get('seed')} != {seed}")
+        if sealed.get("pack_id") != pack.manifest["id"]:
+            mismatches.append(f"pack_id {sealed.get('pack_id')!r} != {pack.manifest['id']!r}")
+        if sealed.get("pack_version") != pack.manifest["version"]:
+            mismatches.append(
+                f"pack_version {sealed.get('pack_version')!r} != {pack.manifest['version']!r}")
+        if mismatches:
+            print("E_RESUME_STATE_MISMATCH: " + "; ".join(mismatches), file=sys.stderr)
+            return 1
+        resume_tick = int(sealed.get("tick", 0))
+
+    # **恢复语义的日志边界（M4 新增，fail-closed）**：恢复是「同 seed + 同 pack + 快进到同一 tick」的
+    # **确定性重放** ⇒ 若复用**已有**的事件日志，`EventLog` 会**追加**（第二个 `world.init` + seq 重复）
+    # ⇒ 日志立刻不可核验。故：要恢复就必须指向一个**新的 / 空的**事件日志，否则结构化拒绝。
+    if (args.resume_state or args.resume_tick is not None) and events_path.exists() \
+            and events_path.stat().st_size > 0:
+        print(
+            f"E_RESUME_LOG_EXISTS: refusing to resume into a non-empty event log ({events_path.name}); "
+            "resume re-plays from genesis, so reusing the log would append a second world.init and "
+            "duplicate the seq chain. Point --events at a fresh path (the old log stays intact).",
+            file=sys.stderr,
+        )
+        return 1
+
+    kernel = WorldKernel(
+        pack=pack, seed=seed, log=EventLog(events_path),
+        snapshot_every=args.snapshot_every, checkpoint_dir=checkpoint_dir,
+        plan_ticks=int(args.ticks) if args.ticks is not None else DEFAULT_PLAN_TICKS,
+    )
+
+    # ③ 启动锚定：快进到「此刻」（算式与实数都打印）
+    wall = world_clock.now_utc8()
+    warmup = 0 if args.no_warmup else world_clock.warmup_ticks(wall, sem)
+    anchor_tick = int(resume_tick) if resume_tick is not None else warmup
+    wall_minutes = wall.hour * 60 + wall.minute
+    print(
+        f"anchor: UTC+8 wall clock {wall.strftime('%H:%M')} ({wall_minutes} min into the day) | "
+        f"warmup = (({wall_minutes}) - {sem['tick0_minutes']}) mod {sem['day_ticks']} = {warmup} ticks"
+        + (f" | resume-tick override = {anchor_tick} ticks" if resume_tick is not None else "")
+    )
+    if anchor_tick > 0:
+        kernel.run(anchor_tick)
+    print(
+        f"world clock after fast-forward: {world_clock.clock_of(kernel.world.tick, sem)} "
+        f"(tick {kernel.world.tick}) | tick0 = "
+        f"{sem['tick0_minutes'] // 60:02d}:{sem['tick0_minutes'] % 60:02d} | "
+        f"pace = {args.pace} real-second(s) per world-minute"
+    )
+
+    # ④ 服务（只读；端口被占 ⇒ E_ADDRINUSE exit 1，不静默降级）
+    live_world = LiveWorld(kernel, sem=sem, pace_s_per_tick=float(args.pace), warmup=warmup,
+                           max_observers=int(args.max_observers))
+    server = LiveServer(live_world, bind=bind, port=port, allow_remote=bool(args.allow_remote))
+    try:
+        server.start()
+    except AddrInUse as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+
+    policy = server.bind_policy()
+    print(f"live channel: http://{server.bind}:{server.port} (read-only; "
+          f"{'remote access ENABLED' if args.allow_remote else 'loopback only'})")
+    if policy["warning"]:
+        print(f"WARNING: {policy['warning']}")
+
+    max_ticks = None
+    if args.ticks is not None:
+        max_ticks = int(args.ticks)
+    if args.days is not None:
+        day_ticks = int(sem["day_ticks"])
+        by_days = int(float(args.days) * day_ticks)
+        max_ticks = by_days if max_ticks is None else min(max_ticks, by_days)
+
+    stop_flag = _StopFlag()
+
+    def _request_stop(signum, _frame) -> None:
+        print(f"signal {signum}: sealing the world after this tick", file=sys.stderr)
+        stop_flag.set()
+
+    for signal_name in ("SIGINT", "SIGTERM"):
+        handler = getattr(signal, signal_name, None)
+        if handler is not None:
+            try:
+                signal.signal(handler, _request_stop)
+            except (ValueError, OSError):  # 非主线程 ⇒ 跳过（不影响功能）
+                pass
+
+    state_path = out_dir / "live_state.json"
+    sealed: dict = {}
+    seal_error: OSError | None = None
+    try:
+        loop = live_world.advance_loop(max_ticks=max_ticks, stop_event=stop_flag)
+    finally:
+        # **F7（r3）· 封存路径必须 fail-closed 且可观测**
+        #
+        # 旧形态：封存段**无 try/except**，且 `server.stop()` 排在 `write_text()` **之后**
+        # ⇒ 写 `live_state.json` 抛 `OSError`（观察者负载打满 fd ⇒ `Errno 24`）时：
+        # 摘要不打印、`server.stop()` **被跳过**、HTTP daemon 线程不停 ⇒ 解释器 finalize 期
+        # 争用 stderr 锁 ⇒ `Fatal Python error: _enter_buffered_busy` ⇒ **SIGABRT**。
+        # **因果方向：daemon 线程未停是果，跳过 `stop()` 是因。**
+        # 修法：封存异常转**结构化错误**（非 0 退出 + stderr 一行诊断 + stdout 一行 JSON），
+        # 且 `server.stop()` 放进**内层 finally** ⇒ 它在**任何**封存失败路径上都仍被执行
+        # （内层 finally 对 OSError 之外的异常同样生效，异常随后按原样上抛）。
+        try:
+            sealed = live_world.seal_state()
+            sealed.update({
+                "seed": kernel.seed,
+                "pack_id": pack.manifest["id"],
+                "pack_version": pack.manifest["version"],
+                "pace_s_per_tick": float(args.pace),
+                "events": str(events_path),
+            })
+            state_path.write_text(json.dumps(sealed, ensure_ascii=False, sort_keys=True) + "\n",
+                                  encoding="utf-8")
+        except OSError as exc:
+            seal_error = exc
+        finally:
+            server.stop()
+
+    if seal_error is not None:
+        detail = getattr(seal_error, "strerror", None) or str(seal_error)
+        print(f"E_LIVE_STATE_SEAL_FAILED: cannot write {state_path.name}: "
+              f"{type(seal_error).__name__}: {detail}", file=sys.stderr)
+        print(json.dumps({
+            "command": "live",
+            "pack_id": pack.manifest["id"],
+            "seed": kernel.seed,
+            "bind": server.bind,
+            "port": server.port,
+            "sealed": False,
+            # **派生读数**（不是字面 True）：`stop()` 正常执行会把这两个字段置 None
+            "server_stopped": server.httpd is None and server.thread is None,
+            "live_state": str(state_path),
+            "error": "E_LIVE_STATE_SEAL_FAILED",
+            "detail": f"{type(seal_error).__name__}: {detail}",
+            "read_only": True,
+        }, ensure_ascii=False, sort_keys=True))
+        return 1
+
+    print(json.dumps({
+        "command": "live",
+        "pack_id": pack.manifest["id"],
+        "seed": kernel.seed,
+        "bind": server.bind,
+        "port": server.port,
+        "bind_policy": policy,
+        "clock_semantics": sem,
+        "warmup_ticks": warmup,
+        "pace_s_per_tick": float(args.pace),
+        "loop": loop,
+        "state_hash": sealed["state_hash"],
+        "event_chain_hash": sealed["event_chain_hash"],
+        "live_state": str(state_path),
+        "events": str(events_path),
+        "read_only": True,
+    }, ensure_ascii=False, sort_keys=True))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.command == "run":
@@ -1006,6 +1356,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_verify(args)
     if args.command == "validate":
         return cmd_validate(args)
+    if args.command == "live":
+        return cmd_live(args)
     if args.command == "pack":
         if args.pack_command == "sign":
             return cmd_pack_sign(args)

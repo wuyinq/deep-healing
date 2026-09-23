@@ -1,0 +1,41 @@
+{
+  "connection_accounting": "连接数由本进程自记账（不信服务端自报）",
+  "criterion_1": "① 断开**所有**观察者后世界继续推进（observers == 0 且 tick 增长）",
+  "criterion_5": "⑤ 观察者独立性：0 个 vs 2 个观察者的同一窗口 tick 增量相同",
+  "delta_with_two": 102,
+  "delta_with_zero": 102,
+  "passed_1": true,
+  "passed_5": true,
+  "with_two_observers": [
+    {
+      "at": "10:54:03",
+      "clock": "08:21",
+      "label": "two_observers_connected",
+      "observers": 0,
+      "tick": 81
+    },
+    {
+      "at": "10:54:05",
+      "clock": "10:03",
+      "label": "two_observers_after_2s",
+      "observers": 0,
+      "tick": 183
+    }
+  ],
+  "with_zero_observers": [
+    {
+      "at": "10:54:06",
+      "clock": "10:45",
+      "label": "all_observers_disconnected",
+      "observers": 0,
+      "tick": 225
+    },
+    {
+      "at": "10:54:08",
+      "clock": "12:27",
+      "label": "after_2s_with_zero_observers",
+      "observers": 0,
+      "tick": 327
+    }
+  ]
+}

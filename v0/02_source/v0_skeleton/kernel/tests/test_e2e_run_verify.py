@@ -40,7 +40,7 @@ def _cli(*args: str) -> subprocess.CompletedProcess:
 def _run(events: Path, ticks: int = 120, snapshot_every: int = 50) -> subprocess.CompletedProcess:
     events.parent.mkdir(parents=True, exist_ok=True)
     return _cli(
-        "run", "--pack", PACK_REL, "--seed", str(SEED),
+        "run", "--ws-port", "0", "--pack", PACK_REL, "--seed", str(SEED),
         "--events", str(events), "--snapshot-every", str(snapshot_every), "--ticks", str(ticks),
     )
 
@@ -82,15 +82,32 @@ def test_e2e_run_then_verify_ok(tmp_path):
 
 # --------------------------------------------------------------------------- R6
 def test_verify_detects_truncated_log(tmp_path):
-    """朴素整行截断（不重算链）→ verify exit≠0，并打印首个分歧 tick。"""
+    """朴素整行截断（不重算链）→ verify exit≠0，并打印首个分歧 tick。
+
+    **M4 口径修正（登记 C-13；判据意图不变，只改夹具参数）**：
+    `cli.py` 的 `truncated log: max_tick != plan_ticks` 只有在**截断跨过 tick 边界**
+    （即 `max_tick` 掉到 `plan_ticks` 之下）时才触发。M4 给每 tick 每 NPC 增加了一条
+    `npc.decision` ⇒ 每 tick 事件数由 4 变为 **9** ⇒ 原来「删尾部 6 行」只删掉 tick 120 内的
+    事件、`max_tick` 仍是 120 ⇒ 该分支不触发（改由 event-stream 比较先报分歧）。
+    故夹具改为**删到确实跨过 tick 边界**（`lines[:-12]`），并**显式断言该前提成立**
+    （否则本用例会在不满足前提时静默退化为「只测 event-stream 比较」）。
+    根因隔离读数见 `03` M4-13 与 `/tmp/m4_trunc_rootcause.py`。
+    """
     events = tmp_path / "e.jsonl"
     assert _run(events).returncode == 0
 
     lines = _read_lines(events)
+    plan_ticks = max(obj["tick"] for obj in lines)
+    kept = lines[:-12]  # 删到跨过 tick 边界（M4：每 tick 9 条事件）
+    # **前提断言**：必须真的把 max_tick 拉到 plan_ticks 之下，否则本用例测的不是 `truncated log` 分支
+    assert max(obj["tick"] for obj in kept) < plan_ticks, (
+        "fixture precondition violated: 截断未跨过 tick 边界 ⇒ `truncated log` 分支不可达；"
+        "请加大截断行数（M4 起每 tick 事件数 = 9）")
+
     trunc_dir = tmp_path / "trunc"
     trunc_dir.mkdir()
     truncated = trunc_dir / "e.jsonl"
-    _write_lines(truncated, lines[:-6])  # 只删尾部若干行，链本身仍连续
+    _write_lines(truncated, kept)
 
     verify = _cli("verify", "--events", str(truncated), "--pack", PACK_REL)
     assert verify.returncode != 0, _out(verify)

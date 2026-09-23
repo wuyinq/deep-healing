@@ -36,13 +36,28 @@ export { ERROR_CODES, MESSAGE_TYPES };
 
 const KNOWN_PACKS = new Set(['xingfu-xiaoqu', 'xingfu-xiaoqu-north']);
 
+// **会话层资源上限（M4 / D-M4-17②；关闭 M2/M3 结转的 R2 M3-06「会话层无配额、无 TTL、三个 Map 无界」）**
+//   ① `maxSessions`：并发会话上限，超限 ⇒ 结构化 `E_SESSION_QUOTA`（HTTP 429），不静默挤掉老会话；
+//   ② `sessionTtlMs`：会话 TTL（以 `clock()` 计），到期即**回收**（含 queues / outboxes / 录像登记）；
+//   ③ `maxQueuedIntents` / `maxOutboxMessages`：`queues` / `outboxes` **有界**；
+//      队列超限 ⇒ 结构化 `E_SESSION_QUOTA`（不入队）；下行箱超限 ⇒ **丢最旧**并记审计读数
+//      （`outboxDropped`，逐条可核验，绝不无声膨胀）。
+export const SESSION_LIMITS = Object.freeze({
+  max_sessions: 32,
+  session_ttl_ms: 30 * 60 * 1000,
+  max_queued_intents: 64,
+  max_outbox_messages: 512,
+});
+
 export class SessionServer {
-  constructor({ kernelClient, policy = DEFAULT_POLICY, clock = () => Date.now(), snapshotEveryTicks = 50, knownPacks = KNOWN_PACKS, recorder = null }) {
+  constructor({ kernelClient, policy = DEFAULT_POLICY, clock = () => Date.now(), snapshotEveryTicks = 50, knownPacks = KNOWN_PACKS, recorder = null, limits = SESSION_LIMITS }) {
     this.kernelClient = kernelClient;
     this.policy = policy instanceof InterventionPolicy ? policy : new InterventionPolicy(policy, { clock });
     this.clock = clock;
     this.snapshotEveryTicks = snapshotEveryTicks;
     this.knownPacks = knownPacks;
+    // **资源上限（M4 / D-M4-17②）**：可注入以便判据把上限压到很小来测反例。
+    this.limits = { ...SESSION_LIMITS, ...(limits || {}) };
     // **只读录像**（R2 / F11）：`createSession({record:true})` 的会话把每条**下行**消息交给注入的
     // recorder。本层**不碰文件系统**（落盘位置与形态由宿主决定：spike 落 `spikes/s12-session/logs/`），
     // 也**不写世界状态** —— 录像只是下行消息的副本。
@@ -54,7 +69,68 @@ export class SessionServer {
     this.voidedIntents = []; // 预算耗尽降级时的作废读数（R2 / M3-03）
     this.voidIncomplete = []; // 桥侧作废**未确认**的降级读数（R3 / G7：不得宣告作废）
     this.mergedIntents = 0; // 重复 id 合并计数（R2 / F10）
+    this.outboxDropped = 0; // 下行箱超限时**丢最旧**的累计条数（M4 / D-M4-17②，逐条可核验）
+    this.reclaimedSessions = 0; // TTL 回收的会话数（M4 / D-M4-17②）
     this.log = []; // 会话层自己的审计流水（**不含** token / 玩家原文）
+  }
+
+  /**
+   * **TTL 回收**（M4 / D-M4-17②）：清掉 `clock() - last_seen_ms > session_ttl_ms` 的会话，
+   * 连同它的 `queues` / `outboxes` / 录像登记一起释放（三个 Map 因此**有界**）。
+   * 返回被回收的 session_id 列表（确定序：按 id 升序）。
+   */
+  reclaimExpired() {
+    const now = this.clock();
+    const expired = [];
+    for (const [sessionId, session] of this.sessions.entries()) {
+      const lastSeen = Number(session.last_seen_ms ?? session.created_ms ?? 0);
+      if (now - lastSeen > this.limits.session_ttl_ms) expired.push(sessionId);
+    }
+    expired.sort();
+    for (const sessionId of expired) {
+      this.sessions.delete(sessionId);
+      this.queues.delete(sessionId);
+      this.outboxes.delete(sessionId);
+      this.recordingSessions.delete(sessionId);
+    }
+    this.reclaimedSessions += expired.length;
+    return expired;
+  }
+
+  /** 当前**有效**会话数（含 TTL 回收后的读数）。 */
+  sessionCount() {
+    this.reclaimExpired();
+    return this.sessions.size;
+  }
+
+  /** 配额与占用读数（结构化，供判据/健康检查读取）。 */
+  quota() {
+    return {
+      max_sessions: this.limits.max_sessions,
+      session_ttl_ms: this.limits.session_ttl_ms,
+      max_queued_intents: this.limits.max_queued_intents,
+      max_outbox_messages: this.limits.max_outbox_messages,
+      sessions: this.sessions.size,
+      reclaimed_sessions: this.reclaimedSessions,
+      outbox_dropped: this.outboxDropped,
+    };
+  }
+
+  /** 取**未过期**的会话（过期 ⇒ null，并顺手回收）。 */
+  #liveSession(sessionId) {
+    this.reclaimExpired();
+    return this.sessions.get(sessionId) ?? null;
+  }
+
+  /** 下行箱**有界**入队：超限 ⇒ 丢最旧并记审计读数（不静默膨胀）。 */
+  #pushOutbox(sessionId, stamped) {
+    const outbox = this.outboxes.get(sessionId);
+    if (!outbox) return;
+    while (outbox.length >= this.limits.max_outbox_messages) {
+      outbox.shift();
+      this.outboxDropped += 1;
+    }
+    outbox.push(stamped);
   }
 
   /** POST /sessions —— 建会话并返回 {session_id, token, tick_rate, schema_version, ...}。 */
@@ -67,6 +143,18 @@ export class SessionServer {
         body: { error: 'E_PACK_INVALID', detail: `unknown district_pack_id ${checked.value.district_pack_id}` },
       };
     }
+    // **会话配额（M4 / D-M4-17②）**：先回收过期会话，再判上限；超限 ⇒ 结构化拒绝（不静默挤掉老会话）
+    this.reclaimExpired();
+    if (this.sessions.size >= this.limits.max_sessions) {
+      return {
+        status: 429,
+        body: {
+          error: 'E_SESSION_QUOTA',
+          detail: `session limit reached (${this.sessions.size}/${this.limits.max_sessions})`,
+          quota: this.quota(),
+        },
+      };
+    }
     const sessionId = `sess_${randomUUID().replace(/-/g, '').slice(0, 16)}`;
     const token = randomUUID(); // **不入日志**：本对象之外的任何落盘/打印都不得含它
     const session = {
@@ -77,6 +165,7 @@ export class SessionServer {
       client_version: checked.value.client_version,
       record: checked.value.record,
       created_ms: this.clock(),
+      last_seen_ms: this.clock(),   // TTL 基准（M4 / D-M4-17②）
       tick: 0,
       seq: 0,
     };
@@ -107,10 +196,11 @@ export class SessionServer {
 
   /** WS 上行入口：鉴权 + 协议校验 + 权限判定 + 策略校验 + 入队。**绝不改世界状态**。 */
   async onClientMessage(sessionId, raw) {
-    const session = this.sessions.get(sessionId);
+    const session = this.#liveSession(sessionId);
     if (!session) {
       return { messages: [makeError({ tick: 0, seq: 0, reason: 'E_SESSION_UNKNOWN', detail: sessionId })] };
     }
+    session.last_seen_ms = this.clock();   // 活跃即续期（TTL）
     let parsed;
     try {
       parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
@@ -186,7 +276,21 @@ export class SessionServer {
       client_tick: intent.client_tick,
       queued_tick: session.tick,
     };
-    this.queues.get(session.session_id).push(queued);
+    // **队列有界（M4 / D-M4-17②）**：超限 ⇒ 拒绝且不入队（不静默膨胀）。
+    // 口径调和：`session.protocol.schema.json` 的 `errorCode` 是**冻结闭枚举**（本轮不得改）
+    // ⇒ 协议的 `reason` 取枚举内最贴近的 `E_RATE_LIMITED`，而结构化配额码 `E_SESSION_QUOTA`
+    // 落在 `detail` 前缀 + 审计记录 `reason_code`（两处都可机器读取，且不破坏冻结契约）。
+    const queue = this.queues.get(session.session_id) ?? [];
+    if (queue.length >= this.limits.max_queued_intents) {
+      return this.#reply(session, makeIntentAck({
+        tick: session.tick, seq: session.seq, id: intent.id, status: 'rejected',
+        reason: 'E_RATE_LIMITED',
+        detail: `E_SESSION_QUOTA: intent queue full (${queue.length}/${this.limits.max_queued_intents})`,
+        impactBudgetRemaining: this.policy.remainingBudget(session.session_id),
+      }), { reasonCode: 'E_SESSION_QUOTA', intentId: intent.id, kind: queued.kind, target: queued.target });
+    }
+    queue.push(queued);
+    this.queues.set(session.session_id, queue);
     return this.#reply(session, makeIntentAck({
       tick: session.tick, seq: session.seq, id: intent.id, status: 'queued',
       impactBudgetRemaining: this.policy.remainingBudget(session.session_id),
@@ -338,7 +442,7 @@ export class SessionServer {
     session.tick = Number(snapshot.tick ?? session.tick);
     session.seq += 1;
     const stamped = { ...message, seq: session.seq };
-    this.outboxes.get(sessionId).push(stamped);
+    this.#pushOutbox(sessionId, stamped);
     this.recordDownstream(sessionId, stamped);
     return { ok: true, tick: session.tick };
   }
@@ -349,11 +453,13 @@ export class SessionServer {
     if (!checked.ok) {
       return { ok: false, reason: checked.reason, detail: checked.detail };
     }
-    for (const [sessionId, outbox] of this.outboxes.entries()) {
+    this.reclaimExpired();
+    for (const sessionId of [...this.outboxes.keys()].sort()) {
       const session = this.sessions.get(sessionId);
+      if (!session) continue;
       session.seq += 1;
       const stamped = { ...message, seq: session.seq };
-      outbox.push(stamped);
+      this.#pushOutbox(sessionId, stamped);
       this.recordDownstream(sessionId, stamped);
     }
     return { ok: true, message };
@@ -394,7 +500,7 @@ export class SessionServer {
     if (!checked.ok) throw new Error(`internal: ${checked.reason} ${checked.detail}`);
     session.seq += 1;
     const stamped = { ...message, seq: session.seq };
-    this.outboxes.get(session.session_id).push(stamped);
+    this.#pushOutbox(session.session_id, stamped);
     this.recordDownstream(session.session_id, stamped);
     if (audit) {
       this.auditRecord({

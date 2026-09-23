@@ -1,0 +1,7 @@
+{
+  "abs_delta_minus_seconds": 59.942179792094976,
+  "criterion": "负例：去掉节流 ⇒ |tick 增量 − 真实秒数| > 1（判据必须红）",
+  "passed": true,
+  "tick_delta": 60,
+  "window_real_seconds": 0.058
+}

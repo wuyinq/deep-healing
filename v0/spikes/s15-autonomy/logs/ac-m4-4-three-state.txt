@@ -1,0 +1,78 @@
+=== [0] 交付面整树摘要（注入前后必须逐位相同）===
+delivery_tree_digest_before=9d352f0f976da223fe94884b582138e61f9ca5b5243136c882c5e2b7a4ab8b9d  -
+
+=== [1] 隔离镜像（镜像 02_source 根，路径算术依赖它）===
+clean
+inj-remote
+inj-urllib
+mirror_roots=clean inj-remote inj-urllib 
+
+=== [2] 注入 A：providers.remote_api（项目自身模型出口）===
+injected into /tmp/m4r2_ac44/inj-remote/v0_skeleton/kernel/deephealing_kernel/rules/decision.py
+  ImportFrom(module contains 'providers') at lines [19]
+  Name('remote_api') reference at lines [477]
+8:  - **零模型调用**：本模块不 import 任何网络/SDK（`providers.remote_api` 是唯一出口）；
+19:from ..providers import remote_api
+
+=== [3] 注入 B：urllib（对照，证明判据有命中能力）===
+474:import urllib.request
+
+=== [4] state=DELIVERY（真实交付面，未注入）===
+--- state=DELIVERY workdir=/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-006-deephealing-v0-m4/02_source/v0_skeleton/kernel
+$ rg -n "requests|httpx|openai|urllib|socket\." deephealing_kernel/rules/*.py ; echo exit=$?
+rg_exit=1
+$ PYTHONDONTWRITEBYTECODE=1 python3 -m pytest tests/test_rules_layer.py -q -p no:cacheprovider ; echo exit=$?
+.......                                                                  [100%]
+7 passed in 0.14s
+
+=== [5] state=CLEAN-MIRROR（镜像副本，未注入：应与 DELIVERY 同读数）===
+--- state=CLEAN-MIRROR workdir=/tmp/m4r2_ac44/clean/v0_skeleton/kernel
+$ rg -n "requests|httpx|openai|urllib|socket\." deephealing_kernel/rules/*.py ; echo exit=$?
+rg_exit=1
+$ PYTHONDONTWRITEBYTECODE=1 python3 -m pytest tests/test_rules_layer.py -q -p no:cacheprovider ; echo exit=$?
+.......                                                                  [100%]
+7 passed in 0.14s
+
+=== [6] state=INJ-REMOTE-API（必须非绿）===
+--- state=INJ-REMOTE-API workdir=/tmp/m4r2_ac44/inj-remote/v0_skeleton/kernel
+$ rg -n "requests|httpx|openai|urllib|socket\." deephealing_kernel/rules/*.py ; echo exit=$?
+rg_exit=1
+$ PYTHONDONTWRITEBYTECODE=1 python3 -m pytest tests/test_rules_layer.py -q -p no:cacheprovider ; echo exit=$?
+>       assert not violations, (
+            "决策路径出现模型出口引用（AC-M4-4 要求零模型调用）：\n" + "\n".join(violations))
+E       AssertionError: 决策路径出现模型出口引用（AC-M4-4 要求零模型调用）：
+E         decision.py:19: providers
+E         decision.py:19: remote_api
+E         decision.py:477: remote_api
+E       assert not ['decision.py:19: providers', 'decision.py:19: remote_api', 'decision.py:477: remote_api']
+
+tests/test_rules_layer.py:271: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_rules_layer.py::test_decision_path_has_no_model_seam - Asse...
+1 failed, 6 passed in 0.15s
+
+=== [7] state=INJ-URLLIB（必须非绿）===
+--- state=INJ-URLLIB workdir=/tmp/m4r2_ac44/inj-urllib/v0_skeleton/kernel
+$ rg -n "requests|httpx|openai|urllib|socket\." deephealing_kernel/rules/*.py ; echo exit=$?
+deephealing_kernel/rules/decision.py:474:import urllib.request
+rg_exit=0
+$ PYTHONDONTWRITEBYTECODE=1 python3 -m pytest tests/test_rules_layer.py -q -p no:cacheprovider ; echo exit=$?
+                    violations.append(f"{path.name}:{lineno}: {dotted}")
+>       assert not violations, (
+            "决策路径出现模型出口引用（AC-M4-4 要求零模型调用）：\n" + "\n".join(violations))
+E       AssertionError: 决策路径出现模型出口引用（AC-M4-4 要求零模型调用）：
+E         decision.py:474: urllib.request
+E       assert not ['decision.py:474: urllib.request']
+
+tests/test_rules_layer.py:271: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_rules_layer.py::test_call_capability_is_the_only_seam - Ass...
+FAILED tests/test_rules_layer.py::test_decision_path_has_no_model_seam - Asse...
+2 failed, 5 passed in 0.15s
+
+=== [8] 交付面摘要复核 ===
+delivery_tree_digest_after =9d352f0f976da223fe94884b582138e61f9ca5b5243136c882c5e2b7a4ab8b9d  -
+DELIVERY-FACE: byte-identical (OK)
+
+=== [9] 交付面零注入复核 ===
+clean_exit=1（1=零命中）

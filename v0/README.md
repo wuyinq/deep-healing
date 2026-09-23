@@ -1,4 +1,4 @@
-# v0 —— DeepHealing V0 垂直切片（里程碑 M1 + M2 + M3）
+# v0 —— DeepHealing V0 垂直切片（里程碑 M1 + M2 + M3 + M4）
 
 本目录是 V0 的**可验证交付单元**。里程碑在**同一棵树上继续生长**（不另起目录）。
 
@@ -109,6 +109,34 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m deephealing_kernel verify \
    **那 1 条 FAILED 是预期行为**（`466db840…` → `1a69ee09…`，沿用 M1 先例：清单保持冻结真相，divergence 文档化）。
    **修复后非 `/Users` 检出全量套件 151 passed / 0 skipped**（原为 1 failed / 150 passed）。
 
+## M4 落盘口径（重要，审计用）
+
+> **政策变更（用户 2026-09-23 明确）**：提交**不再等验收**——实现即提交，修复再提交。
+> 因此 **M4 是「已落盘、未验收」**，与 M1~M3 的「验收后落盘」口径**不同**，读本段时务必注意。
+
+1. **落盘范围 = `V0_M4.sha256` 冻结面**（214 条：`02_source/**` **160** +
+   `spikes/**` **51**（s14-observability 14 / s15-autonomy 9 / s16-liveworld 28）+
+   根级 `03_artisan_self_test.log` / `06_v0_m4_self_test.md` / `V0_SELF_TEST.md`）。
+   冻结面**头部 16 行显式声明采集面与排除项**（沿用 R5-RAV-M3 口径：**被排除路径不得承载判据性结论**）。
+   生成方式：`python3 <ws>/V0_M4.gen.py`（脚本本身不入面）。
+2. **M4 交付内容** = 观测层（W9）+ 集成验收（W10）+ **自主决策接入 tick 循环（W11）** +
+   **世界自带时钟（W12）**。新增产品文件：`kernel/deephealing_kernel/live.py`、
+   `rules/decision.py`、`world_clock.py`、`tools/duckdb_queries.sql` 与 4 个新测试套件。
+3. **三条核心能力（实测，非自述）**：
+   - **自主决策**：`stub_decide` 退出决策路径，真引擎（`rules/decision.py`）接管；
+   - **活的世界**：观察者全断开后世界继续推进；
+   - **不是回放**：连入读到**当前** tick，不是按 tick 播事件。
+4. **落盘时校验读数**（PM 侧，2026-09-23）：`shasum -c V0_M4.sha256` ⇒ **214 OK / 0 FAILED**；
+   `verify_specs.sh` ⇒ **OK (130 checks passed, 0 skipped)**，exit 0；
+   端到端 `run --ticks 300` ⇒ exit 0，**2520 事件**，`chain_tail 81669e96…`。
+5. **基线已改写（已登记，防乒乓）**：`stub_decide` 被真引擎替换 ⇒ 状态必然改变。
+   `state_hash` / `chain_tail` 由 M1 基线改写为 M4 基线，登记在 `06_v0_m4_self_test.md` §M4-C。
+   **不得**为保旧基线留着 `stub_decide`。
+6. **`SEED.sha256` 语义（PM 裁决 R4）**：它是**起点溯源文件**，**不是**活的自校验面。
+   `shasum -c` 报失配是**合法 M4 改动的预期结果**，不是缺陷。
+7. **诚实边界（不得在总结里弱化）**：M4 **未经 PM 逐 AC 终验**；`04`/`05` 两份门禁报告覆盖的是
+   **修复前**的树（mtime 13:19 / 12:49）；修复后的独立重门禁**在途**；**F7 未清**（见「已知限制」）。
+
 ## 已知限制（如实记录，未粉饰）
 
 1. **标定缓存与位置耦合 —— 已修（M1 后置修复，已随本仓库生效）**：
@@ -152,9 +180,9 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m deephealing_kernel verify \
 
 | 项 | 值 |
 |---|---|
-| 需求书 | `REQ-20260921-003`（M1）、`REQ-20260921-004`（M2）、`REQ-20260921-005`（M3，rev5）；上游 `REQ-20260921-002` 架构冻结 |
+| 需求书 | `REQ-20260921-003`（M1）、`REQ-20260921-004`（M2）、`REQ-20260921-005`（M3，rev5）、`REQ-20260921-006`（M4，rev2）；上游 `REQ-20260921-002` 架构冻结 |
 | 验收 | **M1**：有条件通过（6 PASS / 1 GAP / 1 分列均 PASS，CRITICAL 0）；**M2**：通过（8/8 AC PASS，CRITICAL 0，残留 FAIL 0）；**M3**：**通过**（逐 AC PASS，**CRITICAL 0**，残留 MEDIUM/LOW/GAP 已逐条登记 M4） |
 | 冻结计划 | `docs/architecture/04-v0-plan.md`（13 工作包 / 4 里程碑 M1~M4） |
 | 契约副本 | `docs/specs/` 是**架构冻结轮**的契约发布视图（冻结时刻快照，**不随里程碑同步**：M1/M2 均未改，现有 5 份与 `02_source` 已漂移）；**可自校验的源**是 `02_source/` |
-| 落盘提交 | 见本目录所在仓库的提交历史（M1 / M2 / M3 各一笔提交） |
+| 落盘提交 | 见本目录所在仓库的提交历史（M1 / M2 / M3 各一笔提交；**M4 为「已落盘、未验收」**，按用户 2026-09-23 政策「实现即提交」落盘） |
 | M3 终验 | `dev_team_workspace/REQ-20260921-005-deephealing-v0-m3/08_pm_verdict.md` + `08_pm_verdict_r5.md`（工作区，不随仓库提供） |

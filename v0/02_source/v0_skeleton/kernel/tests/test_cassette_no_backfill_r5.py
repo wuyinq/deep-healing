@@ -65,7 +65,7 @@ def _line_count(root: Path, name: str = RELATION_FILE) -> int:
 def _record_into(cassettes: Path, tmp: Path, *, cwd: Path | None = None) -> Path:
     """**同 seed 先录一遍**（关键前提：不同 seed ⇒ 全 miss ⇒ 看不到回填）。"""
     cassettes.mkdir(parents=True, exist_ok=True)
-    proc = _cli("run", "--pack", PACK, "--seed", "20260921", "--ticks", "100", "--cognition",
+    proc = _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921", "--ticks", "100", "--cognition",
                 "--events", str(tmp / "rec" / "events.jsonl"), "--cassette-dir", str(cassettes), cwd=cwd)
     assert proc.returncode == 0, proc.stdout + proc.stderr
     return cassettes
@@ -99,7 +99,7 @@ def _append_duplicate_key(cassettes: Path) -> Path:
 
 
 def _replay(cassettes: Path, tmp: Path, *, cwd: Path | None = None) -> subprocess.CompletedProcess:
-    return _cli("run", "--pack", PACK, "--seed", "20260921", "--ticks", "100", "--replay",
+    return _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921", "--ticks", "100", "--replay",
                 "--cassette-dir", str(cassettes), "--cognition",
                 "--events", str(tmp / "rep" / "events.jsonl"), cwd=cwd)
 
@@ -305,7 +305,7 @@ def test_regressions_clean_replay_green_and_miss_red(tmp_path):
 
     empty = tmp_path / "cas-empty"
     empty.mkdir(parents=True, exist_ok=True)
-    miss = _cli("run", "--pack", PACK, "--seed", "20260921", "--ticks", "100", "--replay",
+    miss = _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921", "--ticks", "100", "--replay",
                 "--cassette-dir", str(empty), "--cognition",
                 "--events", str(tmp_path / "miss" / "events.jsonl"))
     combined = miss.stdout + miss.stderr

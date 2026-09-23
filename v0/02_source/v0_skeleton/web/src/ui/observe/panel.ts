@@ -27,6 +27,7 @@ export class ObservePanel {
   private readonly anomalyEl: HTMLElement;
   private readonly npcEl: HTMLElement;
   private readonly metricEl: HTMLElement;
+  private readonly liveEl: HTMLElement;
   private tick = 0;
   private events: Array<Record<string, unknown>> = [];
 
@@ -41,8 +42,10 @@ export class ObservePanel {
     this.anomalyEl = this.adopt(host, 'anomaly-read', 'div');
     this.npcEl = this.adopt(host, 'npc-profile', 'div');
     this.metricEl = this.adopt(host, 'metrics', 'div');
+    // M4 / AC-M4-11③：观察窗的**实时通道读数**（只读文本节点，**不是**控件）
+    this.liveEl = this.adopt(host, 'live-readout', 'div');
     // 只读控件：面板本体不产生任何输入控件
-    this.root.append(this.tickEl, this.metricEl, this.anomalyEl, this.eventEl, this.npcEl);
+    this.root.append(this.tickEl, this.metricEl, this.liveEl, this.anomalyEl, this.eventEl, this.npcEl);
   }
 
   /** 复用宿主里已有的同 id 元素（避免同 id 重复 ⇒ 取到的永远是未被更新的那一个）。 */
@@ -137,5 +140,41 @@ export class ObservePanel {
 
   get eventsSeen(): number {
     return this.events.length;
+  }
+
+  /**
+   * 实时通道读数（M4 / AC-M4-11③）：页面显示的是**当前**时刻（通道 tick + 世界钟 + 墙上钟对照）。
+   *
+   * 只读：只写文本节点与 `dataset`，**不新增任何控件**（`listWriteControls()` 仍必须为空）。
+   * `channelTick` 与墙上钟的分钟差**如实披露**（1× 档下世界钟领先，属预期，不是错误）。
+   */
+  renderLiveReadout(readout: {
+    connected: boolean;
+    channelTick: number;
+    worldClock: string;
+    wallClock: string;
+    observers: number;
+    timezone: string;
+    stateHash: string;
+    clockOffsetMinutes: number;
+  }): void {
+    this.liveEl.dataset.connected = String(readout.connected);
+    this.liveEl.dataset.channelTick = String(readout.channelTick);
+    this.liveEl.dataset.worldClock = readout.worldClock;
+    this.liveEl.dataset.wallClock = readout.wallClock;
+    this.liveEl.dataset.observers = String(readout.observers);
+    this.liveEl.dataset.stateHash = readout.stateHash;
+    this.liveEl.dataset.clockOffsetMinutes = String(readout.clockOffsetMinutes);
+    this.liveEl.textContent = [
+      `live channel ${readout.connected ? 'connected' : 'offline'} (read-only)`,
+      `world tick ${readout.channelTick} · world clock ${readout.worldClock} ${readout.timezone}`,
+      `wall clock ${readout.wallClock} · offset +${readout.clockOffsetMinutes} min (expected at 1x)`,
+      `observers ${readout.observers} · state ${readout.stateHash.slice(0, 12)}`,
+    ].join('\n');
+  }
+
+  /** 实时读数（供真浏览器验收脚本读取；不经 DOM 解析）。 */
+  liveReadout(): Record<string, string> {
+    return { ...this.liveEl.dataset } as Record<string, string>;
   }
 }

@@ -67,11 +67,11 @@ class FakeKernelClient {
   }
 }
 
-function makeServer({ policy = DEFAULT_POLICY } = {}) {
+function makeServer({ policy = DEFAULT_POLICY, limits } = {}) {
   let now = 0;
   const clock = () => now;
   const kernelClient = new FakeKernelClient();
-  const server = new SessionServer({ kernelClient, policy, clock });
+  const server = new SessionServer({ kernelClient, policy, clock, ...(limits ? { limits } : {}) });
   return {
     server,
     kernelClient,
@@ -523,4 +523,110 @@ test('test_downgrade_with_unconfirmed_bridge_void_does_not_declare_void', async 
   assert.equal(submitted.length, 33);
   assert.equal(kernelClient.observeRejections, 34, '保留的 33 条 + 触发降级的那条，全部经 observe 通道被拒');
   assert.equal(server.pendingIntentCount(id), 0);
+});
+
+// ============================================================================
+// M4 / D-M4-17② —— 会话层加固（配额 / TTL / 有界 queues & outboxes）
+// 关闭 M2/M3 结转的 R2 M3-06：「会话层无配额、无 TTL、三个 Map 无界」。
+// 每条判据都配**反例**（把上限放大 / 不推进时钟 ⇒ 同一断言必须反向）。
+// ============================================================================
+
+const CREATE_BODY = { mode: 'participate', district_pack_id: 'xingfu-xiaoqu', client_version: '0.3.0' };
+const OBSERVE_BODY = { mode: 'observe', district_pack_id: 'xingfu-xiaoqu', client_version: '0.3.0' };
+
+test('test_m4_session_quota_rejects_beyond_max_sessions', async () => {
+  const { server } = makeServer({ limits: { max_sessions: 2, session_ttl_ms: 60 * 60 * 1000 } });
+  assert.equal((await server.createSession(CREATE_BODY)).status, 201);
+  assert.equal((await server.createSession(CREATE_BODY)).status, 201);
+
+  const third = await server.createSession(CREATE_BODY);
+  assert.equal(third.status, 429, '超过 max_sessions 必须结构化拒绝（不静默挤掉老会话）');
+  assert.equal(third.body.error, 'E_SESSION_QUOTA');
+  assert.equal(third.body.quota.max_sessions, 2);
+  assert.equal(third.body.quota.sessions, 2);
+
+  // 反例：把上限放大到 3 ⇒ 同一调用必须成功（证明上面的 429 不是恒真）
+  const { server: roomy } = makeServer({ limits: { max_sessions: 3 } });
+  await roomy.createSession(CREATE_BODY);
+  await roomy.createSession(CREATE_BODY);
+  assert.equal((await roomy.createSession(CREATE_BODY)).status, 201, '上限放大后必须成功（判据可达）');
+});
+
+test('test_m4_session_ttl_reclaims_expired_sessions_and_frees_quota', async () => {
+  const { server, advance } = makeServer({ limits: { max_sessions: 1, session_ttl_ms: 1000 } });
+  assert.equal((await server.createSession(CREATE_BODY)).status, 201);
+  assert.equal((await server.createSession(CREATE_BODY)).status, 429, '未过期 ⇒ 配额仍满');
+
+  advance(500);                                   // 反例对照：未到 TTL
+  assert.equal((await server.createSession(CREATE_BODY)).status, 429, 'TTL 未到不得回收');
+
+  advance(600);                                   // 累计 1100ms > 1000ms ⇒ 过期
+  assert.equal((await server.createSession(CREATE_BODY)).status, 201, 'TTL 到期必须回收并释放配额');
+  assert.equal(server.reclaimedSessions, 1, '回收计数必须逐条可核验');
+  assert.equal(server.sessionCount(), 1, '回收后只剩新会话');
+  assert.equal(server.queues.size, 1, 'queues 必须随会话一起释放（有界）');
+  assert.equal(server.outboxes.size, 1, 'outboxes 必须随会话一起释放（有界）');
+});
+
+test('test_m4_intent_queue_is_bounded', async () => {
+  const { server, advance } = makeServer({ limits: { max_queued_intents: 3 } });
+  const id = (await server.createSession(CREATE_BODY)).body.session_id;
+  for (let index = 0; index < 3; index += 1) {
+    advance(6000);                                // 跨过节流/冷却窗口（与既有用例同口径）
+    const ack = record((await server.onClientMessage(id, intent(`i-q-${index}`))).messages)[0];
+    assert.equal(ack.status, 'queued', `第 ${index + 1} 条应入队`);
+  }
+  advance(6000);
+  const overflow = record((await server.onClientMessage(id, intent('i-q-overflow'))).messages)[0];
+  assert.equal(overflow.status, 'rejected', '超限必须拒（不入队）');
+  assert.equal(overflow.reason, 'E_RATE_LIMITED',
+    '协议的 reason 必须留在**冻结闭枚举**内（schema 本轮不改）');
+  assert.match(String(overflow.detail), /^E_SESSION_QUOTA: /,
+    '结构化配额码 E_SESSION_QUOTA 必须落在 detail 前缀（可机器读取）');
+  assert.equal(server.log[server.log.length - 1].reason_code, 'E_SESSION_QUOTA',
+    '审计记录必须带结构化配额码');
+  assert.equal(server.pendingIntentCount(id), 3, '队列长度必须被钉在上限（不膨胀）');
+
+  // 反例：上限放大到 4 ⇒ 第 4 条必须入队
+  const { server: roomy, advance: roomyAdvance } = makeServer({ limits: { max_queued_intents: 4 } });
+  const roomyId = (await roomy.createSession(CREATE_BODY)).body.session_id;
+  for (let index = 0; index < 4; index += 1) {
+    roomyAdvance(6000);
+    await roomy.onClientMessage(roomyId, intent(`i-r-${index}`));
+  }
+  assert.equal(roomy.pendingIntentCount(roomyId), 4, '上限放大后第 4 条必须入队（判据可达）');
+});
+
+test('test_m4_outbox_is_bounded_and_drops_oldest_with_audit_counter', async () => {
+  const { server } = makeServer({ limits: { max_outbox_messages: 4 } });
+  const id = (await server.createSession(OBSERVE_BODY)).body.session_id;
+  for (let tick = 1; tick <= 10; tick += 1) {
+    assert.equal(server.broadcast({ t: 'tick_meta', tick, seq: 0, ms: 0 }).ok, true);
+  }
+  const outbox = server.drainOutbox(id);
+  assert.equal(outbox.length, 4, 'outbox 必须被钉在上限（有界）');
+  assert.equal(server.outboxDropped, 6, '丢最旧的条数必须逐条可核验（不得无声膨胀）');
+  assert.equal(outbox[outbox.length - 1].tick, 10, '保留的必须是最新的（丢最旧）');
+  assert.equal(server.quota().outbox_dropped, 6);
+
+  // 反例：上限放大 ⇒ 不得丢弃
+  const { server: roomy } = makeServer({ limits: { max_outbox_messages: 64 } });
+  const roomyId = (await roomy.createSession(OBSERVE_BODY)).body.session_id;
+  for (let tick = 1; tick <= 10; tick += 1) roomy.broadcast({ t: 'tick_meta', tick, seq: 0, ms: 0 });
+  assert.equal(roomy.drainOutbox(roomyId).length, 10, '上限放大后不得丢弃（判据可达）');
+  assert.equal(roomy.outboxDropped, 0);
+});
+
+test('test_m4_bridge_declares_no_network_surface_and_ws_port_defaults_to_zero', async () => {
+  const { readFileSync } = await import('node:fs');
+  const bridgePath = fileURLToPath(new URL('../bridge/kernel_bridge.py', import.meta.url));
+  const source = readFileSync(bridgePath, 'utf8');
+  // 桥经 stdio 管道驱动（等价双 fd）：源码里不得出现网络监听/连接面
+  for (const forbidden of ['socket.', 'listen(', 'http.server', 'asyncio.start_server']) {
+    assert.equal(source.includes(forbidden), false, `桥源码出现网络面：${forbidden}`);
+  }
+  // 反例（零命中不算证据）：同一扫描器必须命中注入的违规行
+  assert.equal((source + '\nsock = socket.socket()\n').includes('socket.'), true);
+  assert.match(source, /--ws-port", type=int, default=0/, '桥的 --ws-port 默认必须是 0（不监听）');
+  assert.equal(source.includes('ws_port_accepted_not_listening'), false, '旧字段名必须消失');
 });

@@ -24,6 +24,7 @@
         "intent.applied",
         "intent.rejected",
         "npc.action",
+        "npc.decision",
         "capability.invoked",
         "capability.fallback",
         "task.state_changed",
@@ -251,6 +252,35 @@
                   "ref": { "type": "string" },
                   "importance": { "type": "number", "minimum": 0, "maximum": 1 },
                   "superseded_by": { "type": ["string", "null"] }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "npc.decision" } }, "required": ["type"] },
+          "then": {
+            "properties": {
+              "payload": {
+                "type": "object",
+                "required": ["npc_id", "dominant_need", "dominant_deficit", "chosen_action",
+                             "utility_score", "bt_branch", "schedule_state", "schedule_is_driver",
+                             "decision_source"],
+                "properties": {
+                  "npc_id": { "type": "string" },
+                  "dominant_need": {
+                    "type": "string",
+                    "enum": ["physiology", "safety", "belonging", "esteem", "self_actualization"]
+                  },
+                  "dominant_deficit": { "type": "number", "minimum": 0, "maximum": 1 },
+                  "chosen_action": { "type": "string" },
+                  "utility_score": { "type": "number", "minimum": 0 },
+                  "utility_ranking": { "type": "array", "items": { "type": "object" } },
+                  "bt_branch": { "type": "string" },
+                  "schedule_state": { "type": "string" },
+                  "schedule_is_driver": { "type": "boolean", "const": false },
+                  "target_entity": { "type": ["string", "null"] },
+                  "decision_source": { "type": "string", "const": "behaviour_tree" }
                 }
               }
             }

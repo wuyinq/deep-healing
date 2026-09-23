@@ -484,6 +484,12 @@ cd <ws> && grep -rn -I -E "ADR-01[0-9]|ADR-10[^0-9]" . \
 - **如何验证**：`AC-M2-7` —— ① 全量 `pytest tests/ -q -p no:cacheprovider`；② 逐条 M1 命令（`verify_specs.sh --quiet` /
   `test_determinism_replay.py` / `test_pack_validate.py` / `test_bus_and_ecs_invariants.py` / `test_kernel_digest.py`）；
   ③ 基线复算（末检查点 `state_hash == 9a4ae3da0d7cc3f8556d07ae773b8579d80f55a5cf6d4a0fc5594f5d7a66625f`）。
+  > **M4 口径变更（2026-09-23，追加；历史段不改）**：上面这条基线读数属 **M1/M2 口径**。
+  > M4 把决策路径由班表桩（`stub_decide`）换成「需求 → 效用 → 行为树」（`rules/decision.py`）⇒
+  > `state_hash` / `chain_tail` **必然**改变（REQ AC-M4-8⑥：这是**预期**，不是回归）。
+  > 新基线：`state_hash = 0d79e5f349cad67d8ebc623fb7e49a17082e0170d0b5a5c3de62715ea42a2dca`、
+  > `chain_tail = 81669e9685e5dec845d0d5060321c0eba66939063997941c5be5f2e0d97d8cb6`（seed 20260921 / 300 tick）。
+  > 登记面：`06_v0_m4_self_test.md` 与 `V0_SELF_TEST.md` 的「基线变更登记」节。
 - **如何回退**：① 去掉 `world.schema.json` 顶层的 `weather`；② 把 `pack.py` 的 `projection` 恢复为
   `{key: value for key, value in world_seed.items() if key != "weather"}`（即恢复实质过滤）；③ 还原 T-1/T-3 两处断言原文
   （T-2 属 P-5 缺陷关闭，**不随本 ADR 回退**）；④ 重跑 AC-M2-7 与 `verify_specs.sh --quiet`。
@@ -601,3 +607,39 @@ cd <ws> && grep -rn -I -E "ADR-01[0-9]|ADR-10[^0-9]" . \
   - `narrative_hooks` **加字段不删字段**（`healing_face` / `hidden_face`），旧消费方零改动；
   - `art-bible.md` 的既有数值约束**不被推翻**（饱和 ≤45 / 色相暖区 / 粗糙度 ≥0.55 / 无镜面）；
   - 「治愈系氛围达成」仍是 GAP：本 ADR 只把**可检查部分**冻结为契约。
+
+
+## ADR-017 事件类型枚举新增 `npc.decision`（决策路径可观测的契约变更）
+
+- 状态：已采纳（M4）
+- 依据：`REQ-20260921-006` §0 #9 / AC-M4-8①、设计 `01_m4_design.md` §2 D-M4-2、`events.schema.json` 条文
+  「事件类型枚举（冻结）。新增类型 = 契约变更，**需 ADR 并递增 schema_version**」。
+- 背景：M4 把 tick 阶段 [3] 的决策由班表桩（`stub_decide`，`decision_source="deterministic_stub"`）
+  换成「需求 → 效用 → 行为树」（`rules/decision.py`）。AC-M4-8① 要求「真实事件流里出现决策事件，
+  至少带 `dominant_need` / `chosen_action` / `utility_score` / `bt_branch`」—— 既有 9 类事件
+  **都不承载**这些字段（`npc.action` 只有 `action` / `decision_source` / `target_entity` / `duration_ticks`）
+  ⇒ 必须新增一个事件类型。
+- 决定：
+  1. `02_source/events.schema.json` 的 `type` 闭枚举**追加成员** `"npc.decision"`（只加不删、不改既有成员）；
+  2. `$defs/payloadByType.allOf` **追加** `then` 子句：`payload` 必填
+     `npc_id` / `dominant_need` / `dominant_deficit` / `chosen_action` / `utility_score` /
+     `bt_branch` / `schedule_state` / `schedule_is_driver`（`const: false`）/ `decision_source`
+     （`const: "behaviour_tree"`）；
+  3. `deephealing_kernel/events.py` 的 `EVENT_TYPES` 同步追加（内核侧闭集，两处必须一致）；
+  4. 事件**不进世界状态**：决策记录只入事件链，`state_hash` 只受「动作实际造成的 state 变化」影响
+     ⇒ `world.schema.json` 的导出面不被污染；
+  5. `npc.action.decision_source` 取**既有枚举值** `behaviour_tree`（不扩枚举）。
+- **schema_version 载体（口径登记）**：本 schema **没有** `schema_version` 顶层键 ⇒ 本契约的版本化由
+  **ADR（本条）+ `06_v0_m4_self_test.md` 登记**承载，`events.schema.json` **不承载** `schema_version` 键。
+  该口径已写进 `06` 与 `V0_SELF_TEST.md`（Raven 预审 M2 的处置）。
+- 后果与迁移：
+  - `npc.decision` **每 tick 每 NPC 一条**（全量发，AC-M4-8① 要真实事件流）⇒ 事件体积上升：
+    60 tick × 5 NPC 的实测读数为 `300` 条决策事件（见 `spikes/s15-autonomy/logs/decision-observability.json`）；
+    该体积已折算进 AC-M4-3 的数值预算（`06` 的预算节）。
+  - `verify_specs.sh --quiet` 必须仍 **0 skipped**（加成员后复跑证明）。
+  - 下游读者：任何按「`type` 枚举恒为 9 成员」推理的脚本必须改为读枚举本身。
+- 如何验证：`cd 02_source && bash verify_specs.sh --quiet`（0 skipped）；
+  `cd 02_source/v0_skeleton/kernel && python3 -m pytest tests/test_autonomous_decision.py -q -p no:cacheprovider`
+  （含 `npc.decision` 过 `events.schema.json` 的 `jsonschema.validate` 断言）。
+- 如何回退：① 从 `events.schema.json` 与 `events.py` 的枚举里去掉 `"npc.decision"`；
+  ② 去掉 `payloadByType.allOf` 的该 `then` 子句；③ `tick.py` 不再 emit `npc.decision`（其余决策逻辑不变）。

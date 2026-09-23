@@ -33,7 +33,14 @@ from .events import EventLog
 from .pack import DistrictPack
 from .rng import WorldRng
 from .rules.adaptation import TaskAdaptationEngine
+from .rules.decision import decide as autonomous_decide   # 决策阶段唯一入口（模块级别名，测试注入点）
 from . import snapshot as snapshot_mod
+
+#: 决策来源（`npc.action.decision_source` 与 `npc.decision.decision_source` 的取值）。
+#: `behaviour_tree` = 需求 → 效用 → 行为树（默认路径）；`deterministic_stub` = M1 班表桩（**仅供负例**）。
+DECISION_SOURCE = "behaviour_tree"
+DECISION_SOURCE_STUB = "deterministic_stub"
+DECISION_SOURCES = (DECISION_SOURCE, DECISION_SOURCE_STUB)
 
 PHASES = (
     "input",
@@ -90,6 +97,25 @@ def build_schedule_index(pack: DistrictPack | None) -> dict[str, list[dict]]:
                 blocks.append(item)
             index[npc_id] = blocks
     return index
+
+
+def build_pack_profiles(pack: DistrictPack | None) -> dict[str, dict]:
+    """`npc_id -> {need_weights, home_entity}`（**单一权威**：内容包 `npcs/*.json`）。
+
+    `pack.npcs` 已由 `pack.py` 聚合 `npcs_glob` 下的全文档 ⇒ 这里只做投影，不另立数据源。
+    """
+    profiles: dict[str, dict] = {}
+    if pack is None:
+        return profiles
+    for document in sorted(pack.npcs, key=lambda item: str(item.get("id", ""))):
+        npc_id = document.get("id")
+        if not npc_id:
+            continue
+        profiles[str(npc_id)] = {
+            "need_weights": dict(document.get("need_weights") or {}),
+            "home_entity": document.get("home_entity"),
+        }
+    return profiles
 
 
 def _safe_session_id(value: object) -> str:
@@ -190,9 +216,16 @@ class WorldKernel:
         bus: KernelBus | None = None,
         tick_rate: int = 10,
         plan_ticks: int = DEFAULT_PLAN_TICKS,
+        decision_source: str = DECISION_SOURCE,
+        pack_profiles: dict[str, dict] | None = None,
     ) -> None:
         world_seed = pack.world_seed if pack is not None else {}
         constants = world_seed.get("constants", {})
+        if decision_source not in DECISION_SOURCES:
+            raise ValueError(
+                f"unknown decision_source {decision_source!r} (allowed: {DECISION_SOURCES})"
+            )
+        self.decision_source = str(decision_source)
         self.pack = pack
         self.seed = int(seed if seed is not None else world_seed.get("seed", 0))
         self.log = log
@@ -206,6 +239,12 @@ class WorldKernel:
         self.rng = WorldRng(self.seed)
         self.world = World(seed=self.seed, constants=constants)
         self.world.schedule_index = build_schedule_index(pack)
+        # NPC 档案（需求权重 / 归属房间）：**单一权威 = 内容包 `npcs/*.json`**（`pack.py` 已聚合）。
+        # 构造面变更登记（D-M4-15⑥）：新增构造参数 `pack_profiles`，缺省即由 `pack.npcs` 派生，
+        # **不在别处再写一份**（避免两份漂移）。
+        self.pack_profiles = (
+            dict(pack_profiles) if pack_profiles is not None else build_pack_profiles(pack)
+        )
         self.ticks_done = 0
         self.last_snapshot: snapshot_mod.Snapshot | None = None
         # 任务演进引擎（AC-M3-5 / D-14）：规则**全部**来自内容包 `tasks/*.json` 的
@@ -382,8 +421,13 @@ class WorldKernel:
         perception = {"tick": ctx.tick, "entity_count": len(self.world.query())}
         self.bus.publish("metrics", {"perception": perception, "inbound": len(inbound)})
 
-        # [3] 决策（确定性桩）
-        intents = stub_decide(self.world, self.rng, ctx.tick, ctx)
+        # [3] 决策（需求 → 效用 → 行为树；`decision_source="deterministic_stub"` 时退回 M1 班表桩，
+        #     该路径**仅供负例**，默认路径不经过它）
+        if self.decision_source == DECISION_SOURCE_STUB:
+            intents = stub_decide(self.world, self.rng, ctx.tick, ctx)
+        else:
+            intents = autonomous_decide(self.world, self.rng, ctx.tick, ctx,
+                                        pack_profiles=self.pack_profiles)
         self.world.stage_intents(intents)
 
         # [4] 执行（**唯一写点**）
@@ -394,12 +438,17 @@ class WorldKernel:
         # [5] 记账
         if self.log is not None:
             for intent in intents:
+                # `npc.decision`：**每 tick 每 NPC 一条**全量发（D-M4-21）；桩路径不产出 `decision`
+                # 子字典 ⇒ 负例下事件数为 0（D-M4-1 ②）
+                decision = intent.get("decision")
+                if decision:
+                    self.log.append(ctx.tick, "npc.decision", intent["npc_id"], dict(decision))
                 if not (intent["moved"] or intent["schedule_changed"]):
                     continue
                 self.log.append(ctx.tick, "npc.action", intent["npc_id"], {
                     "npc_id": intent["npc_id"],
                     "action": intent["action"],
-                    "decision_source": "deterministic_stub",
+                    "decision_source": self.decision_source,
                     "target_entity": intent["target_entity"],
                     "duration_ticks": 1,
                 })
