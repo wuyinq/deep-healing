@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0.0",
+  "pack_id": "xingfu-xiaoqu-xuqin",
+  "aesthetic_constraints": {
+    "palette": { "saturation_max_pct": 45, "warm_hue_range_deg": [20, 60], "cool_complement_hue_range_deg": [180, 210], "night_high_saturation_accents_max": 2 },
+    "lighting": { "shadow_softness_min": 0.5, "ambient_ratio_min": 0.35 },
+    "material": { "roughness_min": 0.6 },
+    "audio": { "allowed_beds": ["ambient_lowfreq", "none"], "sharp_high_freq_sfx": false },
+    "validation": "数值超界即校验失败（tools/aesthetic_check.py）；不依赖主观评价"
+  },
+  "assets": [
+    {
+      "id": "mat-kitchen-wall",
+      "kind": "material",
+      "source": "procedural",
+      "palette": { "hue_deg": 32, "saturation_pct": 20, "lightness_pct": 71 },
+      "roughness_range": [0.74, 0.9],
+      "audio_bed": "none",
+      "license": "proprietary-self-authored"
+    },
+    {
+      "id": "prop-knife-plate",
+      "kind": "prop",
+      "source": "placeholder",
+      "palette": { "hue_deg": 30, "saturation_pct": 40, "lightness_pct": 55 },
+      "roughness_range": [0.68, 0.86],
+      "audio_bed": "none",
+      "license": "proprietary-self-authored",
+      "replaceable_by": "authored"
+    },
+    {
+      "id": "fx-corridor-lamp",
+      "kind": "texture",
+      "source": "procedural",
+      "palette": { "hue_deg": 44, "saturation_pct": 42, "lightness_pct": 72 },
+      "roughness_range": [0.9, 1.0],
+      "audio_bed": "none",
+      "license": "proprietary-self-authored",
+      "note": "夜间唯一的高饱和点缀（数量 1 ≤ 上限 2）"
+    }
+  ],
+  "licence_policy": {
+    "runtime_allowed": ["proprietary-self-authored", "CC0-1.0", "CC-BY-4.0", "MIT", "Apache-2.0"],
+    "offline_pipeline_only": ["GPL-3.0"],
+    "note": "GPL 系只允许留在离线美术管线，不得进入运行时与交付产物。"
+  }
+}

@@ -29,6 +29,29 @@
     另有空闲读超时 `REQUEST_IDLE_TIMEOUT_S`（挡「已建立并保持」的 keep-alive 连接）。
     超限 ⇒ **503 `E_HTTP_QUOTA`** + 结构化 JSON（**不排队、不静默、不耗 fd**，立即关连接）；
     `daemon_threads=True` + 每连接写超时 + 心跳。
+  - **F7 · r5 加固（有界回收的补丁，与上面的并发上限同批）**：
+    ① 配额归还点从 handler 的 `finish()` 移到 `LiveHTTPServer.shutdown_request()`
+       —— **fd 真正关掉之后**才归还，配额语义 = 「同时打开的 fd 上限」（r4 的归还点早于
+       `close_request()`，中间一旦有长阻塞，同时打开的 fd 可远超配额）；
+    ② **写路径超时：确认既有 socket 超时已覆盖（r3 更正 · 无代码改动）**。
+       r5 曾声称「`setup()` 统一设写超时（r4 只在 SSE 路径设）」，但 `settimeout()` 作用于
+       **整个 socket（读写同限）**，而 `setup()` 里的 `self.connection.settimeout(REQUEST_IDLE_TIMEOUT_S)`
+       在 r4 之前就存在、取值 5.0 == `WRITE_TIMEOUT_S` ⇒ 写路径**本来就受同一超时约束**，
+       「普通端点的 flush 会无界阻塞」这条断言与事实**相反**。该条**未落地也无需落地**：
+       r3 起按事实表述（依据：Sentinel MEDIUM-1 + Raven L-1，见 `07_adr.md` ADR-019 的更正段）。
+       回退/负对照面：删掉 `setup()` 里那行 `settimeout` ⇒ 连接超时变 `None` ⇒
+       `tests/test_m52_f7_fd_accounting.py` 的「连接超时」不变式**必红**；
+    ③ `LiveHTTPServer.handle_error()` 覆写：handler 异常**只计数**（`/live/health.handler_errors`
+       + `handler_error_kinds`），**不倒 traceback 进 stderr** —— 观察者「连上即断」是预期噪声，
+       stdlib 默认实现会把它变成无界 stderr 写（实测单臂 90~127MB），线程串行排在 stderr 锁上，
+       handler 完成变慢 ⇒ fd 回收变慢。
+       **r3 补可观测性（FIX-6）**：另留**有界**诊断样本（首 `HANDLER_ERROR_SAMPLES_MAX` 条、
+       每条 `repr(exc)` 截断到 `HANDLER_ERROR_REPR_MAX` 字符）⇒ `/live/health.handler_errors_last`；
+       `finish()` 吞掉的异常另记 `finish_errors` / `finish_error_kinds`（此前「连上即断」的噪声
+       从「有痕迹」变成「完全无痕迹」）。
+       **为什么不在本模块落文件**：本模块的零文件系统访问是**设计属性**（见上一条：不 import
+       `pathlib`、不 `open(` ⇒ 路径穿越面在设计层不存在）；落盘由 `cli` 从**有界内存样本**写出
+       （`live_handler_errors.jsonl`，条数与字节双重有界）。
 
 **世界状态的持久化不在这里**（`live_state.json` 由 `cli` 写）：本模块只产出数据。
 """
@@ -38,6 +61,7 @@ from __future__ import annotations
 import errno
 import json
 import queue
+import sys
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -67,6 +91,11 @@ REQUEST_IDLE_TIMEOUT_S = 5.0
 SUBSCRIBER_QUEUE_MAX = 256
 WRITE_TIMEOUT_S = 5.0
 HEARTBEAT_S = 10.0
+#: **有界诊断样本（FIX-6 · r3）**：handler 异常只留**首 N 条**样本（每条 `repr(exc)` 截断），
+#: 使「预期噪声」之外的**真缺陷**仍有结构化痕迹，同时不给内存/日志留无界增长面。
+HANDLER_ERROR_SAMPLES_MAX = 8
+HANDLER_ERROR_REPR_MAX = 200
+FINISH_ERROR_KINDS_MAX = 16
 LOOPBACK_HOSTS = ("127.0.0.1", "localhost", "::1")
 
 ERROR_BIND_REFUSED = "E_BIND_REFUSED"
@@ -287,6 +316,34 @@ class LiveHTTPServer(ThreadingHTTPServer):
                 pass
             raise
 
+    def shutdown_request(self, request) -> None:
+        """**F7（r5）：fd 真正关掉之后**才归还 accept 配额。
+
+        r4 把归还点放在 handler 的 `finish()` 里 —— 那时 fd **还开着**（`shutdown_request`
+        要等 `process_request_thread` 的 `finally` 才跑）。两者之间一旦有长阻塞
+        （实测：`finish()` 的 flush 撞 `BrokenPipeError` ⇒ 往 stderr 写 100MB 级 traceback，
+        线程串行排在 stderr 锁上），配额已被归还而 fd 未关 ⇒ **同时打开的 fd 数可以远超配额**。
+
+        把归还点挪到 `close_request()` 之后 ⇒ 配额语义变成「**同时打开的 fd 上限**」，
+        与「fd 是 `accept()` 那一刻被消耗的」这条事实对齐。
+        """
+        try:
+            super().shutdown_request(request)
+        finally:
+            self.server_ref.release_accept()
+
+    def handle_error(self, request, client_address) -> None:
+        """**F7（r5）：handler 异常计数，不倒 traceback 进 stderr。**
+
+        stdlib 默认实现会把整段 traceback 写 stderr。观察者频繁「连上即断」时，
+        `finish()` 的 flush 撞 `BrokenPipeError` 是**预期噪声**，默认实现却把它变成
+        **无界 stderr 写**（实测：单臂 90~127MB）——线程串行排在 stderr 锁上，
+        handler 完成变慢 ⇒ fd 回收变慢（r3 的失败形态）。
+
+        这里只计数（`/live/health.handler_errors`），错误类别可观测，但不写 stderr。
+        """
+        self.server_ref.note_handler_error(request, client_address)
+
 
 class LiveServer:
     """只读 HTTP/SSE 观察服务（`ThreadingHTTPServer`；daemon 线程，仅存活于本进程运行期）。"""
@@ -312,6 +369,54 @@ class LiveServer:
         self.http_connections = 0
         self.http_connections_peak = 0
         self.connection_rejections = 0
+        # **F7（r5）**：handler 异常计数（替代「倒 traceback 进 stderr」）
+        self._error_lock = threading.Lock()
+        self.handler_errors = 0
+        self.handler_error_kinds: dict[str, int] = {}
+        # **FIX-6（r3）**：**有界**诊断样本（首 N 条，`repr(exc)` 截断）⇒ `/live/health.handler_errors_last`
+        # 与 `cli` 的有界落盘；以及 `finish()` 吞掉的异常计数（此前完全无痕迹）。
+        self.handler_error_samples: list[dict] = []
+        self.finish_errors = 0
+        self.finish_error_kinds: dict[str, int] = {}
+
+    # ------------------------------------------------------------------ handler 异常记账（F7 · r5 / FIX-6 · r3）
+    def note_handler_error(self, request, client_address) -> None:
+        """记一次 handler 异常（**不写 stderr**）。类别用异常类名聚合，便于区分
+        「观察者断开」（`BrokenPipeError` / `ConnectionResetError`，预期噪声）与真缺陷。
+
+        **FIX-6（r3）**：另留**有界**诊断样本 —— 首 `HANDLER_ERROR_SAMPLES_MAX` 条，
+        每条 `repr(exc)` 截断到 `HANDLER_ERROR_REPR_MAX` 字符。界（条数 / 字节）随
+        `/live/health.handler_error_diagnostics` 一并公布，便于核验「有界」这件事。
+        """
+        kind = "unknown"
+        exc = sys.exc_info()[1]
+        if exc is not None:
+            kind = type(exc).__name__
+        sample: dict | None = None
+        with self._error_lock:
+            self.handler_errors += 1
+            self.handler_error_kinds[kind] = self.handler_error_kinds.get(kind, 0) + 1
+            if len(self.handler_error_samples) < HANDLER_ERROR_SAMPLES_MAX:
+                try:
+                    address = f"{client_address[0]}:{client_address[1]}"
+                except (TypeError, IndexError):
+                    address = "unknown"
+                detail = "" if exc is None else repr(exc)[:HANDLER_ERROR_REPR_MAX]
+                self.handler_error_samples.append(
+                    {"seq": self.handler_errors, "kind": kind, "client": address, "repr": detail})
+        return None
+
+    def note_finish_error(self, error: BaseException | None) -> None:
+        """记一次被 `finish()` 吞掉的异常（**FIX-6 · r3**）：`finish()` 的 flush 撞
+        「观察者连上即断」是预期噪声，但吞掉之后**完全无痕迹** ⇒ 这里补计数与类别聚合
+        （类别字典上限 `FINISH_ERROR_KINDS_MAX`，超出记入 `other`）。"""
+        kind = "unknown" if error is None else type(error).__name__
+        with self._error_lock:
+            self.finish_errors += 1
+            if kind in self.finish_error_kinds or len(self.finish_error_kinds) < FINISH_ERROR_KINDS_MAX:
+                self.finish_error_kinds[kind] = self.finish_error_kinds.get(kind, 0) + 1
+            else:
+                self.finish_error_kinds["other"] = self.finish_error_kinds.get("other", 0) + 1
 
     # ------------------------------------------------------------------ 普通 HTTP 连接准入（**accept 层**）
     def admit_accept(self) -> bool:
@@ -483,7 +588,20 @@ class LiveServer:
             "http_connections": self.http_connections,
             "http_connections_peak": self.http_connections_peak,
             "connection_rejections": self.connection_rejections,
+            "handler_errors": self.handler_errors,
+            "handler_error_kinds": dict(sorted(self.handler_error_kinds.items())),
+            # **FIX-6（r3）**：有界诊断样本 + 界（条数 / 字节）+ `finish()` 吞异常计数
+            "handler_errors_last": list(self.handler_error_samples),
+            "handler_error_diagnostics": {
+                "samples_max": HANDLER_ERROR_SAMPLES_MAX,
+                "repr_max_chars": HANDLER_ERROR_REPR_MAX,
+                "samples_kept": len(self.handler_error_samples),
+                "max_bytes": HANDLER_ERROR_SAMPLES_MAX * (HANDLER_ERROR_REPR_MAX + 128),
+            },
+            "finish_errors": self.finish_errors,
+            "finish_error_kinds": dict(sorted(self.finish_error_kinds.items())),
             "request_idle_timeout_s": REQUEST_IDLE_TIMEOUT_S,
+            "write_timeout_s": WRITE_TIMEOUT_S,
             "pace_s_per_tick": self.world.pace_s_per_tick,
             "running": self.world.running,
         }
@@ -518,10 +636,17 @@ def _make_handler(server_ref: LiveServer):
 
         # -------------------------------------------------------------- 连接生命周期（F7 · r3/r4）
         def setup(self) -> None:
-            """连接建立：**空闲读超时**（keep-alive 空闲连接不得无限期占线程 + fd）。
+            """连接建立：**socket 超时（读写同限）**。
 
             连接**计数不在这里**做：F7（r4）把连接准入前移到 `LiveHTTPServer.process_request()`
             （**起线程之前**）—— 在 handler 里计数等于「fd 已经被 accept 吃掉之后才记账」。
+
+            **写超时（r3 更正）**：`settimeout()` 作用于**整个 socket**（读与写同限），
+            这里的取值 `REQUEST_IDLE_TIMEOUT_S = 5.0` 与 `WRITE_TIMEOUT_S = 5.0` 相等
+            ⇒ 普通端点的 `finish()` flush **本来就**受 5s 约束，不存在「无界阻塞」缺口，
+            r5 声称的「统一设写超时」**未落地也无需落地**（Sentinel MEDIUM-1 / Raven L-1；
+            见 `07_adr.md` ADR-019 的更正段）。**不要**删掉这行 —— 删掉它超时变 `None`，
+            连接生命周期就没有任何界（`tests/test_m52_f7_fd_accounting.py` 有对应不变式）。
             """
             super().setup()
             try:
@@ -530,10 +655,21 @@ def _make_handler(server_ref: LiveServer):
                 pass
 
         def finish(self) -> None:
+            """收尾：**容忍对端断开**（观察者连上即断是预期噪声）。
+
+            F7（r5）：归还 accept 配额的动作**已移到 `LiveHTTPServer.shutdown_request()`**
+            （fd 真正关掉之后）—— 在这里归还等于「配额已还、fd 未关」，正是 fd 超出配额的那条通路。
+            这里只负责把 `finish()` 的 flush 异常吃掉（否则它会冒到 `handle_error`）。
+
+            **FIX-6（r3）**：吞异常**必须留痕** —— 每次吞掉都调 `note_finish_error()`
+            （`/live/health.finish_errors` + `finish_error_kinds`），否则「连上即断」这条
+            噪声从「有痕迹（stderr）」变成「完全无痕迹」。
+            """
             try:
                 super().finish()
-            finally:
-                server_ref.release_accept()
+            except (BrokenPipeError, ConnectionResetError, TimeoutError, OSError) as error:
+                self.close_connection = True
+                server_ref.note_finish_error(error)
 
         # -------------------------------------------------------------- 响应原语
         def _write_headers(self, code: int, content_type: str, length: int, *, close: bool) -> None:

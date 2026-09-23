@@ -1,0 +1,17 @@
+{
+  "id": "kitchen-1052",
+  "display_name": "屠夫之家 · 五楼厨房",
+  "kind": "indoor_zone",
+  "area_mm2": 96000000,
+  "nav_nodes": ["nav-kitchen", "nav-room-1052"],
+  "ambience": {
+    "audio_bed": "ambient_lowfreq",
+    "lighting": { "ambient_ratio": 0.40, "shadow_softness": 0.58, "key_light_temp_k": 4000 },
+    "palette": { "hue_deg": 32, "saturation_pct": 20, "lightness_pct": 71 }
+  },
+  "props": ["prop-knife-plate"],
+  "activity_slots": [
+    { "slot": "morning", "suitable_actions": ["work", "rest"] },
+    { "slot": "evening", "suitable_actions": ["work", "rest", "talk"] }
+  ]
+}

@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deephealing.local/schemas/intervention.policy.schema.json",
+  "title": "DeepHealing Intervention Policy (participate mode)",
+  "description": "参与模式介入策略契约（护栏）。所有上行 intent 在入队前必须过本策略校验；被拒必须落 intent.rejected 事件（含 reason_code），可审计、可回放。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "scope", "rate_limit", "cooldown_ms", "impact_budget", "forbidden_actions", "audit"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0.0" },
+    "scope": {
+      "type": "object",
+      "description": "介入可见范围与目标约束。",
+      "additionalProperties": false,
+      "required": ["mode", "allowed_kinds", "target_kinds", "max_targets_per_intent"],
+      "properties": {
+        "mode": { "type": "string", "const": "participate" },
+        "allowed_kinds": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "enum": ["delegate_instruction", "ghost_hand", "avatar"] },
+          "description": "V0 只允许 delegate_instruction；其余通道即使出现在 schema 中也不得启用。"
+        },
+        "target_kinds": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["npc", "prop", "room", "zone"] }
+        },
+        "max_targets_per_intent": { "type": "integer", "minimum": 1, "maximum": 8 },
+        "instruction_text_max_chars": { "type": "integer", "minimum": 1, "default": 1000 },
+        "player_text_policy": {
+          "type": "string",
+          "enum": ["delimit_and_ignore_instructions", "allowlist_fields"],
+          "description": "玩家文本进入能力上下文时的注入防护（对应 capability.safety.prompt_injection_guard）。"
+        }
+      }
+    },
+    "rate_limit": {
+      "type": "object",
+      "description": "反刷限流（滑动窗口）。",
+      "additionalProperties": false,
+      "required": ["window_ms", "max_intents", "per_target_max_intents", "duplicate_merge_window_ms"],
+      "properties": {
+        "window_ms": { "type": "integer", "minimum": 1, "default": 10000 },
+        "max_intents": { "type": "integer", "minimum": 1, "default": 6 },
+        "per_target_max_intents": { "type": "integer", "minimum": 1, "default": 2 },
+        "duplicate_merge_window_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 3000,
+          "description": "同目标同内容的重复意图合并窗口，合并后只计一次影响。"
+        }
+      }
+    },
+    "cooldown_ms": {
+      "type": "object",
+      "description": "目标级与全局冷却。冷却中提交 → E_COOLDOWN。",
+      "additionalProperties": false,
+      "required": ["per_target_ms", "global_ms"],
+      "properties": {
+        "per_target_ms": { "type": "integer", "minimum": 0, "default": 5000 },
+        "global_ms": { "type": "integer", "minimum": 0, "default": 1000 }
+      }
+    },
+    "impact_budget": {
+      "type": "object",
+      "description": "会话级影响预算。耗尽后后续介入降级为「观察 + 记入待办」（E_BUDGET_EXHAUSTED）。",
+      "additionalProperties": false,
+      "required": ["per_session", "per_window", "window_ticks", "cost_table", "on_exhausted"],
+      "properties": {
+        "per_session": { "type": "number", "minimum": 0, "default": 100 },
+        "per_window": { "type": "number", "minimum": 0, "default": 20 },
+        "window_ticks": { "type": "integer", "minimum": 1, "default": 3000 },
+        "cost_table": {
+          "type": "object",
+          "description": "各通道/动作的影响成本（数据驱动）。",
+          "additionalProperties": { "type": "number", "minimum": 0 }
+        },
+        "on_exhausted": { "type": "string", "enum": ["observe_and_queue", "reject"] }
+      }
+    },
+    "forbidden_actions": {
+      "type": "array",
+      "minItems": 1,
+      "description": "硬拒清单（命中即 E_FORBIDDEN_ACTION，不进入队列）。",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "match", "reason"],
+        "properties": {
+          "id": { "type": "string" },
+          "match": {
+            "type": "object",
+            "description": "数据驱动匹配条件（对 intent 的字段做等值/前缀/正则匹配）。",
+            "additionalProperties": false,
+            "properties": {
+              "field": { "type": "string" },
+              "equals": {},
+              "prefix": { "type": "string" },
+              "regex": { "type": "string" }
+            }
+          },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "task_adaptation_guards": {
+      "type": "object",
+      "description": "任务迭代演进的护栏（对应 tasks/*.json 的 adaptation_rules）。",
+      "additionalProperties": false,
+      "required": ["max_shifts_per_task", "require_rule_id", "rollback_to_snapshot_allowed"],
+      "properties": {
+        "max_shifts_per_task": { "type": "integer", "minimum": 0, "default": 3 },
+        "require_rule_id": { "type": "boolean", "const": true },
+        "rollback_to_snapshot_allowed": { "type": "boolean", "default": true },
+        "hard_constraints": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "治愈向硬约束（如不得产出伤害/猎奇向内容、不得绕过任务分级、不得直接改写 trauma_flags）。"
+        }
+      }
+    },
+    "audit": {
+      "type": "object",
+      "description": "全量审计要求（可回放、可追溯、可回滚）。",
+      "additionalProperties": false,
+      "required": ["log_events", "fields", "retention_ticks", "redact"],
+      "properties": {
+        "log_events": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "enum": ["intent.applied", "intent.rejected", "task.state_changed"] }
+        },
+        "fields": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "审计必留字段（如 intent_id/session_id/kind/target/impact_cost/reason_code/rule_id）。"
+        },
+        "retention_ticks": { "type": "integer", "minimum": 1 },
+        "redact": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "审计日志中必须脱敏的字段（token、原始请求头等）。"
+        },
+        "player_text_storage": {
+          "type": "string",
+          "enum": ["digest_only", "redacted_summary"],
+          "description": "玩家原始文本的存储策略：默认只存 digest，避免原文进入产物。"
+        }
+      }
+    }
+  }
+}

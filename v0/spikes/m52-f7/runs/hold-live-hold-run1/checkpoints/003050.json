@@ -1,0 +1,477 @@
+{
+  "event_chain_hash": "de225df154460783652bb6bca09d1619aeec1ce18a9885cb631e51d6f880a483",
+  "rng_state_digest": "2a2b111f26dc2a30183a0ec71e12a103d3ec28fad49245df95292d69b3d5caf9",
+  "state": {
+    "constants": {
+      "day_ticks": 1440,
+      "dt_ms": 100,
+      "max_entities": 512,
+      "snapshot_every_ticks": 50,
+      "tick_rate_hz": 10,
+      "world_bounds_mm": {
+        "x": 60000,
+        "y": 30000,
+        "z": 24000
+      }
+    },
+    "entities": [
+      {
+        "id": "bench-01",
+        "kind": "prop",
+        "tags": [
+          "interactive",
+          "rest"
+        ],
+        "transform": {
+          "nav_node_id": "nav-bench",
+          "pos_mm": {
+            "x": 33000,
+            "y": 0,
+            "z": 12000
+          },
+          "room_id": null,
+          "rot_mdeg": {
+            "x": 0,
+            "y": 90000,
+            "z": 0
+          }
+        }
+      },
+      {
+        "id": "courtyard-01",
+        "kind": "zone",
+        "tags": [
+          "outdoor",
+          "shared"
+        ],
+        "transform": {
+          "nav_node_id": "nav-courtyard",
+          "pos_mm": {
+            "x": 30000,
+            "y": 0,
+            "z": 12000
+          },
+          "room_id": null,
+          "rot_mdeg": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        }
+      },
+      {
+        "id": "gate-north",
+        "kind": "portal",
+        "tags": [
+          "inactive-target",
+          "portal"
+        ],
+        "transform": {
+          "nav_node_id": "nav-gate-north",
+          "pos_mm": {
+            "x": 30000,
+            "y": 0,
+            "z": 24000
+          },
+          "room_id": null,
+          "rot_mdeg": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        }
+      },
+      {
+        "id": "laundry-01",
+        "kind": "zone",
+        "tags": [
+          "chore",
+          "shared"
+        ],
+        "transform": {
+          "nav_node_id": "nav-laundry",
+          "pos_mm": {
+            "x": 18000,
+            "y": 0,
+            "z": 3000
+          },
+          "room_id": null,
+          "rot_mdeg": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        }
+      },
+      {
+        "emotion": {
+          "arousal": 0.28,
+          "mood_label": "numb",
+          "updated_tick": 0,
+          "valence": -0.15
+        },
+        "id": "npc-001",
+        "kind": "npc",
+        "memory_ref": {
+          "episode_table": "episodes",
+          "fact_keys": [],
+          "last_reflect_tick": null,
+          "working_buffer_id": "wb-npc-001"
+        },
+        "needs": {
+          "belonging": 0.03313500000000374,
+          "esteem": 0.0617870000000081,
+          "physiology": 0.055497000000006194,
+          "safety": 0.055497000000006236,
+          "self_actualization": 0.04734300000000764
+        },
+        "relations": {
+          "npc-002": 0.35,
+          "npc-003": 0.1,
+          "npc-004": 0.05,
+          "npc-005": 1.0
+        },
+        "schedule": {
+          "entry_id": "night-shift",
+          "state": "resting",
+          "target_entity": "room-101",
+          "until_tick": 4320
+        },
+        "tags": [
+          "night-shift",
+          "resident"
+        ],
+        "transform": {
+          "nav_node_id": "nav-room-101",
+          "pos_mm": {
+            "x": 6081,
+            "y": 0,
+            "z": 3500
+          },
+          "room_id": "room-101",
+          "rot_mdeg": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "trauma_flags": [
+          {
+            "healed_tick": null,
+            "id": "loss-of-spouse",
+            "severity": 3,
+            "since_tick": 0
+          }
+        ]
+      },
+      {
+        "emotion": {
+          "arousal": 0.45,
+          "mood_label": "content",
+          "updated_tick": 0,
+          "valence": 0.3
+        },
+        "id": "npc-002",
+        "kind": "npc",
+        "memory_ref": {
+          "episode_table": "episodes",
+          "fact_keys": [
+            "works-downtown"
+          ],
+          "last_reflect_tick": null,
+          "working_buffer_id": "wb-npc-002"
+        },
+        "needs": {
+          "belonging": 0.05330100000000618,
+          "esteem": 0.041816000000004114,
+          "physiology": 0.05082500000000803,
+          "safety": 0.0508250000000081,
+          "self_actualization": 0.04581600000000416
+        },
+        "relations": {
+          "npc-001": 0.35,
+          "npc-003": 1.0,
+          "npc-004": 1.0,
+          "npc-005": 1.0
+        },
+        "schedule": {
+          "entry_id": "commuter",
+          "state": "resting",
+          "target_entity": "room-102",
+          "until_tick": 4320
+        },
+        "tags": [
+          "commuter",
+          "resident"
+        ],
+        "transform": {
+          "nav_node_id": "nav-room-102",
+          "pos_mm": {
+            "x": 12000,
+            "y": 0,
+            "z": 3000
+          },
+          "room_id": "room-102",
+          "rot_mdeg": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "trauma_flags": []
+      },
+      {
+        "emotion": {
+          "arousal": 0.22,
+          "mood_label": "calm",
+          "updated_tick": 0,
+          "valence": 0.05
+        },
+        "id": "npc-003",
+        "kind": "npc",
+        "memory_ref": {
+          "episode_table": "episodes",
+          "fact_keys": [
+            "keeps-daily-routine"
+          ],
+          "last_reflect_tick": null,
+          "working_buffer_id": "wb-npc-003"
+        },
+        "needs": {
+          "belonging": 0.02943300000000128,
+          "esteem": 0.04912500000000747,
+          "physiology": 0.07276000000000868,
+          "safety": 0.07276000000000866,
+          "self_actualization": 0.056289000000007416
+        },
+        "relations": {
+          "npc-001": 0.1,
+          "npc-002": 1.0,
+          "npc-004": 1.0,
+          "npc-005": 0.55
+        },
+        "schedule": {
+          "entry_id": "retired",
+          "state": "resting",
+          "target_entity": "room-102",
+          "until_tick": 4320
+        },
+        "tags": [
+          "resident",
+          "retired"
+        ],
+        "transform": {
+          "nav_node_id": "nav-courtyard",
+          "pos_mm": {
+            "x": 12000,
+            "y": 0,
+            "z": 3000
+          },
+          "room_id": null,
+          "rot_mdeg": {
+            "x": 0,
+            "y": 180000,
+            "z": 0
+          }
+        },
+        "trauma_flags": [
+          {
+            "healed_tick": null,
+            "id": "empty-nest",
+            "severity": 2,
+            "since_tick": 0
+          }
+        ]
+      },
+      {
+        "emotion": {
+          "arousal": 0.6,
+          "mood_label": "anxious",
+          "updated_tick": 0,
+          "valence": -0.05
+        },
+        "id": "npc-004",
+        "kind": "npc",
+        "memory_ref": {
+          "episode_table": "episodes",
+          "fact_keys": [
+            "overloaded-schedule"
+          ],
+          "last_reflect_tick": null,
+          "working_buffer_id": "wb-npc-004"
+        },
+        "needs": {
+          "belonging": 0.04367600000000539,
+          "esteem": 0.05204200000000754,
+          "physiology": 0.03876900000000495,
+          "safety": 0.03876900000000491,
+          "self_actualization": 0.0633670000000089
+        },
+        "relations": {
+          "npc-001": 1.0,
+          "npc-002": 1.0,
+          "npc-003": 1.0,
+          "npc-005": 0.75
+        },
+        "schedule": {
+          "entry_id": "caregiver",
+          "state": "resting",
+          "target_entity": "room-102",
+          "until_tick": 4320
+        },
+        "tags": [
+          "caregiver",
+          "resident"
+        ],
+        "transform": {
+          "nav_node_id": "nav-laundry",
+          "pos_mm": {
+            "x": 12000,
+            "y": 0,
+            "z": 3000
+          },
+          "room_id": null,
+          "rot_mdeg": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "trauma_flags": [
+          {
+            "healed_tick": null,
+            "id": "caregiver-burnout",
+            "severity": 4,
+            "since_tick": 0
+          }
+        ]
+      },
+      {
+        "emotion": {
+          "arousal": 0.5,
+          "mood_label": "hopeful",
+          "updated_tick": 0,
+          "valence": 0.2
+        },
+        "id": "npc-005",
+        "kind": "npc",
+        "memory_ref": {
+          "episode_table": "episodes",
+          "fact_keys": [
+            "studying-for-exam"
+          ],
+          "last_reflect_tick": null,
+          "working_buffer_id": "wb-npc-005"
+        },
+        "needs": {
+          "belonging": 0.05118400000000761,
+          "esteem": 0.05336400000000631,
+          "physiology": 0.07855200000000823,
+          "safety": 0.07855200000000831,
+          "self_actualization": 0.027450000000003597
+        },
+        "relations": {
+          "npc-001": 1.0,
+          "npc-003": 0.55,
+          "npc-004": 0.2
+        },
+        "schedule": {
+          "entry_id": "student",
+          "state": "resting",
+          "target_entity": "room-201",
+          "until_tick": 4320
+        },
+        "tags": [
+          "resident",
+          "student"
+        ],
+        "transform": {
+          "nav_node_id": "nav-room-201",
+          "pos_mm": {
+            "x": 5970,
+            "y": 0,
+            "z": 6000
+          },
+          "room_id": "room-201",
+          "rot_mdeg": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "trauma_flags": []
+      },
+      {
+        "id": "room-101",
+        "kind": "room",
+        "tags": [
+          "floor-1",
+          "residential"
+        ],
+        "transform": {
+          "nav_node_id": "nav-room-101",
+          "pos_mm": {
+            "x": 6000,
+            "y": 0,
+            "z": 3000
+          },
+          "room_id": "room-101",
+          "rot_mdeg": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        }
+      },
+      {
+        "id": "room-102",
+        "kind": "room",
+        "tags": [
+          "floor-1",
+          "residential"
+        ],
+        "transform": {
+          "nav_node_id": "nav-room-102",
+          "pos_mm": {
+            "x": 12000,
+            "y": 0,
+            "z": 3000
+          },
+          "room_id": "room-102",
+          "rot_mdeg": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        }
+      },
+      {
+        "id": "room-201",
+        "kind": "room",
+        "tags": [
+          "floor-2",
+          "residential"
+        ],
+        "transform": {
+          "nav_node_id": "nav-room-201",
+          "pos_mm": {
+            "x": 6000,
+            "y": 0,
+            "z": 6000
+          },
+          "room_id": "room-201",
+          "rot_mdeg": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        }
+      }
+    ],
+    "schema_version": "1.0.0",
+    "seed": 20260921,
+    "tick": 3050
+  },
+  "state_hash": "1c5b0c96e23891f4e5c6830e696eda119c8f6f5dae31adcb8e64815b2ef36f52",
+  "tick": 3050
+}

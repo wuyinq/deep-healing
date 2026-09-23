@@ -1,0 +1,3 @@
+{"artifact_ok": true, "errno24": false, "exit": 0, "fatal_python_error": false, "fd_tcp_peak": 33, "fd_total_peak": 73, "pass": true, "served_200": 1500, "tag": "hold-live-hold-run0", "thread_peak": 0}
+{"artifact_ok": true, "errno24": false, "exit": 0, "fatal_python_error": false, "fd_tcp_peak": 34, "fd_total_peak": 73, "pass": true, "served_200": 1500, "tag": "hold-live-hold-run1", "thread_peak": 0}
+all_pass=True (fd_total_peak < 1024 required)

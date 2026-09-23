@@ -1,0 +1,68 @@
+{
+ "10a_pass": false,
+ "10a_share": 0.9697,
+ "10a_top_branch": "restore",
+ "10b_pass": false,
+ "10b_share": 0.9754,
+ "10b_top_need": "safety",
+ "10c_min_actions_per_npc": 4,
+ "10c_pass": true,
+ "10d1_outdoor_share": 0.0076,
+ "10d1_pass": false,
+ "10d2_npcs": [],
+ "10d2_npcs_at_or_above_20pct": 0,
+ "10d2_pass": false,
+ "actions": {
+  "flee": 49,
+  "rest": 1966,
+  "talk": 2709,
+  "walk": 1396,
+  "work": 1080
+ },
+ "all_pass": false,
+ "branches": {
+  "explore": 71,
+  "flee": 49,
+  "restore": 6982,
+  "socialize": 16,
+  "work": 82
+ },
+ "decisions": 7200,
+ "needs": {
+  "belonging": 16,
+  "esteem": 82,
+  "physiology": 8,
+  "safety": 7023,
+  "self_actualization": 71
+ },
+ "npcs_in_decisions": 5,
+ "outdoor_threshold_mm": 1500,
+ "pack_npcs": 5,
+ "per_npc_actions": {
+  "npc-001": 5,
+  "npc-002": 4,
+  "npc-003": 4,
+  "npc-004": 5,
+  "npc-005": 4
+ },
+ "per_npc_outdoor": {
+  "npc-001": 0.0,
+  "npc-002": 0.0,
+  "npc-003": 0.0312,
+  "npc-004": 0.0069,
+  "npc-005": 0.0
+ },
+ "sample_every": 5,
+ "scope": {
+  "consistent": true,
+  "files_scanned": 15,
+  "kernel_root": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260923-002-deephealing-m5-2-character-loop/02_source/v0_skeleton/kernel",
+  "npcs_in_decisions": 5,
+  "pack": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260923-002-deephealing-m5-2-character-loop/02_source/v0_skeleton/districts/xingfu-xiaoqu",
+  "pack_npcs": 5,
+  "samples_total": 1440
+ },
+ "seed": 20260921,
+ "status": "measured",
+ "ticks": 1440
+}

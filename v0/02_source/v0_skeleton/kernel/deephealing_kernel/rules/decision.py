@@ -70,6 +70,13 @@ ACTION_NEED: dict[str, str | None] = {
     "hold": None,
 }
 
+#: **C1（M5.2 r1）**：动作 → **额外**缓解的需求。原实现里 `safety` **只由 `flee` 缓解**
+#: ⇒ `restore` 分支长期主导（实测 97.54% 决策 `dominant_need=safety`）。语义依据：**家 = 安全**，
+#: 回家休息本身就在缓解安全感压力。数据映射（非按 NPC 特判），追加式，不改 `ACTION_NEED` 的既有语义。
+ACTION_EXTRA_NEEDS: dict[str, tuple[str, ...]] = {
+    "rest": ("safety",),
+}
+
 #: 需求动力学（**确定性、6 位小数**）：
 #:   ① 所有需求每 tick 自然**累积**（压力上升）；
 #:   ② 被选中动作对**自身需求**按比例**缓解**（乘性衰减用加性 delta 表达 ⇒ 与 `ecs.system_movement`
@@ -245,10 +252,16 @@ class Decision:
     bt_branch: str
     schedule_state: str
     target_entity: str | None
+    memory_influence: dict | None = None
 
     def to_payload(self) -> dict:
-        """事件 payload（D-M4-2 的必填字段逐字对齐）。"""
-        return {
+        """事件 payload（D-M4-2 的必填字段逐字对齐）。
+
+        **M5.2 r1 追加键**（**只加，且仅在记忆链已接线时加**）：`memory_influence` ——
+        供 AC-3.4 的 `utility_ranking` **独立复算**（`by_action` 即复算所需的全部加成量）。
+        `memory_view is None`（= 记忆链未接线）⇒ **不加该键**，payload 与改前**逐字节一致**。
+        """
+        payload = {
             "npc_id": self.npc_id,
             "dominant_need": self.dominant_need,
             "dominant_deficit": self.dominant_deficit,
@@ -261,6 +274,9 @@ class Decision:
             "target_entity": self.target_entity,
             "decision_source": DECISION_SOURCE,
         }
+        if self.memory_influence is not None:
+            payload["memory_influence"] = copy.deepcopy(self.memory_influence)
+        return payload
 
 
 def _q(value: float) -> float:
@@ -300,15 +316,82 @@ def _needs_delta(action: str, needs: dict) -> dict[str, float] | None:
     口径（与 `utility.py` 的 docstring 一致）：`needs` 组件是**需求压力**。
       - 所有需求 +`BUILDUP_PER_TICK`（自然累积）；
       - 被选中动作缓解的需求 −`RELIEF_RATIO × 当前压力`（乘性衰减的加性表达）。
+      - **C1（M5.2 r1）**：一个动作可缓解**多于一个**需求（`ACTION_NEED` 主需求
+        + `ACTION_EXTRA_NEEDS` 追加需求）；`rest` 因此同时缓解 `physiology` 与 `safety`。
     """
     keys = sorted(key for key in needs if isinstance(needs.get(key), (int, float)))
     if not keys:
         return None
     delta = {key: BUILDUP_PER_TICK for key in keys}
+    relieved: list[str] = []
     target = ACTION_NEED.get(action)
-    if target in delta:
-        delta[target] = _q(BUILDUP_PER_TICK - RELIEF_RATIO * float(needs[target]))
+    if target:
+        relieved.append(target)
+    relieved.extend(ACTION_EXTRA_NEEDS.get(action, ()))
+    for need in relieved:
+        if need in delta:
+            delta[need] = _q(BUILDUP_PER_TICK - RELIEF_RATIO * float(needs[need]))
     return delta
+
+
+#: **AC-3.4 记忆影响**（M5.2 r1）：经历对效用的加成权重 / 最低重要度门槛 / 参与计算的最近条数。
+#: 全部是**数据**，不是按 NPC 特判的分支。
+MEMORY_SIGNAL_WEIGHT = 0.20
+MEMORY_SIGNAL_MIN_IMPORTANCE = 0.5
+MEMORY_SIGNAL_WINDOW = 3
+
+#: **W4 关系演进**：一次 `talk`（社交）对「对端友善度」的确定性增量。
+RELATION_TALK_DELTA = 0.05
+
+
+def memory_influence(memory_view: dict | None, npc_id: str) -> dict:
+    """只读记忆视图 → 效用加成（**纯函数**：同输入同输出，无随机、无时钟）。
+
+    信号来源 = **经历（episodes）**：取该 NPC **最近 `MEMORY_SIGNAL_WINDOW` 条**
+    `importance >= MEMORY_SIGNAL_MIN_IMPORTANCE` 的记录，按 `kind`（= 当时的动作名）累加，
+    对**同一动作**加成 `MEMORY_SIGNAL_WEIGHT × min(1, Σimportance)`。
+
+    `facts` / `relations` 在视图里**只读暴露**（形状见 C-1 / M-13③），**本轮不参与效用**：
+    AC-4 要求「行为差异来自**经历**、不来自 tick 数」，而关系会随 tick 自行演进 ——
+    若把它接进效用，两个「无经历」对照臂之间也会因 tick 数产生差异，判据就失去判别力。
+    """
+    result: dict = {"read": memory_view is not None, "signals": [], "utility_delta": 0.0,
+                    "by_action": {}}
+    if memory_view is None:
+        return result
+    entry = memory_view.get(npc_id)
+    if not isinstance(entry, dict):
+        return result
+    episodes = entry.get("episodes")
+    episodes = [item for item in episodes if isinstance(item, dict)] \
+        if isinstance(episodes, list) else []
+
+    def recency_key(record: dict) -> tuple[int, int]:
+        tick = record.get("tick")
+        ref = record.get("ref")
+        return (-(int(tick) if isinstance(tick, (int, float)) and not isinstance(tick, bool) else 0),
+                -(int(ref) if isinstance(ref, (int, float)) and not isinstance(ref, bool) else 0))
+
+    weights: dict[str, float] = {}
+    signals: list[str] = []
+    for record in sorted(episodes, key=recency_key):
+        if len(signals) >= MEMORY_SIGNAL_WINDOW:
+            break
+        importance = record.get("importance")
+        if isinstance(importance, bool) or not isinstance(importance, (int, float)):
+            continue
+        importance = float(importance)
+        if importance < MEMORY_SIGNAL_MIN_IMPORTANCE:
+            continue
+        action = str(record.get("kind") or "")
+        if not action:
+            continue
+        weights[action] = weights.get(action, 0.0) + importance
+        signals.append(f"episode:{action}@ref={record.get('ref')}")
+    result["by_action"] = {action: _q(MEMORY_SIGNAL_WEIGHT * min(1.0, weights[action]))
+                           for action in sorted(weights)}
+    result["signals"] = signals
+    return result
 
 
 def _resolve_target(action: str, branch: str, entity: Any, world: Any, profile: dict,
@@ -319,6 +402,9 @@ def _resolve_target(action: str, branch: str, entity: Any, world: Any, profile: 
     - `work` → 当前日程块 `target_entity`（无则 home）
     - `socialize` → **最近的其他 NPC**
     - `explore` → 日程块目标集合 / 街区门户 / 中庭（取距离最近者）
+      **C2（M5.2 r1）**：候选**不含 `home_entity`** —— 原实现把 `home` 塞进候选并取「最近」，
+      等于让「探索」退化成「待在家」（实测室外占比 0.76%）。家在候选全空时仍作**兜底**返回，
+      但它**不再是候选**（不再参与「取最近」的竞争）。
     - `hold` → 不动（None）
     """
     home = profile.get("home_entity")
@@ -339,8 +425,8 @@ def _resolve_target(action: str, branch: str, entity: Any, world: Any, profile: 
         target = schedule.get("target_entity")
         if isinstance(target, str) and target:
             candidates.append(target)
-        if isinstance(home, str) and home:
-            candidates.append(home)
+        # C2（M5.2 r1）：**不再**把 home 放进 explore 的候选集
+        # （原实现 append(home) ⇒「探索」= 待在家；见函数 docstring）
         for other in world.query():
             if other.id == entity.id:
                 continue
@@ -365,11 +451,18 @@ def _resolve_target(action: str, branch: str, entity: Any, world: Any, profile: 
 
 # ---------------------------------------------------------------------- 决策入口
 def decide(world: Any, rng: Any, tick: int, ctx: Any, *,
-           pack_profiles: dict[str, dict]) -> list[dict]:
+           pack_profiles: dict[str, dict], memory_view: dict | None = None) -> list[dict]:
     """tick 阶段 [3] 的决策入口：需求 → 效用 → 行为树分支 → intents。
 
     返回的每条 intent 在 M1 协议之上**额外**带 `decision` 子字典（D-M4-2 的事件来源）；
     日程桩路径不产出该键 ⇒ `tick.py` 只在非空时 emit `npc.decision`。
+
+    **AC-3 断链③（M5.2 r1）**：`memory_view` 是**只读**记忆视图
+    `{npc_id: {"episodes": [...], "facts": {...}, "relations": {npc_id: float}}}`，由 `tick` 组装后传入。
+    本函数**只读**它（不写穿、不持有），且 `memory_view is None` ⇒ 行为与改前**逐字节一致**。
+
+    **W4（M5.2 r1）**：`talk` 意图额外带 `relations_delta`（对端友善度增量），由执行阶段
+    `ecs.system_relations` 落盘 —— 决策层**不写世界**（唯一写点仍是执行阶段）。
     """
     # 延迟导入：`tick.py` 在模块级导入本模块 ⇒ 这里若在模块级反向导入会成环。
     # `_step_towards` 是 M1 冻结的整数毫米步进（含 `rng.stream("npc.<id>.move")` 抽取语义），
@@ -416,9 +509,22 @@ def decide(world: Any, rng: Any, tick: int, ctx: Any, *,
         branch = branch_of(blackboard)
 
         # ③ 效用：日程候选（先验/约束）+ 行为树分支追加的候选
+        #    + **AC-3.4（M5.2 r1）**：只读记忆视图给出的经历加成（`memory_view is None` ⇒ 零加成）
         candidates = candidate_actions(state) + branch_candidates(branch, state)
-        ranked = utility_mod.score_actions(needs, weights, {"schedule_state": state}, candidates)
+        base_ranked = utility_mod.score_actions(needs, weights, {"schedule_state": state}, candidates)
+        influence = memory_influence(memory_view, entity.id)
+        if influence["by_action"]:
+            ranked = [
+                {**item, "score": _q(item["score"] + influence["by_action"].get(item["action"], 0.0))}
+                for item in base_ranked
+            ]
+            # 与 `utility.score_actions` 同口径的显式 tie-break：分数降序 → 需求 id 升序 → 目标 id 升序
+            ranked.sort(key=lambda item: (-item["score"], item["need"], item["target_entity"] or ""))
+        else:
+            ranked = base_ranked
         top = ranked[0] if ranked else {"action": "hold", "need": "physiology", "score": 0.0}
+        chosen_delta = _q(influence["by_action"].get(str(top["action"]), 0.0))
+        influence["utility_delta"] = chosen_delta
 
         # ④ 动作 × 分支 → 目标解析 → 整数毫米步进
         action = str(top["action"])
@@ -430,6 +536,12 @@ def decide(world: Any, rng: Any, tick: int, ctx: Any, *,
             if target is not None:
                 move_delta, jitter = _step_towards(entity, target, rng)
         moved = any(move_delta.values()) or jitter != 0
+
+        # ⑤ **W4（M5.2 r1）**：`talk` 且对端是 NPC ⇒ 关系（友善度）增量（决策层不写世界）
+        relations_delta: dict[str, float] = {}
+        peer = world.get(target_entity) if target_entity else None
+        if action == "talk" and peer is not None and peer.kind == "npc":
+            relations_delta[peer.id] = RELATION_TALK_DELTA
 
         decision = Decision(
             npc_id=entity.id,
@@ -443,6 +555,7 @@ def decide(world: Any, rng: Any, tick: int, ctx: Any, *,
             bt_branch=branch,
             schedule_state=state,
             target_entity=target_entity,
+            memory_influence=influence if memory_view is not None else None,
         )
 
         intents.append({
@@ -456,17 +569,23 @@ def decide(world: Any, rng: Any, tick: int, ctx: Any, *,
             "moved": moved,
             "schedule_changed": schedule_changed,
             "decision": decision.to_payload(),
+            "relations_delta": relations_delta,
+            "relation_source_event": f"npc.action:{action}" if relations_delta else None,
         })
     return intents
 
 
 def _next_block(blocks: list[dict], current_until_tick: int) -> dict | None:
-    """取「start_tick 严格大于当前 until_tick」中最小的一块（无则 None）。
+    """取「**包含当前 tick 的块**」——即 `start_tick >= 当前 until_tick` 中最小的一块（无则 None）。
+
+    **C3（M5.2 r1）**：原实现用 `start_tick > current_until_tick`（**严格大于**）⇒
+    **跳过边界块**（块边界上 `start_tick == until_tick` 的那一块被丢掉，日程白跳一格）。
+    改为 `>=` 后，边界处推进到**该 tick 所属的块**（`01 设计 §5.1 C3`）。
 
     与 `tick._next_block` 同语义（本模块自带一份，避免在决策路径上反向依赖 tick 模块的
     模块级符号；顺序由数据决定，非代码分支）。
     """
-    candidates = [block for block in blocks if int(block.get("start_tick", 0)) > current_until_tick]
+    candidates = [block for block in blocks if int(block.get("start_tick", 0)) >= current_until_tick]
     if not candidates:
         return None
     return min(candidates, key=lambda block: (int(block["start_tick"]), str(block.get("state", ""))))

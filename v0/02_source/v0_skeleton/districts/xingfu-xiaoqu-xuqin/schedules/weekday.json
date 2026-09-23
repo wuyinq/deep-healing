@@ -1,0 +1,21 @@
+{
+  "id": "weekday",
+  "display_name": "工作日日程表（徐琴提案包）",
+  "day_ticks": 1440,
+  "time_scale_note": "1 tick = 1 世界分钟（600:1 压缩）；tick 0 = 07:00 起床点。",
+  "entries": {
+    "xuqin": {
+      "npc_id": "npc-006",
+      "blocks": [
+        { "start_tick": 0, "end_tick": 120, "state": "resting", "target_entity": "room-1052", "capability_budget": { "per_tick_calls": 0 } },
+        { "start_tick": 120, "end_tick": 480, "state": "working", "target_entity": "kitchen-01", "capability_budget": { "per_tick_calls": 1 } },
+        { "start_tick": 480, "end_tick": 600, "state": "socializing", "target_entity": "courtyard-01", "capability_budget": { "per_tick_calls": 2 } },
+        { "start_tick": 600, "end_tick": 1080, "state": "working", "target_entity": "kitchen-01", "capability_budget": { "per_tick_calls": 1 } },
+        { "start_tick": 1080, "end_tick": 1260, "state": "moving", "target_entity": "gate-north", "capability_budget": { "per_tick_calls": 1 } },
+        { "start_tick": 1260, "end_tick": 1440, "state": "resting", "target_entity": "room-1052", "capability_budget": { "per_tick_calls": 0 } }
+      ],
+      "reflect_at": [1320]
+    }
+  },
+  "v0_note": "日程是数据；内核只按 start_tick/end_tick 取当前块，不写任何 if npc_id 分支（AC-6 的数据驱动要求）。"
+}

@@ -1,0 +1,26 @@
+verify_pack: OK (14 files, pack_id=xingfu-xiaoqu version=0.1.0)
+verify_pack: OK (14 files, pack_id=xingfu-xiaoqu-north version=0.2.0)
+aesthetic_check: OK (5 assets)
+ENGINE jsonschema 4.26.0 :: impl 白名单 module 前缀=deephealing_kernel. :: builtin 登记名=['cassette_replay', 'determinism_gate_reference'] :: 执行隔离=subprocess(calls_per_spawn=3, timeout=10.0s)
+EXEC  embed.text :: cassette_replay :: verified_impl runs=3 digest=0b751117883add83… impl_exists=True output_compliant=True stable=True
+EXEC  embed.text :: deterministic_rule :: verified_impl runs=3 digest=fa07be28c533a2d4… impl_exists=True output_compliant=True stable=True
+EXEC  emotion.appraise :: cassette_replay :: verified_impl runs=3 digest=d48b05a4d56c7b6d… impl_exists=True output_compliant=True stable=True
+EXEC  emotion.appraise :: deterministic_rule :: verified_impl runs=3 digest=a160ea3001ce0a3e… impl_exists=True output_compliant=True stable=True
+EXEC  intent.plan :: cassette_replay :: verified_impl runs=3 digest=cd27944be00b7931… impl_exists=True output_compliant=True stable=True
+EXEC  intent.plan :: deterministic_rule :: verified_impl runs=3 digest=190dae3ef1c5b252… impl_exists=True output_compliant=True stable=True
+EXEC  memory.reflect :: cassette_replay :: verified_impl runs=3 digest=62c1214f563619be… impl_exists=True output_compliant=True stable=True
+EXEC  memory.reflect :: deterministic_rule :: verified_impl runs=3 digest=18736f2b51d3afa3… impl_exists=True output_compliant=True stable=True
+EXEC  relation.infer :: cassette_replay :: verified_impl runs=3 digest=849c8d9c39470580… impl_exists=True output_compliant=True stable=True
+EXEC  relation.infer :: deterministic_rule :: verified_impl runs=3 digest=5dc62090a9f1d233… impl_exists=True output_compliant=True stable=True
+capability binding verify: capabilities=6 exec=10 gaps=0 rejects=0
+engine = jsonschema 4.26.0
+PASS  v0_skeleton/capabilities/embed.text@1.0.0.capability.json
+PASS  v0_skeleton/capabilities/emotion.appraise@1.0.0.capability.json
+PASS  v0_skeleton/capabilities/imagine.predict@1.0.0.capability.json
+PASS  v0_skeleton/capabilities/intent.plan@1.0.0.capability.json
+PASS  v0_skeleton/capabilities/memory.reflect@1.0.0.capability.json
+PASS  v0_skeleton/capabilities/relation.infer@1.0.0.capability.json
+schema validate: checked=6 failures=0
+asset pack verify: assets=1 files=2 rejects=0
+zero-generation-scan: hits=0
+verify_specs: OK (138 checks passed, 0 skipped)

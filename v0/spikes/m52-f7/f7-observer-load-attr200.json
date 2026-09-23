@@ -1,0 +1,53 @@
+{
+ "all_pass": true,
+ "arms": [
+  {
+   "artifact_ok": true,
+   "artifacts": [
+    "live_state.json"
+   ],
+   "errno24": false,
+   "exit": 0,
+   "fatal_python_error": false,
+   "fd_peak_below_limit": true,
+   "fd_tcp_peak": 6,
+   "fd_total_peak": 46,
+   "mode": "live",
+   "observers": 200,
+   "pass": true,
+   "probe_nofile_raised": false,
+   "probe_nofile_soft": 4096,
+   "regime": "arch",
+   "served_200": 61333,
+   "tag": "attr200-live-arch-run0",
+   "thread_peak": 0,
+   "wall_s": 23.7
+  },
+  {
+   "artifact_ok": true,
+   "artifacts": [
+    "live_state.json"
+   ],
+   "errno24": false,
+   "exit": 0,
+   "fatal_python_error": false,
+   "fd_peak_below_limit": true,
+   "fd_tcp_peak": 5,
+   "fd_total_peak": 45,
+   "mode": "live",
+   "observers": 200,
+   "pass": true,
+   "probe_nofile_raised": false,
+   "probe_nofile_soft": 4096,
+   "regime": "arch",
+   "served_200": 56755,
+   "tag": "attr200-live-arch-run1",
+   "thread_peak": 0,
+   "wall_s": 22.03
+  }
+ ],
+ "fd_peak_limit": 1024,
+ "kernel_root": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260923-002-deephealing-m5-2-character-loop/02_source/v0_skeleton/kernel",
+ "observers": 200,
+ "regime_reference": "m4-r4-arch-f7-probe-reference.py (M4 §D-12)"
+}

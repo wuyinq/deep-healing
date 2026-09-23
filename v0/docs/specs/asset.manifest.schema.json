@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deephealing.local/schemas/asset.manifest.schema.json",
+  "title": "DeepHealing 资产清单（asset manifest）",
+  "description": "D-0.8 / AC-15 的资产一等公民契约。文档形态：`{ schema_version, assets: [<asset>...] }`；单个资产条目也可直接用 `$defs.asset` 校验。**运行时零生成**：本契约只描述**离线**产出并已收编的资产；运行时不得存在生成调用路径（判据见 v0_skeleton/tools/verify_asset_pack.py 的 A9 与 content-pipeline.spec.md）。许可不是自声明字段：`license` 必须与 `source_model` + `model_version` 在 asset.license.table.data.json 里**查表一致**（default-deny）。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "assets"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0.0" },
+    "manifest_kind": { "type": "string" },
+    "note": { "type": "string" },
+    "assets": {
+      "type": "array",
+      "description": "已收编资产条目。空清单没有意义：至少 1 条。",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/asset" }
+    }
+  },
+  "$defs": {
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "asset_id", "file", "content_hash", "content_hash_basis", "type", "license",
+        "source_model", "model_version", "prompt_digest", "seed", "generated_at",
+        "review_status", "replacement_of", "derived_from", "provenance", "meta"
+      ],
+      "properties": {
+        "asset_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{2,63}$",
+          "description": "资产唯一 id（小写、可寻址）。跨资产引用（derived_from）用同一命名空间。"
+        },
+        "file": {
+          "type": "string",
+          "description": "资产文件在 pack 内的相对路径（收编进 pack 的必需字段；无主资产不得进交付链）。"
+        },
+        "content_hash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "description": "内容寻址哈希。算法与规范化规则见 `content_hash_basis`；必须与 snapshot.schema.json 的 canonical JSON 口径一致。"
+        },
+        "content_hash_basis": {
+          "type": "string",
+          "enum": ["decoded_pixels_normalized", "file_bytes"],
+          "description": "**必须写明**哈希取自什么。推荐 `decoded_pixels_normalized`（解码后像素 + 规范化规则）：换 EXIF / 重编码不产生新哈希，否则「可重生成 / 可追溯」不可复算。取 `file_bytes` 时必须在 meta.note 说明为何不能取像素（V0 现状见 09 的未决项）。"
+        },
+        "type": { "type": "string", "enum": ["image", "audio", "video", "3d", "text", "procedural"] },
+        "license": {
+          "type": "string",
+          "enum": ["apache-2.0", "mit", "cc0-1.0", "cc-by-4.0", "flux-1-dev-non-commercial", "cc-by-nc-4.0", "tencent-hunyuan-3d", "unknown"],
+          "description": "**白名单枚举**（与 asset.license.table.data.json 的 license_enum 逐字一致）。枚举合法**不等于**可用：必须与 (source_model, model_version) 查表一致，且该行 commercial_use=true；不一致或查不到 ⇒ 拒收（default-deny）。"
+        },
+        "source_model": { "type": "string", "description": "产出该资产的模型 id（查表 key 之一）。" },
+        "model_version": { "type": "string", "description": "模型版本（查表 key 之二）。" },
+        "prompt_digest": {
+          "type": "string",
+          "pattern": "^(sha256:[0-9a-f]{64}|procedural:none)$",
+          "description": "**摘要**，不得存原始提示词（隐私 / IP 纪律）。程序化资产用 `procedural:none`。"
+        },
+        "seed": { "type": ["integer", "null"], "description": "生成种子（可重生成的关键）；程序化 / 无种子资产为 null。" },
+        "generated_at": { "type": "string", "description": "生成时间（ISO8601，带时区）。" },
+        "review_status": {
+          "type": "string",
+          "enum": ["draft", "reviewed", "adopted", "rejected"],
+          "description": "**只有 `adopted` 允许进 district pack**；`adopted` 必须附人工过审痕迹（见 `review`）。"
+        },
+        "review": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "人工过审痕迹：`review_status=adopted` 时必填。",
+          "required": ["reviewer", "reviewed_at"],
+          "properties": {
+            "reviewer": { "type": "string" },
+            "reviewed_at": { "type": "string" },
+            "note": { "type": "string" }
+          }
+        },
+        "replacement_of": { "type": ["string", "null"], "description": "被本资产替换的资产 id（可空）。与 `06` / `08` 的「可替换资产位」一致。" },
+        "derived_from": {
+          "type": "array",
+          "description": "**来源传递闭包**：父资产 id 或模型 id 的列表（默认空数组）。任一层命中非白名单来源 ⇒ **整棵子树拒收**；父资产必须在库且有 manifest（跨资产查重）。",
+          "items": { "type": "string" },
+          "default": []
+        },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "来源可核验性。**离线云 / API 产出无法本地复算**，必须标 `self_reported`，**不得**标为「已核验」。",
+          "required": ["origin", "self_reported", "verification_status"],
+          "properties": {
+            "origin": { "type": "string", "enum": ["local_generation", "offline_cloud", "api", "procedural"] },
+            "self_reported": { "type": "boolean" },
+            "verification_status": { "type": "string", "enum": ["self_reported", "not_claimed"] },
+            "note": { "type": "string" }
+          }
+        },
+        "workflow": {
+          "type": ["object", "null"],
+          "description": "生成该资产的工作流（ComfyUI 等）**受管登记**：JSON 必须登记 sha256，其引用的模型名必须过白名单表。",
+          "additionalProperties": false,
+          "required": ["path", "sha256", "referenced_models"],
+          "properties": {
+            "path": { "type": "string" },
+            "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+            "referenced_models": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "meta": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["generator_metadata_stripped"],
+          "properties": {
+            "generator_metadata_stripped": {
+              "type": "boolean",
+              "description": "入库前是否剥离 PNG `tEXt` / `iTXt` 等生成器元数据（否则完整提示词可能随资产进交付链）。**必须为 true**。"
+            },
+            "kept_chunks": { "type": "array", "description": "若保留白名单 chunk，在此逐条列明。", "items": { "type": "string" }, "default": [] },
+            "note": { "type": "string" }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "review_status": { "const": "adopted" } }, "required": ["review_status"] },
+          "then": { "required": ["review"] },
+          "description": "`adopted` 必须附人工过审痕迹（reviewer + 时间）。"
+        },
+        {
+          "if": {
+            "properties": { "provenance": { "properties": { "origin": { "enum": ["offline_cloud", "api"] } }, "required": ["origin"] } },
+            "required": ["provenance"]
+          },
+          "then": {
+            "properties": {
+              "provenance": {
+                "properties": {
+                  "self_reported": { "const": true },
+                  "verification_status": { "const": "self_reported" }
+                }
+              }
+            }
+          },
+          "description": "云 / API 产出必须标 self_reported，不得标「已核验」（已声明边界）。"
+        },
+        {
+          "if": { "properties": { "meta": { "properties": { "generator_metadata_stripped": { "const": false } } }, "required": ["meta"] }, "required": ["meta"] },
+          "then": { "not": {} },
+          "description": "未剥离生成器元数据的资产不得通过校验（该分支不可满足 ⇒ 校验期拒收）。"
+        }
+      ]
+    }
+  }
+}

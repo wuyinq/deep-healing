@@ -46,6 +46,11 @@ class Entity:
     components: dict[str, Any] = field(default_factory=dict)
 
 
+def _q(value: float) -> float:
+    """6 位小数量化（与 `rules.decision._q` 同口径；关系值不得引入浮点末位噪声）。"""
+    return round(float(value), 6)
+
+
 def _normalize_component(name: str, value: Any) -> Any:
     """按 normalization.sort_arrays 显式排序（禁止依赖插入/迭代顺序）。"""
     if name == "tags":
@@ -77,6 +82,9 @@ class World:
         self.tick = 0
         # `npc_id -> 日程块列表`（内容包驱动；由内核在建世界时注入，见 tick.build_schedule_index）
         self.schedule_index: dict[str, list[dict]] = {}
+        # **M5.2 r1**：本 tick **实际写入**的关系变更（由 `system_relations` 填充、[5] 记账段读取 emit）。
+        # 它是「读了实际写点」的凭据，不是 decide 阶段的自报值。
+        self.relation_changes: list[dict] = []
 
     # ------------------------------------------------------------------ 实体
     def spawn(self, entity: Entity) -> None:
@@ -168,6 +176,52 @@ def system_schedule(world: World) -> None:
             world.set_component(intent["npc_id"], "schedule", dict(schedule))
 
 
+def system_relations(world: World) -> None:
+    """系统 1b（**M5.2 r1 新增**）：应用 decide 阶段暂存的关系（友善度）增量（写 `relations` 组件）。
+
+    **C-1 口径（Raven 预审 CRITICAL，硬性）**：`relations` 的值形状**保持数值标量**
+    `{peer_id: number ∈ [-1,1]}`（`world.schema.json#/$defs/relations` 冻结；改成对象形状会直接让
+    `test_state_passes_world_schema` 变红，那是**真回归**）。`updated_tick` / `source_event`
+    **不进组件**，只进 `relation.changed` 事件（由 [5] 记账段读取本函数填充的
+    `world.relation_changes` 后 emit）——「为什么变了」由**事件记录**回答。
+
+    放在 `system_movement` **之前**：后者末尾会 `clear_intents()`，之后就读不到暂存意图了。
+    """
+    world.relation_changes = []
+    for intent in world.pending_intents():
+        delta = intent.get("relations_delta")
+        if not isinstance(delta, dict) or not delta:
+            continue
+        npc_id = intent["npc_id"]
+        entity = world.get(npc_id)
+        if entity is None:
+            continue
+        relations = dict(entity.components.get("relations") or {})
+        changed = False
+        for peer_id in sorted(delta):
+            amount = delta[peer_id]
+            if isinstance(amount, bool) or not isinstance(amount, (int, float)) or amount == 0:
+                continue
+            raw_before = relations.get(peer_id, 0.0)
+            before = float(raw_before) if isinstance(raw_before, (int, float)) \
+                and not isinstance(raw_before, bool) else 0.0
+            after = _q(min(1.0, max(-1.0, before + float(amount))))
+            if after == before:
+                continue
+            relations[peer_id] = after
+            changed = True
+            world.relation_changes.append({
+                "npc_id": npc_id,
+                "peer_npc_id": str(peer_id),
+                "from": _q(before),
+                "to": after,
+                "tick": int(world.tick),
+                "source_event": str(intent.get("relation_source_event") or "npc.action"),
+            })
+        if changed:
+            world.set_component(npc_id, "relations", relations)
+
+
 def system_movement(world: World) -> None:
     """系统 2：按 decide 阶段暂存的意图朝 target 走一步（写 transform / needs 组件）。"""
     for intent in world.pending_intents():
@@ -195,4 +249,4 @@ def system_movement(world: World) -> None:
     world.clear_intents()
 
 
-SYSTEMS: tuple[Callable[[World], None], ...] = (system_schedule, system_movement)
+SYSTEMS: tuple[Callable[[World], None], ...] = (system_schedule, system_relations, system_movement)

@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0.0",
+  "id": "xingfu-xiaoqu-xuqin",
+  "version": "0.1.0",
+  "display_name": "幸福小区 · 徐琴提案包（人物闭环提案，独立读数）",
+  "engine_range": ">=1.0.0 <2.0.0",
+  "bounds_mm": {
+    "x": 48000,
+    "y": 30000,
+    "z": 24000
+  },
+  "author": "deep-healing content team",
+  "license": "proprietary-self-authored",
+  "entrypoints": {
+    "world_seed": "world.seed.json",
+    "buildings_glob": "buildings/*.json",
+    "npcs_glob": "npcs/*.json",
+    "tasks_glob": "tasks/*.json",
+    "schedules_glob": "schedules/*.json",
+    "assets_manifest": "assets/manifest.json",
+    "worldview": "worldview.json"
+  },
+  "portals": [],
+  "districts_version_note": "M5.2 r1：徐琴人物闭环的**独立提案包**（D-8：与主读数包并列，不并入）。纯数据新增：内核零改动（district.pack.spec.md §3 的迁移路径）。AC-10 主读数仍取仓库原包（5 NPC），本包读数**并列公布、不混成一个数**。徐琴的设定逐条来自 M5.1 保真册 CHR-01~CHR-22，见 npcs/npc-006.json 的 source_facts。",
+  "tags": [
+    "proposal",
+    "single-character",
+    "xuqin"
+  ]
+}

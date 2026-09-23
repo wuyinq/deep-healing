@@ -1,0 +1,75 @@
+........................................................................ [ 34%]
+.....................................F.................................. [ 68%]
+.........................................................F.........      [100%]
+=================================== FAILURES ===================================
+______________ test_pace_is_identical_with_zero_and_two_observers ______________
+
+tmp_path = PosixPath('/private/var/folders/jw/d3rw0nn56cg0vwzyd4pxdyv40000gn/T/pytest-of-wooyinq/pytest-1197/test_pace_is_identical_with_ze0')
+
+    def test_pace_is_identical_with_zero_and_two_observers(tmp_path):
+        """⑦ 观察者独立性对照（D-M4-15⑤）：同一窗口，0 个 vs 2 个观察者 ⇒ 推进节奏相同。
+    
+        **F6（r3）**：容差锚定到**实测窗口 / pace**（不再是固定 `|Δ| ≤ 3`）——
+        固定阈值在 CPU 争用下假红（`time.sleep(2.0)` 实际跑 2.2s ⇒ 期望 110 tick 而阈值按 100 算）。
+        """
+        zero = _measure_pace(tmp_path, observers=0)
+        two = _measure_pace(tmp_path, observers=2)
+        print(f"⑦ 独立性对照: 0 个观察者 ⇒ 窗口 {zero[1]:.4f}s / tick 增量 {zero[0]}"
+              f"（期望 {zero[1] / PACE_S_PER_TICK:.1f}）| 2 个观察者连着 ⇒ 窗口 {two[1]:.4f}s / "
+              f"tick 增量 {two[0]}（期望 {two[1] / PACE_S_PER_TICK:.1f}）")
+        failures = _pace_failures(zero, two)
+>       assert failures == [], "；".join(failures)
+E       AssertionError: 2 个观察者: tick 增量 112 与**实测窗口** 2.1471s 锚定的期望 107.4 不一致（容差 3.2）⇒ 推进不再 deadline 锚定
+E       assert ['2 个观察者: tic... deadline 锚定'] == []
+E         
+E         Left contains one more item: '2 个观察者: tick 增量 112 与**实测窗口** 2.1471s 锚定的期望 107.4 不一致（容差 3.2）⇒ 推进不再 deadline 锚定'
+E         Use -v to get more diff
+
+tests/test_live_observation.py:356: AssertionError
+----------------------------- Captured stdout call -----------------------------
+⑦ 独立性对照: 0 个观察者 ⇒ 窗口 2.1382s / tick 增量 110（期望 106.9）| 2 个观察者连着 ⇒ 窗口 2.1471s / tick 增量 112（期望 107.4）
+______________ test_default_run_without_intents_is_bit_identical _______________
+
+tmp_path = PosixPath('/private/var/folders/jw/d3rw0nn56cg0vwzyd4pxdyv40000gn/T/pytest-of-wooyinq/pytest-1197/test_default_run_without_inten0')
+
+        shifts = []
+        for index, target in enumerate(["npc-001", "npc-003", "npc-001", "npc-003", "npc-001"]):
+            for audit in fire(target, index + 1):
+                if audit.rule_id == "rule-a" and audit.is_shift:
+                    shifts.append(audit)
+        assert len(shifts) == 2, f"rule-a 的迁移次数必须被 max_shifts=2 钉住，实测 {len(shifts)}"
+        assert [audit.shift_index for audit in shifts] == [1, 2]
+        assert engine.state_of("task-synthetic") == "s0"
+        last = engine.audit_log()[-1]
+        assert last["decision"] == DECISION_MAX_SHIFTS_REACHED and last["rule_id"] == "rule-a"
+    
+    
+    # ---------------------------------------------------------------------------- 5. 无 intent 基线
+    def test_default_run_without_intents_is_bit_identical(tmp_path):
+        """AC-M3-5 末条 / AC-M3-6 + **M4 口径改写**：无 intent 的默认跑必须
+        「**确定性自洽**」（两次独立运行逐位相同）且与**本轮新基线**一致。
+    
+        判据变更登记见文件头：旧值（`9a4ae3da…` / `baecca92…`）**不再作断言**，
+        只作为历史存档；本轮新基线由 M4 产出并登记。
+        """
+        first_dir = tmp_path / "first"
+        second_dir = tmp_path / "second"
+        results = []
+        for out_dir in (first_dir, second_dir):
+            _, kernel, log = _kernel(out_dir, snapshot_every=50)
+            kernel.run(300)
+            checkpoints = sorted((out_dir / "checkpoints").glob("*.json"))
+>           assert [path.name for path in checkpoints] == [
+                "000050.json", "000100.json", "000150.json", "000200.json", "000250.json", "000300.json",
+            ]
+E           AssertionError: M4 基线漂移：state_hash 8603dedb8cdb4a1799c80c8061c2e056025164a0cf16272a39020a442774c15c != 登记的 0d79e5f349cad67d8ebc623fb7e49a17082e0170d0b5a5c3de62715ea42a2dca
+E           assert '8603dedb8cdb...20a442774c15c' == '0d79e5f349ca...2715ea42a2dca'
+E             
+E             - 0d79e5f349cad67d8ebc623fb7e49a17082e0170d0b5a5c3de62715ea42a2dca
+E             + 8603dedb8cdb4a1799c80c8061c2e056025164a0cf16272a39020a442774c15c
+
+tests/test_task_adaptation.py:243: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_live_observation.py::test_pace_is_identical_with_zero_and_two_observers
+FAILED tests/test_task_adaptation.py::test_default_run_without_intents_is_bit_identical
+2 failed, 209 passed in 1133.31s (0:18:53)

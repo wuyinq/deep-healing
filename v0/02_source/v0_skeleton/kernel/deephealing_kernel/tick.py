@@ -30,9 +30,11 @@ from typing import Any, Protocol
 from .bus import KernelBus
 from .ecs import Entity, World
 from .events import EventLog
+from .memory.store import EVENT_LAYER_NAMES
 from .pack import DistrictPack
 from .rng import WorldRng
 from .rules.adaptation import TaskAdaptationEngine
+from .rules.decision import URGENCY_THRESHOLD
 from .rules.decision import decide as autonomous_decide   # 决策阶段唯一入口（模块级别名，测试注入点）
 from . import snapshot as snapshot_mod
 
@@ -53,6 +55,11 @@ PHASES = (
 
 STEP_MM = 500          # 每 tick 最大位移（整数毫米）
 JITTER_MM = 100        # 抖动幅度（整数毫米，来自 rng.stream("npc.<id>.move")）
+
+
+def _q(value: float) -> float:
+    """6 位小数量化（与 `rules.decision._q` 同口径；记忆重要度不得引入浮点末位噪声）。"""
+    return round(float(value), 6)
 
 # `--ticks` 默认值的**单一权威定义**（P-1 / D-3 / 3A-C1；本轮只在此处定义，**不搬家**）：
 #
@@ -218,6 +225,10 @@ class WorldKernel:
         plan_ticks: int = DEFAULT_PLAN_TICKS,
         decision_source: str = DECISION_SOURCE,
         pack_profiles: dict[str, dict] | None = None,
+        memory_store: Any = None,
+        capability_registry: Any = None,
+        budget_ledger: Any = None,
+        emotion_pressure_threshold: float = URGENCY_THRESHOLD,
     ) -> None:
         world_seed = pack.world_seed if pack is not None else {}
         constants = world_seed.get("constants", {})
@@ -247,6 +258,23 @@ class WorldKernel:
         )
         self.ticks_done = 0
         self.last_snapshot: snapshot_mod.Snapshot | None = None
+        # ---- M5.2 r1 接线（AC-3 断链①②④）------------------------------------------------
+        # `memory_store`（可空）：**唯一**记忆写入点（`MemoryStore` 自身是内核侧唯一写入点）。
+        #   `None` ⇒ **零写入、零 emit**，事件流与改前**逐字节一致**（向后兼容判据）。
+        self.memory_store = memory_store
+        # `capability_registry` + `budget_ledger`（可空）：情绪评估**走既有 capability 通道**
+        #   （预算 / 录制 / 降级全部复用）。`None` ⇒ 零调用、零副作用。
+        self.capability_registry = capability_registry
+        self.budget_ledger = budget_ledger
+        self.emotion_pressure_threshold = float(emotion_pressure_threshold)
+        #: 本 tick 的情绪评估结果（capability 通道产出；无 registry ⇒ 空）
+        self.emotion_results: dict[str, dict] = {}
+        #: 本 tick 的**能力降级读数**（fail-closed：不调用就不伪造结果，落一条可核验记录）
+        self.emotion_fallbacks: list[dict] = []
+        #: **累计**降级读数（M5.2 r3 / FIX-1 ③）：`emotion_fallbacks` 每 tick 重置 ⇒ 命令层只能看到
+        #  最后一 tick 的快照；这里追加保留全程记录，供交付 CLI / 探针给出「预算耗尽 / 无 provider /
+        #  cassette miss」的可核验读数。**无 registry ⇒ 恒为空**（默认路径零副作用）。
+        self.emotion_fallbacks_log: list[dict] = []
         # 任务演进引擎（AC-M3-5 / D-14）：规则**全部**来自内容包 `tasks/*.json` 的
         # `adaptation_rules`（数据驱动）。无 intent 时**零副作用** ⇒ F-4 基线逐位不变（R-1 红线）。
         self.adaptation = TaskAdaptationEngine(pack.tasks if pack is not None else [])
@@ -427,7 +455,8 @@ class WorldKernel:
             intents = stub_decide(self.world, self.rng, ctx.tick, ctx)
         else:
             intents = autonomous_decide(self.world, self.rng, ctx.tick, ctx,
-                                        pack_profiles=self.pack_profiles)
+                                        pack_profiles=self.pack_profiles,
+                                        memory_view=self._build_memory_view())
         self.world.stage_intents(intents)
 
         # [4] 执行（**唯一写点**）
@@ -435,29 +464,184 @@ class WorldKernel:
         for system in self.world.systems():
             system(self.world)
 
-        # [5] 记账
-        if self.log is not None:
-            for intent in intents:
+        # [5] 记账（**事件在此 emit**；`memory.written` / `relation.changed` 的位置见方法注释）
+        self._appraise_emotions(intents, ctx.tick)      # 断链④：走既有 capability 通道（无 registry ⇒ 零调用）
+        changes_by_npc: dict[str, list[dict]] = {}
+        for change in self.world.relation_changes:      # 读 **[4] 实际写入**的关系变更，不是 decide 的自报值
+            changes_by_npc.setdefault(str(change["npc_id"]), []).append(change)
+        for intent in intents:
+            npc_id = intent["npc_id"]
+            if self.log is not None:
                 # `npc.decision`：**每 tick 每 NPC 一条**全量发（D-M4-21）；桩路径不产出 `decision`
                 # 子字典 ⇒ 负例下事件数为 0（D-M4-1 ②）
                 decision = intent.get("decision")
                 if decision:
-                    self.log.append(ctx.tick, "npc.decision", intent["npc_id"], dict(decision))
-                if not (intent["moved"] or intent["schedule_changed"]):
-                    continue
-                self.log.append(ctx.tick, "npc.action", intent["npc_id"], {
-                    "npc_id": intent["npc_id"],
-                    "action": intent["action"],
-                    "decision_source": self.decision_source,
-                    "target_entity": intent["target_entity"],
-                    "duration_ticks": 1,
-                })
+                    self.log.append(ctx.tick, "npc.decision", npc_id, dict(decision))
+                if intent["moved"] or intent["schedule_changed"]:
+                    self.log.append(ctx.tick, "npc.action", npc_id, {
+                        "npc_id": npc_id,
+                        "action": intent["action"],
+                        "decision_source": self.decision_source,
+                        "target_entity": intent["target_entity"],
+                        "duration_ticks": 1,
+                    })
+                for change in changes_by_npc.get(npc_id, []):
+                    self.log.append(ctx.tick, "relation.changed", npc_id, {
+                        "npc_id": change["npc_id"],
+                        "peer_npc_id": change["peer_npc_id"],
+                        "from": change["from"],
+                        "to": change["to"],
+                        "tick": change["tick"],
+                        "source_event": change["source_event"],
+                    })
+            # **位置显式钉死（Raven M-2）**：`memory.written` 落在 [5] 记账段内、**逐 NPC 分组之内**
+            # （该 NPC 的 `npc.decision` / `npc.action` / `relation.changed` 之后、下一个 NPC 之前）。
+            # ⇒ 既有 [5] 段的事件**相对顺序不变**，新增事件只插在各自分组尾部。
+            if self.memory_store is not None:
+                for payload in self._write_memory(intent, ctx.tick):
+                    if self.log is not None:
+                        self.log.append(ctx.tick, "memory.written", npc_id, payload)
         self.bus.publish("ticks", {"tick": ctx.tick, "dt_ms": ctx.dt_ms})
 
         # [6] 快照（每 snapshot_every 个 tick）
         if self.snapshot_every > 0 and ctx.tick % self.snapshot_every == 0:
             self._take_and_write_checkpoint()
         self.ticks_done += 1
+
+    # ------------------------------------------------------------------ M5.2 r1 记忆链
+    def _build_memory_view(self) -> dict | None:
+        """组装**只读**记忆视图（AC-3 断链③的输入；`memory_store is None` ⇒ `None`，零副作用）。
+
+        形状（Raven C-1 / M-13③ 冻结）：`{npc_id: {"episodes": [...], "facts": {...},
+        "relations": {peer_npc_id: float}}}` —— `relations` 是**数值标量**，不是对象。
+        """
+        if self.memory_store is None:
+            return None
+        view: dict[str, dict] = {}
+        for entity in self.world.query(kind="npc"):
+            relations = entity.components.get("relations") or {}
+            view[entity.id] = {
+                "episodes": self.memory_store.fetch_episodes(entity.id),
+                "facts": {str(item.get("key")): item.get("value")
+                          for item in self.memory_store.fetch_facts(entity.id)},
+                "relations": {str(key): float(value) for key, value in sorted(relations.items())
+                              if isinstance(value, (int, float)) and not isinstance(value, bool)},
+            }
+        return view
+
+    def _appraise_emotions(self, intents: list[dict], tick: int) -> None:
+        """**断链④**：情绪评估走**既有 capability 通道**（`emotion.appraise` 槽位）。
+
+        **不得**在 tick 内自造旁路情绪函数：旁路会绕开预算 / 录制（cassette）/ 降级三条契约。
+        这里直接复用 `CapabilityRegistry.invoke`（它已内建：预算闸门、provider 路由、
+        `output_schema` 强校验、fallback 链、journal 记账）。
+
+        - `capability_registry is None` ⇒ **零调用、零副作用**（默认路径逐字节不变）。
+        - 预算不允许 / provider 失败 / 输出不合规 ⇒ 由 registry 走 fallback 链，本方法把
+          **降级读数**记进 `emotion_fallbacks`（**不伪造**情绪结果）。
+        - 调用条件 = 该 NPC 本 tick 的主导需求缺口 `>= emotion_pressure_threshold`（数据，非按 NPC 特判）。
+        """
+        self.emotion_results = {}
+        self.emotion_fallbacks = []
+        if self.capability_registry is None or self.budget_ledger is None:
+            return
+        for intent in intents:
+            decision = intent.get("decision") or {}
+            deficit = decision.get("dominant_deficit")
+            deficit = float(deficit) if isinstance(deficit, (int, float)) \
+                and not isinstance(deficit, bool) else 0.0
+            if deficit < self.emotion_pressure_threshold:
+                continue
+            npc_id = str(intent["npc_id"])
+            entity = self.world.get(npc_id)
+            emotion = dict(entity.components.get("emotion") or {}) if entity is not None else {}
+            valence = emotion.get("valence")
+            arousal = emotion.get("arousal")
+            payload = {
+                "npc_id": npc_id,
+                "tick": int(tick),
+                "event_summary": (f"tick={tick} action={decision.get('chosen_action')} "
+                                  f"need={decision.get('dominant_need')} "
+                                  f"branch={decision.get('bt_branch')}"),
+                "current_emotion": {
+                    "valence": float(valence) if isinstance(valence, (int, float)) else 0.0,
+                    "arousal": float(arousal) if isinstance(arousal, (int, float)) else 0.0,
+                },
+            }
+            try:
+                result = self.capability_registry.invoke("emotion.appraise", payload,
+                                                         budget=self.budget_ledger)
+            except Exception as error:  # noqa: BLE001 —— 回放模式的 cassette miss 必须可核验，不得静默
+                self.emotion_fallbacks.append({"npc_id": npc_id, "tick": int(tick),
+                                               "reason": f"{type(error).__name__}"})
+                continue
+            if getattr(result, "ok", False) and isinstance(getattr(result, "output", None), dict):
+                self.emotion_results[npc_id] = dict(result.output)
+                # **FIX-1 ③（r3）**：**降级成功也要留痕**。`registry._fallback()` 对契约声明的降级
+                # 返回 `ok=True + fallback_reason=<key>`（例：预算耗尽 ⇒ `on_budget_exhausted` ⇒
+                # deterministic_rule 的真输出）⇒ 只看 `ok` 会把它当**正常情绪结果**，降级在 tick 层
+                # 不可见。这里按 `fallback_reason` 补一条可核验记录（与 registry 的
+                # 「零回填 ≠ 零痕迹」同向）；输出**不伪造** —— 它就是 deterministic_rule 的实算结果。
+                fallback_reason = getattr(result, "fallback_reason", None)
+                if fallback_reason:
+                    self.emotion_fallbacks.append({
+                        "npc_id": npc_id, "tick": int(tick), "reason": str(fallback_reason),
+                        "provider_class": str(getattr(result, "provider_class", "")),
+                    })
+            else:
+                self.emotion_fallbacks.append({
+                    "npc_id": npc_id, "tick": int(tick),
+                    "reason": str(getattr(result, "fallback_reason", None) or "not_ok"),
+                })
+        # 累计（FIX-1 ③）：命令层可读到「全程」降级读数，而不是最后一 tick 的快照。
+        self.emotion_fallbacks_log.extend(self.emotion_fallbacks)
+
+    def _write_memory(self, intent: dict, tick: int) -> list[dict]:
+        """**断链①②**：写记忆 + 返回 `memory.written` 的 payload 列表。
+
+        payload 逐字对齐 `events.schema.json` 的 `then` 子句（Raven C-2 冻结）：
+        必含 `{npc_id: str, layer: str, ref: str}`，可选 `kind` / `importance`；
+        `layer` 走 **store 词表 → 事件词表**映射（`EVENT_LAYER_NAMES`，**禁止**直接写 store 词表）；
+        `ref` **恒为 string**（正常写入 = 记录 id 的十进制字符串；`write_enabled=False` ⇒ `"none"`）。
+
+        **不写正文摘要进事件**：`text_summary` 只进库，payload 里没有它。
+        """
+        store = self.memory_store
+        npc_id = str(intent["npc_id"])
+        decision = intent.get("decision") or {}
+        action = str(decision.get("chosen_action") or intent.get("action") or "hold")
+        target = intent.get("target_entity")
+        deficit = decision.get("dominant_deficit")
+        importance = _q(min(1.0, max(0.0, float(deficit) if isinstance(deficit, (int, float))
+                                        and not isinstance(deficit, bool) else 0.0)))
+        emotion = self.emotion_results.get(npc_id) or {}
+        if isinstance(emotion.get("importance"), (int, float)) and not isinstance(emotion["importance"], bool):
+            importance = _q(min(1.0, max(0.0, 0.5 * importance + 0.5 * float(emotion["importance"]))))
+        text_summary = (f"tick={int(tick)} action={action} target={target or '-'} "
+                        f"branch={decision.get('bt_branch') or '-'} "
+                        f"need={decision.get('dominant_need') or '-'} "
+                        f"mood={emotion.get('mood_label') or 'unknown'}")
+        refs = [f"tick:{int(tick)}"]
+        episode_ref = store.append_episode(npc_id, int(tick), action, text_summary, importance, refs)
+        working_ref = store.append_working(npc_id, int(tick), action, text_summary, slot="tick")
+        written = bool(store.write_enabled)
+        payloads = [
+            {
+                "npc_id": npc_id,
+                "layer": EVENT_LAYER_NAMES["episodes"],
+                "ref": str(episode_ref) if written else "none",
+                "kind": action,
+                "importance": importance,
+            },
+            {
+                "npc_id": npc_id,
+                "layer": EVENT_LAYER_NAMES["working"],
+                "ref": str(working_ref) if written and working_ref is not None else "none",
+                "kind": action,
+                "importance": importance,
+            },
+        ]
+        return payloads
 
     def _take_and_write_checkpoint(self) -> snapshot_mod.Snapshot:
         """写入顺序**冻结**：先 `append(snapshot.taken)` → 再取链尾写检查点（INVARIANT-ECH-1）。"""

@@ -56,6 +56,8 @@ from .live import (
     DEFAULT_BIND,
     DEFAULT_LIVE_PORT,
     DEFAULT_WS_PORT,
+    HANDLER_ERROR_REPR_MAX,
+    HANDLER_ERROR_SAMPLES_MAX,
     MAX_OBSERVERS_DEFAULT,
     AddrInUse,
     BindRefused,
@@ -151,7 +153,21 @@ def build_parser() -> argparse.ArgumentParser:
                      help="[M2/W3~W6] 认知层驱动入口（**形态定死**，设计 §3.4b(2)）："
                           "tick 循环之后跑一次认知循环，产物落 <out>/cognition/**（不写世界状态）")
     run.add_argument("--memory", action="store_true",
-                     help="[M2/W5] 打开记忆层写入（**默认关闭** ⇒ 零写入，设计 §3.4b(5)）")
+                     help="[M2/W5] 打开**认知层自己的** MemoryStore 写入（<out>/cognition/memory.sqlite；"
+                          "默认关闭 ⇒ 零写入，设计 §3.4b(5)）。**注意**：它**不是**内核 tick 的记忆链"
+                          "（那条是 `--memory-chain`）—— 打开它不会让 `memory.written` 出现在事件清单里")
+    run.add_argument("--memory-chain", action="store_true",
+                     help="[M5.2 r3 / FIX-1] 打开**内核 tick** 的记忆链（AC-3 断链①②）：构造 "
+                          "MemoryStore(<out>/kernel_memory.sqlite, write_enabled=True) 并传入 WorldKernel "
+                          "⇒ 事件清单出现 memory.written（默认 **off** ⇒ 构造参数与改前逐字节一致）")
+    run.add_argument("--capability-chain", action="store_true",
+                     help="[M5.2 r3 / FIX-1] 打开**内核 tick** 的能力链（AC-3 断链④）：构造 CapabilityRegistry "
+                          "+ BudgetLedger 并传入 WorldKernel ⇒ emotion.appraise 经既有 capability 通道"
+                          "（预算 / provider 路由 / output_schema / fallback / journal）；默认 **off**")
+    run.add_argument("--emotion-pressure-threshold", type=float, default=None,
+                     help="[M5.2 r3 / FIX-1] 情绪评估的**调用条件**（该 NPC 主导需求缺口 >= 该值才调 "
+                          "emotion.appraise）；缺省 = WorldKernel 默认（URGENCY_THRESHOLD=0.6）。"
+                          "实测需求缺口 ~0.06 ⇒ 要让能力链真被调用需显式调低（例 0.0）")
     run.add_argument("--cassette-dir", default=None,
                      help="[M2/W3] cassette 根目录（默认 `<out>/cognition/cassettes`）；"
                           "`--replay` 时用它指向已录制的 cassette，miss ⇒ E_CASSETTE_MISS（fail-closed）")
@@ -195,6 +211,14 @@ def build_parser() -> argparse.ArgumentParser:
     live.add_argument("--no-warmup", action="store_true", help="不做「快进到当前 UTC+8 时刻」的启动锚定")
     live.add_argument("--max-observers", type=int, default=MAX_OBSERVERS_DEFAULT,
                       help="SSE 并发观察者上限（超限 ⇒ 503）")
+    live.add_argument("--memory-chain", action="store_true",
+                      help="[M5.2 r3 / FIX-1] 同 `run --memory-chain`：内核 tick 的记忆链（MemoryStore ⇒ "
+                           "memory.written 事件；默认 off ⇒ 与改前逐字节一致）")
+    live.add_argument("--capability-chain", action="store_true",
+                      help="[M5.2 r3 / FIX-1] 同 `run --capability-chain`：内核 tick 的能力链"
+                           "（CapabilityRegistry + BudgetLedger ⇒ emotion.appraise；默认 off）")
+    live.add_argument("--emotion-pressure-threshold", type=float, default=None,
+                      help="[M5.2 r3 / FIX-1] 情绪评估的调用条件（同 `run`；缺省 = 0.6）")
 
     pack = sub.add_parser("pack", help="内容包工具")
     pack_sub = pack.add_subparsers(dest="pack_command", required=True)
@@ -342,6 +366,109 @@ def _refuse_existing_replay_outputs(out_dir: Path) -> None:
         )
 
 
+# --------------------------------------------------- 内核链入口（M5.2 r3 / FIX-1 · R-C1）
+def _build_kernel_chain(args, *, out_dir: Path, pack) -> tuple[dict, dict]:
+    """**交付 CLI 的内核链入口**（AC-3 断链①②④ 在交付形态下的唯一可执行路径）。
+
+    为什么需要（Raven R-C1 = CRITICAL）：`tick.py` 实现了接线（`memory_store` /
+    `capability_registry` / `budget_ledger` 三个构造参数 + `_write_memory()` / `_appraise_emotions()`），
+    但 r2 之前**交付面没有任何入口传值** —— `cli.py` 的 `WorldKernel(...)` 构造都不传 ⇒
+    交付命令的事件清单里永远没有 `memory.written`，`emotion.appraise` 也永远零调用
+    （唯一传值点全在测试/脚手架里）。
+
+    契约（**默认 off ⇒ 构造参数与改前逐字节一致**，回归护栏见 `03` 的 M5.2-r3 段 ②）：
+      - `--memory-chain`：构造内核侧 `MemoryStore(<out>/kernel_memory.sqlite, write_enabled=True)`
+        并传入 `memory_store` ⇒ `step()` 的 [5] 段写库并 emit `memory.written`；
+      - `--capability-chain`：构造 `CapabilityRegistry`（数据驱动发现 + 四类 adapter）与
+        `BudgetLedger` 并传入 ⇒ `emotion.appraise` 走既有 capability 通道
+        （预算闸门 / provider 路由 / output_schema / fallback / journal 全部复用）；
+      - `--emotion-pressure-threshold`：情绪评估的**调用条件**（该 NPC 主导需求缺口 >= 该值），
+        缺省 = `WorldKernel` 默认（`URGENCY_THRESHOLD = 0.6`）。实测需求缺口 ~0.06 ⇒
+        要让能力链**真的被调用**必须显式调低（这是数据参数，不是按 NPC 特判）。
+
+    返回 `(WorldKernel 的额外关键字参数, 结构化读数容器)`；**两个开关都 off 时 `extra == {}`**
+    ⇒ `WorldKernel(...)` 的实参集合与改前完全相同。
+    """
+    extra: dict = {}
+    state: dict = {"memory_chain": False, "capability_chain": False}
+    if bool(getattr(args, "memory_chain", False)):
+        from .memory.store import MemoryStore
+        store_path = out_dir / "kernel_memory.sqlite"
+        store = MemoryStore(store_path, write_enabled=True)
+        store.init_schema()
+        extra["memory_store"] = store
+        state["memory_chain"] = True
+        state["memory_store_path"] = str(store_path)
+        state["memory_store"] = store
+    if bool(getattr(args, "capability_chain", False)):
+        from .budget import BudgetLedger
+        registry, _unused = _build_cognition_registry(
+            out_dir, cassette_root=out_dir / "kernel_capability" / "cassettes",
+            replay_mode=bool(getattr(args, "replay", False)))
+        registry.discover()
+        state["registry_validation_errors"] = registry.validate()
+        per_tick_calls, daily_tokens = _capability_caps(
+            [registry.capability(slot) for slot in registry.slots()])
+        ledger = BudgetLedger(day_ticks=int(pack.world_seed["constants"].get("day_ticks", 1440)),
+                              per_tick_calls=per_tick_calls, per_npc_daily_tokens=daily_tokens)
+        extra["capability_registry"] = registry
+        extra["budget_ledger"] = ledger
+        state["capability_chain"] = True
+        state["registry"] = registry
+    threshold = getattr(args, "emotion_pressure_threshold", None)
+    if threshold is not None:
+        extra["emotion_pressure_threshold"] = float(threshold)
+        state["emotion_pressure_threshold"] = float(threshold)
+    return extra, state
+
+
+def _kernel_chain_readings(kernel, state: dict, events_path: Path) -> dict:
+    """内核链的**结构化读数**（FIX-1 关闭判据 ①③ 的落点）。
+
+    只报盘上/内存里**真实存在**的读数：`memory.written` 按 `layer` 计数、`fetch_episodes` 读回条数、
+    `emotion.appraise` 的调用/成功/降级。**不伪造情绪结果** —— 降级一律落 `emotion_fallbacks`。
+    """
+    readings: dict = {
+        "memory_chain": bool(state.get("memory_chain")),
+        "capability_chain": bool(state.get("capability_chain")),
+        "emotion_pressure_threshold": state.get("emotion_pressure_threshold"),
+        "registry_validation_errors": state.get("registry_validation_errors"),
+    }
+    if state.get("memory_chain"):
+        by_layer: dict = {}
+        for line in events_path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if event.get("type") == "memory.written":
+                layer = str((event.get("payload") or {}).get("layer"))
+                by_layer[layer] = by_layer.get(layer, 0) + 1
+        store = state.get("memory_store")
+        episodes: dict = {}
+        if store is not None:
+            for entity in kernel.world.query(kind="npc"):
+                episodes[entity.id] = len(store.fetch_episodes(entity.id))
+        readings["memory_store_path"] = state.get("memory_store_path")
+        readings["memory_written_by_layer"] = dict(sorted(by_layer.items()))
+        readings["memory_written_total"] = sum(by_layer.values())
+        readings["store_write_count"] = None if store is None else int(store.write_count)
+        readings["episodes_readback"] = episodes
+    registry = state.get("registry")
+    if state.get("capability_chain") and registry is not None:
+        calls = [call for call in registry.calls if call.get("slot") == "emotion.appraise"]
+        readings["emotion_appraise_calls"] = len(calls)
+        readings["emotion_appraise_ok"] = sum(1 for call in calls if call.get("ok"))
+        readings["emotion_fallbacks_total"] = len(kernel.emotion_fallbacks_log)
+        readings["emotion_fallbacks"] = list(kernel.emotion_fallbacks_log)
+        readings["emotion_results_npcs_last_tick"] = sorted(kernel.emotion_results)
+        readings["capability_journal_kinds"] = sorted(
+            {str(item.get("event")) for item in registry.journal})
+    return readings
+
+
 # --------------------------------------------------------------------------- run
 def cmd_run(args) -> int:
     try:
@@ -357,6 +484,8 @@ def cmd_run(args) -> int:
     except PackInvalid as exc:
         print(str(exc), file=sys.stderr)
         return 1
+    # **FIX-1（r3）· 内核链入口**：默认 off ⇒ `chain_extra == {}` ⇒ 构造实参与改前逐字节一致。
+    chain_extra, chain_state = _build_kernel_chain(args, out_dir=events_path.parent, pack=pack)
     kernel = WorldKernel(
         pack=pack,
         seed=args.seed,
@@ -365,6 +494,7 @@ def cmd_run(args) -> int:
         checkpoint_dir=checkpoint_dir,
         tick_rate=args.tick_rate,
         plan_ticks=args.ticks,
+        **chain_extra,
     )
     # **F5′（r3）· 只读观察通道必须在 tick 循环之前启动**
     #
@@ -400,12 +530,15 @@ def cmd_run(args) -> int:
             "note": "read-only observation channel; there is no write endpoint",
         }
         _LIVE_CHANNELS.append(live_server)
+    stopped_channels: list = []
     try:
         kernel.run(args.ticks)
     finally:
         # **F7（r3）**：观察面现在整段 tick 循环都活着 ⇒ 循环一结束就**显式 stop()**，
         # 不让 HTTP daemon 线程活到解释器 finalize（那是 `_enter_buffered_busy` ⇒ SIGABRT 的成因）。
-        _stop_live_channels()
+        # **FIX-6（r3）**：stop() 返回已停通道 ⇒ 停稳之后取有界诊断样本落盘。
+        stopped_channels = _stop_live_channels()
+    live_diagnostics = _write_live_diagnostics(events_path.parent, stopped_channels)
     cognition_report = None
     if args.cognition:
         cognition_report = _run_cognition(
@@ -452,11 +585,16 @@ def cmd_run(args) -> int:
     if args.replay:
         print("note: --replay forces the cognition layer onto cassette_replay (fail-closed on miss); "
               "M1's tick path makes no capability calls => no effect there")
+    kernel_chain = None
+    if chain_state.get("memory_chain") or chain_state.get("capability_chain"):
+        kernel_chain = _kernel_chain_readings(kernel, chain_state, events_path)
     print(json.dumps({
         "command": "run", "pack_id": pack.manifest["id"], "seed": kernel.seed,
         "ticks": args.ticks, "snapshot_every": kernel.snapshot_every,
         "events": str(events_path), "checkpoints": str(checkpoint_dir),
         "live_channel": live_channel,
+        "kernel_chain": kernel_chain,
+        "live_diagnostics": live_diagnostics,
         "chain_tail": kernel.log.last_hash if kernel.log is not None else None,
         "event_count": kernel.log._seq if kernel.log is not None else 0,  # noqa: SLF001 (诊断输出)
         "cognition": None if cognition_report is None else {
@@ -1079,20 +1217,56 @@ def _run_cognition(pack, kernel, *, out_dir: Path, replay_mode: bool, memory_wri
 _LIVE_CHANNELS: list = []
 
 
-def _stop_live_channels() -> None:
-    """停掉本进程已启动的只读观察通道（**幂等**）。
+def _stop_live_channels() -> list:
+    """停掉本进程已启动的只读观察通道（**幂等**），返回**已停**的通道列表。
 
     **F7（r3）**：`server.stop()`（`shutdown()` + `server_close()` + 线程 join）必须**显式执行**——
     让 HTTP daemon 线程活到解释器 finalize，会在 finalize 期争用 `stderr` 锁 ⇒
     `Fatal Python error: _enter_buffered_busy` ⇒ **SIGABRT**。
     单条通道停失败**不得**跳过其余通道（收尾路径不因局部异常而扩大影响）。
+
+    **FIX-6（r3）**：返回值供 `_write_live_diagnostics()` 在**停稳之后**取有界诊断样本
+    （停之前取会漏掉收尾期间的 handler 异常）。
     """
+    stopped: list = []
     while _LIVE_CHANNELS:
         server = _LIVE_CHANNELS.pop()
         try:
             server.stop()
         except Exception as exc:  # noqa: BLE001 — 收尾路径：记录并继续停其余通道，不上抛
             print(f"E_LIVE_STOP_FAILED: {type(exc).__name__}: {exc}", file=sys.stderr)
+        stopped.append(server)
+    return stopped
+
+
+def _write_live_diagnostics(out_dir: Path, servers: list) -> dict | None:
+    """把观察通道的**有界**诊断落一个**有界**文件（FIX-6 · r3；无异常 ⇒ 返回 None，不产残渣）。
+
+    界（逐条给出）：条数 ≤ `HANDLER_ERROR_SAMPLES_MAX`（8）、每条 `repr` ≤
+    `HANDLER_ERROR_REPR_MAX`（200）字符、文件 ≤ `max_samples × (repr_max + 128)` 字节
+    ⇒ 单文件硬上限 ≈ 2.6KB（不是「大概很小」，是可算的上界）。
+    `finish()` 吞掉的异常只落**计数**（`finish_errors` / `finish_error_kinds`），不落原文。
+    """
+    samples = [item for server in servers for item in getattr(server, "handler_error_samples", [])]
+    finish_errors = sum(int(getattr(server, "finish_errors", 0)) for server in servers)
+    finish_kinds: dict = {}
+    for server in servers:
+        for kind, count in (getattr(server, "finish_error_kinds", {}) or {}).items():
+            finish_kinds[kind] = finish_kinds.get(kind, 0) + int(count)
+    if not samples and not finish_errors:
+        return None
+    target = out_dir / "live_handler_errors.jsonl"
+    lines = [json.dumps(item, ensure_ascii=False, sort_keys=True)
+             for item in samples[:HANDLER_ERROR_SAMPLES_MAX]]
+    target.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
+    return {
+        "path": str(target),
+        "samples_kept": len(lines),
+        "bytes": target.stat().st_size,
+        "bytes_bound": HANDLER_ERROR_SAMPLES_MAX * (HANDLER_ERROR_REPR_MAX + 128),
+        "finish_errors": finish_errors,
+        "finish_error_kinds": dict(sorted(finish_kinds.items())),
+    }
 
 
 class _StopFlag:
@@ -1211,11 +1385,21 @@ def cmd_live(args) -> int:
         )
         return 1
 
+    # **FIX-1（r3）· 内核链入口（live 路径）**：默认 off ⇒ `chain_extra == {}`（与改前逐字节一致）。
+    chain_extra, chain_state = _build_kernel_chain(args, out_dir=out_dir, pack=pack)
     kernel = WorldKernel(
         pack=pack, seed=seed, log=EventLog(events_path),
         snapshot_every=args.snapshot_every, checkpoint_dir=checkpoint_dir,
         plan_ticks=int(args.ticks) if args.ticks is not None else DEFAULT_PLAN_TICKS,
+        **chain_extra,
     )
+    if chain_state.get("memory_chain") or chain_state.get("capability_chain"):
+        print("kernel chain: "
+              f"memory={chain_state.get('memory_chain')} "
+              f"(store={chain_state.get('memory_store_path')}) | "
+              f"capability={chain_state.get('capability_chain')} "
+              f"(emotion_pressure_threshold="
+              f"{chain_state.get('emotion_pressure_threshold', 'default(0.6)')})")
 
     # ③ 启动锚定：快进到「此刻」（算式与实数都打印）
     wall = world_clock.now_utc8()
@@ -1306,6 +1490,9 @@ def cmd_live(args) -> int:
         finally:
             server.stop()
 
+    # **FIX-6（r3）**：停稳之后落有界诊断（无异常 ⇒ None，不产残渣文件）。
+    live_diagnostics = _write_live_diagnostics(out_dir, [server])
+
     if seal_error is not None:
         detail = getattr(seal_error, "strerror", None) or str(seal_error)
         print(f"E_LIVE_STATE_SEAL_FAILED: cannot write {state_path.name}: "
@@ -1322,6 +1509,7 @@ def cmd_live(args) -> int:
             "live_state": str(state_path),
             "error": "E_LIVE_STATE_SEAL_FAILED",
             "detail": f"{type(seal_error).__name__}: {detail}",
+            "live_diagnostics": live_diagnostics,
             "read_only": True,
         }, ensure_ascii=False, sort_keys=True))
         return 1
@@ -1341,6 +1529,7 @@ def cmd_live(args) -> int:
         "event_chain_hash": sealed["event_chain_hash"],
         "live_state": str(state_path),
         "events": str(events_path),
+        "live_diagnostics": live_diagnostics,
         "read_only": True,
     }, ensure_ascii=False, sort_keys=True))
     return 0

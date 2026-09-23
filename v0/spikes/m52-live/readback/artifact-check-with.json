@@ -1,0 +1,74 @@
+{
+ "all_pass": true,
+ "criteria": {
+  "desktop_is_1440x900": {
+   "pass": true,
+   "reading": [
+    1440,
+    900
+   ]
+  },
+  "narrow_is_390x844": {
+   "pass": true,
+   "reading": [
+    390,
+    844
+   ]
+  },
+  "video_duration_ge_15s": {
+   "pass": true,
+   "reading": 18.12
+  },
+  "video_frames_ge_100": {
+   "pass": true,
+   "reading": 453
+  },
+  "video_has_motion": {
+   "pass": true,
+   "reading": {
+    "t0.5": "47dcfb5b9f7b53f2d99a743cca31b1fb4dde6b3b30f14736eaccc40b82a7529c",
+    "t10": "79245aa8adb02eef49f41723cd0aa70571cd022c45741aa107f71d55a5c95725"
+   }
+  }
+ },
+ "ffmpeg": "/Users/wooyinq/Library/Caches/ms-playwright/ffmpeg-1011/ffmpeg-mac",
+ "ffmpeg_exists": true,
+ "frames": {
+  "t0.5": {
+   "at_seconds": 0.5,
+   "bytes": 179606,
+   "exit": 0,
+   "sha256": "47dcfb5b9f7b53f2d99a743cca31b1fb4dde6b3b30f14736eaccc40b82a7529c"
+  },
+  "t10": {
+   "at_seconds": 10.0,
+   "bytes": 156518,
+   "exit": 0,
+   "sha256": "79245aa8adb02eef49f41723cd0aa70571cd022c45741aa107f71d55a5c95725"
+  }
+ },
+ "shots": {
+  "desktop": "spikes/m52-live/shots/desktop-1440x900.png",
+  "desktop_bytes": 100572,
+  "narrow": "spikes/m52-live/shots/narrow-390x844.png",
+  "narrow_bytes": 64217
+ },
+ "status": "measured",
+ "tag": "with",
+ "video": {
+  "bytes": 876121,
+  "frame_count": {
+   "dir": "/tmp/m52-live-frames/frames-76753d2f",
+   "exit": 0,
+   "frames": 453,
+   "last_stats_line": "frame=  453 fps=0.0 q=-0.0 Lsize=N/A time=00:00:18.12 bitrate=N/A speed=90.7x"
+  },
+  "path": "spikes/m52-live/rec/page@9f24fb2d28e32edc254468e70662e9aa.webm",
+  "probe": {
+   "duration_raw": "Duration: 00:00:18.12",
+   "duration_seconds": 18.12,
+   "exit": 1,
+   "fps_metadata": 25.0
+  }
+ }
+}

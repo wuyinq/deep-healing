@@ -1,0 +1,29 @@
+{
+  "id": "task-003",
+  "display_name": "让徐琴在失控前先把人推下楼",
+  "level": "B",
+  "initial_state": "dormant",
+  "states": ["dormant", "noticed", "guarded", "held"],
+  "transitions": [
+    { "from": "dormant", "to": "noticed", "trigger": "npc.action#npc-006", "condition": "target_entity==courtyard-01" },
+    { "from": "noticed", "to": "guarded", "trigger": "intent.applied", "condition": "kind==delegate_instruction" },
+    { "from": "guarded", "to": "held", "trigger": "npc.action#npc-006", "condition": "action==talk" }
+  ],
+  "adaptation_rules": [
+    {
+      "id": "rule-003-boundary",
+      "match": { "event_type": "intent.applied", "kind": "delegate_instruction", "target": "npc-006" },
+      "effect": { "shift_to": "guarded", "reason": "玩家介入让边界动作被看见" },
+      "max_shifts": 1,
+      "impact_cost": 2.0
+    }
+  ],
+  "rewards": { "healing_delta": 0.05, "relation_delta": { "npc-006": 0.1 } },
+  "hard_constraints": [
+    "不得直接改写 npc-006 的 trauma_flags",
+    "不得把「失控」写成可奖励的行为",
+    "不得产出伤害/猎奇向内容"
+  ],
+  "source_facts": ["CHR-04", "CHR-11"],
+  "v0_role": "M5.2 徐琴提案包的关键事件可执行化（事件 → 记忆 → 决策链的可追溯样本）"
+}

@@ -1,0 +1,83 @@
+{
+  "tag": "with",
+  "pack": "xingfu-xiaoqu-xuqin",
+  "seed": 20260921,
+  "run_seconds": 130,
+  "tick_ms": 250,
+  "ticks_reached": 33,
+  "final_state_hash": "5ec2afc50d3a4d98aec0db33409a562567f5f44732236529642c7da7045530db",
+  "final_event_chain_hash": "a77cb9549fbdb055eb3253508d5787bfd3175a28bb0922a43116ae614501d004",
+  "events_total": 134,
+  "events_backfilled": 127,
+  "driver_kinds": {
+    "bridge_meta": 1,
+    "event": 134,
+    "ready": 1,
+    "snapshot": 3,
+    "tick_meta": 33,
+    "delta": 32,
+    "live": 33,
+    "inject_result": 1,
+    "bridge_stop": 1
+  },
+  "injection": {
+    "importance_after": 0.95,
+    "importance_at_write": 0.144619,
+    "kind": "inject_result",
+    "kind_promoted": "rest",
+    "layer": "episodic",
+    "memory_written_event_seq": 63,
+    "mode": "promote",
+    "note": "库级提升一条**内核自产**经历的权重（AC-4 预置关键经历的等价形态）；事件 payload 里的 importance 是写入时刻的值 ⇒ 与库内当前值**有意不同**，这正是注入的可核验痕迹",
+    "npc_id": "npc-006",
+    "ref": 16,
+    "seq": 0,
+    "source_event": {
+      "action": "rest",
+      "seq": 62,
+      "target_entity": "room-1052",
+      "tick": 16
+    },
+    "status": "promoted",
+    "store_after": {
+      "importance": 0.95,
+      "kind": "rest",
+      "npc_id": "npc-006",
+      "refs": "[\"event:62\", \"injected:key-experience\", \"tick:16\"]",
+      "tick": 16
+    },
+    "store_before": {
+      "importance": 0.144619,
+      "kind": "rest",
+      "npc_id": "npc-006",
+      "refs": "[\"tick:16\"]",
+      "tick": 16
+    },
+    "target_selection": {
+      "chosen_action": "walk",
+      "decision_seq": 77,
+      "decision_tick": 20,
+      "runner_up_action": "rest",
+      "utility_ranking": [
+        {
+          "action": "walk",
+          "score": 0.159872
+        },
+        {
+          "action": "rest",
+          "score": 0.157389
+        },
+        {
+          "action": "talk",
+          "score": 0.151953
+        }
+      ]
+    },
+    "tick": 20
+  },
+  "tick_series_file": "spikes/m52-live/readback/tick-series-with.json",
+  "events_file": "spikes/m52-live/readback/events-with.jsonl",
+  "web_bundle": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260923-002-deephealing-m5-2-character-loop/.build/web",
+  "driver": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260923-002-deephealing-m5-2-character-loop/spikes/m52-live/tools/live_driver.py",
+  "source": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260923-002-deephealing-m5-2-character-loop/02_source"
+}

@@ -1,0 +1,4 @@
+{"artifact_ok": true, "errno24": false, "exit": 0, "fatal_python_error": false, "fd_tcp_peak": 15, "fd_total_peak": 55, "pass": true, "served_200": 49662, "tag": "live-arch-run0", "thread_peak": 0}
+{"artifact_ok": true, "errno24": false, "exit": 0, "fatal_python_error": false, "fd_tcp_peak": 23, "fd_total_peak": 63, "pass": true, "served_200": 49902, "tag": "live-arch-run1", "thread_peak": 0}
+{"artifact_ok": true, "errno24": false, "exit": 0, "fatal_python_error": false, "fd_tcp_peak": 20, "fd_total_peak": 59, "pass": true, "served_200": 50112, "tag": "live-arch-run2", "thread_peak": 0}
+all_pass=True (fd_total_peak < 1024 required)

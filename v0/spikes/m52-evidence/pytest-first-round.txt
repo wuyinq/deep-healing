@@ -1,0 +1,466 @@
+....F.........................................F..FF.FFF........FF....... [ 34%]
+........................................................................ [ 68%]
+.........................................................F.........      [100%]
+=================================== FAILURES ===================================
+_______________ test_injection_point_is_still_the_decision_stage _______________
+
+tmp_path = PosixPath('/private/var/folders/jw/d3rw0nn56cg0vwzyd4pxdyv40000gn/T/pytest-of-wooyinq/pytest-1191/test_injection_point_is_still_0')
+
+    def test_injection_point_is_still_the_decision_stage(tmp_path):
+        """④ 配套：`tick_mod.autonomous_decide` 仍可被替换（模块级别名，M1 对抗判据不零命中）。"""
+        assert hasattr(tick_mod, "autonomous_decide")
+        original = tick_mod.autonomous_decide
+        calls: list[int] = []
+    
+        def counting(world, rng, tick, ctx, *, pack_profiles):
+            calls.append(tick)
+            return original(world, rng, tick, ctx, pack_profiles=pack_profiles)
+    
+        tick_mod.autonomous_decide = counting
+        try:
+>           _run(tmp_path, ticks=5, name="patched")
+
+tests/test_autonomous_decision.py:262: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_autonomous_decision.py:51: in _run
+    kernel.run(ticks)
+deephealing_kernel/tick.py:680: in run
+    self.step()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <deephealing_kernel.tick.WorldKernel object at 0x103eb8050>
+
+    def step(self) -> None:
+        """推进一个 tick（阶段顺序 = PHASES，不可交换）。"""
+        next_tick = self.world.tick + 1
+        ctx = TickContext(tick=next_tick, dt_ms=int(self.world.constants.get("dt_ms", 100)))
+    
+        # [1] 输入：tick 边界注入已完成的能力结果（M1 无能力调用 ⇒ 空队列）
+        #            + **玩家意图只在 tick 边界出队应用**（D-1；队列空 ⇒ 零副作用）
+        inbound: list[dict] = self._apply_queued_intents(ctx.tick)
+        # [2] 感知：构造确定性感知视图（M1 无外部输入 ⇒ 仅 tick 与实体计数）
+        perception = {"tick": ctx.tick, "entity_count": len(self.world.query())}
+        self.bus.publish("metrics", {"perception": perception, "inbound": len(inbound)})
+    
+        # [3] 决策（需求 → 效用 → 行为树；`decision_source="deterministic_stub"` 时退回 M1 班表桩，
+        #     该路径**仅供负例**，默认路径不经过它）
+        if self.decision_source == DECISION_SOURCE_STUB:
+            intents = stub_decide(self.world, self.rng, ctx.tick, ctx)
+        else:
+>           intents = autonomous_decide(self.world, self.rng, ctx.tick, ctx,
+                                        pack_profiles=self.pack_profiles,
+                                        memory_view=self._build_memory_view())
+E           TypeError: test_injection_point_is_still_the_decision_stage.<locals>.counting() got an unexpected keyword argument 'memory_view'
+
+deephealing_kernel/tick.py:453: TypeError
+_______ test_replay_with_missing_cassettes_fails_closed_at_command_layer _______
+
+tmp_path = PosixPath('/private/var/folders/jw/d3rw0nn56cg0vwzyd4pxdyv40000gn/T/pytest-of-wooyinq/pytest-1191/test_replay_with_missing_casse0')
+
+    def test_replay_with_missing_cassettes_fails_closed_at_command_layer(tmp_path):
+        empty = _empty_cassette_dir(tmp_path)
+        out = tmp_path / "miss-out"
+        proc = _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
+                    "--snapshot-every", "50", "--ticks", "100", "--cognition", "--replay",
+                    "--cassette-dir", str(empty))
+        combined = proc.stdout + proc.stderr
+        # ① exit ≠ 0 + 结构化 E_ 诊断（无 Traceback）
+        assert proc.returncode != 0, f"replay miss must be visible at exit code, got {proc.returncode}"
+        assert E_MISS.search(combined), "stderr/stdout must carry a structured E_CASSETTE_MISS line"
+        assert "Traceback" not in combined, combined[-800:]
+        # ② summary.json 含 fail-closed 计数且值 = 实际 miss 数
+        summary_path = out / "cognition" / "summary.json"
+        assert summary_path.is_file(), "summary.json must exist even when fail-closed"
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        assert isinstance(summary.get("fail_closed_events"), int) and summary["fail_closed_events"] > 0
+        # miss 的槽数由**树的执行路径**决定（第一分支在 intent.plan 处中断 ⇒ emotion.appraise 走
+        # 第二分支再 miss；relation.infer 不再被调）——计数口径以 journal 为准（见下一条用例）。
+>       assert summary.get("degraded_reasons") == ["intent.plan"]
+E       AssertionError: assert ['emotion.appraise'] == ['intent.plan']
+E         
+E         At index 0 diff: 'emotion.appraise' != 'intent.plan'
+E         Use -v to get more diff
+
+tests/test_cassette_miss_cli.py:80: AssertionError
+____________ test_normal_replay_with_complete_cassettes_stays_green ____________
+
+tmp_path = PosixPath('/private/var/folders/jw/d3rw0nn56cg0vwzyd4pxdyv40000gn/T/pytest-of-wooyinq/pytest-1191/test_normal_replay_with_comple0')
+
+    def test_normal_replay_with_complete_cassettes_stays_green(tmp_path):
+        cassettes = _record_cassettes(tmp_path)
+        out = tmp_path / "ok-out"
+        proc = _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
+                    "--snapshot-every", "50", "--ticks", "60", "--cognition", "--memory", "--replay",
+                    "--cassette-dir", str(cassettes))
+        combined = proc.stdout + proc.stderr
+        assert proc.returncode == 0, f"正常回放必须 exit 0，got {proc.returncode}: {combined[-600:]}"
+        assert not E_MISS.search(combined)
+        summary = json.loads((out / "cognition" / "summary.json").read_text(encoding="utf-8"))
+        assert summary["fail_closed_events"] == 0
+        calls = [line for line in (out / "cognition" / "cognition.jsonl").read_text(encoding="utf-8").splitlines()
+                 if '"capability.call"' in line]
+>       assert len(calls) == 15, f"正常回放应有 15 次能力调用（5 NPC × 3 槽位），got {len(calls)}"
+E       AssertionError: 正常回放应有 15 次能力调用（5 NPC × 3 槽位），got 5
+E       assert 5 == 15
+E        +  where 5 = len(['{"cassette_key": null, "event": "capability.call", "fallback_reason": null, "ms": 0.091, "npc_id": "npc-001", "ok": ...130abb888e11c0e84dd25a6d21c8a40b2", "provider": "cassette_replay", "seq": 13, "slot": "emotion.appraise", "tick": 60}'])
+
+tests/test_cassette_miss_cli.py:149: AssertionError
+_____________ test_replay_on_tampered_cassette_does_not_write_back _____________
+
+tmp_path = PosixPath('/private/var/folders/jw/d3rw0nn56cg0vwzyd4pxdyv40000gn/T/pytest-of-wooyinq/pytest-1191/test_replay_on_tampered_casset0')
+
+    def test_replay_on_tampered_cassette_does_not_write_back(tmp_path):
+        """① `--replay` 命中篡改 ⇒ 源目录前后**逐字节相同**（且仍 fail-closed）。"""
+        cassettes = tmp_path / "cas"
+        _record_into(cassettes, tmp_path)
+>       _tamper_last_relation(cassettes)
+
+tests/test_cassette_no_backfill_r5.py:117: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_cassette_no_backfill_r5.py:77: in _tamper_last_relation
+    lines = path.read_text(encoding="utf-8").splitlines()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Caskroom/miniconda/base/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Caskroom/miniconda/base/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/private/var/folders/jw/d3rw0nn56cg0vwzyd4pxdyv40000gn/T/pytest-of-wooyinq/pytest-1191/test_replay_on_tampered_casset0/cas/relation.infer__deterministic_rule.jsonl')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/private/var/folders/jw/d3rw0nn56cg0vwzyd4pxdyv40000gn/T/pytest-of-wooyinq/pytest-1191/test_replay_on_tampered_casset0/cas/relation.infer__deterministic_rule.jsonl'
+
+/opt/homebrew/Caskroom/miniconda/base/lib/python3.13/pathlib/_local.py:537: FileNotFoundError
+________________ test_prev_hash_only_tamper_forms_are_rejected _________________
+
+tmp_path = PosixPath('/private/var/folders/jw/d3rw0nn56cg0vwzyd4pxdyv40000gn/T/pytest-of-wooyinq/pytest-1191/test_prev_hash_only_tamper_for0')
+
+    def test_prev_hash_only_tamper_forms_are_rejected(tmp_path):
+        """F-3b：`prev_hash`-only 的两种形态都必须在 `verify_chain()` 与命令层判红。
+    
+        Raven r3 曾报「仅改 `prev_hash` ⇒ exit 0」；r4 实测 exit 1 并判其不可复现。本轮独立复跑
+        （形态矩阵读数见 `03` §修复轮 5）：**两种形态都判红** ⇒ `verify_chain()` 无需结构性改动，
+        由本用例钉住（形态 B 是更严的一格：改 `prev_hash` **并自洽重签**自身 `hash`，
+        只剩「`prev_hash` 必须等于前一条的 `key`」这一条判据可抓它）。
+        """
+        from deephealing_kernel.providers.cassette import CassetteStore
+        from deephealing_kernel.snapshot import chained_hash
+    
+        cassettes = tmp_path / "cas-prevhash"
+        _record_into(cassettes, tmp_path)
+        path = cassettes / RELATION_FILE
+>       base = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_cassette_no_backfill_r5.py:181: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Caskroom/miniconda/base/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Caskroom/miniconda/base/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/private/var/folders/jw/d3rw0nn56cg0vwzyd4pxdyv40000gn/T/pytest-of-wooyinq/pytest-1191/test_prev_hash_only_tamper_for0/cas-prevhash/relation.infer__deterministic_rule.jsonl')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/private/var/folders/jw/d3rw0nn56cg0vwzyd4pxdyv40000gn/T/pytest-of-wooyinq/pytest-1191/test_prev_hash_only_tamper_for0/cas-prevhash/relation.infer__deterministic_rule.jsonl'
+
+/opt/homebrew/Caskroom/miniconda/base/lib/python3.13/pathlib/_local.py:537: FileNotFoundError
+___________ test_duplicate_key_cassette_is_visible_at_command_layer ____________
+
+tmp_path = PosixPath('/private/var/folders/jw/d3rw0nn56cg0vwzyd4pxdyv40000gn/T/pytest-of-wooyinq/pytest-1191/test_duplicate_key_cassette_is0')
+
+    def test_duplicate_key_cassette_is_visible_at_command_layer(tmp_path):
+        """②-命令层：重复 key（= 回填签名）⇒ exit ≠ 0 + `E_CASSETTE_TAMPERED`（修复前 exit 0）。"""
+        cassettes = tmp_path / "cas-dup"
+        _record_into(cassettes, tmp_path)
+>       _append_duplicate_key(cassettes)
+
+tests/test_cassette_no_backfill_r5.py:206: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_cassette_no_backfill_r5.py:90: in _append_duplicate_key
+    lines = path.read_text(encoding="utf-8").splitlines()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Caskroom/miniconda/base/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Caskroom/miniconda/base/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/private/var/folders/jw/d3rw0nn56cg0vwzyd4pxdyv40000gn/T/pytest-of-wooyinq/pytest-1191/test_duplicate_key_cassette_is0/cas-dup/relation.infer__deterministic_rule.jsonl')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/private/var/folders/jw/d3rw0nn56cg0vwzyd4pxdyv40000gn/T/pytest-of-wooyinq/pytest-1191/test_duplicate_key_cassette_is0/cas-dup/relation.infer__deterministic_rule.jsonl'
+
+/opt/homebrew/Caskroom/miniconda/base/lib/python3.13/pathlib/_local.py:537: FileNotFoundError
+_________ test_negative_control_reverting_f1_guard_reproduces_backfill _________
+
+tmp_path = PosixPath('/private/var/folders/jw/d3rw0nn56cg0vwzyd4pxdyv40000gn/T/pytest-of-wooyinq/pytest-1191/test_negative_control_revertin0')
+
+    def test_negative_control_reverting_f1_guard_reproduces_backfill(tmp_path):
+        """③ 退回 F-1 守卫 ⇒ ① 变红（回填复现）⇒ 判据有牙齿。
+    
+        变异**只发生在 `tmp_path` 的整树副本**上（交付树零改动，末尾逐字节复核）。
+        """
+        live_source = (KERNEL_ROOT / "deephealing_kernel" / "registry.py").read_text(encoding="utf-8")
+        assert live_source.count(F1_GUARD) == 1, (
+            f"F-1 守卫锚点命中数必须 = 1，实测 {live_source.count(F1_GUARD)}（锚点漂移 ⇒ 负例无效）"
+        )
+    
+        copy_root = tmp_path / "patched" / "02_source"
+        shutil.copytree(SKELETON_ROOT.parent, copy_root, ignore=shutil.ignore_patterns("__pycache__"))
+        patched_kernel = copy_root / "v0_skeleton" / "kernel"
+        target = patched_kernel / "deephealing_kernel" / "registry.py"
+        patched_text = target.read_text(encoding="utf-8")
+        assert patched_text.count(F1_GUARD) == 1
+        target.write_text(patched_text.replace(F1_GUARD, F1_REVERTED), encoding="utf-8")
+        assert target.read_text(encoding="utf-8").count(F1_REVERTED) == 1, "退回形态必须恰好生效 1 处"
+    
+        cassettes = tmp_path / "cas-neg"
+        _record_into(cassettes, tmp_path, cwd=patched_kernel)
+>       _tamper_last_relation(cassettes)
+
+tests/test_cassette_no_backfill_r5.py:239: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_cassette_no_backfill_r5.py:77: in _tamper_last_relation
+    lines = path.read_text(encoding="utf-8").splitlines()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Caskroom/miniconda/base/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Caskroom/miniconda/base/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/private/var/folders/jw/d3rw0nn56cg0vwzyd4pxdyv40000gn/T/pytest-of-wooyinq/pytest-1191/test_negative_control_revertin0/cas-neg/relation.infer__deterministic_rule.jsonl')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/private/var/folders/jw/d3rw0nn56cg0vwzyd4pxdyv40000gn/T/pytest-of-wooyinq/pytest-1191/test_negative_control_revertin0/cas-neg/relation.infer__deterministic_rule.jsonl'
+
+/opt/homebrew/Caskroom/miniconda/base/lib/python3.13/pathlib/_local.py:537: FileNotFoundError
+_____________________ test_replay_detects_wall_clock_leak ______________________
+
+tmp_path = PosixPath('/private/var/folders/jw/d3rw0nn56cg0vwzyd4pxdyv40000gn/T/pytest-of-wooyinq/pytest-1191/test_replay_detects_wall_clock0')
+
+    def test_replay_detects_wall_clock_leak(tmp_path):
+        """负例（对抗用例）：tick 内引入 wall-clock 后必须出现分歧；去掉泄漏后一致。双向断言。"""
+        # ① 反向对照：无泄漏 ⇒ 两次产物一致
+        clean_a = _run_kernel(tmp_path / "clean_a")
+        clean_b = _run_kernel(tmp_path / "clean_b")
+        assert snapshot_mod.compare_checkpoints(clean_a / "checkpoints", clean_b / "checkpoints") == []
+    
+        # ② 注入 wall-clock 泄漏：decide 阶段的 need 漂移改用 time.time_ns()
+        #    **注入点迁移登记（M4 / D-M4-1）**：决策路径已由 `stub_decide` 换成模块级别名
+        #    `autonomous_decide`，故注入点随之迁移。**意图不变**：把非确定性注入**决策阶段** ⇒
+        #    检测器必须变红。签名多了关键字参数 `pack_profiles`（决策层需要 NPC 档案）。
+        original = tick_mod.autonomous_decide
+    
+        def leaky(world, rng, tick, ctx, *, pack_profiles):
+            intents = original(world, rng, tick, ctx, pack_profiles=pack_profiles)
+            # 注意：`time.time_ns() % 1000` 在本机**恒为 0**（时钟微秒粒度）⇒ 注入会退化成常量，
+            # 负例就变成零命中绿。故取**微秒**分量（实测逐次不同）。
+            leaked = int(time.time_ns() // 1000) % 1000 - 500
+            for intent in intents:
+                intent["jitter_mm"] = leaked
+            return intents
+    
+        tick_mod.autonomous_decide = leaky
+        try:
+>           leaky_a = _run_kernel(tmp_path / "leaky_a")
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_determinism_replay.py:103: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_determinism_replay.py:50: in _run_kernel
+    kernel.run(ticks)
+deephealing_kernel/tick.py:680: in run
+    self.step()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <deephealing_kernel.tick.WorldKernel object at 0x103ebb350>
+
+    def step(self) -> None:
+        """推进一个 tick（阶段顺序 = PHASES，不可交换）。"""
+        next_tick = self.world.tick + 1
+        ctx = TickContext(tick=next_tick, dt_ms=int(self.world.constants.get("dt_ms", 100)))
+    
+        # [1] 输入：tick 边界注入已完成的能力结果（M1 无能力调用 ⇒ 空队列）
+        #            + **玩家意图只在 tick 边界出队应用**（D-1；队列空 ⇒ 零副作用）
+        inbound: list[dict] = self._apply_queued_intents(ctx.tick)
+        # [2] 感知：构造确定性感知视图（M1 无外部输入 ⇒ 仅 tick 与实体计数）
+        perception = {"tick": ctx.tick, "entity_count": len(self.world.query())}
+        self.bus.publish("metrics", {"perception": perception, "inbound": len(inbound)})
+    
+        # [3] 决策（需求 → 效用 → 行为树；`decision_source="deterministic_stub"` 时退回 M1 班表桩，
+        #     该路径**仅供负例**，默认路径不经过它）
+        if self.decision_source == DECISION_SOURCE_STUB:
+            intents = stub_decide(self.world, self.rng, ctx.tick, ctx)
+        else:
+>           intents = autonomous_decide(self.world, self.rng, ctx.tick, ctx,
+                                        pack_profiles=self.pack_profiles,
+                                        memory_view=self._build_memory_view())
+E           TypeError: test_replay_detects_wall_clock_leak.<locals>.leaky() got an unexpected keyword argument 'memory_view'
+
+deephealing_kernel/tick.py:453: TypeError
+___________________ test_replay_detects_unordered_iteration ____________________
+
+tmp_path = PosixPath('/private/var/folders/jw/d3rw0nn56cg0vwzyd4pxdyv40000gn/T/pytest-of-wooyinq/pytest-1191/test_replay_detects_unordered_0')
+
+    def test_replay_detects_unordered_iteration(tmp_path):
+        """负例：用 set 迭代顺序驱动决策 → 跨进程哈希分歧必须被检出。
+    
+        前提（预审 M5 三条，缺一即零命中绿）：
+          (a) 注入容器是 **set[str]**（set[int] 恒为 1..5、dict 恒为插入序 ⇒ 永远红不了）；
+          (b) 迭代顺序真的进入 state_hash；
+          (c) 两个产物在**不同子进程**产生（PYTHONHASHSEED=1 vs =2），测试进程**不作**比较方。
+        """
+        driver = tmp_path / "unordered_driver.py"
+        driver.write_text(_DRIVER, encoding="utf-8")
+        kernel_root = str(KERNEL_ROOT)
+    
+        def produce(mode: str, hashseed: str, name: str) -> Path:
+            out = tmp_path / name
+            env = dict(os.environ, PYTHONHASHSEED=hashseed, PYTHONDONTWRITEBYTECODE="1")
+            proc = subprocess.run(
+                [sys.executable, str(driver), kernel_root, str(out), mode],
+                capture_output=True, text=True, env=env, cwd=kernel_root,
+            )
+            assert proc.returncode == 0, proc.stderr
+            return out / "checkpoints"
+    
+        # ① set[str] 跨进程 ⇒ 必须分歧，且分歧落在 state_hash 上
+        diffs = snapshot_mod.compare_checkpoints(
+>           produce("strset", "1", "str_1"), produce("strset", "2", "str_2")
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        )
+
+tests/test_determinism_replay.py:196: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+mode = 'strset', hashseed = '1', name = 'str_1'
+
+    def produce(mode: str, hashseed: str, name: str) -> Path:
+        out = tmp_path / name
+        env = dict(os.environ, PYTHONHASHSEED=hashseed, PYTHONDONTWRITEBYTECODE="1")
+        proc = subprocess.run(
+            [sys.executable, str(driver), kernel_root, str(out), mode],
+            capture_output=True, text=True, env=env, cwd=kernel_root,
+        )
+>       assert proc.returncode == 0, proc.stderr
+E       AssertionError: Traceback (most recent call last):
+E           File "/private/var/folders/jw/d3rw0nn56cg0vwzyd4pxdyv40000gn/T/pytest-of-wooyinq/pytest-1191/test_replay_detects_unordered_0/unordered_driver.py", line 43, in <module>
+E             kernel.run(60)
+E             ~~~~~~~~~~^^^^
+E           File "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260923-002-deephealing-m5-2-character-loop/02_source/v0_skeleton/kernel/deephealing_kernel/tick.py", line 680, in run
+E             self.step()
+E             ~~~~~~~~~^^
+E           File "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260923-002-deephealing-m5-2-character-loop/02_source/v0_skeleton/kernel/deephealing_kernel/tick.py", line 453, in step
+E             intents = autonomous_decide(self.world, self.rng, ctx.tick, ctx,
+E                                         pack_profiles=self.pack_profiles,
+E                                         memory_view=self._build_memory_view())
+E         TypeError: unordered() got an unexpected keyword argument 'memory_view'
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/opt/homebrew/Caskroom/miniconda/base/bin/python3', '/private/var/folders/jw/d3rw0nn56cg0vwzyd...  memory_view=self._build_memory_view())\nTypeError: unordered() got an unexpected keyword argument \'memory_view\'\n').returncode
+
+tests/test_determinism_replay.py:191: AssertionError
+______________ test_default_run_without_intents_is_bit_identical _______________
+
+tmp_path = PosixPath('/private/var/folders/jw/d3rw0nn56cg0vwzyd4pxdyv40000gn/T/pytest-of-wooyinq/pytest-1191/test_default_run_without_inten0')
+
+    def test_default_run_without_intents_is_bit_identical(tmp_path):
+        """AC-M3-5 末条 / AC-M3-6 + **M4 口径改写**：无 intent 的默认跑必须
+        「**确定性自洽**」（两次独立运行逐位相同）且与**本轮新基线**一致。
+    
+        判据变更登记见文件头：旧值（`9a4ae3da…` / `baecca92…`）**不再作断言**，
+        只作为历史存档；本轮新基线由 M4 产出并登记。
+        """
+        first_dir = tmp_path / "first"
+        second_dir = tmp_path / "second"
+        results = []
+        for out_dir in (first_dir, second_dir):
+            _, kernel, log = _kernel(out_dir, snapshot_every=50)
+            kernel.run(300)
+            checkpoints = sorted((out_dir / "checkpoints").glob("*.json"))
+            assert [path.name for path in checkpoints] == [
+                "000050.json", "000100.json", "000150.json", "000200.json", "000250.json", "000300.json",
+            ]
+            last = json.loads(checkpoints[-1].read_text(encoding="utf-8"))
+            assert last["tick"] == 300
+            assert _types(log).count("task.state_changed") == 0
+            assert _types(log).count("intent.applied") == 0
+            results.append((last["state_hash"], log.last_hash))
+    
+        # ① 确定性自洽：两次独立运行逐位相同（判据**机制**，与基线数值无关）
+        assert results[0][0] == results[1][0], f"两次运行的 state_hash 不一致：{results}"
+        assert results[0][1] == results[1][1], f"两次运行的 chain_tail 不一致：{results}"
+        # ② 本轮新基线（M4 产出，已登记）作为回归锚
+>       assert results[0][0] == M4_BASELINE_STATE_HASH_300, (
+            f"M4 基线漂移：state_hash {results[0][0]} != 登记的 {M4_BASELINE_STATE_HASH_300}")
+E       AssertionError: M4 基线漂移：state_hash 8603dedb8cdb4a1799c80c8061c2e056025164a0cf16272a39020a442774c15c != 登记的 0d79e5f349cad67d8ebc623fb7e49a17082e0170d0b5a5c3de62715ea42a2dca
+E       assert '8603dedb8cdb...20a442774c15c' == '0d79e5f349ca...2715ea42a2dca'
+E         
+E         - 0d79e5f349cad67d8ebc623fb7e49a17082e0170d0b5a5c3de62715ea42a2dca
+E         + 8603dedb8cdb4a1799c80c8061c2e056025164a0cf16272a39020a442774c15c
+
+tests/test_task_adaptation.py:243: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_autonomous_decision.py::test_injection_point_is_still_the_decision_stage
+FAILED tests/test_cassette_miss_cli.py::test_replay_with_missing_cassettes_fails_closed_at_command_layer
+FAILED tests/test_cassette_miss_cli.py::test_normal_replay_with_complete_cassettes_stays_green
+FAILED tests/test_cassette_no_backfill_r5.py::test_replay_on_tampered_cassette_does_not_write_back
+FAILED tests/test_cassette_no_backfill_r5.py::test_prev_hash_only_tamper_forms_are_rejected
+FAILED tests/test_cassette_no_backfill_r5.py::test_duplicate_key_cassette_is_visible_at_command_layer
+FAILED tests/test_cassette_no_backfill_r5.py::test_negative_control_reverting_f1_guard_reproduces_backfill
+FAILED tests/test_determinism_replay.py::test_replay_detects_wall_clock_leak
+FAILED tests/test_determinism_replay.py::test_replay_detects_unordered_iteration
+FAILED tests/test_task_adaptation.py::test_default_run_without_intents_is_bit_identical
+10 failed, 201 passed in 638.04s (0:10:38)

@@ -1,0 +1,52 @@
+F.F.F.                                                                   [100%]
+=================================== FAILURES ===================================
+______________________ test_c1_rest_also_relieves_safety _______________________
+
+    def test_c1_rest_also_relieves_safety():
+        """C1：`_needs_delta("rest", needs)` 的返回字典**含 `safety` 键且值 < 0**。"""
+        delta = decision_mod._needs_delta("rest", FLAT_NEEDS)
+        assert delta is not None, "rest 对非空 needs 必须产出增量字典"
+        assert "safety" in delta, "C1 未落地：rest 的增量字典里没有 safety 键"
+>       assert delta["safety"] < 0, (
+            f"C1 未落地：rest 未缓解 safety（实测 delta['safety']={delta['safety']}，期望 < 0）"
+        )
+E       AssertionError: C1 未落地：rest 未缓解 safety（实测 delta['safety']=0.004，期望 < 0）
+E       assert 0.004 < 0
+
+tests/test_m52_alive_world.py:40: AssertionError
+_________ test_c2_explore_never_targets_home_even_when_home_is_nearest _________
+
+    def test_c2_explore_never_targets_home_even_when_home_is_nearest():
+        """C2：`explore` 的候选集**不含** `home_entity` ⇒ 即便家在最近处也不得选它。"""
+        world, npc, profile = _explore_world()
+        schedule = {"target_entity": None, "state": "moving"}
+        target = decision_mod._resolve_target("walk", "explore", npc, world, profile, schedule)
+>       assert target != "room-101", (
+            f"C2 未落地：explore 把「家」当成了候选（实测 target={target!r}，家=room-101）"
+        )
+E       AssertionError: C2 未落地：explore 把「家」当成了候选（实测 target='room-101'，家=room-101）
+E       assert 'room-101' != 'room-101'
+
+tests/test_m52_alive_world.py:74: AssertionError
+________________ test_c3_boundary_block_is_selected_not_skipped ________________
+
+    def test_c3_boundary_block_is_selected_not_skipped():
+        """C3：`tick == until_tick` 时必须返回**包含当前 tick 的块**（start_tick == until_tick），
+        而不是下一块。"""
+        block = decision_mod._next_block(BOUNDARY_BLOCKS, 30)
+        assert block is not None, "C3：边界块必须被选中，不得返回 None"
+>       assert block["state"] == "working", (
+            f"C3 未落地：边界块被跳过（实测 state={block['state']!r}，期望 'working'）"
+        )
+E       AssertionError: C3 未落地：边界块被跳过（实测 state='resting'，期望 'working'）
+E       assert 'resting' == 'working'
+E         
+E         - working
+E         + resting
+
+tests/test_m52_alive_world.py:101: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_m52_alive_world.py::test_c1_rest_also_relieves_safety - Ass...
+FAILED tests/test_m52_alive_world.py::test_c2_explore_never_targets_home_even_when_home_is_nearest
+FAILED tests/test_m52_alive_world.py::test_c3_boundary_block_is_selected_not_skipped
+3 failed, 3 passed in 0.02s

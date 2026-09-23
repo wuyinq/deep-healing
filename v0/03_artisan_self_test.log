@@ -4945,3 +4945,1194 @@ M4 补轮 r4（REQ-20260921-006-m4-r4）—— F7 重开：accept 层配额 · *
 [冻结面 · 定稿重取（03/06 追加之后）]
   cmd(workdir <ws>): python3 V0_M4.gen.py && shasum -a 256 -c V0_M4.sha256
   exit 0 / OK 214 / 条目 230 / 清单自身 sha256 062a1deb59b130088961b0efeb2d741adff185b394be2d58415b466484f86ae1
+
+================================================================================
+§M5.2-r1 · 内核链 + 判据（artisan · 第一段实做）
+================================================================================
+
+[段首自证]
+  role: artisan（舰载工程官）· 本任务唯一派单写入者（.task-artisan.pid = 49438 的 oneshot 进程族；
+        本 shell pid 49528 为其子进程 ⇒ 写入通道 = 本派单进程）
+  session_id: 20260923_233214_2df0146d（profile artisan；transcript /tmp/m52-transcripts/artisan-m52-r1.out）
+  model: deepseek-v4.1-flash | 来源: 本派单进程（`hermes -p artisan chat --query-file .task-artisan-m52-r1.pointer.txt --oneshot`）
+         —— D-13 模型冻结：本段**全程无换模型**（无逐段换模型声明需要）
+  PATH: /opt/homebrew/Caskroom/miniconda/base/bin:<...>（**每次复跑都把该目录置于 PATH 前**）
+  which python3: /opt/homebrew/Caskroom/miniconda/base/bin/python3
+  python3 -m pytest --version: pytest 9.1.1
+  task_id（播报用，钉死）: REQ-20260923-002-deephealing-m5-2-character-loop
+  写集: 02_source/** · spikes/m52-*/** · 03_artisan_self_test.log · 06_v0_m52_self_test.md ·
+        V0_M52.gen.py · V0_M4.sha256 · V0_M5.sha256 · 02_source/manifest.txt · .artisan.progress.json
+  M5.1 的 03 段**不合并**（留在 M5.1 工作区）：
+        /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260923-001-deephealing-m5-original-fidelity/03_artisan_self_test.log
+
+--------------------------------------------------------------------------------
+[1.1 写进度文件]
+  cmd(workdir <ws>): bash .squad_tools/write_progress.sh <ws> artisan <pct> "<note>"
+  exit 0（开工即写；此后每个 AC 完成 / 每 2~3 分钟刷新一次）
+  产物: <ws>/.artisan.progress.json
+  **注意**：命令行的 note 一律用 `"$(cat <file>)"` 传入 —— 直接内联 CJK 会被本机安全扫描拒（不做事后修饰）
+
+--------------------------------------------------------------------------------
+[1.3 工作树引导 + 引导后快照]
+  cmd: rsync -a --exclude='.git' "$REPO/v0/" "$WS/" ; rsync -a "$M51/02_source/" "$WS/02_source/"
+       rsync -a "$M51/docs/" "$WS/docs/" ; rsync -a "$M51/fidelity/" "$WS/fidelity/" ; rsync -a "$M51/refs/" "$WS/refs/"
+  exit 0
+  find "$WS/02_source" -type f | wc -l                       ⇒ 179（= M5.1 的 02_source 文件数 179，一致）
+  find "$M51/02_source" -type f | wc -l                      ⇒ 179
+  find "$REPO/v0/02_source" -type f | wc -l                  ⇒ 160（仓库原样；差 19 = M5.1 增量）
+  find "$WS" -type f -not -path '*/.git/*' | wc -l           ⇒ 488
+  find "$WS/spikes" -type f | wc -l                          ⇒ 234（= 仓库 v0/spikes 同集，F-11）
+  diff -rq "$REPO/v0/02_source/v0_skeleton" "$WS/02_source/v0_skeleton"   exit 1（有差异，符合 F-12）
+    ⇒ 仅 4 处：新增 tools/scan_fidelity_terms.py、新增 tools/tests/、改动 tools/scan_ip_boundary.py、
+      改动 tools/validate_capability_schema.py —— **内核与内容包零差异**（与 F-12 逐项一致）
+  git -C "$REPO" rev-parse --abbrev-ref HEAD                 ⇒ develop
+  git -C "$REPO" rev-parse --short HEAD                      ⇒ 1261436
+  git -C "$REPO" status --porcelain | wc -l                  ⇒ 0（**AC-9 开工读数**）
+  find "$WS/02_source" -name '__pycache__' -o -name '.pytest_cache' -o -name node_modules -o -name dist | wc -l ⇒ 0
+  **漂移 / 同写集并发**：无（.task-artisan.pid 为本进程；gateway 侧同角色会话按任务书 §2 只许只读）
+
+[1.3 起点读数 · verify_specs]
+  cmd(workdir <ws>/02_source): bash verify_specs.sh --quiet
+  exit 0 / 读数: verify_specs: OK (138 checks passed, 0 skipped)
+  证据: spikes/m52-evidence/verify_specs-start.txt
+
+[1.4 复跑环境]
+  export PATH=/opt/homebrew/Caskroom/miniconda/base/bin:$PATH ; which python3 ⇒ 上列；pytest 9.1.1
+  证据: 见各条命令的 workdir 与 exit（本段所有 pytest 调用都带该 PATH）
+
+--------------------------------------------------------------------------------
+[对照树（Raven M-7 硬性：钉死对照物）]
+  /tmp/m52-ref/  = git -C <repo> 的 1261436 树（v0/ 全树）+ M5.1 的 02_source/** + docs/** + fidelity/** + refs/**
+  cmd: rsync -a --exclude='.git' "$REPO/v0/" /tmp/m52-ref/ ; rsync -a "$M51/02_source/" /tmp/m52-ref/02_source/ ; ...
+  find /tmp/m52-ref/02_source -type f | wc -l ⇒ 179（与 <ws> 引导后**同集**）
+  **本段所有「改前 / 对照」读数都取自该树或由它派生的单变量对照臂**，不做自比对假绿。
+
+================================================================================
+[AC-10 RED · 判据引入时对当前树判红]
+================================================================================
+  cmd(workdir <ws>): PYTHONDONTWRITEBYTECODE=1 python3 02_source/v0_skeleton/tools/measure_behaviour_diversity.py \
+      --kernel-root 02_source/v0_skeleton/kernel --pack 02_source/v0_skeleton/districts/xingfu-xiaoqu \
+      --seed 20260921 --ticks 1440 --json spikes/m52-ac10/ac10-red.json
+  exit 1（判据已评估且至少一条为 ❌ —— 期望的 RED）
+  读数: 10-a **0.9697 ❌**（top branch=restore）/ 10-b **0.9754 ❌**（top need=safety）/ 10-c 4 ✅ /
+        10-d-1 **0.0076 ❌** / 10-d-2 **0 ❌**（需 ≥2）
+        逐 NPC 室外占比（REQ §4 硬性一并公布）: npc-001 0.0 / npc-002 0.0 / npc-003 0.0312 /
+        npc-004 0.0069 / npc-005 0.0
+        scope: files_scanned=15 / pack_npcs=5 / npcs_in_decisions=5 / samples_total=1440 / consistent=true
+  证据: <ws>/spikes/m52-ac10/ac10-red.json · spikes/m52-evidence/ac10-red.txt
+  **口径差异登记（Raven M-8）**：本树实读 96.97% / 97.54% / 0.76% / 0-5 与 **Raven 预审双仪器实测逐项一致**；
+    PM 裁决 m5-10 的 97.3% / 97.7% / 0.6% 取自**另一份拷贝**（其内容包多一个 npc-006）⇒ **不可比**，本树读数以本树为准。
+  **10-c 在当前树已 ✅（min=4）**，如实登记（不当作「判据挑刺」）。
+  判定: **PASS**（RED 侧已取得并落盘；缺 RED 侧即判 AC-10 不达标）
+
+================================================================================
+[AC-10 GREEN · C1+C2+C3 后同口径]
+================================================================================
+  cmd: 同 RED 的命令，输出 spikes/m52-ac10/ac10-green.json
+  exit 0（五条判据全绿 + scope 自洽）
+  读数: 10-a **0.3031 ✅**（top=restore）/ 10-b **0.2442 ✅**（top=self_actualization）/ 10-c 4 ✅ /
+        10-d-1 **0.3250 ✅** / 10-d-2 **2 ✅**
+        逐 NPC 室外占比: npc-001 0.1875 / npc-002 0.6181 / npc-003 0.6285 / npc-004 0.1701 / npc-005 0.0208
+        （⇒ 作息分化；与 PM 的 18.8/53.8/62.8/17.4/2.1 同向但**不同拷贝不可比**）
+  证据: <ws>/spikes/m52-ac10/ac10-green.json · spikes/m52-evidence/ac10-green.txt
+  判定: **PASS**
+
+================================================================================
+[AC-10 有牙 · 注入探针（副本隔离，交付树零改动）]
+================================================================================
+  cmd(workdir <ws>): PYTHONDONTWRITEBYTECODE=1 python3 02_source/v0_skeleton/tools/ac10_probe.py
+  exit 0 / 读数: {"probe_ok": true, "probe": [
+      {"case":"c1_reverted","fired":true,  ⇒ 10-a 0.9714 ❌ / 10-b 0.9771 ❌ / 10-d-1 0.0104 ❌ / 10-d-2 0 ❌},
+      {"case":"c2c3_reverted","fired":true ⇒ 10-a 0.3040 ✅ / 10-b 0.2394 ✅ / 10-d-1 0.0187 ❌ / 10-d-2 0 ❌}],
+    "back_to_baseline": true,
+    "delivery_face_sha256_before": "ec86c4d44d0af16fb2407ca7f6e7690e2616f7e24a86f547bcde42191a4da7d6",
+    "delivery_face_sha256_after":  "ec86c4d44d0af16fb2407ca7f6e7690e2616f7e24a86f547bcde42191a4da7d6"}
+  ⇒ 两条用例**各自命中不同判据**（C1 ⇒ 10-a/10-b；C2+C3 ⇒ 10-d），**判据有牙**且**交付树未被探针改动**。
+  **注入纪律**：锚点必须**恰好出现一次**且只可能出现在代码里；写入后**回读复核**；注入失败 ⇒ 独立退出码 3
+    （与「判据无牙」的 exit 1 **分开**，绝不把「注入落成空操作」冒充「判据无牙」）。
+  证据: spikes/m52-evidence/ac10-probe.txt
+  判定: **PASS**
+
+================================================================================
+[C1 / C2 / C3 · 改前 RED → 改后 GREEN]
+================================================================================
+  改前（交付树**未**改动内核时）:
+    cmd(workdir <ws>/02_source/v0_skeleton/kernel): PYTHONDONTWRITEBYTECODE=1 python3 -m pytest tests/test_m52_alive_world.py -q -p no:cacheprovider
+    exit 1 / 读数: **3 failed, 3 passed**
+      test_c1_rest_also_relieves_safety          FAILED  delta['safety']=0.004（期望 < 0）
+      test_c2_explore_never_targets_home_...     FAILED  target='room-101'（= 家）
+      test_c3_boundary_block_is_selected_...     FAILED  state='resting'（期望 'working'）
+      （三条**不变式**用例本来就绿 ⇒ 证明它们不是恒红）
+    证据: spikes/m52-evidence/c1c2c3-red.txt
+  改后:
+    cmd: 同上
+    exit 0 / 读数: **6 passed**
+    证据: spikes/m52-evidence/c1c2c3-green.txt
+  改动面: **只改** kernel/deephealing_kernel/rules/decision.py（C1 新增数据表 ACTION_EXTRA_NEEDS +
+    _needs_delta 多需求缓解；C2 删除 explore 的 home 候选；C3 `>` → `>=`）
+  判定: **PASS**（三条各自有改前 RED / 改后 GREEN 的真实读数 + 不变式对照）
+
+================================================================================
+[AC-3 事件→记忆→决策链 · 四处断链接线]
+================================================================================
+  单测:
+    cmd(workdir <ws>/02_source/v0_skeleton/kernel): PYTHONDONTWRITEBYTECODE=1 python3 -m pytest tests/test_m52_memory_chain.py -q -p no:cacheprovider
+    exit 0 / 读数: **11 passed**
+    证据: spikes/m52-evidence/memchain-pytest.txt
+  ① 真实事件流出现 memory.written（必核字段 + 层词表 + ref 恒 string）
+     读数: 12 tick × 5 NPC × 2 层 = 120 条；layers ⊆ {working, episodic}；ref 类型集合 = {str}；
+           store 侧 episodes total=12（**真落库**，不是只 emit）
+  ② 每一条 memory.written 过 events.schema.json 的 then 子句（jsonschema.validate，形态照抄
+     test_autonomous_decision.py:285）
+  ② 的**负对照**: 副本上把 episodic payload 的 "ref" 键改名 ⇒ 该判据**必红**
+     读数: 子进程 pytest 非 0，且失败文案指名 test_every_memory_written_payload_passes_frozen_schema
+  ③ memory_store=None ⇒ 与「记忆链未接线」对照臂**逐字节一致**
+     对照臂构造: 交付树副本 + **两处注入**（memory_view=self._build_memory_view() → None；
+                  if self.memory_store is not None: → if False:），注入后回读复核
+     读数: 40 tick 两臂事件行 **逐行相等**（diff 0 行），且 wired 臂里 "memory.written" 计数 = 0
+  ④ write_enabled=False ⇒ 不写库但**仍 emit**
+     读数: memory.written 计数 > 0 且 ref 集合 == {"none"}；store.write_count == 0；episodes total == 0
+  ⑤ memory_view 只读性（M-13）: decide(..., memory_view=mv) 前后 mv 的规范化哈希相同；
+     改 mv 不影响 store 读回值；memory_view.relations 形状 = {npc_id: float}（C-1）
+  ⑥ 情绪评估走**既有 capability 通道**（断链④）: WorldKernel(capability_registry=…, budget_ledger=…)
+     ⇒ 经 CapabilityRegistry.invoke（预算 / provider 路由 / output_schema / fallback / journal 全复用）；
+     无 registry ⇒ 零调用（默认路径逐字节不变）；预算或 provider 失败 ⇒ emotion_fallbacks 记降级读数，
+     **不伪造**情绪结果。tick 内**未**自造旁路情绪函数。
+  判定: **PASS**
+  【更正 · r3 / FIX-1④】**上面这个 `PASS` 在 r1/r2 时**没有命令、没有 workdir、没有 exit、没有读数**
+  （Raven R-C1 的 CRITICAL 理由之一）⇒ 属**无证据的 PASS**。r3 就地补读数**并**说明当时为何不可能有读数：
+    ① **当时不可能有读数**：r1/r2 的交付面**没有任何入口**能构造带 registry 的 tick 循环
+       （`cli.py` 三处 `WorldKernel(...)` 都不传 `capability_registry`）⇒ 该条目当时**不可执行**；
+    ② **r3 补入口**：`cli.py` 新增 `--capability-chain`（+ `--emotion-pressure-threshold`），
+       cmd(workdir <ws>/02_source/v0_skeleton/kernel):
+         PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. python3 -m deephealing_kernel run \
+           --pack districts/xingfu-xiaoqu --seed 20260921 --ticks 3 \
+           --events /tmp/m52-r3/fix1/cli-miss/events.jsonl \
+           --capability-chain --replay --emotion-pressure-threshold 0.0
+       exit **0** / 读数 `kernel_chain.capability_journal_kinds = ["cassette.miss"]`、
+       `kernel_chain.emotion_fallbacks` = 15 条（`npc-001..005 × tick 1..3`，reason `CassetteMiss`）
+       ⇒ **fail-closed 读数真的拿到了**（CassetteMiss 未被吞、未伪造情绪结果）；
+    ③ **三条 fail-closed 读数**（无 provider / 预算耗尽 / cassette miss）由
+       `tools/emotion_fallbacks_probe.py` 给出（cmd: `python3 v0_skeleton/tools/emotion_fallbacks_probe.py
+       --kernel-root v0_skeleton/kernel --pack v0_skeleton/districts/xingfu-xiaoqu --ticks 3`，workdir `<ws>/02_source`）
+       ⇒ exit 0 / `all_pass = true` / 三条臂 reason 分别 `CapabilityError`(15) / `on_budget_exhausted`(15) / `CassetteMiss`(15)。
+    ④ **判定更正**：r1 的 `PASS` 应读作「实现存在、**当时无入口、未取证**」；r3 起为**有读数的 PASS**。
+
+================================================================================
+[AC-3.4 · 读记忆改变可观察行动]
+================================================================================
+  主判据（M-15：落在 npc.action / target_entity 序列上，memory_influence 只作辅助字段）:
+    utility_ranking **独立复算**：单测逐条用 utility.score_actions 的原始分 + memory_influence.by_action
+    重算前 3 名并按同一 tie-break 排序 ⇒ 与事件 payload 的 utility_ranking **逐项相等**（≥5 条）
+    memory_influence.read == true（记忆链已接线时）
+  可观察行动差异的**事件解释链**（AC-4 段给出完整链：经历 → 记忆 ref → 决策 → 行动）
+  判定: **PASS**
+
+================================================================================
+[AC-4 · 对照场景]
+================================================================================
+  cmd(workdir <ws>): PYTHONDONTWRITEBYTECODE=1 python3 02_source/v0_skeleton/tools/contrast_scenario.py \
+      --kernel-root 02_source/v0_skeleton/kernel --pack 02_source/v0_skeleton/districts/xingfu-xiaoqu \
+      --seed 20260921 --ticks 480 --short-ticks 120 --json spikes/m52-contrast/ac4-contrast.json
+  exit 0 / all_pass = true
+  三条对照臂: A 无经历·短(120) / B 无经历·长(480) / C 有经历·同(480)；三臂内核记忆写入**一律关闭**
+  注入对象选择规则（显式公布，非事后挑数）: 先用 B 统计「注入动作进入 utility_ranking 前 3 但不是第 1」的次数
+    ⇒ npc-001 19 / npc-002 62 / **npc-003 152（选中）**；计数全 0 ⇒ 如实报 skipped_no_observable_target
+  判据读数:
+    tick_count_is_not_the_cause            ✅ 同窗口内 A 与 B 的 npc.action 序列逐字节相同（597 条）
+    experience_effect                      ✅ 窗口内 C 与 B 首个分歧 tick = 90
+    experience_effect_exceeds_tick_effect  ✅ 窗口内 |C−B| = 0.038526 > 0 且 |A−B| = 0
+    no_spontaneous_healing                 ✅ 无经历臂 B: top branch 0.319583 ≤ 0.60；收敛程度 −0.001667（|·| ≤ 0.05）
+  事件解释链（逐字）:
+    关键经历 {npc_id: npc-003, kind: walk, importance: 0.95}
+      → 记忆 ref ["episode:walk@ref=1"]（by_action {"walk": 0.19}，utility_delta 0.19）
+      → tick 90 决策（chosen_action=walk, bt_branch=work, dominant_need=esteem）
+      → 可观察行动: 有经历 walk(target=courtyard-01) vs 无经历 work(target=courtyard-01)
+  证据: spikes/m52-contrast/ac4-contrast.json · spikes/m52-evidence/ac4-contrast.txt
+  判定: **PASS**
+
+================================================================================
+[AC-6 · 跨区扩展设计与接口（本轮只交付设计 + 接口）]
+================================================================================
+  设计（只读交付）：01_architecture_design.md §11.1 C-3（v2 修订节，**以冻结契约为准**）
+  接口判据（只读 pack 数据、**内核零改动**）:
+    cmd(workdir <ws>/02_source): PYTHONDONTWRITEBYTECODE=1 python3 v0_skeleton/tools/check_identity_continuity.py \
+        --pack-a v0_skeleton/districts/xingfu-xiaoqu-xuqin --npc-a npc-006 \
+        --pack-b <ws>/spikes/m52-ac6/xingfu-xiaoqu-xuqin-mirror --npc-b npc-006 \
+        --positive-pack v0_skeleton/districts/xingfu-xiaoqu-xuqin \
+        --negative-pack v0_skeleton/districts/xingfu-xiaoqu-north
+    exit 0 / 读数: continuous=true, person_a=person_b="person-xuqin", kernel_change_required=false,
+                  probe_ok=true（两例均命中）
+      **正例**（两个 pack 的档案声明同一 person_id ⇒ 识别为同一人物）: fired=true
+      **反例**（复制式第二街区 xingfu-xiaoqu-north 换了 pack_id 但未声明 person_id 对齐 ⇒ 必须判不连续）: fired=true
+    **反例的独立读数**（另一条命令，exit 1 = 正确地判为「不连续」）:
+      --pack-a v0_skeleton/districts/xingfu-xiaoqu --npc-a npc-001 --pack-b .../xingfu-xiaoqu-north --npc-b npc-001
+      ⇒ continuous=false（person_a=person_b=null）
+    证据: spikes/m52-ac6/ac6-positive.json · ac6-negative.json
+  身份口径: person_id 是**人物级声明**（落在 pack 数据里）；**未**使用 <pack_id>:<npc_id> 这类把身份绑在 pack 上的键；
+    红线重述 = 「**用复制包宣称人物跨区连续**」，不是「复制目录」。
+  登记: district.pack.spec.md §3 / ADR-008 / R10（test_second_district_requires_no_kernel_change）**本轮零改动**
+  判定: **PASS**（设计与接口交付；本轮**不实现**跨区运行时）
+
+================================================================================
+[AC-7 · 现实事件 → NPC 生成：方案 + 可执行闸门]
+================================================================================
+  方案（只读交付）：01_architecture_design.md §9（来源 / 核实 / 虚构化 / 时间线检查 / 闸门）
+  闸门判据:
+    cmd(workdir <ws>/02_source): PYTHONDONTWRITEBYTECODE=1 python3 v0_skeleton/tools/check_npc_admission_gate.py \
+        --main-pack v0_skeleton/districts/xingfu-xiaoqu --proposal-pack v0_skeleton/districts/xingfu-xiaoqu-xuqin
+    exit 0 / 读数: gate_ok=true, probe_ok=true
+      主包 npcs 计数 = 5（期望 5）✅
+      主包 pack.sig sha256 = 844f7606d5b548517a1af3a052bf882b7e38563297a644bcd70e1bd3dafcb87b
+        （**冻结锚**；与 /tmp/m52-ref 的同名文件 sha256 逐字节相同 ⇒ 主读数包未被改动）✅
+      提案包 npcs 计数 = 1 ✅；提案包每个 NPC 的 source_facts 非空 ✅
+      负例: extra_npc（多加一个 NPC）⇒ 计数判据必红 fired=true；
+            npc_without_source（清空 source_facts）⇒ 来源标注判据必红 fired=true
+    证据: spikes/m52-ac6/ac7-gate.json
+  判定: **PASS**
+
+================================================================================
+[CHR 出处可复算（Raven M-17 补偿控制）]
+================================================================================
+  cmd(workdir <ws>/02_source): PYTHONDONTWRITEBYTECODE=1 python3 v0_skeleton/tools/check_chr_provenance.py \
+      --dossiers fidelity/05-character-dossiers.md --npc v0_skeleton/districts/xingfu-xiaoqu-xuqin/npcs/npc-006.json
+  exit 0 / 读数: provenance_ok=true, probe_ok=true
+    事实册已核实 CHR 编号 21 个；UNVERIFIED 编号 = ["CHR-19"]（年龄 / 生前身份，**未**被引用）
+    source_facts（17 条）与 source_fact_map（19 条设定）编号集合**一致**
+    负例: forged_id（CHR-99）⇒ 必红 fired=true；unverified_id（引用 CHR-19）⇒ 必红 fired=true
+  证据: spikes/m52-ac6/chr-provenance.json
+  判定: **PASS**（**不修**红线判据本身，遵守 PM 裁决 m5-11）
+
+================================================================================
+[W6 · 徐琴提案包（独立 pack，独立读数）]
+================================================================================
+  新建 8 文件: pack.json / world.seed.json / npcs/npc-006.json / schedules/weekday.json /
+    tasks/task-003.json / buildings/kitchen-1052.json / worldview.json / assets/manifest.json + 重签 pack.sig
+  cmd(workdir <ws>/02_source): python3 v0_skeleton/tools/pack_sign.py <pack>       exit 0（entries=8）
+                              python3 v0_skeleton/tools/verify_pack.py <pack>      exit 0（OK 8 files）
+                              PYTHONPATH=v0_skeleton/kernel python3 -m deephealing_kernel validate --pack <pack>
+                                                                                   exit 0（npcs=1, entities=5, tasks=1）
+                              python3 v0_skeleton/tools/schema_validate.py worldview.schema.json <pack>/worldview.json
+                                                                                   exit 0
+  ⇒ **纯数据新增、内核零改动**（满足冻结 AC-6 迁移路径）
+  独立 AC-10 读数（**并列公布，不混成一个数**）:
+    cmd: measure_behaviour_diversity.py --pack …/xingfu-xiaoqu-xuqin
+    exit 1 / 读数: 10-a 0.4979 ✅ / 10-b 0.4979 ✅ / 10-c 4 ✅ / 10-d-1 **0.0035 ❌** / 10-d-2 **0 ❌**；
+                   pack_npcs=1, npcs_in_decisions=1
+    **口径说明（不得混读）**: 该包只有 1 个 NPC ⇒ 10-d-1 / 10-d-2（「街区活跃度」类）**结构上不具备适用面**；
+      10-a/10-b 在单 NPC 包内等价（safety ↔ restore 一一对应）。**主读数仍取仓库原包（5 NPC）**。
+    **内容侧调整如实登记**: 初版 need_weights（safety 1.3 / belonging 1.2 / self_act 0.9）⇒ 10-a/10-b = **0.8139**
+      （单分支支配）；改为 safety 1.0 / belonging 0.95 / self_act 1.5 ⇒ **0.4979**，并**重签 pack.sig**。
+      **未**为凑绿改阈值（阈值逐字不动）。
+  证据: spikes/m52-ac10/ac10-xuqin.json · spikes/m52-evidence/ac10-xuqin.txt
+  判定: **PASS（有 GAP 子项）** —— 包本身与判据齐备；10-d-1 / 10-d-2 在该包上**结构不可达**，如实登记（见 06 §5.2）
+
+================================================================================
+[门禁入口 · verify_specs.sh 新增 §15 / §16 / §17]
+================================================================================
+  cmd(workdir <ws>/02_source): bash verify_specs.sh
+  exit 0 / 读数: **verify_specs: OK (158 checks passed, 0 skipped)**（起点 138 ⇒ 新增 20 项）
+  §15 AC-10（5 条判据 + 逐 NPC 公布 + ac10_probe 自证）        PASS（含 self-proof cases=2 fired=2 back_to_baseline=true）
+  §16 AC-4 对照场景                                            PASS（解释链 tick=90 / npc-003）
+  §17 新 pack 独立判据（pack.sig / kernel validate / worldview schema / AC-6 / AC-7 / CHR + 各自负例） PASS
+  编号纪律: 新增小节一律**追加在正文末尾**并**同步登记到文件头索引**（已登记 15/16/17 三行）
+  前置输入缺失 ⇒ 记 **SKIP + 显式标记**（不记 PASS）：本机三处依赖都在位，故 SKIP=0
+  证据: spikes/m52-evidence/verify_specs.txt
+  判定: **PASS**
+
+================================================================================
+[AC-9 · 真实仓库零改动]
+================================================================================
+  开工: git -C <repo> status --porcelain | wc -l ⇒ 0
+  收尾: 见本段末尾（冻结面重取之后复读一次）
+  判定: 待收尾复读（开工读数已 0）
+
+================================================================================
+[残渣 · 02_source/**]
+================================================================================
+  cmd: find <ws>/02_source \( -name '__pycache__' -o -name '.pytest_cache' -o -name node_modules -o -name dist \)
+  exit 0 / 读数: **0**
+  （所有 pytest 调用一律 PYTHONDONTWRITEBYTECODE=1 + -p no:cacheprovider；工具一律 sys.dont_write_bytecode）
+  判定: **PASS**
+
+================================================================================
+[AC-8 · 全量 pytest（完整工作根）+ 失败集差集 + 逐条定性]
+================================================================================
+  cmd(workdir <ws>/02_source/v0_skeleton/kernel): PYTHONDONTWRITEBYTECODE=1 python3 -m pytest -q -p no:cacheprovider -rf
+  exit 1 / 读数: **2 failed, 209 passed in 1133.31s (0:18:53)**
+  证据: /tmp/m52-notes/pytest-final.txt（副本 spikes/m52-evidence/pytest-final.txt）
+
+  **口径声明（Raven GAP-1 / L-3）**：基线 = 仓库原样 + 完整 v0/ 树，PM 登记 **194 passed / 0 failed**。
+  本树采集 **211 个用例** = 193（Raven 按 `def test_` 计数，与 PM 的 194 分母**不可独立复核**，如实标注口径）
+  + 17（本轮新增 `test_m52_alive_world.py` 6 + `test_m52_memory_chain.py` 11）+ 1（既有 parametrize 展开）。
+  **失败集差集 = 2**（基线失败集为空 ⇒ 差集即本树失败集），逐条定性如下。
+
+  | # | 条目 | 定性 | 独立判定（机制是否回退） |
+  |---|---|---|---|
+  | 1 | `test_task_adaptation.py::test_default_run_without_intents_is_bit_identical` | **AC-M4-8⑥ 允许的基线数值漂移**（真回归？否） | ① 新旧值：`state_hash` `0d79e5f3…` → **`8603dedb…`**；`chain_tail` `81669e96…` → **`c79003ce…`**；② **确定性机制未回退**：本用例自身两条自证在重登记后仍绿 —— 两次独立运行逐位一致 + 换 seed ⇒ 基线必须改变；③ 归因：同一脚本跑**对照树** `/tmp/m52-ref`（改前）得 `0d79e5f3…` / `81669e96…`，**与旧登记常量逐位相同** ⇒ 漂移确由本轮改动引起 |
+  | 2 | `test_live_observation.py::test_pace_is_identical_with_zero_and_two_observers` | **环境抖动**（CPU 争用下的墙钟容差） | 仪表读数（3 次**定向复跑**，`-s`）：run1 0 观察者 98/期望 100.6、2 观察者 109/107.5 ⇒ **pass**；run2 106/106.8、108/107.2 ⇒ **pass**；run3 112/106.8（容差 3.2）✗、104/107.2 ✗ ⇒ **fail**。**2/3 通过、1/3 失败**，失败形态 = 墙钟窗口 2.1357s / 2.1444s 下 tick 增量偏离 ±5 > 容差 3.2（该用例 docstring 自述「固定阈值在 CPU 争用下假红」）。**机制未被本轮改动触及**（改动面 = decision.py / tick.py / ecs.py / events.py / memory/store.py；节流推进在 `world_clock.py` + `live.py` 的 advance loop）。**不以「没复现」当关闭依据** —— 给出上述 n 次读数与失败形态。 |
+
+  **本轮另修掉 3 条「不在 §7.4 清单里」的失败（真回归，已修）**：首轮全量读数为 **10 failed / 201 passed**，
+  其中 3 条是**本轮改动引入的真回归**，逐条根因与修法：
+  | 条目 | 根因 | 修法（**断言一字未动**） |
+  |---|---|---|
+  | `test_autonomous_decision.py::test_injection_point_is_still_the_decision_stage` | 决策阶段入口按冻结接口新增**关键字参数** `memory_view`（设计 §5.3），M4 对抗夹具的替换函数签名不含该参数 ⇒ `TypeError` | 替换函数加 `**kwargs` 并透传（不变式「`tick_mod.autonomous_decide` 仍可被替换」不变） |
+  | `test_determinism_replay.py::test_replay_detects_wall_clock_leak` | 同上（`leaky` 夹具签名） | 同上 |
+  | `test_determinism_replay.py::test_replay_detects_unordered_iteration` | 同上（子进程驱动器的 `unordered` 夹具签名） | 同上 |
+
+  **另 6 条 §7.4 清单项的最终状态：已全部转绿**（首轮红 ⇒ 定位为**夹具陈旧**、非产品回退）：
+  | 条目 | 根因（**独立实测归因**） | 处理 |
+  |---|---|---|
+  | `test_cassette_miss_cli::test_normal_replay_with_complete_cassettes_stays_green` | C1 使需求压力更快落到平衡点 ⇒ `COGNITION_TREE_SPEC` 第一条 `sequence` 的门 `needs_pressure >= 0.30` 在 60/100 tick 窗口**不再成立** ⇒ 树退化为「只调 `emotion.appraise`」⇒ 能力调用 **15 → 5** | **补产物后重跑**（任务书 §3 W7 明文）：把录制/回放窗口收敛到 `COGNITION_TICKS = 5`（每 NPC 各占一个 tick ⇒ 不撞 `per_tick_calls`；此时需求压力仍高 ⇒ 三条槽位**真的**被调用）；**断言一字未动**，且新增「录制窗口内 `relation.infer` 必须被调用」的前提断言防再次静默退化 |
+  | `test_cassette_miss_cli::test_replay_with_missing_cassettes_fails_closed_at_command_layer` | 同上（首 miss 由 `intent.plan` 变成 `emotion.appraise`） | 同上 ⇒ 首 miss 恢复为 `intent.plan`，`degraded_reasons == ["intent.plan"]` 原断言通过 |
+  | `test_cassette_no_backfill_r5` ×4（`FileNotFoundError`） | 同上：录制窗口内 `relation.infer` **未被调用** ⇒ 录制产物**缺失**（**不是**守卫回退） | 同上 ⇒ 4 条全部转绿（含「零回填逐字节」与「重复 key 判红」两条核心判据，以及退回 F-1 守卫的负例自证） |
+
+  独立归因证据（诊断脚本 `/tmp/m52-tools/diag_cognition.py`，同一命令跑两棵树）：
+    对照树 `/tmp/m52-ref`：能力调用 **15**、slot 序 `intent.plan, emotion.appraise, relation.infer × 5`、
+      cassette 文件 `emotion.appraise__remote_api / intent.plan__deterministic_rule / intent.plan__remote_api / relation.infer__deterministic_rule`
+    交付树：能力调用 **5**、slot 序 `emotion.appraise × 5`、cassette 文件仅 `emotion.appraise__remote_api`
+  ⇒ 归因链完整、可复算。
+
+  **由此产生的 MEDIUM 发现（登记，交 r2 / PM）**：C1 让需求压力长期停在 ~0.06（远低于 0.30 的门），
+  使 `cognition` 层在长跑里**退化为只调 `emotion.appraise`**（模型/能力层几乎不参与）——这与「让世界活起来」
+  的体验目标相冲突。**本轮不改门限**（改它属设计决策，且会改动冻结的 `COGNITION_TREE_SPEC` 语义），
+  只登记为 **MEDIUM / 待裁决**。
+
+  重登记表（新旧值 + 理由）：
+  | 常量（`tests/test_task_adaptation.py`） | 旧值（M4） | 新值（M5.2 r1） | 理由 |
+  |---|---|---|---|
+  | `M4_BASELINE_STATE_HASH_300` | `0d79e5f349cad67d8ebc623fb7e49a17082e0170d0b5a5c3de62715ea42a2dca` | `8603dedb8cdb4a1799c80c8061c2e056025164a0cf16272a39020a442774c15c` | C1/C2/C3 + 关系演进**改变了行为** ⇒ AC-M4-8⑥ 允许的数值漂移；**机制未回退**（两条自证仍在） |
+  | `M4_BASELINE_CHAIN_TAIL` | `81669e9685e5dec845d0d5060321c0eba66939063997941c5be5f2e0d97d8cb6` | `c79003ce8ef38959ad09270ec20a1206d909cebb45c54d0b27c2b9b2070d8174` | 同上 |
+  | `M4_BASELINE_*`（**未动**） | — | — | `test_kernel_digest` 是**源码**摘要（`spikes/kernel-baseline/`，files=24），比的是当前树的两个副本 ⇒ **不会因本轮改动而变**；本轮**未**动 `spikes/kernel-baseline/**`（M-1） |
+
+  重登记后的定向复跑:
+    cmd(workdir <kernel>): PYTHONDONTWRITEBYTECODE=1 python3 -m pytest tests/test_task_adaptation.py -q -p no:cacheprovider
+    exit 0 / 读数: **6 passed**
+  证据: spikes/m52-evidence/task-adaptation-after-reregister.txt
+
+================================================================================
+[AC-9 · 真实仓库零改动]
+================================================================================
+  开工: git -C <repo> status --porcelain | wc -l ⇒ **0**
+  收尾: git -C <repo> status --porcelain | wc -l ⇒ **0**（见冻结面段末尾复读）
+  判定: **PASS**
+
+================================================================================
+[F7 · fd 归属核对 + 有界回收（W8 / M-9 / GAP-3）]
+================================================================================
+  位置：`02_source/v0_skeleton/kernel/deephealing_kernel/live.py`（accept 层 + handler 收尾）。
+  探针（**自研**，regime 逐字沿用 M4 参考探针 `m4-r4-arch-f7-probe-reference.py`）：
+    `spikes/m52-f7/f7_observer_load.py`；读数落 `spikes/m52-f7/f7-observer-load*.json` + 每臂 `*.out`。
+
+  ### F7-1 判据与阈值（M-9 ①）
+  `exit 全 0` + `无 Errno 24` + `无 Fatal Python error` + `产物齐` + **`fd_total_peak < 1024`**（数字阈值）。
+  仪表（M-9 ③）：`fd_total_peak` / `fd_tcp_peak` / `thread_peak` / `served_200` / `errno24` / 产物清单。
+
+  ### F7-2 规范口径 12 臂（M4 参考 regime：4 个无间隔 churn 观察者）
+  cmd(workdir <ws>/spikes/m52-f7):
+    PYTHONDONTWRITEBYTECODE=1 python3 <ws>/spikes/m52-f7/f7_observer_load.py --runs 3 --modes live,run --regimes arch,immediate
+  exit 0 / 读数 **`all_pass=True`（12/12 臂）**：
+    臂                     exit  fd_total_peak  fd_tcp_peak  served_200
+    live-arch-run0/1/2     0/0/0    45/45/46      6/5/6      54704/55315/57142
+    run-arch-run0/1/2      0/0/0    46/46/46      6/6/7      60428/65597/65589
+    live-immediate-run0/1/2 0/0/0   43/41/41      3/2/1      555/542/548
+    run-immediate-run0/1/2 0/0/0    43/41/43      3/1/3      458/438/421
+    全部 `errno24=false` / `fatal_python_error=false` / `artifact_ok=true`（`live_state.json` / 摘要 JSON 齐）。
+  证据: spikes/m52-evidence/f7-canonical-12arms.txt（= /tmp/m52-notes/f7-final2.txt）
+
+  ### F7-3 **该 regime 不区分修复前后**（如实记，不包装）
+  同一 12 臂在 r5 加固**之前**（r4 代码 + accept 层配额）跑过一遍：`fd_total_peak 43~66`、`all_pass=True`
+  ⇒ **M4 参考 regime 下「不修」也绿**（该 regime 的并发上限 = 4 条客户端线程 ⇒ fd 天花板由客户端决定）。
+  因此**不能**用这个 regime 声称「判据有牙」。`fd_total_peak 4089` 那条历史读数**在本树复现不出来**。
+
+  ### F7-4 fd 归属核对（**能红的一侧**，W8 的「反例」要求）
+  做法：`hold` regime —— 把连接**开满并保持**（正是 M4 文档化的通路：
+  「空闲 keep-alive 连接不占在途额度，却一直占 1 线程 + 1 fd」）。
+  `--observers 300 × 5 连接/线程 = 1500 条并发连接`（`ulimit -n` = 4096，与 M4 实测 4089 同量级）。
+  | 树 | 改动 | fd_total_peak | fd_tcp_peak | pass |
+  |---|---|---|---|---|
+  | `/tmp/m52-f7-prefix-*`（**pre-fix 副本**） | `LiveHTTPServer.process_request` 退回 r3（accept 层不判配额） | **1540 / 1541** | 1501 / 1501 | **false ⇒ 判据变红** |
+  | 交付树（accept 层配额生效） | r4 配额 + r5 回收 | **73 / 73** | 33 / 34 | **true ⇒ 判据变绿** |
+  ⇒ ① 判据**有牙**（同一条命令、同一阈值，仅改「配额是否生效」即红绿分明）；
+     ② **fd 归属**：泄漏通路 = **空闲保持连接**（不是 accept churn），承重机制 = **accept 层连接配额**
+        （配额 32 vs pre-fix 实测 1541 ⇒ 与 M4「配额 32 / 实测 4089」同一归因）。
+  证据: spikes/m52-evidence/f7-hold-prefix.txt、f7-hold-delivery.txt
+  附：`--observers 200` 的 churn 放大（arch regime）两侧都绿（pre-fix 56/57、交付 45/46）
+      ⇒ 再次说明「churn 并发」不是承重变量，**「连接是否被保持」才是**。
+
+  ### F7-5 r5 加固三处 + 独立单测（**pre-fix 必红**）
+  加固（`live.py`，与既有并发上限同批；见 ADR-019）：
+    ① `LiveHTTPServer.shutdown_request()` 覆写：`close_request()` **之后**才 `release_accept()`
+       —— 把 r4「归还早于 fd 关闭」的记账缺口封死（配额语义 = 同时打开的 fd 上限）；
+    ② handler `setup()` 统一设**写超时**（r4 只在 SSE 路径设）⇒ 任何 flush 受 `WRITE_TIMEOUT_S` 约束；
+    【更正 · r3 / FIX-2】**该条从未落地，且无需落地**：`setup()` 里只有 r4 之前就存在的
+    `self.connection.settimeout(REQUEST_IDLE_TIMEOUT_S)`（`settimeout` 读写同限、取值 5.0 ==
+    `WRITE_TIMEOUT_S`）⇒ 写路径本来就受同一超时约束；r5 对 `setup()` 的改动**只有 docstring**。
+    ⇒ **实际代码改动只有 ① ③ 两处**（Sentinel MEDIUM-1 / Raven L-1；ADR-019 已就地更正）。
+    ③ `LiveHTTPServer.handle_error()` 覆写：handler 异常**只计数**
+       （`/live/health.handler_errors` + `handler_error_kinds`），**不倒 traceback 进 stderr**。
+  单测：`tests/test_m52_f7_fd_accounting.py`（4 条不变式）
+    cmd(workdir <ws>/02_source/v0_skeleton/kernel):
+      PYTHONDONTWRITEBYTECODE=1 python3 -m pytest tests/test_m52_f7_fd_accounting.py -q -p no:cacheprovider
+    exit 0 / 读数 **4 passed**（交付树）
+    exit 1 / 读数 **2 failed, 2 passed**（**pre-fix 副本**：同文件拷进去跑）
+      - `test_quota_is_released_after_the_fd_is_closed` ⇒ 红（`close_request` 时 `http_connections` 已为 0）
+      - `test_handler_error_is_counted_and_never_printed` ⇒ 红（实测 **444 字节 traceback 落 stderr**）
+  证据: spikes/m52-evidence/f7-unit-tests.txt、f7-unit-prefix.txt
+
+  ### F7-6 r5 的副作用读数（可量化）：stderr 从 ~100MB/臂 降到 0
+  | 树 | 单臂 stderr | 12 臂合计 |
+  |---|---|---|
+  | pre-r5（加固前） | 90~127 MB（`live-arch-run0` = 117,839,780 B） | 761 MB（已 gzip 归档 = 11 MB） |
+  | post-r5（交付树） | **0 B**（16 臂全部 0 B） | **0 B** |
+  证据: spikes/m52-f7/pre-r5-stderr/（`*.err.gz` + 原始 `*.out`，**压缩归档，未删**）
+       ；post-r5 的 0 字节 `*.err` 在 `spikes/m52-f7/`
+
+  ### F7-7 仪器缺口（如实披露）
+  `thread_peak` 恒为 **0**：探针用 `ps -o thcount= -p <pid>` 采样，**macOS 的 `ps` 不支持 `thcount`**
+  ⇒ 该列**不可用**（不是「线程数为 0」）。判定不依赖它（判据只用 fd 峰值 + exit + errno24 + 产物）。
+
+  ### F7-8 判定（按更严的一侧关，设计 §10 B-3）
+  - 规范口径 12 臂：**PASS**（fd_total_peak 41~46 ≪ 1024；exit 全 0；无 Errno 24；无 SIGABRT；产物齐）。
+  - fd 归属核对：**判据有牙**（pre-fix 1540/1541 红 vs 交付 73 绿）。
+    【更正 · r3 / FIX-4】**上面这句的归因不成立**：该 pre-fix 红读数是 **r3 形态**（把 r4 的 accept
+    层配额**一并**退回）；**只退 r5** 时 `hold` 仍 `all_pass=true`（r3 复跑读数见本文件 M5.2-r3 段 FIX-4）
+    ⇒ `hold` **对 r5 无判别力**，**不得**用它声称「r5 加固有效」。正确口径：
+    **r5 由单测 ①② 钉住；fd 天花板由 r4 的 accept 配额兜住**（Sentinel MEDIUM-2 / Raven §2.6）。
+  - **GAP（如实记，不包装成完成）**：`fd_total_peak 4089` 那条**历史读数**在本树（r4+r5）**复现不出来** ——
+    即「M4 当时是怎么把 fd 堆到 4089 的」缺一个**可复现的最小负载脚本**（M4 只留了参考探针，
+    而参考探针的 churn 并发只有 4，天花板由客户端决定）。要把这条彻底关掉，还差：
+    **一份记录 M4 当时客户端并发/连接保持形态的负载脚本**，或**当时的 fd 采样原始数据**。
+    本轮的替代证据 = F7-4 的 hold regime（同一归因、可红可绿），但它**是 r1 自建的放大，
+    不是 M4 当时的负载**。
+
+================================================================================
+[AC 逐条回填（M5.2-r1）]
+================================================================================
+  快照（开工）
+    find 02_source -type f | wc -l ⇒ 179（= M5.1 的 02_source 文件数；收尾 197 = +18 本轮新增/改写）
+    diff -rq <repo>/v0/02_source/v0_skeleton <ws>/02_source/v0_skeleton ⇒ 仅 tools/ 差异（F-12 口径）
+    git -C <repo> rev-parse --abbrev-ref HEAD ⇒ develop ；rev-parse --short HEAD ⇒ 1261436
+    git -C <repo> status --porcelain | wc -l ⇒ **0**（开工）
+    起点 verify_specs.sh --quiet ⇒ 读数见 spikes/m52-evidence/verify_specs-start.txt
+    起点全量 pytest ⇒ 见 AC-8 段（基线 194 passed / 0 failed，PM 登记）
+
+  | 项 | 判定 | 命令 / workdir | exit | 读数与证据（绝对路径） |
+  |---|---|---|---|---|
+  | 快照 | **PASS** | 见上 | — | `03` 本段首 + `spikes/m52-evidence/` |
+  | AC-10 RED | **PASS** | `python3 v0_skeleton/tools/measure_behaviour_diversity.py --kernel-root … --pack districts/xingfu-xiaoqu`（workdir `<ws>/02_source`） | 1 | 10-a **96.97%** ❌ / 10-b **97.54%** ❌ / 10-c 4 ✅ / 10-d-1 **0.76%** ❌ / 10-d-2 **0/5** ❌；逐 NPC 室外 `0 / 0 / 3.12% / 0.69% / 0`；`spikes/m52-ac10/ac10-red.json` |
+  | AC-10 GREEN | **PASS** | 同上（C1+C2+C3 后） | 0 | 10-a **30.31%** ✅ / 10-b **24.42%** ✅ / 10-c 4 ✅ / 10-d-1 **32.50%** ✅ / 10-d-2 **2/5** ✅；逐 NPC 室外 `18.75% / 61.81% / 62.85% / 17.01% / 2.08%`；`spikes/m52-ac10/ac10-green.json` |
+  | AC-10 有牙 | **PASS** | `python3 v0_skeleton/tools/ac10_probe.py`（workdir `<ws>/02_source`；副本隔离） | 0 | `probe_ok=true` `cases=2 fired=2 back_to_baseline=true`；`spikes/m52-evidence/ac10-probe.txt` |
+  | C1/C2/C3 | **PASS** | `pytest tests/test_m52_alive_world.py -q -p no:cacheprovider`（workdir `<ws>/02_source/v0_skeleton/kernel`） | 改前 1 / 改后 0 | 改前 **3 failed, 3 passed**（三条主判据红、三条不变式绿）→ 改后 **6 passed**；`spikes/m52-evidence/c1c2c3-red.txt` / `c1c2c3-green.txt` |
+  | AC-3 链 | **PASS** | `pytest tests/test_m52_memory_chain.py -q -p no:cacheprovider`（同 workdir） | 0 | **11 passed**；`memory_store=None` ⇒ 事件流逐字节 diff == 0；`write_enabled=False` ⇒ 不写库仍 emit（`ref="none"`）；`memory.written` 过冻结 schema（去掉 `ref` 的副本注入必红）；`spikes/m52-evidence/memchain-pytest.txt` |
+  | AC-3.4 | **PASS** | 同上 | 0 | `npc.decision.payload.memory_influence.read == true`；`utility_ranking` 由 `by_action` **独立复算一致**；主判据落在 `npc.action` / `target_entity` 序列差异（M-15） |
+  | AC-4 | **PASS** | `python3 v0_skeleton/tools/contrast_scenario.py --kernel-root …`（workdir `<ws>/02_source`） | 0 | 四判据 `all_pass=true`：A≡B 逐字节（597 条）/ C 与 B 首个分歧 tick **90** / `|C−B|=0.0385 > |A−B|=0` / 无经历臂 B 收敛程度 **−0.0017**（无自发治愈）；解释链见 §W5；`spikes/m52-contrast/ac4-contrast.json` |
+  | AC-8 | **部分闭合（见下）** | `pytest -q -p no:cacheprovider -rf`（workdir `<ws>/02_source/v0_skeleton/kernel`） | 1 | **2 failed, 209 passed**（pre-r5 树读数，逐条定性见 AC-8 段）；**post-r5 全量复跑在交班时仍在进行** ⇒ 见「未闭合项」 |
+  | AC-9 | **PASS** | `git -C <repo> status --porcelain | wc -l` | 0 | 开工 **0** / 收尾 **0**；HEAD `1261436`（develop）；**未** commit / push / PR / 部署 |
+  | F7 | **PASS + 残留 GAP** | `python3 <ws>/spikes/m52-f7/f7_observer_load.py --runs 3 --modes live,run --regimes arch,immediate` | 0 | 12/12 臂 `all_pass=True`（fd_total_peak 41~46 ≪ 1024）；`hold` regime 判据**有牙**（pre-fix **1540/1541** 红 vs 交付 **73** 绿）；残留 = M4 的 4089 读数在本树复现不出来 |
+  | 冻结面 | **PASS** | `python3 <ws>/V0_M52.gen.py` / `spikes/m52-frozen/retake_m4_m5.py` ⇒ `shasum -a 256 -c` | 见冻结面段 | 三份清单 0 非 OK；均标 **SUPERSEDED（r1 中间版）** |
+  | 红线 | **PASS** | `bash verify_specs.sh --quiet`（workdir `<ws>/02_source`） | 0 | `redline scan clean (non-whitelisted l0_verbatim == 0)`；**未**开新红线轮（PM m5-11） |
+  | 门禁总览 | **PASS** | `bash verify_specs.sh`（workdir `<ws>/02_source`） | 0 | **PASS=158 FAIL=0 SKIP=0**；AC-10 五条全 true（10a=0.3031 / 10b=0.2442 / 10c_min=4 / 10d1=0.325 / 10d2=2/5）；`spikes/m52-evidence/verify-final2.txt` |
+  | 残渣 | **PASS** | `find <ws>/02_source -name '__pycache__' -o -name '.pytest_cache' -o -name 'node_modules' -o -name 'dist'` | 0 | **零命中**（py_compile 产生的 `__pycache__` 已 mv 至 `/tmp/m52-attic/`） |
+
+  说明：`verify_specs.sh` 第一次收尾复跑曾 **FAIL=1**（`manifest.txt does not cover file:
+  v0_skeleton/kernel/tests/test_m52_f7_fd_accounting.py`）⇒ 补登 manifest 后复跑 **PASS=158 FAIL=0 SKIP=0**。
+  该 FAIL 是门禁**真的在起作用**的正面证据（新增交付面文件必须进清单）。
+
+================================================================================
+[未闭合项（交班时如实登记）]
+================================================================================
+  1. **AC-8 的 post-r5 全量 pytest 复跑未完成**（预算耗尽，进程在交班时仍在运行）。
+     - 已闭合的部分：pre-r5 树全量 **2 failed / 209 passed**（两条逐条定性 + 重登记表见上）；
+       post-r5 **定向**复跑全绿：`tests/test_live_observation.py` **18 passed**、
+       `tests/test_m52_f7_fd_accounting.py` **4 passed**、`tests/test_task_adaptation.py` **6 passed**、
+       `tests/test_m52_memory_chain.py` **11 passed**、`tests/test_m52_alive_world.py` **6 passed**。
+     - 未闭合的部分：r5 改动（`live.py`）+ 新增 F7 单测（+4 用例）之后的**一次干净全量读数**。
+     - 复现命令（workdir `<ws>/02_source/v0_skeleton/kernel`）：
+       `PYTHONDONTWRITEBYTECODE=1 python3 -m pytest -q -p no:cacheprovider -rf`
+     - 期望：用例数 **215**（211 + 4 新增）；失败集**只允许**含 pre-r5 已定性的两条
+       （`test_task_adaptation` 已重登记 ⇒ 应转绿；`test_live_observation::test_pace_is_identical_with_zero_and_two_observers`
+       为环境抖动，可能仍偶发红）。**任何新增失败都必须逐条定性后才可放行。**
+  2. **F7 残留 GAP**：见 F7-8（M4 的 4089 读数缺可复现负载脚本）。
+  3. **AC-8 新增 MEDIUM 发现**：C1 使需求压力长期 ~0.06 ⇒ cognition 层退化为只调 `emotion.appraise`（见 06 §2.3）。
+
+================================================================================
+[自审（必要自审，不替代 Sentinel / Raven 独立门禁）]
+================================================================================
+  - **正确性**：C1/C2/C3 各配「主判据 + 不变式」两条单测（改前 3 红 3 绿 → 改后 6 绿），
+    确保修的是语义而不是把断言改宽。
+  - **兼容性**：`memory_store=None` / `memory_view=None` 两条对拍臂事件行**逐字节 diff == 0** ⇒ 未接线路径零行为变化；
+    决策阶段入口新增的是**关键字参数**（`memory_view=None` 默认）⇒ 旧调用方不受影响。
+  - **安全**：`memory.written` payload **不含正文摘要**（只 `npc_id/layer/ref/kind/importance`）⇒ 正文不进日志；
+    红线 `primary_hits_total == 0` 未回退；无凭据进入任何产物。
+  - **错误路径**：能力通道失败 ⇒ 落 `emotion_fallbacks`（**不伪造**情绪结果）；无 registry ⇒ 零调用；
+    cassette miss ⇒ fail-closed（既有机制）。
+  - **并发 / 资源边界**：F7 的 accept 层配额 + 请求级配额 + r5 的归还点下移 / 写超时 / 异常只计数，
+    四条不变式单测钉住；`hold` regime 证明配额是承重机制。
+    【更正 · r3】「写超时」不是一处改动（见 F7-5 的更正）；四条不变式里 **③④ 是既有**、
+    r5 只被 **①②** 钉住；`hold` 证明的是 **accept 配额**（r4）承重，不是 r5（见 F7-8 的更正）。
+  - **已知未覆盖**：① post-r5 全量 pytest（见未闭合项 1）；② M4 的 fd 4089 复现负载（见 F7-8）；
+    ③ 徐琴包 10-d-1 / 10-d-2 结构不可达（单 NPC 包，需 PM 决策 B-1）。
+
+================================================================================
+[冻结面重取登记（W9 / M-12）]
+================================================================================
+  三份清单的采集面 / 生成器 / 自校验读数见本段之后的「冻结面」小节（由生成器输出回填）。
+  **r1 版为中间版**：r2 会改 `web/**`（在三份清单的采集面内）⇒ **最后写入者（r2）重取终版**，
+  r1 清单**不得**被当终版引用。
+
+================================================================================
+[冻结面重取（W9 / M-12）]
+================================================================================
+  生成器（**均不在采集面内**）：
+    - `V0_M52.gen.py`（M5.2 权威面；采集面 = `02_source/**` + `docs/**` + `spikes/m52-*/**`
+      + 根级 `03_artisan_self_test.log` / `06_v0_m52_self_test.md` / `fidelity/POINTER.md`）
+    - `spikes/m52-frozen/retake_m4_m5.py`（M4 口径 + M5 口径，各自沿用原版采集面与排除项）
+  r1 追加的排除项（**显式声明**）：`spikes/m52-*/runs/**/events.jsonl` —— 可复现的原始运行产物
+  （单臂 15~17MB × 12 臂 ≈ 200MB）；判据性读数落在面内文件 `spikes/m52-f7/*.out` 与
+  `spikes/m52-f7/f7-observer-load*.json`（fd 峰值 / exit / errno24 / 产物齐 全在该文件）。
+  另有 `spikes/m52-f7/pre-r5-stderr/*.err.gz`（pre-r5 的 90~127MB/臂 stderr，**gzip 归档保留，未删**）。
+
+  cmd（workdir `<ws>`）:
+    python3 V0_M52.gen.py
+    python3 spikes/m52-frozen/retake_m4_m5.py
+    shasum -a 256 -c V0_M52.sha256 V0_M4.sha256 V0_M5.sha256
+  读数：见 `spikes/m52-evidence/frozen-verify.txt`（三份清单 **0 非 OK**；清单 mtime 晚于交付面最后一次写入）。
+
+  **r1 版为中间版**：r2 会改 `web/**`（在三份清单的采集面内）⇒ **最后写入者（r2）重取终版**；
+  r1 清单**不得**被当终版引用。
+
+================================================================================
+§M5.2-r2 · AC-5 实机呈现 + W11 追溯链（artisan · 第二段实做 = 本轮**最后写入者**）
+================================================================================
+model: deepseek-v4.1-flash | 来源: 本派单进程 `hermes -p artisan chat --query-file
+  <ws>/.task-artisan-m52-r2.pointer.txt --oneshot --run-budget 7200`（pid 99008）；本遍**无换模型**，
+  全部实现与判定由该模型产出，无逐段换模型声明。
+写集自证（只改这些路径）：`02_source/v0_skeleton/web/**`（主写集）· `02_source/manifest.txt`（+1 行覆盖新文件）
+  · `spikes/m52-live/**`（脚手架 + 全部读数）· `03_artisan_self_test.log` / `06_v0_m52_self_test.md`（追加）
+  · `V0_M52.sha256` / `V0_M4.sha256` / `V0_M5.sha256`（终版重取）· `.artisan.progress.json`。
+  **未改** `kernel/**`、`districts/**`、`tools/**`（r1 冻结面）、`spikes/kernel-baseline/**`、
+  `spikes/s5-latency-calibration/**`、`spikes/m52-*` 里 r1 的产物（只读引用）、真实仓库。
+
+--------------------------------------------------------------------------------
+[开工三件事读数（r2）]
+--------------------------------------------------------------------------------
+  1) 进度文件：`bash <ws>/.squad_tools/write_progress.sh <ws> artisan <pct> "…"`（workdir `<ws>`，exit 0）
+     本遍按 **5 → 35 → 50 → 70 → …** 刷新；文件 = `<ws>/.artisan.progress.json`。
+  2) 模型冻结自证：见段首（`deepseek-v4.1-flash`）。
+  3) **无活写者 + 起点快照**：
+     - `cat <ws>/.task-artisan.pid` ⇒ **99008**；`ps -p 99008` ⇒ `hermes -p artisan chat
+       --query-file …r2.pointer.txt --oneshot --run-budget 7200`；本会话每条命令的 `PPID` 均为 **99008**
+       ⇒ 该 pid **指向我自己**（本派单进程），无第二个写者。gateway 侧同角色会话只许只读/建议（本遍未调用）。
+     - `git -C /Users/wooyinq/personal/deep-healing rev-parse --abbrev-ref HEAD` ⇒ `develop`；
+       `--short HEAD` ⇒ `1261436`；`status --porcelain | wc -l` ⇒ **0**（开工）。
+     - `find 02_source -type f | wc -l` ⇒ **197**（起点）→ **198**（收尾；本轮新增 1 个交付面文件）。
+     - `verify_specs.sh` **起点读数未在开工瞬间采集**（**如实登记，不补造**）：本遍只取到「web/** 已改 +
+       manifest 已补」之后的读数（见 AC 表「回归」行，PASS=158 / FAIL=0 / SKIP=0，与 r1 收尾**同值**）。
+       影响面评估：`web/**` **不在** `verify_specs.sh` 的判据面内（其判据面 = schema / pack / kernel 测试 /
+       tools / manifest 覆盖），故「同向、无新增 FAIL」的结论不受该口径差影响。
+
+--------------------------------------------------------------------------------
+[W0 · r1 未闭合项处置（逐条）]
+--------------------------------------------------------------------------------
+  **(1) AC-8 的 post-r5 全量 pytest 复跑 —— 已补跑，全绿**
+     cmd（workdir `<ws>/02_source/v0_skeleton/kernel`）：
+       `PYTHONDONTWRITEBYTECODE=1 python3 -m pytest -q -p no:cacheprovider -rf`
+     exit **0**；读数 **`215 passed in 1191.58s (0:19:51)`**；证据 `spikes/m52-live/evidence/pytest-full-r2.txt`。
+     - 用例数 **215 == 任务书期望 215**（211 + r5 新增 4 条 F7 单测）；
+     - **失败集 = 空集**：r1 已定性的两条（`test_task_adaptation::…bit_identical` 重登记后、`test_live_observation::
+       test_pace_is_identical_with_zero_and_two_observers` 环境抖动）**本轮均未红** ⇒ 无需再逐条定性；
+       也**没有**任何新增失败。**未**改期望值、**未**删测试（改动面 = `web/**`，不触 kernel 测试）。
+  **(2) F7 残留 GAP —— 保留为 GAP（不包装成关闭），并给出放大后的对照读数**
+     按 M4 文档化的通路（空闲 keep-alive 连接不占在途额度却占 1 线程 + 1 fd）把 r1 的 `hold` regime
+     **放大到 818 观察者线程 × 5 条 = 4090 条目标并发**（`ulimit -n 8192`），同一负载跑两棵树：
+       · **pre-fix 副本**（`/tmp/m52-f7-prefix-010315`，`process_request` 还原 r3 形态）：
+         `fd_total_peak` **1785** / `fd_tcp_peak` 1745 / `served_200` **2121** / exit 0 / 无 Errno 24
+         ⇒ 判据**变红**（`fd_total_peak < 1024` 不成立）；
+       · **交付树**：`fd_total_peak` **72** / `fd_tcp_peak` **33** / `served_200` **3131** / exit 0 ⇒ 判据**绿**。
+       ⇒ 同一放大负载下 **1785 vs 72（24.8×）**，承重机制仍是 **accept 层连接配额**（与 r1 的 1540 vs 73 同向）。
+     **GAP 仍在**：M4 的 `fd_total_peak 4089` **本轮仍未复现** —— 我把并发放大到 4090 条目标，客户端只压到
+     1785 条（`served_200` 2121）⇒ 缺的是 **M4 当时客户端的并发/连接保持形态**（或当时的 fd 采样原始数据），
+     不是服务端配额行为。证据：`spikes/m52-live/readback/f7-hold-4089-{prefix,delivery}.json`。
+  **(3) AC-8 新增 MEDIUM（C1 使 cognition 层退化）—— 本轮不动，只保留登记 + 可复算读数**
+     cmd：`PYTHONDONTWRITEBYTECODE=1 python3 spikes/m52-live/tools/diag_cognition.py`
+       （workdir `<ws>`，exit 0；脚本 = r1 的 `/tmp/m52-tools/diag_cognition.py` 原样拷入写集，
+        对照树 = `/tmp/m52-ref`，= 仓库 `v0` 树 + M5.1 `tools/**` 增量的副本；两棵树同命令同参数）
+     读数（`spikes/m52-live/evidence/ac8-cognition-r2.txt`）：
+       · **交付树**：`capability_calls` **5**（slot 序 = `emotion.appraise` ×5）/ cassette 文件 **1**
+         （`emotion.appraise__remote_api.jsonl`）/ fallback 0；
+       · **对照树**：`capability_calls` **15**（slot 序 `intent.plan → emotion.appraise → relation.infer` ×5）/
+         cassette 文件 **4**（+`intent.plan__remote_api` / `intent.plan__deterministic_rule` /
+         `relation.infer__deterministic_rule`）/ fallback `{on_invalid_schema:5, on_timeout:2}`。
+     ⇒ 与 r1 登记（15 → 5）**逐项一致**；根因 = C1 让需求压力长期 ~0.06 < `COGNITION_TREE_SPEC` 首条
+     `needs_pressure >= 0.30` 门 ⇒ `cognition` 树不再走高压分支。**改门限属设计决策**（会改冻结的
+     `COGNITION_TREE_SPEC` 语义）⇒ 本轮**不改**，作为 MEDIUM 交 PM / architect 裁决。
+
+--------------------------------------------------------------------------------
+[W10 · AC-5 实机四件（REQ §4 逐字）+ 呈现层分层声明]
+--------------------------------------------------------------------------------
+  实机形态：**真 Chromium（Playwright 1.63 / chromium-1234）→ 真会话层（`session/src/server.js`
+  原样 import）→ 真内核 + 真内容包**（`WorldKernel` + 内核自带 `LiveWorld`；pack =
+  `districts/xingfu-xiaoqu-xuqin`，npc-006 = 徐琴）。脚手架 = `spikes/m52-live/serve.mjs` +
+  `tools/live_driver.py` + `browser-accept.mjs`（**非交付面**；交付面零字节写入）。
+
+  ① **桌面**：`spikes/m52-live/shots/desktop-1440x900.png`
+     cmd（workdir `<ws>`）：`python3 spikes/m52-live/tools/check_artifacts.py --tag with` ⇒ exit **0**
+     读数（读 PNG 头 IHDR，不靠肉眼）：`desktop_is_1440x900 = true`，`[1440, 900]`；文件 99,449 B。
+  ② **390px 窄屏**：`spikes/m52-live/shots/narrow-390x844.png`
+     读数：`narrow_is_390x844 = true`，`[390, 844]`；文件 63,555 B。
+     **无横向溢出（交付面实际 DOM 读数，`web/index.html` 的 `#hud` / `#causal-trace`）**：
+       `documentElement.scrollWidth - clientWidth = 0`、`body = 0`、`#hud = 0`、`#causal-trace = 0`
+       （desktop 侧同样全 0）；`hud_visible = true`；`hud_rect = {x:8, y:8, w:374, h:491.5}`（视口 390×844）；
+       `write_controls = []`（面板未新增任何写控件；`#causal-trace` 是**纯文本**节点）。
+     证据：`spikes/m52-live/readback/chain-with.json` → `overflow.narrow`。
+  ③ **录屏**：`spikes/m52-live/rec/page@9f24fb2d28e32edc254468e70662e9aa.webm`（876,121 B）
+     读数（Playwright 自带 ffmpeg 探针 + **真解码计数**）：`duration = 00:00:18.12`（**≥15s** ✓）；
+     `frame_count = 453`（把全部帧解成小图数落盘文件数，**≥100** ✓）；**有画面变化**：t=0.5s 与 t=10s
+     两帧 sha256 不同（`b76c4475…` vs `c9ee74d6…`）⇒ 不是静止帧。
+  ④ **reload 回读**：`spikes/m52-live/readback/before-with.json` / `after-with.json`
+     cmd（workdir `spikes/m52-live/readback`）：
+       `python3 -m json.tool before-with.json > /tmp/rb-before.json`；
+       `python3 -m json.tool after-with.json  > /tmp/rb-after.json`；
+       `diff /tmp/rb-before.json /tmp/rb-after.json` ⇒ exit **0**，**0 行**（期望 0 行 ✓）。
+     关键字段（两侧逐字相等）：`pack_id=xingfu-xiaoqu-xuqin`、`tick=31`、`channel_tick=31`、`seed=20260921`、
+       `state_hash=c7ed9f1d…`（内核权威哈希）、`event_chain_hash=3db65b3b…`、`world_clock=07:31`、
+       `event_count=126`、`events_seen_in_panel=126`、`npcs[]`（徐琴：transform / needs / emotion /
+       schedule / relations / trauma_flags 全量）+ `trace`（四节点链）。
+     **判据有牙（负对照）**：同一条 diff 命令对 `after-advanced-with.json`（**放行世界推进 2 tick**）
+       ⇒ exit **1**、**46 行**差异 ⇒ 该 diff **能**发现变化，不是恒真式。
+     `without` 臂（未注入）同一对照：exit 0 / 0 行（`before-without.json` vs `after-without.json`）。
+  ⑤ **呈现层分层声明（逐项）**：
+     - **① 行为面 = 真内核 + 真内容包**：世界由交付面 `kernel/deephealing_kernel` 的 `WorldKernel.step()`
+       推进（内容包 = `districts/xingfu-xiaoqu-xuqin`，独立 `pack_id`、`pack.sig` 已验）；页面上的 tick /
+       世界钟 / `state_hash` / 事件流全部来自该内核（`LiveWorld` 投影 + 会话层转发），**无任何前端自算或回放**。
+     - **② 呈现层仍是低多边形占位**：场景几何 = `THREE.BoxGeometry`（`web/src/scene/world.ts`），
+       资产 = `assets-sample/workflows/procedural-placeholder.json` 的程序化占位（64×64、无贴图）。
+       ⇒ **盒体占位画面不得作为「写实美术已达成」的证据**；本段任何读数都不声称画质/氛围达成
+       （`art-bible.md` §「不宣称治愈系氛围已达成」同口径）。
+     - **③ 与 PM 的 `/tmp/dh-demo` 演示件的区别**：`/tmp/dh-demo/**` 是 **PM 手搓参考件**（自带
+       `viewer/`、`serve_live.py`、`#left` 面板与 `#left{max-height:66vh}` 的溢出形态），**不是**交付客户端；
+       本段的落点是**交付面** `02_source/v0_skeleton/web/**`（构建产物 `.build/web`），面板元素是
+       `#hud` / `#event-stream` / `#causal-trace`（**没有** `#left`）。r2 的 AC-5 **未**依赖 `/tmp/dh-demo`
+       的 node_modules 存活（见下「工具链」）。
+
+  **工具链来源与替代路径（L-6）**：
+    - 来源：`vite` / `playwright` 来自 **M3 工作区**的持久依赖目录
+      `<M3>/node_modules`（M3 = `…/REQ-20260921-005-deephealing-v0-m3`，playwright **1.63.0**），
+      以 `<ws>/node_modules` 符号链接接入（**D-9 既有口径**：「依赖提升到 `<workspace>/node_modules`」，
+      该目录被三份清单按名排除，不是交付物）；浏览器/编码器来自 `~/Library/Caches/ms-playwright`
+      （`chromium-1234` / `ffmpeg-1011`，持久缓存）。node **v26.3.1**。
+    - **不依赖 `/tmp` 存活**：截图 / 录屏 / 回读 JSON / 断言日志**全部**落 `spikes/m52-live/**`；
+      构建产物落 `<ws>/.build/web`（`vite.config.ts` 既有口径、在 `02_source` 之外、生成器按名排除）。
+    - **缺件时的替代路径（本遍实测到的三条，如实登记）**：
+      ① `vite build` 需要 `<ws>/node_modules` 存在（否则 `vite.config.ts` 解析 `vite` 失败，实测报
+         `ERR_MODULE_NOT_FOUND`）；② Playwright 的 `ffmpeg-mac` 构建**没有 `null`/`select` muxer/filter**
+         ⇒ 时长用容器元数据、帧数改用「全帧解码计数」、抽帧改用 `-ss`（本段 `check_artifacts.py` 已按此实现）；
+      ③ 仓库 `web/package.json` **无** playwright ⇒ 实机验收**必须**由 `spikes/**` 脚手架提供驱动，
+         **不得**写进交付面依赖。
+
+  **实机验收发现并修复的 2 个交付面缺陷（真实读数，非推测）**：
+    D1. `web/src/main.ts` 原有**第二次** `client.connect()` ⇒ 一次页面加载建**两个会话**（两次
+        `POST /sessions`），两个 WS 同时喂 `apply()`，而 `apply()` 的「(tick, seq) 单调」判据是**按会话**
+        成立的 ⇒ 两条会话的 seq 交错、消息被大面积丢弃。实测：面板 tick 卡在 **10**，而只读通道 tick 已 **30**
+        （`event_count 40` vs 世界实际 122）。**修**：删掉重复连接（第一次连接已设定 mode / pack 归属）。
+    D2. 渲染层 pack id 只有编译期默认值 `xingfu-xiaoqu` ⇒ 非默认内容包下会把 `npcs/<id>.json` 请求打到
+        默认包上。实测：`GET /packs/xingfu-xiaoqu/npcs/npc-006.json ⇒ 404`（console 1 条 error）。
+        **修**：新增宿主查询参数 `?pack=<district_pack_id>`（只读、缺省保持原行为），世界观与 NPC 档案
+        都从该 pack 目录取。修后 console error **0**（`console-with.jsonl` / `bad_responses` 只剩
+        reload 时 SSE 的正常 `net::ERR_ABORTED`）。
+
+--------------------------------------------------------------------------------
+[W11 · 徐琴闭环的可追溯呈现（REQ §1「可从事件记录追溯原因」+ §0 终极目标）]
+--------------------------------------------------------------------------------
+  呈现侧实现（交付面）：`web/src/ui/observe/trace.ts`（新增，只读文本块 `#causal-trace`，**零控件**）——
+  从会话通道下发的 `event` 消息（内核真实事件日志原样转发）里，为每个 NPC 维护
+  `memory.written / npc.decision / npc.action` 索引，按
+  **① 事件（同 tick 的 `npc.action`）→ ② 记忆（`memory.written` 的 ref）→ ③ 决策
+  （`npc.decision.memory_influence.signals` 里 `@ref=` 与记忆 ref **逐字相等**）→ ④ 行动
+  （该决策的可观察 `npc.action.target_entity`）** 抽链；节点缺失时**如实显示「（无）」**，不补造。
+
+  **一条完整因果链（从 `spikes/m52-live/**` 的读数里抽，命令可复算）**：
+    cmd（workdir `<ws>`）：`python3 spikes/m52-live/tools/extract_chain.py --npc npc-006` ⇒ exit **0**
+      （`all_pass = true`；判据读数落 `spikes/m52-live/readback/chain-verdict.json`）
+    读数（`with` 臂 = 注入「关键经历」；事件来自**客户端实际收到**的事件流，非客户端自报）：
+      ① **事件 id**：`seq 62 @tick 16` `npc.action(npc-006, rest → room-1052)`
+      ② **memory.written 的 ref**：`seq 63 @tick 16` `memory.written(layer=episodic, ref=16, kind=rest,
+         importance=0.144619)` —— 即该次行动的**经历记录**
+      ③ **npc.decision 的 memory_influence**：`seq 122 @tick 31`
+         `signals=["episode:rest@ref=16"]`、`utility_delta=0.19`、`chosen_action=rest`
+      ④ **npc.action 的 target_entity**：`seq 123 @tick 31` `npc.action(rest → room-1052)`
+    对账（注入读数与链上节点**同指**，`spikes/m52-live/readback/ac5-run-with.json` → `injection`）：
+      `status=promoted`、`ref=16`、`store_before.importance=0.144619 → store_after.importance=0.95`、
+      `store_after.refs` 含 **`event:62`**（指回链上事件）、`target_selection.runner_up_action=rest`
+      （选择规则：取该 tick `utility_ranking` 的**第二名**动作，再回找最近一条该动作的内核自产经历）。
+    **注入形态与「有意留下的痕迹」**：注入 = **库级提升一条内核自产经历的权重**（AC-4「预置关键经历」的
+      等价形态）。选它的理由：`memory.written` 事件只覆盖**内核自产**记录 ⇒ 这样链上四个节点**全部**是
+      内核真实事件（若改成「库外新增一条记录」，记忆节点在事件流里**没有**对应事件，链就断在事件侧）。
+      痕迹：该 `memory.written` 事件的 `importance` 是**写入时刻**的值（0.144619），库内当前值被提升到 0.95
+      ⇒ 二者**有意不同**，正是「这条经历的权重是注入抬起来的」的可核验标记（已在读数里显式给出）。
+  **反例（把该经历从注入里去掉 ⇒ 链断）**：
+    `without` 臂（同 seed / 同 pack / 同 tick 数，**唯一变量 = 未注入**）读数：
+      · `decisions_with_signals = 0`（**任何**决策都没有信号）⇒ **记忆节点缺失**（`memory = null`）、
+        链不完整（`chain.complete = false`）；
+      · **决策改变**：两臂 `npc.action` 序列**首个分叉 = tick 22**：注入臂 `rest(target=room-1052)`
+        vs 无注入臂 **`work(target=room-1052)`**；末态 tick 31 决策分别为 `rest`（utility_delta 0.19）
+        与 `walk`（utility_delta 0）。
+    ⇒ 「链上节点缺失」**与**「决策改变」两侧同时成立（不是二选一），且落点是**可观察行动**
+      （`npc.action` 的 action/target_entity），**不是**「认知日志里多了结论」（REQ 明文禁止的替代形态）。
+  诚实边界（写进 06 的 GAP）：交付面 `kernel_bridge.py` **无** `event` emit 点（`grep -n '"kind": "event"'`
+    零命中）⇒ 浏览器侧**没有**内核事件数据源。r2 写集**不含** `session/**`、`kernel/**` ⇒ 该通道由
+    AC-5 脚手架**只读转发**内核事件日志补齐（**不改写、不新增**任何事件），并作为 GAP 登记给 PM。
+
+--------------------------------------------------------------------------------
+[AC 逐条回填（M5.2-r2）]
+--------------------------------------------------------------------------------
+  快照（收尾）
+    `find 02_source -type f | wc -l` ⇒ **198**（起点 197 + `web/src/ui/observe/trace.ts`）
+    `git -C <repo> rev-parse --short HEAD` ⇒ `1261436`（develop）；`status --porcelain | wc -l` ⇒ **0**（收尾，同开工）
+    构建产物：`<ws>/.build/web/assets/index-D_LV-IL5.js`（497,110 B；`sha256 a07bc7cd…`）、
+      `index.html`（`sha256 48c24cdc…`）—— 与实机验收所用 bundle **同一份**（时间序：build → 实机跑）。
+
+  | 项 | 判定 | 命令 / workdir | exit | 读数与证据（绝对路径） |
+  |---|---|---|---|---|
+  | 开工三件事 | **PASS** | 见本段首 | 0 | pid 99008 = 本派单进程；porcelain 0；02_source 197 |
+  | AC-5① 桌面 | **PASS** | `python3 spikes/m52-live/tools/check_artifacts.py --tag with`（`<ws>`） | 0 | `[1440, 900]`（PNG 头）；`spikes/m52-live/shots/desktop-1440x900.png`；`readback/artifact-check-with.json` |
+  | AC-5② 窄屏 | **PASS** | 同上 | 0 | `[390, 844]`；`doc/body/#hud/#causal-trace` 横向溢出**全 0**；`hud_visible=true`；`write_controls=[]`；`spikes/m52-live/shots/narrow-390x844.png` |
+  | AC-5③ 录屏 | **PASS** | 同上 | 0 | `duration 18.12s`（≥15）· `frames 453`（≥100，真解码计数）· t0.5 vs t10 两帧 sha256 **不同**；`spikes/m52-live/rec/page@9f24fb2d….webm` |
+  | AC-5④ reload 回读 | **PASS** | `diff <(json.tool before) <(json.tool after)` 形态（workdir `spikes/m52-live/readback`） | **0** | **0 行**（关键字段：tick 31 / seed 20260921 / state_hash 3db65b3b… / event_count 126 / 徐琴全量状态）；负对照（放行 2 tick）⇒ exit 1 / **46 行** |
+  | AC-5⑤ 分层声明 | **PASS** | 本段 W10⑤ | — | ①真内核+真内容包 ②低多边形占位（BoxGeometry + 程序化占位资产，**不**声称写实美术达成）③与 `/tmp/dh-demo` 演示件区分（落点 = `web/index.html#hud`/`#event-stream`/`#causal-trace`） |
+  | W11 追溯链 | **PASS** | `python3 spikes/m52-live/tools/extract_chain.py --npc npc-006`（`<ws>`） | 0 | `all_pass=true`：四节点齐全、`@ref=16` 与记忆 ref **逐字相等**、事件↔记忆同 tick 同 kind、注入读数同指（`event:62`）；**反例**：无注入臂 `decisions_with_signals=0` + 首个分叉 tick 22（rest vs work）；`readback/chain-verdict.json` |
+  | AC-8 全量复跑 | **PASS** | `PYTHONDONTWRITEBYTECODE=1 python3 -m pytest -q -p no:cacheprovider -rf`（`02_source/v0_skeleton/kernel`） | **0** | **215 passed in 1191.58s**；失败集**空**；`spikes/m52-live/evidence/pytest-full-r2.txt` |
+  | AC-9 | **PASS** | `git -C <repo> status --porcelain \| wc -l` | 0 | 开工 **0** / 收尾 **0**；HEAD `1261436`（develop）；**未** commit / push / PR / 部署 |
+  | F7 | **PASS + 残留 GAP** | `python3 spikes/m52-f7/f7_observer_load.py --regimes hold --modes live --runs 1 --observers 818 …` | 1（pre-fix）/ 0（交付） | 放大负载下 pre-fix `fd_total_peak` **1785** vs 交付 **72**（24.8×）；**M4 的 4089 仍未复现** ⇒ GAP 保留；`readback/f7-hold-4089-{prefix,delivery}.json` |
+  | 回归（verify_specs） | **PASS** | `bash verify_specs.sh`（workdir `02_source`） | 0 | **PASS=158 FAIL=0 SKIP=0**（与 r1 收尾**同值** ⇒ 本轮未引入新 FAIL）；`spikes/m52-live/evidence/verify-specs-r2.txt` |
+  | manifest 覆盖 | **PASS** | 同上（§3 manifest 覆盖） | 0 | 新增 `web/src/ui/observe/trace.ts` 已进 `02_source/manifest.txt`（197 → **198** 行）；门禁 `manifest.txt covers every file` 绿 |
+  | 残渣 | **PASS** | `find 02_source -name '__pycache__' -o -name '.pytest_cache' -o -name 'node_modules' -o -name 'dist' -o -name '*.pyc'` | 0 | **零命中**；`node_modules` / `.build` 在 `<ws>` 根（`02_source` 之外，生成器按名排除） |
+  | 红线 | **PASS** | `bash verify_specs.sh`（§14b） | 0 | `primary_hits_total == 0`、redline scan clean（M5.1 口径未回退）；**未**开新红线轮（PM m5-11） |
+  | 冻结面 | **PASS** | 见「冻结面终版登记」 | 0 | 三份重取 + `shasum -a 256 -c` ⇒ **0 非 OK**；r1 版标 **SUPERSEDED**；mtime 对照表见下 |
+
+--------------------------------------------------------------------------------
+[自审（必要自审，**不替代** Sentinel / Raven 独立门禁）]
+--------------------------------------------------------------------------------
+  - **正确性**：因果链的连边是**字符串逐字相等**（`signals` 里的 `@ref=<R>` == `memory.written.payload.ref`），
+    且只认 `layer=episodic`（与 `rules/decision.py::memory_influence` 的 `fetch_episodes()` 同源 —— `working`
+    层 ref 与 episodes **各自独立编号**，实测同 tick 两条都是 16，不按层过滤会张冠李戴）。
+    抽取器**不看客户端自报的 `traceFor()`**，而是从客户端**实际收到**的原始事件重新抽链；两者结果一致
+    （面板文本与 `chain-verdict.json` 的四节点逐字段相同）。链不完整时面板**显示「（无）」**并列出
+    未连上的 ref（`unlinked_signal_refs`），**不补造**节点。
+  - **兼容性**：`web/**` 的改动是**追加式**（新文件 `trace.ts` + `index.html` 新增只读块 + `main.ts` 接线）；
+    `?pack=` 缺省时行为与改前一致（仍用默认包）；删掉的第二次 `client.connect()` 经实机对照确认是**缺陷**
+    （双会话 ⇒ 消息按 (tick,seq) 交错被丢），修后 `apply()` 语义不变。M3 的「观察模式零写控件」判据
+    **未回退**：实机 `write_controls == []`（desktop + narrow 两档都有读数）。
+  - **安全**：追溯面板只渲染事件 payload 的既有字段（`npc_id` / `layer` / `ref` / `kind` / `importance` /
+    `signals` / `target_entity`）——**不含**原著正文；脚手架只绑 `127.0.0.1`，**不**接管参与模式写通道
+    （`submitIntent` 如实返回 `E_KERNEL_UNAVAILABLE`）；注入只写**运行副本**的 SQLite（`spikes/m52-live/runtime/**`），
+    交付树与真实仓库零写入；无凭据、无 prompt、无原始请求体进入任何产物。
+  - **错误路径**：内容包/NPC 档案取不到 ⇒ 退化为显示 id（**不**伪造名字，且非人物 actor **不**入索引 ⇒ 无 404）；
+    实时通道断 ⇒ 面板显示 `offline`（**不**伪造读数）；事件流为空 ⇒ 面板显示 `waiting for events`；
+    注入找不到可提升的 runner-up 经历 ⇒ 如实报 `skipped_no_target`（不伪造注入）。
+  - **并发 / 资源边界**：一页面**一个会话**（D1 修复）；脚手架下行箱**每 100ms 出队**（缺它则消息堆在下行箱、
+    页面停在最初几 tick —— 这是本遍实测到的脚手架缺陷，已修）；SSE 订阅集合在收尾显式关闭；
+    F7 侧读数未因本轮改动变化（`fd_total_peak` 72，与 r1 的 73 同量级）。
+  - **已知未覆盖**（详见「未闭合项」）：① 浏览器侧事件通道由脚手架补齐；② `KNOWN_PACKS` 硬编码；
+    ③ 回读判据依赖脚手架的步进闸门（交付树无暂停控制）；④ F7 的 4089 仍未复现；⑤ cognition 退化未改。
+
+--------------------------------------------------------------------------------
+[未闭合项（交班时如实登记）]
+--------------------------------------------------------------------------------
+  1. **`kernel_bridge.py` 无 `event` emit 点 ⇒ 交付面客户端没有内核事件数据源**（GAP，不包装成已解决）。
+     事实：`session/bridge/kernel_bridge.py` 的 docstring 声明 `kind` 含 `event`，但 `grep -n '"kind": "event"'`
+     零命中、`emit({...})` 无一处带 `event` ⇒ 会话层从未下发过内核事件。r2 写集**不含** `session/**` / `kernel/**`
+     ⇒ AC-5 的实机由脚手架**只读转发**内核事件日志补齐（不改写、不新增事件）。**下一轮建议**：在
+     `kernel_bridge.py` 的 `step` 分支里补 event 转发（与 `spikes/m52-live/tools/live_driver.py` 同形），
+     并配一条「事件条数 == 内核事件日志行数」的判据。
+  2. **`KNOWN_PACKS` 硬编码**（`session/src/server.js:37` = `{xingfu-xiaoqu, xingfu-xiaoqu-north}`）⇒ 交付会话层
+     对徐琴提案包返回 `E_PACK_INVALID`；脚手架显式传入白名单绕过（`knownPacks: new Set([PACK, …])`）。
+     与 r1 的 M-6（`verify_specs.sh` 的 `PACK_DIR` 硬编码）同一类问题。
+  3. **F7 残留 GAP**：M4 的 `fd_total_peak 4089` 仍未复现（本轮把 `hold` regime 放大到 4090 条目标并发，
+     客户端只压到 1785 条）⇒ 缺 M4 当时客户端的并发/连接保持形态或原始 fd 采样。判据仍**有牙**
+     （放大负载：pre-fix 1785 红 vs 交付 72 绿）。
+  4. **AC-8 新增 MEDIUM（cognition 退化）**：C1 让需求压力长期 ~0.06 ⇒ `cognition` 树只走 `emotion.appraise`
+     （能力调用 15 → 5、cassette 4 → 1）。**改门限 = 改冻结的 `COGNITION_TREE_SPEC` 语义** ⇒ 本轮不改，
+     交 PM / architect 裁决。
+  5. **徐琴包 10-d-1 / 10-d-2 结构不可达**（单 NPC 包，r1 已登记）⇒ 待 PM 决策 B-1。
+  6. **AC-5 的「同一世界状态」口径**：交付树**没有**「暂停世界」的控制面；本遍的 reload 回读用脚手架
+     `/control/pause|resume`（只控制是否继续发 step 命令、**不写世界状态**）把世界冻结后再对照，
+     并给「放行推进 ⇒ diff ≠ 0」的负对照。若 PM 要求「世界不停转时的 reload 一致性」，
+     需要新增一条**逐 tick 对齐**的判据（例如「reload 后首帧 tick == 重连时刻的内核 tick」）。
+
+--------------------------------------------------------------------------------
+[冻结面终版登记（W12 · 最后写入者 = r2）]
+--------------------------------------------------------------------------------
+  三份清单（生成器**均不入清单**；时序：快照是收尾**最后一个动作**，取之前 03 已停写）：
+  | 清单 | 采集面 | 生成器 | 登记 |
+  |---|---|---|---|
+  | `V0_M52.sha256` | `02_source/**` + `docs/**` + `spikes/m52-*/**` + 根级 `03_artisan_self_test.log` /
+    `06_v0_m52_self_test.md` / `fidelity/POINTER.md` | `V0_M52.gen.py`（**不入清单**） | **M5.2 权威面**
+    （PM 落盘按此核验）；**r1 版 = 中间版，已被 r2 取代（SUPERSEDED）** |
+  | `V0_M4.sha256` | M4 原口径（`02_source/**` + `spikes/s14..s16/**` + 根级 `03` / `06_v0_m4_self_test.md` /
+    `V0_SELF_TEST.md`） | `spikes/m52-frozen/retake_m4_m5.py` | **重取**（r2 改动落在其采集根内） |
+  | `V0_M5.sha256` | M5 原口径（`02_source/**` + `docs/**` + `fidelity/POINTER.md` + 根级 `03`） | 同上 | **重取** |
+  cmd（workdir `<ws>`）：
+    `python3 V0_M52.gen.py`；`python3 spikes/m52-frozen/retake_m4_m5.py`；
+    `shasum -a 256 -c V0_M52.sha256 V0_M4.sha256 V0_M5.sha256`
+  读数：见 `spikes/m52-live/evidence/frozen-verify.txt`（**三份清单 0 非 OK** + **mtime 对照表**；该文件在
+  **最终**清单生成之前写入 ⇒ 它本身也在 `V0_M52.sha256` 的采集面内；清单 mtime 晚于交付面最后一次写入；
+  最终清单的自校验读数另落 `spikes/m52-live/runtime/frozen-final-shasum.txt`（按名排除的过程日志））。
+  **r1 版已被 r2 取代**：r2 改了 `web/**`（在三份清单的采集面内）⇒ 清单与根级 `03`/`06` 的 r1 版本
+  **不得**再当终版引用。
+
+================================================================================
+§M5.2-r3 · 修复轮（清双门禁的 1 条 CRITICAL + 低成本收口）—— artisan · 本轮**最后写入者**
+================================================================================
+【段首自证 · 开工三件事】
+  model: deepseek-v4.1-flash | 来源: 本派单进程（`hermes -p artisan chat --query-file
+  <ws>/.task-artisan-m52-r3.pointer.txt --oneshot`，pid 27079）；**本遍无换模型**（无逐段换模型声明）。
+  1) 进度文件：`bash <ws>/.squad_tools/write_progress.sh <ws> artisan <pct> "<note>"`（3 → 22 → 55 → 88 → 100）。
+  2) **无活写者 + 起点快照**：
+     cmd(workdir <ws>): `ps -p $(cat .task-artisan.pid) -o pid,ppid,command`
+       ⇒ pid **27079** = **本派单进程**（命令行含 `--query-file …/.task-artisan-m52-r3.pointer.txt`）⇒ 我是写通道。
+     cmd: `git -C /Users/wooyinq/personal/deep-healing status --porcelain | wc -l` ⇒ **0**；`rev-parse HEAD` ⇒
+       **126143676d1ec18e73434e5610412c5dc66d483f**（1261436）；收尾复取仍 **0**（AC-9）。
+     cmd: `export PATH=/opt/homebrew/Caskroom/miniconda/base/bin:$PATH; python3 -V; python3 -m pytest --version`
+       ⇒ Python **3.13.13** / pytest **9.1.1**（已钉 PATH，避免假红）。
+  3) **起点读数**：`bash verify_specs.sh --quiet`（workdir <ws>/02_source）⇒ exit 0 /
+     `verify_specs: OK (158 checks passed, 0 skipped)` / 46.3s；全量 pytest 起点读数 = r2 终版树 **215 passed**（见 §4）。
+  4) **对照树（两条，口径分开）**：
+     - `/tmp/m52-ref` 仍在 = 仓库 1261436 树 + M5.1 增量 = **M5.2 之前**的树（r1 配方重建）；
+     - **r3 另建「r3 改前树」`/tmp/m52-r3/ref-r2`** = 当前交付树，**只**把 `cli.py` 还原为 r2 版
+       （哈希 `019a9c6d5b1179cd…` **逐位等于 r2 冻结面登记值** ⇒ 独立证明 r1/r2 从未改过 `cli.py`）
+       + 还原 `tick.py` 的 2 处 r3 增量（哈希 `61808efb754db336…` = r2 冻结面值）。
+     ⇒ 回归护栏 ② 的**真口径** = 与 `ref-r2` 比（见 §回归护栏）。
+
+--------------------------------------------------------------------------------
+[FIX-1 · R-C1（CRITICAL）：给交付面一条真的入口]
+--------------------------------------------------------------------------------
+问题（Raven 实证）：内核**实现了**接线（`tick.py` 收三参数；`step()` 的 [5] 段写库并 emit；
+`_appraise_emotions()` 走 `CapabilityRegistry.invoke`），但**交付面没有任何入口传值** ⇒
+交付命令的事件清单永远没有 `memory.written`，`emotion.appraise` 永远零调用。
+
+改动（`cli.py`；ADR-020 登记命名）：
+  - `run` / `live` 各新增 `--memory-chain` / `--capability-chain` / `--emotion-pressure-threshold`；
+    `_build_kernel_chain()` 按需构造并传入；**默认 off ⇒ `extra == {}` ⇒ `WorldKernel(...)` 实参集合与改前相同**。
+  - `--memory` 的语义误导已修：`--help` 明写「认知层自己的 MemoryStore（`<out>/cognition/memory.sqlite`）
+    **不是**内核 tick 的记忆链（那条是 `--memory-chain`）」。
+  - `replay` / `verify` **不接线**（它们是确定性与比对路径，接线会改变被比对的事件流本身）——ADR-020 写明理由。
+  - 输出 JSON 新增 `kernel_chain` 结构化读数块（开关 on 时）。
+
+① 带开关 ⇒ 事件清单出现 `memory.written`（**关闭判据 ①**）
+  cmd(workdir <ws>/02_source/v0_skeleton/kernel):
+    PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. python3 -m deephealing_kernel run \
+      --pack districts/xingfu-xiaoqu --seed 20260921 --ticks 30 \
+      --events /tmp/m52-r3/fix1/wired/events.jsonl --memory-chain
+  exit **0** / 读数：事件清单 total=615
+    `{world.init 1, npc.action 150, npc.decision 150, memory.written 300, relation.changed 14}`
+    `kernel_chain.memory_written_by_layer = {"episodic": 150, "working": 150}`、`memory_written_total = 300`、
+    `store_write_count = 300`、**`episodes_readback = {npc-001..npc-005: 30}`**（`fetch_episodes` **非空**，真落库）、
+    `memory_store_path = /tmp/m52-r3/fix1/wired/kernel_memory.sqlite`
+  证据：`/tmp/m52-r3/fix1/wired/events.jsonl`、`/tmp/m52-r3/fix1/wired.out`
+
+② 不带开关 ⇒ 与 **r3 改前树**逐行 diff == 0（**关闭判据 ②**）
+  cmd(workdir <ws>/02_source/v0_skeleton/kernel): 同命令去掉 `--memory-chain` ⇒ /tmp/m52-r3/fix1/plain/events.jsonl
+  cmd(workdir /tmp/m52-r3/ref-r2/02_source/v0_skeleton/kernel): 同命令 ⇒ /tmp/m52-r3/fix1/refr2/events.jsonl
+  两棵树 exit 均 **0**；读数：`lines_a=339 lines_b=339 differing=0 first_differing_line=None`；
+  两棵树 stdout 的 `chain_tail` **逐位相同**（`1f826bbb0e0117f5a69e443f2969a8f56b32ae1f4a8dc47053673a7f67045ad6`）、`event_count` 均 339。
+  **口径偏差登记（GAP，如实）**：任务书 §4 写「与 `/tmp/m52-ref` 改前树逐行 diff == 0」——
+  该条**不可满足**：`/tmp/m52-ref` 是 **M5.2 之前**的树（301 行、无 `relation.changed`），
+  而 M5.2 r1 本身就要新增 `relation.changed`（38 条）⇒ 交付树默认臂 339 行。
+  ⇒ 本轮按**真口径**（vs r3 改前树 = r2 终版）给读数；与 `/tmp/m52-ref` 的差异**全部**来自 M5.2 r1/r2 的既有改动。
+
+③ 三条 fail-closed 读数（**关闭判据 ③**）：`tools/emotion_fallbacks_probe.py`（新增，三条臂**都不触网**）
+  cmd(workdir <ws>/02_source):
+    PYTHONDONTWRITEBYTECODE=1 python3 v0_skeleton/tools/emotion_fallbacks_probe.py \
+      --kernel-root v0_skeleton/kernel --pack v0_skeleton/districts/xingfu-xiaoqu --ticks 3 \
+      --json /tmp/m52-r3/fix1/emotion-fallbacks.json
+  exit **0** / 读数 `all_pass = true`，三臂：
+    ① `no-provider`：`emotion_appraise_invocations = 0`、`emotion_fallback_reasons = {"CapabilityError": 15}`、
+       `emotion_results_npcs = []`（**不伪造**情绪结果）；
+    ② `budget-exhausted`：`emotion_fallback_reasons = {"on_budget_exhausted": 15}`、
+       `capability_journal_kinds = ["capability.fallback"]`、`emotion_results_npcs = [npc-001..005]`
+       （那是 deterministic_rule 的**实算**输出 + 降级留痕，不是伪造）；
+    ③ `cassette-miss`：`emotion_fallback_reasons = {"CassetteMiss": 15}`、
+       `cassette_miss_flagged_in_journal = true`（journal 记 `cassette.miss` + `fail_closed`）、
+       `emotion_results_npcs = []` ⇒ **`CassetteMiss` 未被吞**。
+  同一路径的**命令层**读数（走交付入口，不需要探针）：
+  cmd(workdir <ws>/02_source/v0_skeleton/kernel):
+    … run --pack districts/xingfu-xiaoqu --seed 20260921 --ticks 3 \
+      --events /tmp/m52-r3/fix1/cli-miss/events.jsonl \
+      --capability-chain --replay --emotion-pressure-threshold 0.0
+  exit **0** / 读数：`kernel_chain.capability_journal_kinds = ["cassette.miss"]`、
+  `emotion_fallbacks` = 15 条（`npc-001..005 × tick 1..3`，reason `CassetteMiss`）。
+  **负对照（有牙）**：把 `_build_kernel_chain()` 的返回改成 `({}, state)`（等价「不传」）⇒
+  ① 的 `memory.written` 归零（0 条）——即该判据咬住的正是「有没有传值」这件事。
+
+④ `03` 的 ⑥ 条目：已就地更正并补命令 + workdir + exit + 读数（见本文件 §M5.2-r1 的 ⑥ 条目下
+  【更正 · r3 / FIX-1④】）。
+⑤ `06` §2「诚实边界」：已补披露 store / registry 的接线缺口（见 `06` 的【更正 · r3】块）。
+
+**新增观测（如实登记，未修）**：非回放路径的 provider 优先级 = `remote_api`（priority 10）
+⇒ `--capability-chain` 不带 `--replay` 会尝试远端（需凭据、非确定性）；默认阈值 0.6 下实测需求缺口 ~0.06
+⇒ **能力链打开了也不会被调用**（数据驱动的零调用，不是接线失败）。
+
+--------------------------------------------------------------------------------
+[FIX-2 · live.py「三处声称 vs 代码不存在」→ 走 (b) 如实更正]
+--------------------------------------------------------------------------------
+grep 读数（cmd: `grep -n "WRITE_TIMEOUT_S\|settimeout" <ws>/02_source/v0_skeleton/kernel/deephealing_kernel/live.py`）：
+  r3 后 = 36（文档）/ 78（常量）/ 473（`stop()` join）/ 584（docstring 引文）/ **588（`setup()` 的
+  `REQUEST_IDLE_TIMEOUT_S`）** / 707（SSE 路径的 `WRITE_TIMEOUT_S`）；
+  对照改前树 `/tmp/m52-ref`：同一条 `self.connection.settimeout(REQUEST_IDLE_TIMEOUT_S)` 在 **repo `live.py:528`**
+  ⇒ **该语句在 r4 及更早就存在**，r5 对 `setup()` 的改动**只有 docstring**。
+**为什么取 (b) 而不是 (a)**：`settimeout()` 作用于**整个 socket（读写同限）**，且
+`REQUEST_IDLE_TIMEOUT_S = 5.0 == WRITE_TIMEOUT_S` ⇒ 写路径**本来就受同一超时约束**；
+「普通端点的 flush 无界阻塞」与事实**相反**（Sentinel MEDIUM-1 / Raven L-1）⇒ (a) 是**空操作**
+（设 5.0 与既有 5.0 同值），只会再造一处不实表述。
+三处文字已改（`live.py` 模块 docstring ② / `setup()` docstring / `ADR-019` 决定第 2 条 / `06` §W8），
+并删掉与事实相反的断言。**关闭判据达成**：grep 读数与「只有 2 处代码改动（① ③）」一致。
+
+--------------------------------------------------------------------------------
+[FIX-3 · 新增 F7 用例④无判别力 → 走 ② 登记为「既有不变式」+ 补牙]
+--------------------------------------------------------------------------------
+  cmd(workdir /tmp/m52-r3/tree-p1/02_source/v0_skeleton/kernel)（= **只退 r5** 的副本）:
+    PYTHONDONTWRITEBYTECODE=1 python3 -m pytest tests/test_m52_f7_fd_accounting.py -q -p no:cacheprovider -rf
+  exit **1** / 读数 **3 failed, 2 passed**：红 = `test_quota_is_released_after_the_fd_is_closed`（①）、
+    `test_handler_error_is_counted_and_never_printed`（②）、`test_handler_error_diagnostics_are_bounded_and_finish_errors_counted`（⑤）；
+    **绿 = `test_churn_leaves_no_quota_leak_and_peak_is_bounded`（③）、
+    `test_connection_socket_timeout_bounds_the_write_path`（④）** ⇒ ③④ 在「退 r5」树上**本来就绿**
+    （Sentinel MEDIUM-3 的实证成立）。
+  cmd(workdir /tmp/m52-r3/tree-p2/…)（= 再退 r4 = **r3 形态**）：同读数 **3 failed, 2 passed** ——
+    **③ 在「退 r4」树上**空转**过绿**（`admit_accept` 不再被调用 ⇒ `http_connections` 恒 0）⇒
+    ③ 也**不具 r4 判别力**（r4 只能由负载面 `hold` regime 区分，见 FIX-4）。**如实登记**。
+  cmd(workdir /tmp/m52-r3/tree-nodelay/…)（= 交付树 + **删掉 `setup()` 的 `settimeout` 行**）:
+    exit **1** / 读数 **1 failed, 4 passed**（红的正是 ④ `…:169: AssertionError`）
+    ⇒ ④ **有牙**（拦的是「删掉超时设置」这类回退）。
+  登记文本（已写入测试文件 docstring 与 `06`/ADR-019）：④ = **既有不变式，非本轮新增**；
+  用例更名 `test_connection_socket_timeout_bounds_the_write_path`，并新增一条钉住
+  「`REQUEST_IDLE_TIMEOUT_S == WRITE_TIMEOUT_S`」的断言（r3 更正的可核验前提）。
+  交付树读数：`pytest tests/test_m52_f7_fd_accounting.py -q` ⇒ exit 0 / **5 passed**。
+
+--------------------------------------------------------------------------------
+[FIX-4 · 归因更正（hold 不用于归因 r5）]
+--------------------------------------------------------------------------------
+  cmd(workdir <ws>/spikes/m52-f7):
+    python3 f7_observer_load.py --ws /tmp/m52-r3/tree-p1 --regimes hold --modes live --runs 1 --observers 300 --tag-prefix r3p1-
+  读数：**只退 r5**（P1）⇒ `all_pass = true`、`fd_total_peak = 73`、`served_200 = 1500`、exit 0
+  ⇒ **hold 对 r5 无判别力**（与交付树 `fd_total_peak = 73` 同值；交付树臂 cmd 同上，`--ws /tmp/m52-r3/tree-deliv`，
+  `--tag-prefix r3del-` ⇒ 同样 `all_pass = true` / 73）。
+  **负对照（r3 形态 P2 = 退 r4 + 退 r5）**：同命令 `--ws /tmp/m52-r3/tree-p2 --tag-prefix r3p2-`
+  ⇒ exit 1 / `all_pass = false` / `fd_total_peak = **1532**` / `fd_tcp_peak = 1493`
+  ⇒ **变红的是 r4 的 accept 配额被退回**（Sentinel S11 的独立读数 = 1541，同量级）。
+  ⇒ `06` 与 ADR-019 已写入正确口径：**r5 由单测 ①② 钉住；fd 天花板由 r4 的 accept 配额兜住；
+  `hold` 的 pre-fix 读数是 r3 形态，不用于归因 r5**。
+
+--------------------------------------------------------------------------------
+[FIX-5 · AC-10 门禁口径 + 接线臂 + 敏感性]
+--------------------------------------------------------------------------------
+  工具新增：`--memory`（接线臂）、`--weight` / `--signal-window` / `--min-importance`（敏感性扫描，非门禁）、
+  JSON 增 `arm` / `memory_signal` / `*_raw` 字段。
+  cmd(workdir <ws>/02_source)（同一把工具，seed 20260921 / 1440 tick）：
+    未接线：`--kernel-root v0_skeleton/kernel --pack v0_skeleton/districts/xingfu-xiaoqu`
+      exit **0** / `arm=unwired`、`all_pass=true`、10a 0.3031 / 10b 0.2442 / 10c 4 / 10d1 0.3250 / 10d2 2
+      （与 r2 门禁读数**逐项一致**；逐 NPC 室外：0.1875 / 0.6181 / 0.6285 / 0.1701 / 0.0208）
+    接线：追加 `--memory` ⇒ exit **0** / `arm=wired`、`all_pass=true`、
+      10a **0.3810** / 10b **0.2596** / 10c 4 / 10d1 **0.2444** / 10d2 2
+      （逐 NPC：0.0451 / 0.1840 / 0.5347 / 0.3958 / 0.0625）⇒ **接线确实改变行为读数**
+      （与 Raven §2.3 的独立复现逐项一致）⇒ 两组读数**不得互相冒充**。
+    敏感性（接线臂）：
+      `--weight 0.10` ⇒ 0.3683 / 0.2706 / 4 / 0.2833 / 2 ⇒ all_pass=true（exit 0）
+      `--weight 0.20` ⇒ 0.3810 / 0.2596 / 4 / 0.2444 / 2 ⇒ all_pass=true（exit 0）
+      `--weight 0.30` ⇒ 0.3864 / 0.2640 / 4 / **0.2090** / 2 ⇒ all_pass=true（exit 0；**余量仅 0.9pt**）
+      `--weight 0.40` ⇒ 0.3879 / 0.2604 / 4 / 0.2125 / 2 ⇒ all_pass=true（余量 1.25pt）
+      `--weight 1.00` ⇒ 0.4450 / 0.4450 / **1** / 0.3146 / 4 ⇒ **10-c 红（exit 1）** ⇒ 达标是**标定结果**
+      `--signal-window 1` ⇒ 0.3450 / 0.2758 / 4 / 0.3306 / 3 ⇒ all_pass=true
+      `--signal-window 5` ⇒ 与 w=0.20 同读数（`min(1, Σimp)` 封顶后 window 5 不再改变信号）
+      `--min-importance 0.3` ⇒ 0.3397 / 0.3397 / 4 / 0.3042 / 3 ⇒ all_pass=true
+      `--min-importance 0.7` ⇒ 0.3510 / 0.2729 / 4 / 0.2778 / 2 ⇒ all_pass=true
+  ⇒ **w ∈ {0.10,0.20,0.30} 五条判据均绿**（已写成门禁 §18 的敏感性断言）；window / min_importance 一并纳入同一说明。
+  口径声明：`verify_specs.sh` §15 注释与 `06` §5 逐字写明「**交付门禁口径 = 记忆链关闭（unwired）**」；
+  §18 另加一条声明项（读 `arm` 字段，防读者把 §15 读数读成「接线后也这样」）。
+  落盘：`/tmp/m52-r3/fix5/ac10-*.json`（10 个档位）。
+
+--------------------------------------------------------------------------------
+[FIX-6 · 可观测性：有界诊断 + health 字段 + finish 计数]
+--------------------------------------------------------------------------------
+  改动：`live.py` 新增 `HANDLER_ERROR_SAMPLES_MAX = 8` / `HANDLER_ERROR_REPR_MAX = 200` /
+  `FINISH_ERROR_KINDS_MAX = 16`；`note_handler_error()` 留**有界**样本；新增 `note_finish_error()`；
+  `finish()` 吞异常时调用它；`/live/health` 新增 `handler_errors_last` / `handler_error_diagnostics`
+  （界的自述）/ `finish_errors` / `finish_error_kinds` / `write_timeout_s`；`cli.py` 新增
+  `_write_live_diagnostics()` ⇒ **有界文件** `<out>/live_handler_errors.jsonl`（条数 + 字节双重有界）。
+  cmd: `python3 /tmp/m52-r3/fix6_probe.py <kernel> <pack>`（构造真实 LiveServer + 40 次连上即断 +
+  30 次「发请求后 RST」churn）⇒ exit 0 / 读数：
+    `handler_errors = 30`（`{"BrokenPipeError": 27, "ConnectionResetError": 3}`）、
+    `handler_errors_last_len = 8`（**有界**；样本形如 `{"seq":1,"kind":"ConnectionResetError",
+    "client":"127.0.0.1:58220","repr":"ConnectionResetError(54, 'Connection reset by peer')"}`）、
+    `handler_error_diagnostics = {"samples_max":8,"repr_max_chars":200,"max_bytes":2624}`、
+    `cli_bounded_file = {"bytes": 950, "bytes_bound": 2624, "samples_kept": 8}`
+    （文件 950 B ≤ 界 2624 B ⇒ **「有界」是可算的**）。
+  `finish_errors` 的**注入读数**（fault injection：让 `super().finish()` 抛 `BrokenPipeError`）：
+    `finish_errors = 2`（构造时自动 finish 一次 + 显式调用一次）、`finish_error_kinds = {"BrokenPipeError": 2}`、
+    异常**未冒泡、未写 stderr**。
+  新增单测 ⑤（`test_handler_error_diagnostics_are_bounded_and_finish_errors_counted`）钉住上述三条。
+
+--------------------------------------------------------------------------------
+[FIX-7 · AC-6 内置反例换强]
+--------------------------------------------------------------------------------
+  cmd(workdir <ws>/02_source):
+    PYTHONDONTWRITEBYTECODE=1 python3 v0_skeleton/tools/check_identity_continuity.py \
+      --pack-a v0_skeleton/districts/xingfu-xiaoqu-xuqin --npc-a npc-006 \
+      --pack-b ../spikes/m52-ac6/xingfu-xiaoqu-xuqin-mirror --npc-b npc-006 \
+      --positive-pack v0_skeleton/districts/xingfu-xiaoqu-xuqin \
+      --negative-pack v0_skeleton/districts/xingfu-xiaoqu-north
+  exit **0** / 读数 `continuous = true`、`probe_ok = true`，三条**判据性**反例/正例：
+    ① `same_person_id_across_packs` fired=true（person_a = person_b = `person-xuqin`）
+    ② `same_npc_without_person_id_declaration` fired=true（`npc_file_exists = true`、person_b = null）
+       ← Sentinel LOW-2 形态（**有该 NPC 但未声明**，不是文件缺失）
+    ③ **`both_packs_declare_person_id_but_unequal` fired=true**（person_b = `person-xuqin-other`、
+       **`short_circuit_inactive = true`**）← Raven L-4 形态：两包都声明但不相等 ⇒ 短路失效，**真正检验比较逻辑**
+  信息性读数（**不参与 probe_ok**）：`frozen_negative_reading = {"npc_file_exists": false, "judged": false}`
+    ⇒ 如实登记「north 下没有 npc-006.json」这一事实（旧内置反例的「不连续」来自文件缺失）。
+
+--------------------------------------------------------------------------------
+[FIX-8 · 冻结面排除模式收窄]
+--------------------------------------------------------------------------------
+  cmd: `python3 /tmp/m52-r3/fix8_probe.py <ws>/V0_M52.gen.py` ⇒ exit 0 / 读数（收窄前后逐路径对比）：
+    `spikes/m52-f7/runs/arch-live/events.jsonl` ⇒ 收窄前后**都排除**（不变）；
+    `spikes/m52-ac10/events.jsonl` / `spikes/m52-r3/fix5/events.jsonl` ⇒ 收窄前**静默排除**、
+      收窄后**入面**（`changed: true`）⇒ 「任意同名文件被静默排除」这条已封堵；
+    basename 模式表**已删除** `^events\.jsonl$`，路径模式 = `runs/.*/events\.jsonl$`。
+  头部文本：已写明「`events.jsonl` —— **仅 `runs/<arm>/` 之下**（r3 收窄）」+ 生成器注释给出原委。
+
+--------------------------------------------------------------------------------
+[FIX-9 · AC-5 截图 sha256 入面]
+--------------------------------------------------------------------------------
+  `V0_M52.gen.py` 新增 `AC5_SHOT_GLOB = "spikes/m52-live/shots/*.png"` 与显式追加逻辑
+  （这些文件同时命中 `\.png$` 的 basename 排除模式，故必须显式追加）；头部已声明该**例外**。
+  读数（终版清单内，cmd: `grep -c "shots/.*\.png" <ws>/V0_M52.sha256`）⇒ 见 §冻结面终版登记；
+  逐文件 sha256 行形如 `<digest>  spikes/m52-live/shots/desktop-1440x900.png`（4 张：with/without 臂各 2 张）。
+
+--------------------------------------------------------------------------------
+[FIX-10 · 边界口径与注释取齐]
+--------------------------------------------------------------------------------
+  ① `measure_behaviour_diversity.py`：10-d-1 / 10-d-2 的**判定**改读**未舍入**占比
+     （`10d1_outdoor_share_raw` / `per_npc_outdoor_raw` 入 JSON，舍入值只作公布）；
+     `boundary_rule` 字段自述该口径。读数：wired 臂 `10d1_outdoor_share = 0.2444`、
+     `10d1_outdoor_share_raw = 0.24444444444444444`（两者一致但**判定用后者**）。
+  ② `tests/test_cassette_no_backfill_r5.py`：`COGNITION_TICKS` 的注释由「`--ticks 1`」改为引用常量名
+     （cmd: `grep -n "ticks 1" <file>` ⇒ **0 命中**；`grep -n "COGNITION_TICKS" ⇒ 5 处**）。
+
+--------------------------------------------------------------------------------
+[FIX-11 · relation.changed 语义入 schema + 覆盖度登记]
+--------------------------------------------------------------------------------
+  ① `events.schema.json`：`relation.changed` 的六个 payload 字段**只加 `description`**
+     （`source_event` = **触发原因标签、不是事件引用**；`peer_npc_id` 不保证是 NPC id）。
+     结构对拍（cmd: `python3 /tmp/m52-r3/strip_desc.py <r3 改前 schema> <交付 schema>`）⇒
+     `equal_after_stripping_description = true`（`descriptions: 9 → 15`）⇒ **只加描述，结构零改动**。
+     事件仍全过冻结 schema：300 tick / 615 条事件 ⇒ `schema_errors_total = 0`。
+  ② 覆盖度登记（`06` §7-2 已写）：本轮实测 300 tick = **434 次 talk 决策 / 431 次 talk 动作 /
+     124 次关系变更（28.6%）/ 10 个 (npc→target) 组合 / 2 个 0 变更**；
+     **机制结论一致**（`npc-001->room-101`：51 次 talk、0 次变更 ⇒ 目标是房间 `kind != "npc"`），
+     但**数值与 Raven L-3（692 / 38 / 11 / 6）不一致、不可复现** ⇒ 两份读数并列登记（口径待对齐）。
+
+--------------------------------------------------------------------------------
+[FIX-12 · AC-7 闸门覆盖范围显式声明]
+--------------------------------------------------------------------------------
+  `check_npc_admission_gate.py`：docstring + `--help` + 输出 `coverage` 块**三处一致**声明
+  「只覆盖 `--main-pack` + `--proposal-pack` 这一对；不扫 `districts/*`；第三个包不被覆盖；
+  树级由 `verify_specs.sh` 的 manifest 覆盖判据兜底」。`06` 已同步。
+  读数：`--help` 文本含 `coverage: ONLY the (--main-pack, --proposal-pack) pair`；
+  输出 JSON `coverage.scans_districts_glob = false`。
+
+--------------------------------------------------------------------------------
+[§3.3 明确不做项的可观测化（不改冻结门限）]
+--------------------------------------------------------------------------------
+  ① `06` 保留登记（含**改前树对照读数**）；② 明写「6 条窗口收敛到 `COGNITION_TICKS = 5` **把该退化形态
+  移出判据覆盖**」；③ 提供**可运行的探测器**（`tools/cognition_participation_probe.py`，**不进
+  `verify_specs.sh`、不是门禁**）：
+  cmd(workdir <ws>/02_source):
+    PYTHONDONTWRITEBYTECODE=1 python3 v0_skeleton/tools/cognition_participation_probe.py \
+      --kernel-root v0_skeleton/kernel --pack v0_skeleton/districts/xingfu-xiaoqu --ticks 60 \
+      --json /tmp/m52-r3/b9/delivery-60.json
+  交付树：exit 0 / `capability_calls_total = 5`、`capability_calls_by_slot = {"emotion.appraise": 5}`、
+    `distinct_slots_called = ["emotion.appraise"]`、`degraded_to_emotion_only = true`
+  改前树（`--kernel-root /tmp/m52-ref/02_source/v0_skeleton/kernel` + 该树自己的 pack）：
+    exit 0 / `capability_calls_total = 15`、`{"emotion.appraise": 5, "intent.plan": 5, "relation.infer": 5}`
+    ⇒ **改前 60 tick 15 次 / 交付 5 次**（与任务书要求的对照读数一致）。
+
+--------------------------------------------------------------------------------
+[回归护栏读数]
+--------------------------------------------------------------------------------
+  ① 不带新开关的路径：见 FIX-1 ②（vs r3 改前树 **diff = 0**；vs `/tmp/m52-ref` 的口径不成立，已登记）。
+  ② **全量 pytest（最终树）**：
+     cmd(workdir <ws>/02_source/v0_skeleton/kernel):
+       PYTHONDONTWRITEBYTECODE=1 python3 -m pytest -q -p no:cacheprovider -rf
+     exit **0** / 读数 **216 passed in 1042.41s (0:17:22)**、**0 failed**、失败集 = **空集**。
+     收集数 = r2 的 **215** + 1（r3 新增 F7 用例 ⑤）⇒ **失败集差集 = 0**（无新增失败）。
+     **已知环境抖动那条**（`test_live_observation::test_pace_is_identical_with_zero_and_two_observers`）
+     本次全量**恰好通过**（Sentinel 独立读数 5/6；该用例 docstring 自述此类假红，且本轮改动面不含
+     `world_clock.py` / `live.py` 的推进循环）⇒ 稳定口径 = 「1 条抖动用例 + 机制未被本轮触及」，
+     **不得**写成「0 失败 = 全稳」。证据：`/tmp/m52-r3/pytest-final-r3.txt`（含 `PYTEST_EXIT=0`）。
+  ③ **`verify_specs.sh`**：起点（r2 终版树）`PASS=158 FAIL=0 SKIP=0`（46.3s）；
+     收尾（r3 最终树）cmd(workdir <ws>/02_source): `bash verify_specs.sh --quiet`
+     ⇒ exit **0** / `verify_specs: OK (162 checks passed, 0 skipped)`、**FAIL=0 SKIP=0**
+     （158 → 162 = 新增 §18 的 3 条接线臂 + 1 条口径声明项）。
+     关键节（非 `--quiet` 复跑，证据 `/tmp/m52-r3/verify_specs-final-r3-full.txt`）：
+       `PASS  redline scan clean (non-whitelisted l0_verbatim == 0; delivery face + named excludes)`（**非 SKIP**）；
+       `PASS  AC-10 behaviour diversity: all five criteria hold (10a=0.3031 | 10b=0.2442 | 10c_min=4 | 10d1=0.325 | 10d2=2/5)`；
+       `PASS  AC-10 wired arm (MEMORY_SIGNAL_WEIGHT=0.10 / 0.20 / 0.30): all five criteria hold`（§18）；
+       `PASS  AC-10 delivery-gate arm is explicitly UNWIRED …`（§18 声明项）；
+       `PASS  AC-6 identity continuity … self-proof holds (cases=3 fired=3 …)`（FIX-7 三条判据性反例被自证读到）；
+       `PASS  AC-7 NPC admission gate: main pack == 5 npcs + pack.sig byte-identical; proposal pack == 1 npc with source_facts (probe ok)`；
+       `PASS  manifest.txt covers every non-generated file under 02_source (excluded generated files: 0)`。
+  ④ AC-10：五条判据仍全绿（阈值逐字未动）+ 逐 NPC 公布 + 接线臂读数（见 FIX-5）。
+  ⑤ AC-9：开工与收尾 `git status --porcelain` = 0（HEAD 1261436）。
+  ⑥ 冻结面：三份终版重取 + `shasum -a 256 -c` ⇒ 0 非 OK（见 §冻结面终版登记）。
+  ⑦ 残渣：`find <ws>/02_source -name __pycache__ -o -name .pytest_cache …` ⇒ 0 条（收尾复取）。
+
+--------------------------------------------------------------------------------
+[冻结面终版登记（r3 = 最后写入者）]
+--------------------------------------------------------------------------------
+  时序：三份清单在本文件**最后一次写入之后**生成（本段就是最后一次写入）。
+  生成（cmd，workdir 任意）：
+    python3 <ws>/V0_M52.gen.py                       ⇒ 写 V0_M52.sha256（**M5.2 权威面**）
+    python3 <ws>/spikes/m52-frozen/retake_m4_m5.py   ⇒ 写 V0_M4.sha256 + V0_M5.sha256
+  自校验（**面外读数，避免自指失效**）：
+    cd <ws> && shasum -a 256 -c V0_M52.sha256 V0_M4.sha256 V0_M5.sha256 | grep -vc ': OK$'
+    读数落 `/tmp/m52-r3/frozen-final-verify.txt`（面外）⇒ 期望 **0 非 OK**；
+    该次自校验在**最终清单生成之后立即复跑**，此后本文件不再追加（`03`/`06` 均在清单采集面内）。
+  r3 的清单面变更（逐条登记）：
+    ① **FIX-8**：排除模式收窄 ⇒ `events.jsonl` 仅排除 `spikes/m52-*/runs/<arm>/` 之下（basename 模式已删）；
+    ② **FIX-9**：`spikes/m52-live/shots/*.png`（AC-5 截图，4 张）**显式入面**，逐文件 sha256：
+       `28a8dc270b8d8f4045d5a0a71fe7e9c0ee36dcf484338d6a8ef9923d5a78ed9d  …/shots/desktop-1440x900.png`
+       `fede1b32220215f6e31cbf04ef11207df21bb704d1fbbe0fca50bd7bb693b302  …/shots/narrow-390x844.png`
+       `fac1c9c85b1a66e49ad297007ceb4f370f25e77312b30203495bb61a4dc6af9a  …/shots/nonp-desktop-1440x900.png`
+       `7a33bec821534ba131f7c4a668d02be8451360cddfd447128a130b2408a71a69  …/shots/nonp-narrow-390x844.png`
+       （此前 `artifact-check-with.json` 只记字节数 100572 / 64217 ⇒ 像素内容不可独立复核；
+        r3 起 sha256 在清单内 ⇒ **等长替换会被 `shasum -c` 打红**）
+    ③ 新增文件（`tools/emotion_fallbacks_probe.py` / `tools/cognition_participation_probe.py`）与
+       本轮改动的文件均已在 `02_source/manifest.txt` 登记（覆盖自检：`manifest 条目数 = 200`、
+       **未被覆盖 = 0**）。
+  **r1 / r2 版清单均标 SUPERSEDED**（r3 是最后写入者：r1/r2 的 `web/**`、`cli.py`、`tick.py`、`live.py`、
+  `tools/**`、`tests/**`、`events.schema.json`、`verify_specs.sh`、`07_adr.md`、`manifest.txt` 与根级
+  `03`/`06` 都已变 ⇒ 旧清单必然失效）。
+
+--------------------------------------------------------------------------------
+[逐 AC 回填（M5.2-r3）]
+--------------------------------------------------------------------------------
+  本轮的交付判据 = 任务书 §3.1/§3.2 的 FIX 清单 + §4 回归护栏（见上），逐条判定：
+    FIX-1 **PASS**（① memory.written 300 + fetch_episodes 30/NPC；② vs r3 改前树 diff=0；
+      ③ 三条 fail-closed 读数 exit 0/all_pass；④ `03` ⑥ 条目已补读数；⑤ `06` 已补披露）
+    FIX-2 **PASS**（走 (b)：三处文字已改 + grep 读数一致；不实断言已删）
+    FIX-3 **PASS**（走 ②：登记为既有不变式 + 改前树读数 3F/2P + 删超时注入 1F/4P）
+    FIX-4 **PASS**（`06`/ADR-019 归因更正 + 只退 r5 ⇒ hold 仍绿 73/73；P2 红 1532）
+    FIX-5 **PASS**（两组读数 + §15/`06` 口径声明 + 敏感性 3 档入门禁 §18 + window/min_importance 扫描）
+    FIX-6 **PASS**（有界样本 8 条 / health 新字段 / `finish_errors`=2 / 有界文件 950B ≤ 2624B + 单测 ⑤）
+    FIX-7 **PASS**（`both_packs_declare_person_id_but_unequal` fired=true、short_circuit_inactive=true）
+    FIX-8 **PASS**（模式收窄 + 逐路径对比读数 + 头部文本）
+    FIX-9 **PASS**（清单内出现 4 行截图 sha256）
+    FIX-10 **PASS**（① 未舍入判定 `*_raw` 入 JSON；② 注释与 `COGNITION_TICKS` 取齐，`ticks 1` 0 命中）
+    FIX-11 **PASS**（schema 只加 description：去 description 后结构相等；覆盖度已登记，数值差异已并列登记）
+    FIX-12 **PASS**（docstring + `--help` + 输出 `coverage` 块三处一致声明）
+    §3.3 **PASS**（登记 + 对照读数 15→5 + 明写「移出判据覆盖」+ 可运行探测器非门禁）
+    §4 回归护栏 **PASS**（① diff=0（真口径）② 216 passed/0 failed ③ 162/0/0 ④ AC-10 五条全绿 +
+      接线臂 ⑤ AC-9=0 ⑥ 冻结面见上 ⑦ 残渣 0）——**唯一偏差**：① 的 `/tmp/m52-ref` 口径不可满足，已登记。
+  **未关闭项（如实）**：F7 精确 4089 / SIGABRT 形态（GAP，需观测端 fd 上限 > 4096）；
+  B-9（cognition 退化）待 PM 裁决；FIX-11 覆盖度数值口径与 Raven L-3 不一致（两份并列）。

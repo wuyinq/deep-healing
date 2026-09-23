@@ -253,9 +253,9 @@ def test_injection_point_is_still_the_decision_stage(tmp_path):
     original = tick_mod.autonomous_decide
     calls: list[int] = []
 
-    def counting(world, rng, tick, ctx, *, pack_profiles):
+    def counting(world, rng, tick, ctx, *, pack_profiles, **kwargs):
         calls.append(tick)
-        return original(world, rng, tick, ctx, pack_profiles=pack_profiles)
+        return original(world, rng, tick, ctx, pack_profiles=pack_profiles, **kwargs)
 
     tick_mod.autonomous_decide = counting
     try:

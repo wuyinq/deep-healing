@@ -1,0 +1,70 @@
+FF..                                                                     [100%]
+=================================== FAILURES ===================================
+________________ test_quota_is_released_after_the_fd_is_closed _________________
+
+tmp_path = PosixPath('/private/var/folders/jw/d3rw0nn56cg0vwzyd4pxdyv40000gn/T/pytest-of-wooyinq/pytest-1205/test_quota_is_released_after_t0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x105c1b950>
+
+    def test_quota_is_released_after_the_fd_is_closed(tmp_path, monkeypatch):
+        """① 归还点必须晚于 `close_request()`。
+    
+        做法：包一层 `close_request()` 记录**关闭那一刻**的 `http_connections` 读数。
+        若归还早于关闭（r4 形态）⇒ 那一刻读数 = 0 ⇒ 本条红。
+        """
+        server = _build(tmp_path)
+        httpd = server.httpd
+        seen: list[int] = []
+        original_close = LiveHTTPServer.close_request
+    
+        def spy(self, request):
+            seen.append(self.server_ref.http_connections)
+            return original_close(self, request)
+    
+        monkeypatch.setattr(LiveHTTPServer, "close_request", spy)
+    
+        assert server.admit_accept() is True
+        assert server.http_connections == 1
+        left, right = socket.socketpair()
+        try:
+            httpd.shutdown_request(left)
+            # ① 关闭那一刻，配额**尚未**归还（= 1）
+            assert seen == [1], f"归还点早于 fd 关闭：close_request 时 http_connections={seen}"
+            # ② 关闭之后才归还
+>           assert server.http_connections == 0
+E           assert 1 == 0
+E            +  where 1 = <deephealing_kernel.live.LiveServer object at 0x105c7dd30>.http_connections
+
+tests/test_m52_f7_fd_accounting.py:82: AssertionError
+_______________ test_handler_error_is_counted_and_never_printed ________________
+
+tmp_path = PosixPath('/private/var/folders/jw/d3rw0nn56cg0vwzyd4pxdyv40000gn/T/pytest-of-wooyinq/pytest-1205/test_handler_error_is_counted_0')
+capsys = <_pytest.capture.CaptureFixture object at 0x105c7e510>
+
+    def test_handler_error_is_counted_and_never_printed(tmp_path, capsys):
+        """② handler 异常只计数，**不倒 traceback 进 stderr**。"""
+        server = _build(tmp_path)
+        httpd = server.httpd
+        left, right = socket.socketpair()
+        try:
+            try:
+                raise BrokenPipeError(32, "Broken pipe")
+            except BrokenPipeError:
+                httpd.handle_error(left, ("127.0.0.1", 12345))
+            captured = capsys.readouterr()
+>           assert captured.err == "", f"handler 异常被写进了 stderr（{len(captured.err)} 字节）"
+E           AssertionError: handler 异常被写进了 stderr（444 字节）
+E           assert '------------...-----------\n' == ''
+E             
+E             + ----------------------------------------
+E             + Exception occurred during processing of request from ('127.0.0.1', 12345)
+E             + Traceback (most recent call last):
+E             +   File "/private/tmp/m52-f7-prefix-010315/02_source/v0_skeleton/kernel/tests/test_m52_f7_fd_accounting.py", line 97, in test_handler_error_is_counted_and_never_printed
+E             +     raise BrokenPipeError(32, "Broken pipe")
+E             + BrokenPipeError: [Errno 32] Broken pipe
+E             + ----------------------------------------
+
+tests/test_m52_f7_fd_accounting.py:101: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_m52_f7_fd_accounting.py::test_quota_is_released_after_the_fd_is_closed
+FAILED tests/test_m52_f7_fd_accounting.py::test_handler_error_is_counted_and_never_printed
+2 failed, 2 passed in 1.68s

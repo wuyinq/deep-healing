@@ -1,0 +1,28 @@
+{
+  "tag": "without",
+  "pack": "xingfu-xiaoqu-xuqin",
+  "seed": 20260921,
+  "run_seconds": 110,
+  "tick_ms": 250,
+  "ticks_reached": 33,
+  "final_state_hash": "40cdbd04fc9c2d7e0d1a66832af3b36936632d0cf47a5975621bec32685548c1",
+  "final_event_chain_hash": "c5a6fb381e945493008f51ab6fd5fc3272cc8284debae0e2e6beaaa91b855c63",
+  "events_total": 134,
+  "events_backfilled": 127,
+  "driver_kinds": {
+    "bridge_meta": 1,
+    "event": 134,
+    "ready": 1,
+    "snapshot": 3,
+    "tick_meta": 33,
+    "delta": 32,
+    "live": 33,
+    "bridge_stop": 1
+  },
+  "injection": null,
+  "tick_series_file": "spikes/m52-live/readback/tick-series-without.json",
+  "events_file": "spikes/m52-live/readback/events-without.jsonl",
+  "web_bundle": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260923-002-deephealing-m5-2-character-loop/.build/web",
+  "driver": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260923-002-deephealing-m5-2-character-loop/spikes/m52-live/tools/live_driver.py",
+  "source": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260923-002-deephealing-m5-2-character-loop/02_source"
+}

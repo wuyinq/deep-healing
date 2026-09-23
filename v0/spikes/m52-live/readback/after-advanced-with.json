@@ -1,0 +1,100 @@
+{
+  "pack_id": "xingfu-xiaoqu-xuqin",
+  "tick": 33,
+  "channel_tick": 33,
+  "seed": 20260921,
+  "state_hash": "5ec2afc50d3a4d98aec0db33409a562567f5f44732236529642c7da7045530db",
+  "event_chain_hash": "a77cb9549fbdb055eb3253508d5787bfd3175a28bb0922a43116ae614501d004",
+  "world_clock": "07:33",
+  "event_count": 134,
+  "events_seen_in_panel": 134,
+  "npcs": [
+    {
+      "id": "npc-006",
+      "display_name": "徐琴（屠夫之家 · 五楼 1052）",
+      "transform": {
+        "nav_node_id": "nav-room-1052",
+        "pos_mm": {
+          "x": 4886,
+          "y": 0,
+          "z": 15000
+        },
+        "room_id": "room-1052",
+        "rot_mdeg": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      "needs": {
+        "belonging": 0.16331900000000008,
+        "esteem": 0.2489360000000001,
+        "physiology": 0.014543000000000045,
+        "safety": 0.014870000000000086,
+        "self_actualization": 0.1072740000000001
+      },
+      "emotion": {
+        "arousal": 0.5,
+        "mood_label": "anxious",
+        "updated_tick": 0,
+        "valence": -0.1
+      },
+      "schedule": {
+        "entry_id": "wd-xuqin",
+        "state": "resting",
+        "target_entity": "room-1052",
+        "until_tick": 60
+      },
+      "relations": {},
+      "trauma_flags": [
+        {
+          "healed_tick": null,
+          "id": "curse-aggregate",
+          "severity": 4,
+          "since_tick": 0
+        }
+      ]
+    }
+  ],
+  "trace": {
+    "npc_id": "npc-006",
+    "event": {
+      "seq": 62,
+      "tick": 16,
+      "type": "npc.action",
+      "action": "rest",
+      "target_entity": "room-1052"
+    },
+    "memory": {
+      "seq": 63,
+      "tick": 16,
+      "ref": "16",
+      "kind": "rest",
+      "layer": "episodic",
+      "importance": 0.144619
+    },
+    "decision": {
+      "seq": 130,
+      "tick": 33,
+      "chosen_action": "rest",
+      "signals": [
+        "episode:rest@ref=16"
+      ],
+      "utility_delta": 0.19,
+      "by_action": {
+        "rest": 0.19
+      }
+    },
+    "action": {
+      "seq": 131,
+      "tick": 33,
+      "action": "rest",
+      "target_entity": "room-1052"
+    },
+    "unlinked_signal_refs": [],
+    "complete": true
+  },
+  "trace_npcs": [
+    "npc-006"
+  ]
+}

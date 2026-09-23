@@ -1,0 +1,286 @@
+{
+ "all_pass": true,
+ "arms": {
+  "with": {
+   "chain": {
+    "action": {
+     "action": "rest",
+     "seq": 123,
+     "target_entity": "room-1052",
+     "tick": 31
+    },
+    "decision": {
+     "by_action": {
+      "rest": 0.19
+     },
+     "chosen_action": "rest",
+     "seq": 122,
+     "signals": [
+      "episode:rest@ref=16"
+     ],
+     "tick": 31,
+     "utility_delta": 0.19
+    },
+    "decision_count": 31,
+    "decisions_with_signals": 11,
+    "event": {
+     "action": "rest",
+     "seq": 62,
+     "target_entity": "room-1052",
+     "tick": 16,
+     "type": "npc.action"
+    },
+    "memory": {
+     "importance_at_write": 0.144619,
+     "kind": "rest",
+     "layer": "episodic",
+     "ref": "16",
+     "seq": 63,
+     "tick": 16
+    },
+    "npc_id": "npc-006",
+    "signal_refs": [
+     "episode:rest@ref=16"
+    ],
+    "unlinked_signal_refs": []
+   },
+   "events": 126,
+   "events_total": 134,
+   "state_hash": "5ec2afc50d3a4d98aec0db33409a562567f5f44732236529642c7da7045530db"
+  },
+  "without": {
+   "chain": {
+    "action": {
+     "action": "walk",
+     "seq": 123,
+     "target_entity": "room-1052",
+     "tick": 31
+    },
+    "decision": {
+     "by_action": {},
+     "chosen_action": "walk",
+     "seq": 122,
+     "signals": [],
+     "tick": 31,
+     "utility_delta": 0
+    },
+    "decision_count": 31,
+    "decisions_with_signals": 0,
+    "event": null,
+    "memory": null,
+    "npc_id": "npc-006",
+    "signal_refs": [],
+    "unlinked_signal_refs": []
+   },
+   "events": 126,
+   "events_total": 134,
+   "state_hash": "40cdbd04fc9c2d7e0d1a66832af3b36936632d0cf47a5975621bec32685548c1"
+  }
+ },
+ "criteria": {
+  "chain_is_complete": {
+   "pass": true,
+   "reading": {
+    "action": {
+     "action": "rest",
+     "seq": 123,
+     "target_entity": "room-1052",
+     "tick": 31
+    },
+    "decision": {
+     "by_action": {
+      "rest": 0.19
+     },
+     "chosen_action": "rest",
+     "seq": 122,
+     "signals": [
+      "episode:rest@ref=16"
+     ],
+     "tick": 31,
+     "utility_delta": 0.19
+    },
+    "event": {
+     "action": "rest",
+     "seq": 62,
+     "target_entity": "room-1052",
+     "tick": 16,
+     "type": "npc.action"
+    },
+    "memory": {
+     "importance_at_write": 0.144619,
+     "kind": "rest",
+     "layer": "episodic",
+     "ref": "16",
+     "seq": 63,
+     "tick": 16
+    }
+   }
+  },
+  "counterexample_chain_breaks_without_injection": {
+   "pass": true,
+   "reading": {
+    "without_chain": {
+     "action": {
+      "action": "walk",
+      "seq": 123,
+      "target_entity": "room-1052",
+      "tick": 31
+     },
+     "decision": {
+      "by_action": {},
+      "chosen_action": "walk",
+      "seq": 122,
+      "signals": [],
+      "tick": 31,
+      "utility_delta": 0
+     },
+     "unlinked_signal_refs": []
+    },
+    "without_decisions_with_signals": 0,
+    "without_injection": null,
+    "without_memory_node": null
+   }
+  },
+  "counterexample_observable_action_differs": {
+   "pass": true,
+   "reading": {
+    "first_divergence": {
+     "tick": 22,
+     "with": {
+      "action": "rest",
+      "target_entity": "room-1052"
+     },
+     "without": {
+      "action": "work",
+      "target_entity": "room-1052"
+     }
+    },
+    "injection_tick": 20,
+    "with_final": [
+     31,
+     "rest",
+     "room-1052"
+    ],
+    "without_final": [
+     31,
+     "walk",
+     "room-1052"
+    ]
+   }
+  },
+  "injection_reconciles_with_chain": {
+   "pass": true,
+   "reading": {
+    "chain_memory_ref": "16",
+    "importance_after": 0.95,
+    "importance_at_write": 0.144619,
+    "importance_before": 0.144619,
+    "injected_ref": "16",
+    "injection_status": "promoted",
+    "refs_after": [
+     "event:62",
+     "injected:key-experience",
+     "tick:16"
+    ],
+    "selection_rule": "rest",
+    "source_event": {
+     "action": "rest",
+     "seq": 62,
+     "target_entity": "room-1052",
+     "tick": 16
+    }
+   }
+  },
+  "memory_links_to_source_event": {
+   "pass": true,
+   "reading": {
+    "event": {
+     "action": "rest",
+     "seq": 62,
+     "target_entity": "room-1052",
+     "tick": 16,
+     "type": "npc.action"
+    },
+    "memory": {
+     "importance_at_write": 0.144619,
+     "kind": "rest",
+     "layer": "episodic",
+     "ref": "16",
+     "seq": 63,
+     "tick": 16
+    }
+   }
+  },
+  "signal_ref_equals_memory_ref": {
+   "pass": true,
+   "reading": {
+    "memory_ref": "16",
+    "signals": [
+     "episode:rest@ref=16"
+    ]
+   }
+  }
+ },
+ "injection": {
+  "importance_after": 0.95,
+  "importance_at_write": 0.144619,
+  "kind": "inject_result",
+  "kind_promoted": "rest",
+  "layer": "episodic",
+  "memory_written_event_seq": 63,
+  "mode": "promote",
+  "note": "库级提升一条**内核自产**经历的权重（AC-4 预置关键经历的等价形态）；事件 payload 里的 importance 是写入时刻的值 ⇒ 与库内当前值**有意不同**，这正是注入的可核验痕迹",
+  "npc_id": "npc-006",
+  "ref": 16,
+  "seq": 0,
+  "source_event": {
+   "action": "rest",
+   "seq": 62,
+   "target_entity": "room-1052",
+   "tick": 16
+  },
+  "status": "promoted",
+  "store_after": {
+   "importance": 0.95,
+   "kind": "rest",
+   "npc_id": "npc-006",
+   "refs": "[\"event:62\", \"injected:key-experience\", \"tick:16\"]",
+   "tick": 16
+  },
+  "store_before": {
+   "importance": 0.144619,
+   "kind": "rest",
+   "npc_id": "npc-006",
+   "refs": "[\"tick:16\"]",
+   "tick": 16
+  },
+  "target_selection": {
+   "chosen_action": "walk",
+   "decision_seq": 77,
+   "decision_tick": 20,
+   "runner_up_action": "rest",
+   "utility_ranking": [
+    {
+     "action": "walk",
+     "score": 0.159872
+    },
+    {
+     "action": "rest",
+     "score": 0.157389
+    },
+    {
+     "action": "talk",
+     "score": 0.151953
+    }
+   ]
+  },
+  "tick": 20
+ },
+ "npc": "npc-006",
+ "source_files": {
+  "run_with": "spikes/m52-live/readback/ac5-run-with.json",
+  "with": "spikes/m52-live/readback/chain-with.json",
+  "without": "spikes/m52-live/readback/chain-without.json"
+ },
+ "status": "measured"
+}

@@ -1,0 +1,83 @@
+{
+  "pack_id": "xingfu-xiaoqu-xuqin",
+  "tick": 31,
+  "channel_tick": 31,
+  "seed": 20260921,
+  "state_hash": "bdd4fc25763218d19036bc1c4cc6a230ee8308e29933cc893916ba1b06913d37",
+  "event_chain_hash": "6a7b6583023de22e49f8b52a8dad837ae4d1af4e04ea9c065b0fd553e7a9cf41",
+  "world_clock": "07:31",
+  "event_count": 126,
+  "events_seen_in_panel": 126,
+  "npcs": [
+    {
+      "id": "npc-006",
+      "display_name": "徐琴（屠夫之家 · 五楼 1052）",
+      "transform": {
+        "nav_node_id": "nav-room-1052",
+        "pos_mm": {
+          "x": 4818,
+          "y": 0,
+          "z": 15000
+        },
+        "room_id": "room-1052",
+        "rot_mdeg": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      "needs": {
+        "belonging": 0.08966600000000007,
+        "esteem": 0.09596100000000007,
+        "physiology": 0.07845400000000008,
+        "safety": 0.08998400000000009,
+        "self_actualization": 0.04331500000000009
+      },
+      "emotion": {
+        "arousal": 0.5,
+        "mood_label": "anxious",
+        "updated_tick": 0,
+        "valence": -0.1
+      },
+      "schedule": {
+        "entry_id": "wd-xuqin",
+        "state": "resting",
+        "target_entity": "room-1052",
+        "until_tick": 60
+      },
+      "relations": {},
+      "trauma_flags": [
+        {
+          "healed_tick": null,
+          "id": "curse-aggregate",
+          "severity": 4,
+          "since_tick": 0
+        }
+      ]
+    }
+  ],
+  "trace": {
+    "npc_id": "npc-006",
+    "event": null,
+    "memory": null,
+    "decision": {
+      "seq": 122,
+      "tick": 31,
+      "chosen_action": "walk",
+      "signals": [],
+      "utility_delta": 0,
+      "by_action": {}
+    },
+    "action": {
+      "seq": 123,
+      "tick": 31,
+      "action": "walk",
+      "target_entity": "room-1052"
+    },
+    "unlinked_signal_refs": [],
+    "complete": false
+  },
+  "trace_npcs": [
+    "npc-006"
+  ]
+}

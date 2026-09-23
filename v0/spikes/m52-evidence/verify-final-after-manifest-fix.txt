@@ -1,0 +1,188 @@
+PASS  required file present and non-empty: manifest.txt
+PASS  required file present and non-empty: world.schema.json
+PASS  required file present and non-empty: events.schema.json
+PASS  required file present and non-empty: snapshot.schema.json
+PASS  required file present and non-empty: capability.schema.json
+PASS  required file present and non-empty: capability.registry.sample.json
+PASS  required file present and non-empty: capability.time-budget.spec.md
+PASS  required file present and non-empty: cassette.schema.json
+PASS  required file present and non-empty: cassette.format.md
+PASS  required file present and non-empty: session.protocol.schema.json
+PASS  required file present and non-empty: district.pack.schema.json
+PASS  required file present and non-empty: district.pack.spec.md
+PASS  required file present and non-empty: intervention.policy.schema.json
+PASS  required file present and non-empty: worldmodel.adapter.spec.md
+PASS  required file present and non-empty: asset.manifest.schema.json
+PASS  required file present and non-empty: asset.license.table.json
+PASS  required file present and non-empty: asset.license.table.data.json
+PASS  required file present and non-empty: art-bible.md
+PASS  required file present and non-empty: content-pipeline.spec.md
+PASS  required file present and non-empty: verify_specs.sh
+PASS  required file present and non-empty: v0_skeleton/districts/xingfu-xiaoqu/pack.json
+PASS  required file present and non-empty: v0_skeleton/districts/xingfu-xiaoqu/pack.sig
+PASS  required file present and non-empty: v0_skeleton/districts/xingfu-xiaoqu/world.seed.json
+PASS  required file present and non-empty: v0_skeleton/districts/xingfu-xiaoqu/assets/manifest.json
+PASS  required file present and non-empty: v0_skeleton/assets-sample/placeholder-001.png
+PASS  required file present and non-empty: v0_skeleton/assets-sample/asset.manifest.sample.json
+PASS  required file present and non-empty: v0_skeleton/assets-sample/workflows/procedural-placeholder.json
+PASS  required file present and non-empty: v0_skeleton/capabilities/imagine.predict@1.0.0.capability.json
+PASS  required file present and non-empty: v0_skeleton/tools/verify_asset_pack.py
+PASS  required file present and non-empty: v0_skeleton/tools/verify_capability_binding.py
+PASS  required file present and non-empty: v0_skeleton/tools/make_placeholder_asset.py
+PASS  required file present and non-empty: v0_skeleton/tools/schema_validate.py
+PASS  required file present and non-empty: v0_skeleton/tools/validate_capability_schema.py
+PASS  required file present and non-empty: v0_skeleton/tools/determinism_probe_worker.py
+PASS  required file present and non-empty: v0_skeleton/kernel/deephealing_kernel/adapters/__init__.py
+PASS  required file present and non-empty: v0_skeleton/kernel/deephealing_kernel/adapters/determinism_probe.py
+PASS  jq parse: ./asset.license.table.data.json
+PASS  jq parse: ./asset.license.table.json
+PASS  jq parse: ./asset.manifest.schema.json
+PASS  jq parse: ./capability.registry.sample.json
+PASS  jq parse: ./capability.schema.json
+PASS  jq parse: ./cassette.schema.json
+PASS  jq parse: ./district.pack.schema.json
+PASS  jq parse: ./events.schema.json
+PASS  jq parse: ./intervention.policy.schema.json
+PASS  jq parse: ./session.protocol.schema.json
+PASS  jq parse: ./snapshot.schema.json
+PASS  jq parse: ./v0_skeleton/assets-sample/asset.manifest.sample.json
+PASS  jq parse: ./v0_skeleton/assets-sample/workflows/procedural-placeholder.json
+PASS  jq parse: ./v0_skeleton/capabilities/embed.text@1.0.0.capability.json
+PASS  jq parse: ./v0_skeleton/capabilities/emotion.appraise@1.0.0.capability.json
+PASS  jq parse: ./v0_skeleton/capabilities/imagine.predict@1.0.0.capability.json
+PASS  jq parse: ./v0_skeleton/capabilities/intent.plan@1.0.0.capability.json
+PASS  jq parse: ./v0_skeleton/capabilities/memory.reflect@1.0.0.capability.json
+PASS  jq parse: ./v0_skeleton/capabilities/pins.json
+PASS  jq parse: ./v0_skeleton/capabilities/relation.infer@1.0.0.capability.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu-north/assets/manifest.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu-north/buildings/b1-building.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu-north/buildings/courtyard-01.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-001.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-002.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-003.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-004.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu-north/npcs/npc-005.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu-north/pack.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu-north/schedules/weekday.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu-north/tasks/task-001.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu-north/tasks/task-002.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu-north/world.seed.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu-north/worldview.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu-xuqin/assets/manifest.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu-xuqin/buildings/kitchen-1052.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu-xuqin/npcs/npc-006.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu-xuqin/pack.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu-xuqin/schedules/weekday.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu-xuqin/tasks/task-003.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu-xuqin/world.seed.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu-xuqin/worldview.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu/assets/manifest.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu/buildings/b1-building.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu/buildings/courtyard-01.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-001.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-002.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-003.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-004.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu/npcs/npc-005.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu/pack.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu/schedules/weekday.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu/tasks/task-001.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu/tasks/task-002.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu/world.seed.json
+PASS  jq parse: ./v0_skeleton/districts/xingfu-xiaoqu/worldview.json
+PASS  jq parse: ./v0_skeleton/session/package.json
+PASS  jq parse: ./v0_skeleton/web/package.json
+PASS  jq parse: ./v0_skeleton/web/tsconfig.json
+PASS  jq parse: ./world.schema.json
+PASS  jq parse: ./worldview.schema.json
+INFO  jq checked 61 JSON files
+PASS  manifest.txt non-empty (197 lines)
+PASS  manifest.txt: every line has 3 fields (path | 用途 | 生成方式)
+PASS  manifest.txt covers every non-generated file under 02_source (excluded generated files: 0)
+PASS  capability OK: embed.text@1.0.0 providers=4 calibrated=yes
+PASS  capability OK: emotion.appraise@1.0.0 providers=4 calibrated=yes
+PASS  capability OK: imagine.predict@1.0.0 providers=1 calibrated=yes
+PASS  capability OK: intent.plan@1.0.0 providers=4 calibrated=yes
+PASS  capability OK: memory.reflect@1.0.0 providers=4 calibrated=yes
+PASS  capability OK: relation.infer@1.0.0 providers=4 calibrated=yes
+PASS  registry sample declares >=3 capabilities
+PASS  registry sample: every capability has four provider classes + calibrated declared values
+PASS  skeleton dir exists: v0_skeleton/web
+PASS  skeleton dir exists: v0_skeleton/kernel
+PASS  skeleton dir exists: v0_skeleton/districts/xingfu-xiaoqu
+PASS  skeleton dir exists: v0_skeleton/capabilities
+PASS  skeleton dir exists: v0_skeleton/tools
+verify_pack: OK (14 files, pack_id=xingfu-xiaoqu version=0.1.0)
+PASS  pack.sig verified for v0_skeleton/districts/xingfu-xiaoqu
+verify_pack: OK (14 files, pack_id=xingfu-xiaoqu-north version=0.2.0)
+PASS  pack.sig verified for v0_skeleton/districts/xingfu-xiaoqu-north (second district is gated)
+PASS  kernel validate --pack v0_skeleton/districts/xingfu-xiaoqu-north
+PASS  kernel validate --pack v0_skeleton/districts/xingfu-xiaoqu
+PASS  worldview.schema.json validated: v0_skeleton/districts/xingfu-xiaoqu/worldview.json
+PASS  pack.entrypoints.worldview registered: v0_skeleton/districts/xingfu-xiaoqu
+PASS  worldview two-reading numerics hold: v0_skeleton/districts/xingfu-xiaoqu
+PASS  worldview.schema.json validated: v0_skeleton/districts/xingfu-xiaoqu-north/worldview.json
+PASS  pack.entrypoints.worldview registered: v0_skeleton/districts/xingfu-xiaoqu-north
+PASS  worldview two-reading numerics hold: v0_skeleton/districts/xingfu-xiaoqu-north
+PASS  every pack carries worldview.json
+PASS  every NPC carries narrative_hooks + healing_face + hidden_face (11 npcs)
+PASS  no node_modules / dist / .build residue under 02_source
+aesthetic_check: OK (5 assets)
+PASS  aesthetic constraints satisfied
+ENGINE jsonschema 4.26.0 :: impl 白名单 module 前缀=deephealing_kernel. :: builtin 登记名=['cassette_replay', 'determinism_gate_reference'] :: 执行隔离=subprocess(calls_per_spawn=3, timeout=10.0s)
+EXEC  embed.text :: cassette_replay :: verified_impl runs=3 digest=0b751117883add83… impl_exists=True output_compliant=True stable=True
+EXEC  embed.text :: deterministic_rule :: verified_impl runs=3 digest=fa07be28c533a2d4… impl_exists=True output_compliant=True stable=True
+EXEC  emotion.appraise :: cassette_replay :: verified_impl runs=3 digest=d48b05a4d56c7b6d… impl_exists=True output_compliant=True stable=True
+EXEC  emotion.appraise :: deterministic_rule :: verified_impl runs=3 digest=a160ea3001ce0a3e… impl_exists=True output_compliant=True stable=True
+EXEC  intent.plan :: cassette_replay :: verified_impl runs=3 digest=cd27944be00b7931… impl_exists=True output_compliant=True stable=True
+EXEC  intent.plan :: deterministic_rule :: verified_impl runs=3 digest=190dae3ef1c5b252… impl_exists=True output_compliant=True stable=True
+EXEC  memory.reflect :: cassette_replay :: verified_impl runs=3 digest=62c1214f563619be… impl_exists=True output_compliant=True stable=True
+EXEC  memory.reflect :: deterministic_rule :: verified_impl runs=3 digest=18736f2b51d3afa3… impl_exists=True output_compliant=True stable=True
+EXEC  relation.infer :: cassette_replay :: verified_impl runs=3 digest=849c8d9c39470580… impl_exists=True output_compliant=True stable=True
+EXEC  relation.infer :: deterministic_rule :: verified_impl runs=3 digest=5dc62090a9f1d233… impl_exists=True output_compliant=True stable=True
+capability binding verify: capabilities=6 exec=10 gaps=0 rejects=0
+PASS  capability binding verified (world-model class binding + determinism gate + calibration)
+engine = jsonschema 4.26.0
+PASS  v0_skeleton/capabilities/embed.text@1.0.0.capability.json
+PASS  v0_skeleton/capabilities/emotion.appraise@1.0.0.capability.json
+PASS  v0_skeleton/capabilities/imagine.predict@1.0.0.capability.json
+PASS  v0_skeleton/capabilities/intent.plan@1.0.0.capability.json
+PASS  v0_skeleton/capabilities/memory.reflect@1.0.0.capability.json
+PASS  v0_skeleton/capabilities/relation.infer@1.0.0.capability.json
+schema validate: checked=6 failures=0
+PASS  capability manifests pass the real JSON-Schema validation (engine = jsonschema)
+PASS  schema validator (valid baseline green + 4 invalid red + sampling-legal green) self-proof holds (cases=6 fired=6 back_to_baseline=n/a engine=jsonschema 4.26.0)
+asset pack verify: assets=1 files=2 rejects=0
+PASS  asset pack verified (manifest coverage + license table + content hash + review status + derived_from + metadata)
+zero-generation-scan: hits=0
+PASS  runtime zero-generation scan clean
+PASS  license enum identical across asset.license.table.data.json / asset.license.table.json / asset.manifest.schema.json
+PASS  calibration registry: 0 absolute paths, 3 relative paths all resolvable
+PASS  calibration frozen anchors: 3/3 (tool anchor == on-disk sha256 == registry entry)
+PASS  scene_assert drives the application assembly path (createScene=8 geometryFor=8 setReading=7 assemblyReport=7)
+PASS  IP boundary scan clean (S1~S5: 2 patterns, 0 unwhitelisted hits)
+PASS  IP boundary scanner per-pattern (jump_scare + verbatim_body_paragraph; probe detected + removal restores baseline) self-proof holds (cases=2 fired=2 back_to_baseline=true)
+PASS  fidelity terms (register face) met: every pinned term has >=1 fact-line hit
+PASS  fidelity terms register face (per-term fact-line injection + non-fact-line ignored + word-salad capped + baseline restore) self-proof holds (cases=9 fired=9 back_to_baseline=true)
+PASS  fidelity lint --strict clean (R1~R7, 0 violations)
+PASS  fidelity lint four-state (no-anchor / fake-anchor / body paragraph / body-in-fact) self-proof holds (cases=18 fired=14 back_to_baseline=true)
+PASS  tools unit tests (AC-2 side: scan_ip_boundary + scan_fidelity_terms) pass
+PASS  tools unit tests (AC-1 side: fidelity_lint + redline_scan + extract_facts) pass
+PASS  redline scan clean (non-whitelisted l0_verbatim == 0; delivery face + named excludes)
+PASS  redline scanner (L0 excerpt punctuation-stripped => hit; technical line => no hit; title exempt; removal => baseline) self-proof holds (cases=7 fired=6 back_to_baseline=true)
+PASS  AC-10 behaviour diversity: all five criteria hold (10a/10b/10c/10d1/10d2 = true/true/true/true/true; 10a=0.3031 top=restore | 10b=0.2442 top=self_actualization | 10c_min=4 | 10d1=0.325 | 10d2=2/5)
+      per-npc outdoor share (REQ hard requirement): {"npc-001":0.1875,"npc-002":0.6181,"npc-003":0.6285,"npc-004":0.1701,"npc-005":0.0208}
+PASS  AC-10 criteria (revert C1 => single-branch dominance; revert C2+C3 => outdoor collapse) self-proof holds (cases=2 fired=2 back_to_baseline=true)
+PASS  AC-4 contrast scenario: all criteria hold (explanation chain at tick 90, injected for npc-003)
+PASS  pack.sig verified for v0_skeleton/districts/xingfu-xiaoqu-xuqin (M5.2 proposal pack)
+PASS  kernel validate --pack v0_skeleton/districts/xingfu-xiaoqu-xuqin (pure-data addition; zero kernel change)
+PASS  worldview.json passes worldview.schema.json for v0_skeleton/districts/xingfu-xiaoqu-xuqin
+PASS  AC-6 identity continuity: same person_id across packs => continuous; copied pack without alignment => discontinuous (probe ok)
+PASS  AC-6 identity continuity (positive/negative cases) self-proof holds (cases=2 fired=2 back_to_baseline=n/a)
+PASS  AC-7 NPC admission gate: main pack == 5 npcs + pack.sig byte-identical; proposal pack == 1 npc with source_facts (probe ok)
+PASS  AC-7 admission gate (extra npc / npc without source_facts) self-proof holds (cases=2 fired=2 back_to_baseline=n/a)
+PASS  CHR provenance: every setting maps to an existing non-UNVERIFIED CHR id (probe ok)
+PASS  CHR provenance (forged id / UNVERIFIED id) self-proof holds (cases=2 fired=2 back_to_baseline=n/a)
+
+verify_specs: PASS=158 FAIL=0 SKIP=0
+verify_specs: OK (158 checks passed, 0 skipped)

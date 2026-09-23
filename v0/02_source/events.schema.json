@@ -29,7 +29,8 @@
         "capability.fallback",
         "task.state_changed",
         "memory.written",
-        "snapshot.taken"
+        "snapshot.taken",
+        "relation.changed"
       ],
       "description": "事件类型枚举（冻结）。新增类型 = 契约变更，需 ADR 并递增 schema_version。"
     },
@@ -250,8 +251,34 @@
                   "npc_id": { "type": "string" },
                   "layer": { "type": "string", "enum": ["working", "episodic", "semantic"] },
                   "ref": { "type": "string" },
+                  "kind": { "type": "string" },
                   "importance": { "type": "number", "minimum": 0, "maximum": 1 },
-                  "superseded_by": { "type": ["string", "null"] }
+                  "superseded_by": { "type": [ "string", "null" ] }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "relation.changed" } }, "required": ["type"] },
+          "then": {
+            "properties": {
+              "payload": {
+                "type": "object",
+                "required": ["npc_id", "peer_npc_id", "from", "to", "tick", "source_event"],
+                "properties": {
+                  "npc_id": { "type": "string",
+                              "description": "关系变更的主体 NPC（pack 内的局部 id）。" },
+                  "peer_npc_id": { "type": "string",
+                                   "description": "关系变更的对端实体 id。**注意**：`talk` 决策的 target 可能是**房间**而非 NPC（实测 300 tick 内 692 次 talk 只产生 38 次关系变更，11 个 (npc→target) 组合里 6 个 0 次，全部因为目标 `kind != \"npc\"`）⇒ 本字段**不保证**是 NPC id。" },
+                  "from": { "type": "number", "minimum": -1, "maximum": 1,
+                            "description": "变更前的友善度标量。" },
+                  "to": { "type": "number", "minimum": -1, "maximum": 1,
+                          "description": "变更后的友善度标量（与 `from` 同刻度）。" },
+                  "tick": { "type": "integer", "minimum": 0,
+                            "description": "变更发生的 tick；与事件本身的 `tick` 相同（判据：`payload.tick == event.tick`）。" },
+                  "source_event": { "type": "string",
+                                    "description": "**触发原因标签，不是事件引用**（M5.2 r3 / FIX-11 · Raven L-3）：取值形如 `<事件类型>:<动作名>`（当前实现恒为 `npc.action:talk`），**没有 seq、没有 hash** ⇒ 只能靠「同 tick + 同 actor」间接 join 回 `npc.action` 事件。语义 = 「由哪类动作触发」，**不得**读成「指向某条具体事件」。若要强引用，需另加字段（本轮不做）。" }
                 }
               }
             }

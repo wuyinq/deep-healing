@@ -32,6 +32,14 @@ ENV = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
 
 E_MISS = re.compile(r"(?m)^E_CASSETTE_MISS\b")
 
+#: 录制/回放窗口（**M5.2 r1 夹具修正，登记，非放宽判据**）：原为 60/100 tick。
+#: M5.2 的 C1（`rest` 同时缓解 `safety`）使需求压力更快落到平衡点（实测 ~0.06）⇒
+#: `COGNITION_TREE_SPEC` 第一条 `sequence` 的门（`needs_pressure >= 0.30`）在 60/100 tick 时
+#: **不再成立** ⇒ 树退化为「只调 `emotion.appraise`」（能力调用 15 → 5、首 miss 由 `intent.plan`
+#: 变成 `emotion.appraise`）。本文件**断言一字未动**，只把窗口收敛到需求压力仍高的 tick 数，
+#: 让「完整 cassette 集 / 首 miss = intent.plan」这两条**原本的语义**重新可执行。
+COGNITION_TICKS = 5
+
 
 def _cli(*args: str) -> subprocess.CompletedProcess:
     return subprocess.run([sys.executable, "-m", "deephealing_kernel", *args],
@@ -45,7 +53,7 @@ def _record_cassettes(tmp_path: Path) -> Path:
     record_dir.mkdir(parents=True, exist_ok=True)
     cassettes.mkdir(parents=True, exist_ok=True)
     proc = _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921", "--events", str(record_dir / "e.jsonl"),
-                "--snapshot-every", "50", "--ticks", "60", "--cognition", "--memory",
+                "--snapshot-every", "50", "--ticks", str(COGNITION_TICKS), "--cognition", "--memory",
                 "--cassette-dir", str(cassettes))
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert any(cassettes.glob("*.jsonl")), "record run must produce cassettes"
@@ -63,7 +71,7 @@ def test_replay_with_missing_cassettes_fails_closed_at_command_layer(tmp_path):
     empty = _empty_cassette_dir(tmp_path)
     out = tmp_path / "miss-out"
     proc = _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
-                "--snapshot-every", "50", "--ticks", "100", "--cognition", "--replay",
+                "--snapshot-every", "50", "--ticks", str(COGNITION_TICKS), "--cognition", "--replay",
                 "--cassette-dir", str(empty))
     combined = proc.stdout + proc.stderr
     # ① exit ≠ 0 + 结构化 E_ 诊断（无 Traceback）
@@ -89,7 +97,7 @@ def test_summary_fail_closed_count_matches_journal(tmp_path):
     empty = _empty_cassette_dir(tmp_path)
     out = tmp_path / "miss-out-2"
     proc = _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
-                "--snapshot-every", "50", "--ticks", "100", "--cognition", "--replay",
+                "--snapshot-every", "50", "--ticks", str(COGNITION_TICKS), "--cognition", "--replay",
                 "--cassette-dir", str(empty))
     assert proc.returncode != 0
     summary = json.loads((out / "cognition" / "summary.json").read_text(encoding="utf-8"))
@@ -117,7 +125,7 @@ def test_negative_control_exit_zero_makes_criterion_red(tmp_path, monkeypatch):
     env = dict(ENV, DH_NEGATIVE_HIDE_CASSETTE_MISS="1")
     proc = subprocess.run(
         [sys.executable, "-m", "deephealing_kernel", "run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921",
-         "--events", str(out / "e.jsonl"), "--snapshot-every", "50", "--ticks", "100",
+         "--events", str(out / "e.jsonl"), "--snapshot-every", "50", "--ticks", str(COGNITION_TICKS),
          "--cognition", "--replay", "--cassette-dir", str(empty)],
         capture_output=True, text=True, cwd=str(KERNEL_ROOT), env=env,
     )
@@ -137,7 +145,7 @@ def test_normal_replay_with_complete_cassettes_stays_green(tmp_path):
     cassettes = _record_cassettes(tmp_path)
     out = tmp_path / "ok-out"
     proc = _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921", "--events", str(out / "e.jsonl"),
-                "--snapshot-every", "50", "--ticks", "60", "--cognition", "--memory", "--replay",
+                "--snapshot-every", "50", "--ticks", str(COGNITION_TICKS), "--cognition", "--memory", "--replay",
                 "--cassette-dir", str(cassettes))
     combined = proc.stdout + proc.stderr
     assert proc.returncode == 0, f"正常回放必须 exit 0，got {proc.returncode}: {combined[-600:]}"

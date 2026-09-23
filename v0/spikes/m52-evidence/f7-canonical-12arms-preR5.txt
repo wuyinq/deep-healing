@@ -1,0 +1,13 @@
+{"artifact_ok": true, "errno24": false, "exit": 0, "fatal_python_error": false, "fd_tcp_peak": 7, "fd_total_peak": 46, "pass": true, "served_200": 53534, "tag": "live-arch-run0", "thread_peak": 0}
+{"artifact_ok": true, "errno24": false, "exit": 0, "fatal_python_error": false, "fd_tcp_peak": 6, "fd_total_peak": 46, "pass": true, "served_200": 53584, "tag": "live-arch-run1", "thread_peak": 0}
+{"artifact_ok": true, "errno24": false, "exit": 0, "fatal_python_error": false, "fd_tcp_peak": 6, "fd_total_peak": 46, "pass": true, "served_200": 54103, "tag": "live-arch-run2", "thread_peak": 0}
+{"artifact_ok": false, "errno24": false, "exit": 1, "fatal_python_error": false, "fd_tcp_peak": 0, "fd_total_peak": 34, "pass": false, "served_200": 0, "tag": "run-arch-run0", "thread_peak": 0}
+{"artifact_ok": false, "errno24": false, "exit": 1, "fatal_python_error": false, "fd_tcp_peak": 0, "fd_total_peak": 6, "pass": false, "served_200": 0, "tag": "run-arch-run1", "thread_peak": 0}
+{"artifact_ok": false, "errno24": false, "exit": 1, "fatal_python_error": false, "fd_tcp_peak": 0, "fd_total_peak": 6, "pass": false, "served_200": 0, "tag": "run-arch-run2", "thread_peak": 0}
+{"artifact_ok": true, "errno24": false, "exit": 0, "fatal_python_error": false, "fd_tcp_peak": 1, "fd_total_peak": 41, "pass": true, "served_200": 529, "tag": "live-immediate-run0", "thread_peak": 0}
+{"artifact_ok": true, "errno24": false, "exit": 0, "fatal_python_error": false, "fd_tcp_peak": 1, "fd_total_peak": 41, "pass": true, "served_200": 527, "tag": "live-immediate-run1", "thread_peak": 0}
+{"artifact_ok": true, "errno24": false, "exit": 0, "fatal_python_error": false, "fd_tcp_peak": 1, "fd_total_peak": 41, "pass": true, "served_200": 527, "tag": "live-immediate-run2", "thread_peak": 0}
+{"artifact_ok": false, "errno24": false, "exit": 1, "fatal_python_error": false, "fd_tcp_peak": 0, "fd_total_peak": 6, "pass": false, "served_200": 0, "tag": "run-immediate-run0", "thread_peak": 0}
+{"artifact_ok": false, "errno24": false, "exit": 1, "fatal_python_error": false, "fd_tcp_peak": 0, "fd_total_peak": 35, "pass": false, "served_200": 0, "tag": "run-immediate-run1", "thread_peak": 0}
+{"artifact_ok": false, "errno24": false, "exit": 1, "fatal_python_error": false, "fd_tcp_peak": 0, "fd_total_peak": 6, "pass": false, "served_200": 0, "tag": "run-immediate-run2", "thread_peak": 0}
+all_pass=False (fd_total_peak < 1024 required)

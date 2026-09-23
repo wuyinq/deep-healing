@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deephealing.local/schemas/district.pack.schema.json",
+  "title": "DeepHealing District Pack Manifest + Signature",
+  "description": "内容包（district pack）契约。pack.json 通过本 schema 的 $defs/packManifest；pack.sig 通过 $defs/packSig。校验失败即 E_PACK_INVALID，内核不启动。目录规范见 district.pack.spec.md。",
+  "$defs": {
+    "packManifest": {
+      "type": "object",
+      "description": "districts/<pack_id>/pack.json",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "id",
+        "version",
+        "display_name",
+        "engine_range",
+        "bounds_mm",
+        "author",
+        "license",
+        "entrypoints",
+        "portals"
+      ],
+      "properties": {
+        "schema_version": { "type": "string", "const": "1.0.0" },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{1,47}$",
+          "description": "内容包 id（目录名必须一致）。"
+        },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "display_name": { "type": "string" },
+        "engine_range": {
+          "type": "string",
+          "pattern": "^>=[0-9]+\\.[0-9]+\\.[0-9]+ <[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "description": "兼容的内核契约版本区间；不满足即拒绝加载（防止新数据配旧内核静默出错）。"
+        },
+        "bounds_mm": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["x", "y", "z"],
+          "properties": {
+            "x": { "type": "integer" },
+            "y": { "type": "integer" },
+            "z": { "type": "integer" }
+          }
+        },
+        "author": { "type": "string" },
+        "license": {
+          "type": "string",
+          "enum": ["proprietary-self-authored", "CC-BY-4.0", "CC0-1.0", "MIT", "Apache-2.0"],
+          "description": "内容包自身许可。**不得**声明为 GPL 系（GPL 资产只允许留在离线美术管线，不得进运行时）。"
+        },
+        "entrypoints": {
+          "type": "object",
+          "description": "数据入口（相对 pack 根目录）。全部为数据文件，内核按 glob 加载。",
+          "additionalProperties": false,
+          "required": ["world_seed", "buildings_glob", "npcs_glob", "tasks_glob", "schedules_glob", "assets_manifest"],
+          "properties": {
+            "world_seed": { "type": "string", "const": "world.seed.json" },
+            "buildings_glob": { "type": "string", "const": "buildings/*.json" },
+            "npcs_glob": { "type": "string", "const": "npcs/*.json" },
+            "tasks_glob": { "type": "string", "const": "tasks/*.json" },
+            "schedules_glob": { "type": "string", "const": "schedules/*.json" },
+            "assets_manifest": { "type": "string", "const": "assets/manifest.json" }
+          }
+        },
+        "portals": {
+          "type": "array",
+          "description": "跨区连接：**只在数据里声明**，内核按数据建边，新增第二街区不得新增代码分支（AC-6）。",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "from_entity", "to_pack_id", "to_entity", "bidirectional"],
+            "properties": {
+              "id": { "type": "string" },
+              "from_entity": { "type": "string" },
+              "to_pack_id": { "type": "string" },
+              "to_entity": { "type": "string" },
+              "bidirectional": { "type": "boolean" },
+              "traversal_cost_ticks": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "districts_version_note": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "packSig": {
+      "type": "object",
+      "description": "districts/<pack_id>/pack.sig —— 内容包完整性清单。由 `kernel pack sign <dir>` 生成；`verify_specs.sh` 逐文件比对。",
+      "additionalProperties": false,
+      "required": ["algorithm", "pack_id", "pack_version", "generated_by", "entries"],
+      "properties": {
+        "algorithm": { "type": "string", "const": "sha256" },
+        "pack_id": { "type": "string" },
+        "pack_version": { "type": "string" },
+        "generated_by": { "type": "string" },
+        "entries": {
+          "type": "array",
+          "minItems": 1,
+          "description": "按 path 字典序排列；不含 pack.sig 自身。",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "sha256"],
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "相对 pack 根目录的 POSIX 路径。"
+              },
+              "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+              "bytes": { "type": "integer", "minimum": 0 }
+            }
+          }
+        }
+      }
+    },
+    "worldSeed": {
+      "type": "object",
+      "description": "districts/<pack_id>/world.seed.json —— 初始世界（须能通过 world.schema.json）。",
+      "additionalProperties": false,
+      "required": ["schema_version", "seed", "tick", "constants", "entities"],
+      "properties": {
+        "schema_version": { "type": "string", "const": "1.0.0" },
+        "seed": { "type": "integer", "minimum": 0 },
+        "tick": { "type": "integer", "const": 0 },
+        "constants": { "type": "object" },
+        "entities": { "type": "array", "items": { "type": "object" } },
+        "weather": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "condition": { "type": "string", "enum": ["clear", "overcast", "rain", "wind"] },
+            "temperature_c": { "type": "number" },
+            "time_of_day": { "type": "string", "pattern": "^[0-2][0-9]:[0-5][0-9]$" }
+          }
+        }
+      }
+    }
+  },
+  "$comment": "校验顺序（冻结）：1) pack.json 过 packManifest；2) engine_range 与内核契约版本比对；3) 每个 entrypoints glob 至少命中 1 个文件；4) 每个数据文件过其对应 schema；5) pack.sig 逐文件 sha256 比对，任一不符即 E_PACK_INVALID 且非 0 退出。"
+}

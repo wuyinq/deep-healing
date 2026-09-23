@@ -36,6 +36,11 @@ KERNEL_ROOT = Path(__file__).resolve().parents[1]
 SKELETON_ROOT = KERNEL_ROOT.parent                      # 02_source/v0_skeleton
 PACK = "districts/xingfu-xiaoqu"
 RELATION_FILE = "relation.infer__deterministic_rule.jsonl"
+#: 录制/回放窗口（M5.2 r1 夹具修正）：收敛到 `COGNITION_TICKS` 时需求压力仍高 ⇒ 三条槽位**真的**被调用
+#: ⇒ `relation.infer` 的 cassette 会被录。原为 100（见 `_record_into` 的修正说明）。
+#: **M5.2 r3 / FIX-10② 更正**：本注释原写「`--ticks 1`」，与常量 `COGNITION_TICKS = 5` 自相矛盾
+#: （Sentinel LOW-4 / Raven L-6②）⇒ 已与常量取齐（文字只说「收敛到 `COGNITION_TICKS`」，不写具体数）。
+COGNITION_TICKS = 5
 ENV = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
 E_TAMPERED = re.compile(r"(?m)^E_CASSETTE_TAMPERED\b")
 E_MISS = re.compile(r"(?m)^E_CASSETTE_MISS\b")
@@ -63,11 +68,28 @@ def _line_count(root: Path, name: str = RELATION_FILE) -> int:
 
 
 def _record_into(cassettes: Path, tmp: Path, *, cwd: Path | None = None) -> Path:
-    """**同 seed 先录一遍**（关键前提：不同 seed ⇒ 全 miss ⇒ 看不到回填）。"""
+    """**同 seed 先录一遍**（关键前提：不同 seed ⇒ 全 miss ⇒ 看不到回填）。
+
+    **M5.2 r1 夹具修正（登记，非放宽判据）**：原用 `--ticks 100`。M5.2 的 C1（`rest` 同时缓解
+    `safety`）使需求压力**更快落到平衡点**（实测 ~0.06）⇒ `COGNITION_TREE_SPEC` 的第一条
+    `sequence` 的门（`needs_pressure >= 0.30`）在 100 tick 时**不再成立** ⇒ 树退化为「只调
+    `emotion.appraise`」⇒ `relation.infer` 的 cassette **不再被录**，本文件 4 条用例因此
+    `FileNotFoundError`（**录制产物缺失**，不是守卫回退）。
+    修正 = 把录制/回放窗口收敛到 `COGNITION_TICKS`（= 5；此时需求压力仍高、三条槽位**真的**被调用），
+    **断言一字未动**；并额外断言「三条槽位都被调到」以防夹具再次静默退化成零命中。
+    （**M5.2 r3 / FIX-10② 更正**：本段原写「`--ticks 1`」，与常量 `COGNITION_TICKS = 5` 不一致 ——
+    Sentinel LOW-4 / Raven L-6②；现改为引用常量名，避免文字与代码再次漂移。）
+    """
     cassettes.mkdir(parents=True, exist_ok=True)
-    proc = _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921", "--ticks", "100", "--cognition",
-                "--events", str(tmp / "rec" / "events.jsonl"), "--cassette-dir", str(cassettes), cwd=cwd)
+    proc = _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921", "--ticks", str(COGNITION_TICKS),
+                "--cognition", "--events", str(tmp / "rec" / "events.jsonl"),
+                "--cassette-dir", str(cassettes), cwd=cwd)
     assert proc.returncode == 0, proc.stdout + proc.stderr
+    produced = sorted(path.name for path in cassettes.glob("*.jsonl"))
+    assert RELATION_FILE in produced, (
+        f"夹具前提失效：录制窗口内 relation.infer 未被调用 ⇒ 录制产物缺失，本文件的守卫判据不可执行。"
+        f"实测 cassette 文件 = {produced}"
+    )
     return cassettes
 
 
@@ -99,7 +121,8 @@ def _append_duplicate_key(cassettes: Path) -> Path:
 
 
 def _replay(cassettes: Path, tmp: Path, *, cwd: Path | None = None) -> subprocess.CompletedProcess:
-    return _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921", "--ticks", "100", "--replay",
+    return _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921",
+                "--ticks", str(COGNITION_TICKS), "--replay",
                 "--cassette-dir", str(cassettes), "--cognition",
                 "--events", str(tmp / "rep" / "events.jsonl"), cwd=cwd)
 
@@ -305,7 +328,8 @@ def test_regressions_clean_replay_green_and_miss_red(tmp_path):
 
     empty = tmp_path / "cas-empty"
     empty.mkdir(parents=True, exist_ok=True)
-    miss = _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921", "--ticks", "100", "--replay",
+    miss = _cli("run", "--ws-port", "0", "--pack", PACK, "--seed", "20260921",
+                "--ticks", str(COGNITION_TICKS), "--replay",
                 "--cassette-dir", str(empty), "--cognition",
                 "--events", str(tmp_path / "miss" / "events.jsonl"))
     combined = miss.stdout + miss.stderr

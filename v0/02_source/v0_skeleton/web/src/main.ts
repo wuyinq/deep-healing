@@ -15,6 +15,7 @@ import { createScene, type SceneHandle } from './scene/world.js';
 import { RenderClient, type ServerMessage } from './net/client.js';
 import { LiveChannel } from './net/live.js';
 import { ObservePanel } from './ui/observe/panel.js';
+import { CausalTrace, type CausalChain } from './ui/observe/trace.js';
 import { InterventionPanel } from './ui/participate/intervention.js';
 import type { Reading, Tone } from './scene/lighting.js';
 
@@ -29,6 +30,26 @@ export interface WorldviewDocument {
 /** 世界观 URL：由会话 `district_pack_id` 决定（**唯一**取值路径）。 */
 export function worldviewUrlFor(districtPackId: string): string {
   return `/packs/${districtPackId}/worldview.json`;
+}
+
+/**
+ * NPC 档案 URL（M5.2 r2）：显示名等**人物级声明**只存在于内容包（`npcs/<id>.json`），
+ * 渲染层**不写死**任何名字。取不到 ⇒ 退回 id（**不**伪造名字）。
+ */
+export function npcProfileUrlFor(districtPackId: string, npcId: string): string {
+  return `/packs/${districtPackId}/npcs/${npcId}.json`;
+}
+
+/** 读 NPC 显示名（只读 GET；失败返回 null，不抛、不编造）。 */
+export async function loadNpcDisplayName(districtPackId: string, npcId: string): Promise<string | null> {
+  try {
+    const response = await fetch(npcProfileUrlFor(districtPackId, npcId));
+    if (!response.ok) return null;
+    const document = (await response.json()) as { display_name?: unknown; person_id?: unknown };
+    return typeof document.display_name === 'string' ? document.display_name : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function loadWorldview(url: string): Promise<WorldviewDocument> {
@@ -48,6 +69,8 @@ export interface AppHandle {
   intervene: InterventionPanel;
   worldview: WorldviewDocument;
   live: LiveChannel;
+  /** M5.2 r2 · 因果追溯（事件 → 记忆 → 决策 → 可观察行动） */
+  trace: CausalTrace;
   setReading(reading: Reading): void;
   setMode(mode: 'observe' | 'participate'): void;
 }
@@ -72,18 +95,50 @@ export async function bootstrap(options: { worldviewUrl?: string; autoConnect?: 
 
   const scene = createScene(canvas, { worldview: tone });
   const observe = new ObservePanel(hud);
+  // **M5.2 r2**：因果追溯面板（只读文本；事件全部来自会话通道下发的 `event` 消息）
+  const trace = new CausalTrace(hud);
   const intervene = new InterventionPanel(document.getElementById('intervention-host') ?? hud, client);
   // **M4 / W12**：观察窗接**实时通道**（只读 SSE）——页面显示的是**当前**时刻，不是回放。
   const live = new LiveChannel(options.liveUrl ?? '/live/stream');
+  const npcNames = new Map<string, string>();
 
   client.onMessage((message: ServerMessage) => {
     scene.apply(message as { t: string; tick: number; state?: never; ops?: never });
     observe.apply(message);
     if (message.t === 'event') {
       const event = message.event as Record<string, unknown>;
+      // 因果追溯：**逐条**摄入内核事件（不加工、不补造）
+      trace.ingest(event);
       if (event?.type === 'task.state_changed') intervene.renderTaskEvolution([event.payload as Record<string, unknown>]);
     }
   });
+
+  /** 追溯焦点：有信号链的 NPC 优先，其次最近的 NPC；显示名来自内容包（取不到则用 id）。 */
+  const focusNpc = (): string | null => {
+    const ids = trace.npcIds();
+    if (ids.length === 0) return null;
+    const withChain = ids.filter((id) => trace.chainFor(id).complete);
+    return withChain.length > 0 ? withChain[withChain.length - 1] : ids[ids.length - 1];
+  };
+  const pendingNames = new Set<string>();
+  const renderTrace = () => {
+    const npcId = focusNpc();
+    if (npcId === null) {
+      trace.render(null);
+      return;
+    }
+    if (npcNames.has(npcId)) {
+      trace.render(npcId, npcNames.get(npcId) ?? null);
+      return;
+    }
+    trace.render(npcId, null);
+    if (pendingNames.has(npcId)) return;
+    pendingNames.add(npcId);
+    void loadNpcDisplayName(packId, npcId).then((name) => {
+      npcNames.set(npcId, name);
+      renderTrace();
+    });
+  };
 
   const modeBadge = document.getElementById('mode-badge');
   const readingBadge = document.getElementById('reading-badge');
@@ -107,7 +162,7 @@ export async function bootstrap(options: { worldviewUrl?: string; autoConnect?: 
 
   // 暴露给真浏览器验收脚本（Playwright）读取，不构成写路径
   (globalThis as unknown as { __deephealing?: unknown }).__deephealing = {
-    scene, client, observe, intervene, worldview, live, setReading, setMode,
+    scene, client, observe, intervene, worldview, live, trace, setReading, setMode,
     geometry: () => scene.geometry(),
     entityIds: () => scene.entityIds(),
     writeControls: () => observe.listWriteControls(),
@@ -121,6 +176,43 @@ export async function bootstrap(options: { worldviewUrl?: string; autoConnect?: 
     // **M4 / AC-M4-10③ + AC-M4-11③**：通道读数（当前 tick / 世界钟 / 墙上钟 / observers）
     liveReadout: () => observe.liveReadout(),
     liveProjection: () => live.stateProjection(),
+    // **M5.2 r2 / AC-5 + W11**：因果追溯（事件 → 记忆 → 决策 → 可观察行动）
+    traceNpcs: () => trace.npcIds(),
+    traceFor: (npcId: string): CausalChain => trace.chainFor(npcId),
+    receivedEvents: () => trace.receivedEvents(),
+    // **M5.2 r2 / AC-5④**：reload 回读用的**关键字段快照**（全部来自页面当前读数）
+    acSnapshot: () => {
+      const projection = (live.stateProjection() ?? {}) as Record<string, unknown>;
+      const entities = Array.isArray(projection.entities)
+        ? (projection.entities as Array<Record<string, unknown>>) : [];
+      const npcs = entities
+        .filter((entity) => entity.kind === 'npc')
+        .map((entity) => ({
+          id: entity.id,
+          display_name: npcNames.get(String(entity.id)) ?? null,
+          transform: entity.transform ?? null,
+          needs: entity.needs ?? null,
+          emotion: entity.emotion ?? null,
+          schedule: entity.schedule ?? null,
+          relations: entity.relations ?? null,
+          trauma_flags: entity.trauma_flags ?? null,
+        }));
+      const focus = focusNpc();
+      return {
+        pack_id: packId,
+        tick: observeTick(observe),
+        channel_tick: live.channelTick,
+        seed: projection.seed ?? null,
+        state_hash: live.readout().stateHash,
+        event_chain_hash: live.readout().eventChainHash,
+        world_clock: live.worldClock,
+        event_count: trace.eventCount(),
+        events_seen_in_panel: observe.eventsSeen,
+        npcs,
+        trace: focus === null ? null : trace.chainFor(focus),
+        trace_npcs: trace.npcIds(),
+      };
+    },
   };
 
   setMode('observe');
@@ -131,20 +223,19 @@ export async function bootstrap(options: { worldviewUrl?: string; autoConnect?: 
   live.connect();
   const liveTimer = setInterval(() => {
     observe.renderLiveReadout(live.readout());
+    renderTrace();
   }, 250);
   if (typeof window !== 'undefined') {
     window.addEventListener('beforeunload', () => { clearInterval(liveTimer); live.close(); });
   }
   observe.renderLiveReadout(live.readout());
 
-  if (options.autoConnect !== false) {
-    try {
-      await client.connect({ url: '/ws', mode: 'observe' });
-    } catch {
-      // 无会话层时仍渲染本地场景（离线可看），但**不**伪造世界状态
-    }
-  }
-  return { scene, client, observe, intervene, worldview, live, setReading, setMode };
+  // **M5.2 r2 修正（AC-5 真浏览器实测）**：此处原有**第二次** `client.connect()` —— 一次页面加载
+  // 会建**两个会话**（两次 `POST /sessions`），两个 WS 同时喂 `apply()`，而 `apply()` 的
+  // 「(tick, seq) 单调」判据是**按会话**成立的 ⇒ 两条会话的 seq 交错，后到的消息被大面积丢弃
+  // （实测：面板 tick 卡在 10，而通道 tick 已 30）。上面的第一次 connect 已建立会话与 pack 归属，
+  // 这里**删除重复连接**（零功能损失：`mode`/`districtPackId` 均已由第一次连接设定）。
+  return { scene, client, observe, intervene, worldview, live, trace, setReading, setMode };
 }
 
 function observeTick(panel: ObservePanel): number {
@@ -153,4 +244,15 @@ function observeTick(panel: ObservePanel): number {
   return match ? Number(match[1]) : 0;
 }
 
-void bootstrap();
+/**
+ * 启动参数（M5.2 r2）：`?pack=<district_pack_id>` 由**宿主页面**给出（只读查询参数），
+ * 缺省保持既有默认包。⇒ 同一份构建可服务不同内容包，且**世界观 / NPC 档案**都从
+ * 该 pack 的目录取（不再把非默认包的 NPC 名字请求打到默认包上 ⇒ 实测会 404）。
+ */
+function bootstrapOptionsFromLocation(): { districtPackId?: string } {
+  if (typeof location === 'undefined') return {};
+  const pack = new URLSearchParams(location.search).get('pack');
+  return pack ? { districtPackId: pack } : {};
+}
+
+void bootstrap(bootstrapOptionsFromLocation());

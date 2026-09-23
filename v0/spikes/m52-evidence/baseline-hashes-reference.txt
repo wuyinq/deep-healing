@@ -1,0 +1,11 @@
+{
+ "other_seed_chain_tail": "865223ffdc9dd304ba74caad40ad24d323dbe608d15e347b4bb63ec07f40ffb2",
+ "other_seed_state_hash": "ca342f4fbafe90f8504fd25537dd5d22e691a780a7869ffcf727dd16e7cdadf7",
+ "run_a_chain_tail": "81669e9685e5dec845d0d5060321c0eba66939063997941c5be5f2e0d97d8cb6",
+ "run_a_state_hash": "0d79e5f349cad67d8ebc623fb7e49a17082e0170d0b5a5c3de62715ea42a2dca",
+ "run_b_chain_tail": "81669e9685e5dec845d0d5060321c0eba66939063997941c5be5f2e0d97d8cb6",
+ "run_b_state_hash": "0d79e5f349cad67d8ebc623fb7e49a17082e0170d0b5a5c3de62715ea42a2dca",
+ "seed_change_alters_baseline": true,
+ "tree": "/private/tmp/m52-ref",
+ "two_runs_bit_identical": true
+}

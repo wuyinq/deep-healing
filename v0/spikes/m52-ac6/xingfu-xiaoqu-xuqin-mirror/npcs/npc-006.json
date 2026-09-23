@@ -1,0 +1,91 @@
+{
+  "id": "npc-006",
+  "person_id": "person-xuqin",
+  "display_name": "徐琴（屠夫之家 · 五楼 1052）",
+  "home_entity": "room-1052",
+  "need_weights": {
+    "physiology": 0.8,
+    "safety": 1.3,
+    "belonging": 1.2,
+    "esteem": 0.7,
+    "self_actualization": 0.9
+  },
+  "schedule_ref": "schedules/weekday.json#xuqin",
+  "relations_seed": {},
+  "trauma_flags": [
+    {
+      "id": "curse-aggregate",
+      "severity": 4,
+      "since_tick": 0,
+      "source_facts": ["CHR-03", "CHR-08"]
+    }
+  ],
+  "personality": {
+    "openness": 0.45,
+    "conscientiousness": 0.6,
+    "extraversion": 0.2,
+    "agreeableness": 0.72,
+    "neuroticism": 0.85
+  },
+  "cognition_policy": {
+    "capability_slots": ["emotion.appraise", "memory.reflect", "relation.infer"],
+    "daily_token_budget": 65000,
+    "reflect_trigger": {
+      "min_ticks_between": 720,
+      "importance_threshold": 0.6
+    }
+  },
+  "memory_policy": {
+    "working_capacity": 64,
+    "episodic_keep_top": 400,
+    "decay_half_life_ticks": 43200
+  },
+  "narrative_hooks": [
+    "红色外衣下面取出过一把钥匙",
+    "擦拭餐刀之后才去看别人手上的伤",
+    "独自离开，只留下看过的一幅画"
+  ],
+  "healing_face": [
+    "失控前先让人下楼，再改口说一起走"
+  ],
+  "hidden_face": [
+    "仿佛是另外一个人在用她的脸微笑"
+  ],
+  "key_events": [
+    {
+      "id": "xuqin-pushes-hanfei-away",
+      "tick_hint": 900,
+      "state": "interrupted",
+      "target_entity": "courtyard-01",
+      "description_key": "boundary_guard_before_loss_of_control",
+      "source_facts": ["CHR-04"],
+      "observable": "先推开对端并让其下楼，随后改口一起走"
+    }
+  ],
+  "source_facts": [
+    "CHR-01", "CHR-02", "CHR-03", "CHR-04", "CHR-05", "CHR-07",
+    "CHR-08", "CHR-09", "CHR-10", "CHR-11", "CHR-12", "CHR-13",
+    "CHR-14", "CHR-18", "CHR-20", "CHR-21", "CHR-22"
+  ],
+  "source_fact_map": {
+    "display_name": ["CHR-18"],
+    "home_entity": ["CHR-18"],
+    "narrative_hooks[0]": ["CHR-05"],
+    "narrative_hooks[1]": ["CHR-07", "CHR-11", "CHR-14"],
+    "narrative_hooks[2]": ["CHR-10", "CHR-13"],
+    "healing_face[0]": ["CHR-04"],
+    "hidden_face[0]": ["CHR-03"],
+    "trauma_flags.curse-aggregate": ["CHR-03", "CHR-08"],
+    "personality.neuroticism": ["CHR-03", "CHR-20"],
+    "personality.agreeableness": ["CHR-04", "CHR-11"],
+    "personality.extraversion": ["CHR-11"],
+    "relations.hanfei.sister_address": ["CHR-02"],
+    "relations.amen.trusted": ["CHR-12"],
+    "key_events.xuqin-pushes-hanfei-away": ["CHR-04"],
+    "appearance.red_coat": ["CHR-05"],
+    "appearance.scarlet_eyes": ["CHR-22"],
+    "affiliation.butcher_house_kitchen": ["CHR-09", "CHR-21"],
+    "cognition_policy.capability_slots": ["CHR-03", "CHR-08"]
+  },
+  "v0_role": "M5.2 人物闭环提案包的主人物：事件 → 记忆 → 决策链的可追溯样本（独立 pack，独立读数）"
+}

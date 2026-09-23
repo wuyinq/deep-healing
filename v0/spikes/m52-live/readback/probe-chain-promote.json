@@ -1,0 +1,113 @@
+{
+ "action_sequences_identical": false,
+ "counterexample_signals_empty_without_injection": true,
+ "first_divergence_after_injection": {
+  "tick": 22,
+  "with": {
+   "action": "rest",
+   "target_entity": "room-1052"
+  },
+  "without": {
+   "action": "work",
+   "target_entity": "room-1052"
+  }
+ },
+ "importance": 0.95,
+ "inject_at": 20,
+ "injection": {
+  "at_tick": 20,
+  "importance_after": 0.95,
+  "importance_at_write": 0.144619,
+  "kind_promoted": "rest",
+  "memory_written_event_seq": 63,
+  "npc_id": "npc-006",
+  "ref": 16,
+  "source_event": {
+   "action": "rest",
+   "seq": 62,
+   "target_entity": "room-1052",
+   "tick": 16
+  },
+  "status": "promoted",
+  "store_after": {
+   "importance": 0.95,
+   "kind": "rest",
+   "npc_id": "npc-006",
+   "refs": "[\"event:62\", \"injected:key-experience\", \"tick:16\"]",
+   "tick": 16
+  },
+  "store_before": {
+   "importance": 0.144619,
+   "kind": "rest",
+   "npc_id": "npc-006",
+   "refs": "[\"tick:16\"]",
+   "tick": 16
+  },
+  "target_selection": {
+   "chosen_action": "walk",
+   "decision_seq": 77,
+   "decision_tick": 20,
+   "runner_up_action": "rest",
+   "utility_ranking": [
+    {
+     "action": "walk",
+     "score": 0.159872
+    },
+    {
+     "action": "rest",
+     "score": 0.157389
+    },
+    {
+     "action": "talk",
+     "score": 0.151953
+    }
+   ]
+  }
+ },
+ "pack": "xingfu-xiaoqu-xuqin",
+ "seed": 20260921,
+ "signal_ref_equals_promoted_ref": true,
+ "status": "measured",
+ "ticks": 120,
+ "with_injection": {
+  "decisions": 120,
+  "decisions_with_signals": 100,
+  "event_count": 485,
+  "first_decision_with_signals": {
+   "chosen_action": "rest",
+   "influence": {
+    "by_action": {
+     "rest": 0.19
+    },
+    "read": true,
+    "signals": [
+     "episode:rest@ref=16"
+    ],
+    "utility_delta": 0.19
+   },
+   "seq": 81,
+   "target_entity": "room-1052",
+   "tick": 21
+  },
+  "name": "promote",
+  "npc_ids": [
+   "npc-006"
+  ],
+  "promote": true,
+  "state_hash": "a6cf1fbbfaf5f9df04eb54deed513b256ae0c36dd8aa7f220000c989e6e2369f",
+  "ticks": 120
+ },
+ "without_injection": {
+  "decisions": 120,
+  "decisions_with_signals": 0,
+  "event_count": 485,
+  "first_decision_with_signals": null,
+  "name": "none",
+  "npc_ids": [
+   "npc-006"
+  ],
+  "promote": false,
+  "state_hash": "0cef5646514ac2078723b6c3e77b60aabed07af718a5f79ad11843d518a55202",
+  "ticks": 120
+ }
+}

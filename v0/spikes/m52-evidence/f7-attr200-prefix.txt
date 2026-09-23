@@ -1,0 +1,3 @@
+{"artifact_ok": true, "errno24": false, "exit": 0, "fatal_python_error": false, "fd_tcp_peak": 17, "fd_total_peak": 57, "pass": true, "served_200": 51343, "tag": "attr200-live-arch-run0", "thread_peak": 0}
+{"artifact_ok": true, "errno24": false, "exit": 0, "fatal_python_error": false, "fd_tcp_peak": 16, "fd_total_peak": 56, "pass": true, "served_200": 53599, "tag": "attr200-live-arch-run1", "thread_peak": 0}
+all_pass=True (fd_total_peak < 1024 required)

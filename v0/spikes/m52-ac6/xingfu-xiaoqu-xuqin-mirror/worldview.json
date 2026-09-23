@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0.0",
+  "pack_id": "xingfu-xiaoqu-xuqin",
+  "tone": {
+    "surface": { "light_k": 4000, "ambient_ratio": 0.40, "saturation_pct": 26 },
+    "underneath": { "light_k": 3000, "ambient_ratio": 0.10, "saturation_pct": 16 }
+  },
+  "anomalies": [
+    {
+      "id": "anom-xq-01",
+      "at_entity": "kitchen-01",
+      "kind": "repeating_trace",
+      "surface_read": "厨房里有人把刀擦得很干净",
+      "underneath_read": "擦干净的是刀，不是手；她先看刀再看人",
+      "reveal_at_tick": 90
+    },
+    {
+      "id": "anom-xq-02",
+      "at_entity": "room-1052",
+      "kind": "still_lit",
+      "surface_read": "五楼那扇窗亮到很晚",
+      "underneath_read": "灯下的人不是她一个人的表情",
+      "reveal_at_tick": 240
+    }
+  ],
+  "fault_lines": [
+    {
+      "id": "fault-xq-01",
+      "about": "npc-006",
+      "kind": "boundary_guard",
+      "repair_via": "key_events.xuqin-pushes-hanfei-away",
+      "repaired_state": "held"
+    }
+  ]
+}

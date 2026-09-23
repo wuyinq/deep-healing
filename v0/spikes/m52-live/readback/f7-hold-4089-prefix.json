@@ -1,0 +1,31 @@
+{
+ "all_pass": false,
+ "arms": [
+  {
+   "artifact_ok": true,
+   "artifacts": [
+    "live_state.json"
+   ],
+   "errno24": false,
+   "exit": 0,
+   "fatal_python_error": false,
+   "fd_peak_below_limit": false,
+   "fd_tcp_peak": 1745,
+   "fd_total_peak": 1785,
+   "mode": "live",
+   "observers": 818,
+   "pass": false,
+   "probe_nofile_raised": false,
+   "probe_nofile_soft": 8192,
+   "regime": "hold",
+   "served_200": 2121,
+   "tag": "4089-live-hold-run0",
+   "thread_peak": 0,
+   "wall_s": 0.62
+  }
+ ],
+ "fd_peak_limit": 1024,
+ "kernel_root": "/private/tmp/m52-f7-prefix-010315/02_source/v0_skeleton/kernel",
+ "observers": 818,
+ "regime_reference": "m4-r4-arch-f7-probe-reference.py (M4 §D-12)"
+}

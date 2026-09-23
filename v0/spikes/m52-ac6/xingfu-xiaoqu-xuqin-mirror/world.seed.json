@@ -1,0 +1,58 @@
+{
+  "schema_version": "1.0.0",
+  "seed": 20260921,
+  "tick": 0,
+  "constants": {
+    "dt_ms": 100,
+    "tick_rate_hz": 10,
+    "snapshot_every_ticks": 50,
+    "day_ticks": 1440,
+    "world_bounds_mm": { "x": 48000, "y": 30000, "z": 24000 },
+    "max_entities": 512
+  },
+  "weather": {
+    "condition": "overcast",
+    "temperature_c": 20.5,
+    "time_of_day": "07:30"
+  },
+  "entities": [
+    {
+      "id": "room-1052",
+      "kind": "room",
+      "transform": { "pos_mm": { "x": 4800, "y": 0, "z": 15000 }, "rot_mdeg": { "x": 0, "y": 0, "z": 0 }, "room_id": "room-1052", "nav_node_id": "nav-room-1052" },
+      "tags": ["residential", "floor-5"]
+    },
+    {
+      "id": "kitchen-01",
+      "kind": "zone",
+      "transform": { "pos_mm": { "x": 12000, "y": 0, "z": 15000 }, "rot_mdeg": { "x": 0, "y": 0, "z": 0 }, "room_id": null, "nav_node_id": "nav-kitchen" },
+      "tags": ["shared", "kitchen"]
+    },
+    {
+      "id": "courtyard-01",
+      "kind": "zone",
+      "transform": { "pos_mm": { "x": 24000, "y": 0, "z": 12000 }, "rot_mdeg": { "x": 0, "y": 0, "z": 0 }, "room_id": null, "nav_node_id": "nav-courtyard" },
+      "tags": ["shared", "outdoor"]
+    },
+    {
+      "id": "gate-north",
+      "kind": "portal",
+      "transform": { "pos_mm": { "x": 24000, "y": 0, "z": 24000 }, "rot_mdeg": { "x": 0, "y": 0, "z": 0 }, "room_id": null, "nav_node_id": "nav-gate-north" },
+      "tags": ["portal", "inactive-target"]
+    },
+    {
+      "id": "npc-006",
+      "kind": "npc",
+      "transform": { "pos_mm": { "x": 5000, "y": 0, "z": 15000 }, "rot_mdeg": { "x": 0, "y": 0, "z": 0 }, "room_id": "room-1052", "nav_node_id": "nav-room-1052" },
+      "needs": { "physiology": 0.38, "safety": 0.52, "belonging": 0.61, "esteem": 0.44, "self_actualization": 0.33 },
+      "emotion": { "valence": -0.1, "arousal": 0.5, "mood_label": "anxious", "updated_tick": 0 },
+      "schedule": { "entry_id": "wd-xuqin", "state": "resting", "until_tick": 60, "target_entity": "room-1052" },
+      "relations": {},
+      "memory_ref": { "episode_table": "episodes", "working_buffer_id": "wb-npc-006", "last_reflect_tick": null, "fact_keys": [] },
+      "trauma_flags": [
+        { "id": "curse-aggregate", "severity": 4, "since_tick": 0, "healed_tick": null }
+      ],
+      "tags": ["resident", "xuqin-proposal"]
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+⑦ 独立性对照: 0 个观察者 ⇒ 窗口 2.1357s / tick 增量 112（期望 106.8）| 2 个观察者连着 ⇒ 窗口 2.1444s / tick 增量 104（期望 107.2）
+F
+=================================== FAILURES ===================================
+______________ test_pace_is_identical_with_zero_and_two_observers ______________
+
+tmp_path = PosixPath('/private/var/folders/jw/d3rw0nn56cg0vwzyd4pxdyv40000gn/T/pytest-of-wooyinq/pytest-1201/test_pace_is_identical_with_ze0')
+
+    def test_pace_is_identical_with_zero_and_two_observers(tmp_path):
+        """⑦ 观察者独立性对照（D-M4-15⑤）：同一窗口，0 个 vs 2 个观察者 ⇒ 推进节奏相同。
+    
+        **F6（r3）**：容差锚定到**实测窗口 / pace**（不再是固定 `|Δ| ≤ 3`）——
+        固定阈值在 CPU 争用下假红（`time.sleep(2.0)` 实际跑 2.2s ⇒ 期望 110 tick 而阈值按 100 算）。
+        """
+        zero = _measure_pace(tmp_path, observers=0)
+        two = _measure_pace(tmp_path, observers=2)
+        print(f"⑦ 独立性对照: 0 个观察者 ⇒ 窗口 {zero[1]:.4f}s / tick 增量 {zero[0]}"
+              f"（期望 {zero[1] / PACE_S_PER_TICK:.1f}）| 2 个观察者连着 ⇒ 窗口 {two[1]:.4f}s / "
+              f"tick 增量 {two[0]}（期望 {two[1] / PACE_S_PER_TICK:.1f}）")
+        failures = _pace_failures(zero, two)
+>       assert failures == [], "；".join(failures)
+E       AssertionError: 0 个观察者: tick 增量 112 与**实测窗口** 2.1357s 锚定的期望 106.8 不一致（容差 3.2）⇒ 推进不再 deadline 锚定；2 个观察者: tick 增量 104 与**实测窗口** 2.1444s 锚定的期望 107.2 不一致（容差 3.2）⇒ 推进不再 deadline 锚定；观察者数量改变了推进节奏（52.44 tick/s vs 48.50 tick/s）⇒ 世界不独立于观察者
+E       assert ['0 个观察者: tic...）⇒ 世界不独立于观察者'] == []
+E         
+E         Left contains 3 more items, first extra item: '0 个观察者: tick 增量 112 与**实测窗口** 2.1357s 锚定的期望 106.8 不一致（容差 3.2）⇒ 推进不再 deadline 锚定'
+E         Use -v to get more diff
+
+tests/test_live_observation.py:356: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_live_observation.py::test_pace_is_identical_with_zero_and_two_observers
+1 failed in 6.25s

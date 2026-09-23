@@ -1,0 +1,115 @@
+{
+  "schema_version": "1.0.0",
+  "table_version": "2026-09-21.r3",
+  "collected_at": "2026-09-21T19:5x+08:00",
+  "default_policy": "deny",
+  "license_enum": ["apache-2.0", "mit", "cc0-1.0", "cc-by-4.0", "flux-1-dev-non-commercial", "cc-by-nc-4.0", "tencent-hunyuan-3d", "unknown"],
+  "commercial_license_whitelist": ["apache-2.0", "mit", "cc0-1.0", "cc-by-4.0"],
+  "models": [
+    {
+      "source_model": "programmatic-placeholder",
+      "model_version": "1.0.0",
+      "license": "cc0-1.0",
+      "commercial_use": true,
+      "kind": "procedural",
+      "url": "local://v0_skeleton/tools/make_placeholder_asset.py",
+      "adjudication": "adopt"
+    },
+    {
+      "source_model": "Z-Image",
+      "model_version": "*",
+      "license": "apache-2.0",
+      "commercial_use": true,
+      "kind": "image",
+      "url": "https://huggingface.co/Tongyi-MAI/Z-Image",
+      "adjudication": "adopt"
+    },
+    {
+      "source_model": "Qwen-Image",
+      "model_version": "*",
+      "license": "apache-2.0",
+      "commercial_use": true,
+      "kind": "image",
+      "url": "https://huggingface.co/Qwen/Qwen-Image",
+      "adjudication": "adopt"
+    },
+    {
+      "source_model": "FLUX.1-schnell",
+      "model_version": "*",
+      "license": "apache-2.0",
+      "commercial_use": true,
+      "kind": "image",
+      "url": "https://huggingface.co/black-forest-labs/FLUX.1-schnell",
+      "adjudication": "adopt"
+    },
+    {
+      "source_model": "FLUX.1-dev",
+      "model_version": "*",
+      "license": "flux-1-dev-non-commercial",
+      "commercial_use": false,
+      "kind": "image",
+      "url": "https://huggingface.co/black-forest-labs/FLUX.1-dev",
+      "adjudication": "reject",
+      "deny_reason": "非商用权重：禁止进入任何交付产物（含 manifest / 示例 / 截图）"
+    },
+    {
+      "source_model": "mflux",
+      "model_version": "*",
+      "license": "mit",
+      "commercial_use": true,
+      "kind": "tool",
+      "url": "https://github.com/filipstrand/mflux",
+      "adjudication": "tool_only",
+      "deny_reason": "工具本身 MIT；其**产物**的许可由被调用的权重决定，必须逐资产按权重行判定"
+    },
+    {
+      "source_model": "ACE-Step",
+      "model_version": "*",
+      "license": "apache-2.0",
+      "commercial_use": true,
+      "kind": "audio",
+      "url": "https://github.com/ace-step/ACE-Step",
+      "adjudication": "adopt"
+    },
+    {
+      "source_model": "MusicGen",
+      "model_version": "*",
+      "license": "cc-by-nc-4.0",
+      "commercial_use": false,
+      "kind": "audio",
+      "url": "https://github.com/facebookresearch/audiocraft",
+      "adjudication": "reject",
+      "deny_reason": "代码 MIT ≠ 权重许可：权重 CC-BY-NC，禁止进交付链"
+    },
+    {
+      "source_model": "Hunyuan3D-2",
+      "model_version": "*",
+      "license": "tencent-hunyuan-3d",
+      "commercial_use": false,
+      "kind": "3d",
+      "url": "https://github.com/Tencent-Hunyuan/Hunyuan3D-2",
+      "adjudication": "reject",
+      "deny_reason": "许可为腾讯自有条款（含地域限制），非白名单；且 CUDA 依赖 → 本机不可跑。本轮未逐字核条款 → 保守拒收"
+    },
+    {
+      "source_model": "TripoSG",
+      "model_version": "*",
+      "license": "mit",
+      "commercial_use": true,
+      "kind": "3d",
+      "url": "https://github.com/VAST-AI-Research/TripoSG",
+      "adjudication": "reject",
+      "deny_reason": "代码 MIT 可商用，但**权重**许可与 CUDA 依赖未核（本机不可跑）→ 本轮不进交付链，待离线云核验"
+    },
+    {
+      "source_model": "ComfyUI",
+      "model_version": "*",
+      "license": "unknown",
+      "commercial_use": false,
+      "kind": "tool",
+      "url": "https://github.com/comfyanonymous/ComfyUI",
+      "adjudication": "tool_only",
+      "deny_reason": "GPL-3.0：只允许独立进程调用 + 产物文件；不得链接进产品。作为**资产来源**不可商用"
+    }
+  ]
+}

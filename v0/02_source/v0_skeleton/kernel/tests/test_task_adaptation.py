@@ -44,8 +44,21 @@ SEED = 20260921
 #   M1M2_BASELINE_CHAIN_TAIL     = "baecca9219a9bbabfc0e46349834438cc0c61ba44fd6315aeda26fb65acfd786"
 # 本轮（M4）新基线：seed 20260921 / 300 tick / pack districts/xingfu-xiaoqu
 #   变更时刻：epoch 1790130629（2026-09-23 10:30:29 +08:00）
-M4_BASELINE_STATE_HASH_300 = "0d79e5f349cad67d8ebc623fb7e49a17082e0170d0b5a5c3de62715ea42a2dca"
-M4_BASELINE_CHAIN_TAIL = "81669e9685e5dec845d0d5060321c0eba66939063997941c5be5f2e0d97d8cb6"
+# ---- M5.2 r1 **重登记**（Raven M-1：只允许改这两个常量）------------------------------------
+# 旧值（M4 口径，**仅存档，不再作断言**）：
+#   M4_BASELINE_STATE_HASH_300 = "0d79e5f349cad67d8ebc623fb7e49a17082e0170d0b5a5c3de62715ea42a2dca"
+#   M4_BASELINE_CHAIN_TAIL     = "81669e9685e5dec845d0d5060321c0eba66939063997941c5be5f2e0d97d8cb6"
+# 变更原因：M5.2 r1 的三处内核改动（C1 `rest` 同时缓解 `safety` / C2 `explore` 候选移除 `home` /
+#   C3 日程边界块）+ 关系（友善度）运行时演进 **改变了行为** ⇒ 属 AC-M4-8⑥ **允许的基线数值漂移**
+#   （**不是机制回退**：确定性机制由本测试自身的两条自证独立钉住 —— ① 两次独立运行逐位一致；
+#    ③ 换 seed ⇒ 基线必须改变）。
+# 独立读数（`/tmp/m52-tools/baseline_hashes.py`，同一命令跑两棵树）：
+#   交付树: state_hash=8603dedb… chain_tail=c79003ce… two_runs_bit_identical=true seed_change_alters=true
+#   对照树(/tmp/m52-ref, 改前): state_hash=0d79e5f3… chain_tail=81669e96… ⇒ **与旧登记常量逐位相同**
+#     ⇒ 旧常量确实来自改前树，漂移可归因于本轮改动。
+# 变更时刻：epoch 1790180400 前后（2026-09-24 00:40 +08:00）
+M4_BASELINE_STATE_HASH_300 = "8603dedb8cdb4a1799c80c8061c2e056025164a0cf16272a39020a442774c15c"
+M4_BASELINE_CHAIN_TAIL = "c79003ce8ef38959ad09270ec20a1206d909cebb45c54d0b27c2b9b2070d8174"
 
 
 def _kernel(tmp_path: Path, *, snapshot_every: int = 0) -> tuple[object, WorldKernel, EventLog]:

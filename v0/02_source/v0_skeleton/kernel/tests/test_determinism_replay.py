@@ -89,8 +89,8 @@ def test_replay_detects_wall_clock_leak(tmp_path):
     #    检测器必须变红。签名多了关键字参数 `pack_profiles`（决策层需要 NPC 档案）。
     original = tick_mod.autonomous_decide
 
-    def leaky(world, rng, tick, ctx, *, pack_profiles):
-        intents = original(world, rng, tick, ctx, pack_profiles=pack_profiles)
+    def leaky(world, rng, tick, ctx, *, pack_profiles, **kwargs):
+        intents = original(world, rng, tick, ctx, pack_profiles=pack_profiles, **kwargs)
         # 注意：`time.time_ns() % 1000` 在本机**恒为 0**（时钟微秒粒度）⇒ 注入会退化成常量，
         # 负例就变成零命中绿。故取**微秒**分量（实测逐次不同）。
         leaked = int(time.time_ns() // 1000) % 1000 - 500
@@ -142,8 +142,8 @@ _DRIVER = textwrap.dedent(
 
     original = tick_mod.autonomous_decide
 
-    def unordered(world, rng, tick, ctx, *, pack_profiles):
-        intents = original(world, rng, tick, ctx, pack_profiles=pack_profiles)
+    def unordered(world, rng, tick, ctx, *, pack_profiles, **kwargs):
+        intents = original(world, rng, tick, ctx, pack_profiles=pack_profiles, **kwargs)
         if mode == "strset":
             order = list({"npc-001", "npc-002", "npc-003", "npc-004", "npc-005"})
         elif mode == "intset":

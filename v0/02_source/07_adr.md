@@ -308,7 +308,7 @@
   | `mflux` / `Z-Image` / `Qwen-Image` / `ACE-Step` | MIT / Apache-2.0 | 白名单 ✅（逐条给 URL + 判定） |
   | Hunyuan3D-2 / TripoSG | 自有条款 / 权重未核 + CUDA 依赖 | 本轮**拒收**（保守；待离线云核验） |
 
-- **版权灰区处理**：逐资产登记来源（模型 id / 版本 / 提示词摘要 / 种子 / 时间 / 许可）；不可商用权重**禁止出现在任何交付产物中**（含 manifest / 示例 / 截图）；不把生成物当「自有版权」宣称；对外使用前必须人工过审（`review_status=adopted` + reviewer + 时间）；IP 边界沿用 `01 §13`（只借鉴设定结构，不复制原文 / 台词 / 姓名）。
+- **版权灰区处理**：逐资产登记来源（模型 id / 版本 / 提示词摘要 / 种子 / 时间 / 许可）；不可商用权重**禁止出现在任何交付产物中**（含 manifest / 示例 / 截图）；不把生成物当「自有版权」宣称；对外使用前必须人工过审（`review_status=adopted` + reviewer + 时间）；IP 边界沿用 `01 §13`（原著人物 / 名称 / 情节是核心依据；仍禁逐字搬运原著正文段落）。
 - **来源可核验性**：云 / API 产出标 `provenance.self_reported=true` 且 `verification_status=self_reported`，**不得**标「已核验」——按 RA-2 先例登记为**已声明边界**。
 
 **成本估算（公式 + 实测基础）**
@@ -643,3 +643,154 @@ cd <ws> && grep -rn -I -E "ADR-01[0-9]|ADR-10[^0-9]" . \
   （含 `npc.decision` 过 `events.schema.json` 的 `jsonschema.validate` 断言）。
 - 如何回退：① 从 `events.schema.json` 与 `events.py` 的枚举里去掉 `"npc.decision"`；
   ② 去掉 `payloadByType.allOf` 的该 `then` 子句；③ `tick.py` 不再 emit `npc.decision`（其余决策逻辑不变）。
+
+## ADR-018 事件类型枚举新增 `relation.changed`（关系友善度运行时演进的可追溯契约）
+
+- 背景 / 问题（M5.2 r1）：REQ §1 要求「关系（友善度，原著机制）**运行时演进**」，且「为什么变了」
+  **可从事件记录追溯原因**。而 `world.schema.json#/$defs/relations` 把值形状**冻结**为
+  `{<npc_id>: number ∈ [-1,1]}`（`pack.py` 与 `test_state_passes_world_schema` 双重执行）
+  ⇒ `updated_tick` / `source_event` **不得**写进组件（写进去就是 schema 违约，属**真回归**）。
+  ⇒ 需要一个**事件侧**载体来回答「谁、对谁、从多少到多少、因为哪个动作、在哪个 tick」。
+- 决定：
+  1. `02_source/events.schema.json` 的 `type` 闭枚举**追加成员** `"relation.changed"`（只加不删、不改既有成员）；
+  2. `$defs/payloadByType.allOf` **追加** `then` 子句：`payload` 必填
+     `npc_id` / `peer_npc_id` / `from` / `to` / `tick` / `source_event`，其中 `from` / `to` 为
+     `number ∈ [-1,1]`（与组件值同域）；
+  3. `deephealing_kernel/events.py` 的 `EVENT_TYPES` 同步追加（内核侧闭集，两处必须一致）；
+  4. **`relations` 组件值形状零改动**（仍为数值标量）⇒ `world.schema.json` **零改动**、
+     `state_hash` 只在「关系真的变了」时变化；
+  5. 变更**只由执行阶段**写入（新增 `ecs.system_relations`，排在 `system_movement` **之前**，
+     因为后者末尾会 `clear_intents()`）；[5] 记账段读 `world.relation_changes`（**实际写入**的凭据）
+     后 emit，**不采信 decide 阶段的自报值**。
+- 后果与迁移：
+  - 事件体积上升：`talk` 命中对端 NPC 时每 tick 每对一条（增量 `+0.05`，上限 `1.0`）。
+  - 下游读者：任何按「`type` 枚举恒为 10 成员」推理的脚本必须改为读枚举本身。
+  - `verify_specs.sh` 必须仍 **0 skipped**（加成员后复跑证明：PASS=158 / FAIL=0 / SKIP=0）。
+- 如何验证：`cd <ws>/02_source && bash verify_specs.sh --quiet`（0 skipped）；
+  `cd 02_source/v0_skeleton/kernel && python3 -m pytest tests/test_m52_memory_chain.py -q -p no:cacheprovider`
+  （含 `relation.changed` 六字段 + 过 `events.schema.json` + 同 seed 逐位一致的断言）。
+- 如何回退：① 从 `events.schema.json` 与 `events.py` 的枚举里去掉 `"relation.changed"`；
+  ② 去掉 `payloadByType.allOf` 的该 `then` 子句；③ `tick.py` 不再 emit 该事件、
+  去掉 `ecs.system_relations` 与 decide 阶段的 `relations_delta`（C1/C2/C3 与记忆链不受影响）。
+
+## ADR-019 F7 有界回收：配额归还点下移到 fd 关闭之后 + handler 异常只计数（r5 加固）
+
+- 背景 / 问题（M5.2 r1 · W8）：M4 的 F7 遗留「accept 层配额生效但 fd 仍泄漏」。
+  r1 复核后把机制拆成两条，**都能从盘上读数归因**：
+  1. **归还点早于 fd 关闭**：r4 在 handler 的 `finish()` 里 `release_accept()`，而真正的
+     `socket.close()` 要等 `process_request_thread` 的 `finally` -> `shutdown_request()`。
+     两者之间一旦有长阻塞，**配额已还、fd 未关** => 同时打开的 fd 数可远超配额
+     （这正是「配额 32 / 实测 TCP fd 4089」的差额来源，`ulimit -n` = 4096）；
+  2. **handler 异常无界写 stderr**：stdlib `BaseServer.handle_error()` 把整段 traceback 写 stderr。
+     观察者「连上即断」时 `finish()` 的 flush 撞 `BrokenPipeError` 是**预期噪声**，
+     默认实现把它放大成**单臂 90~127MB** 的 stderr 写；线程串行排在 stderr 锁上 => handler 完成慢
+     => fd 回收慢（r3 的失败形态）。
+- 决定（三处，与既有并发上限**同批**）：
+  1. `LiveHTTPServer.shutdown_request()` 覆写：`close_request()` **之后**才 `release_accept()`
+     => 配额语义 = 「**同时打开的 fd 上限**」（与「fd 在 `accept()` 那一刻被消耗」对齐）；
+  2. ~~handler 的 `setup()` 统一设**写超时**（r4 只在 SSE 路径设）=> 任何 flush 受 `WRITE_TIMEOUT_S` 约束；~~
+     **【r3 更正 · FIX-2 / Sentinel MEDIUM-1 + Raven L-1】该条从未落地，且无需落地**：
+     `diff` 显示 `setup()` 只有 docstring 变化，`self.connection.settimeout(REQUEST_IDLE_TIMEOUT_S)`
+     在仓库版（r4 及更早）**就存在**（repo `live.py:528` ↔ 交付 `:588`，同一条语句）；而
+     `settimeout()` 作用于**整个 socket（读写同限）**、取值 `5.0 == WRITE_TIMEOUT_S`
+     => 写路径**本来就受同一超时约束**。原文「普通端点的 `finish()` flush 对端不读就会**无界阻塞**」
+     与事实**相反**。⇒ r3 起表述为「**确认既有 `setup()` 的 socket 超时已覆盖写路径（无代码改动）**」；
+     实测读数：`grep -n "WRITE_TIMEOUT_S\|settimeout" live.py` ⇒ 36/78/473/584/588/707 六处
+     （588 = `setup()` 的 `REQUEST_IDLE_TIMEOUT_S`；707 = SSE 路径的 `WRITE_TIMEOUT_S`），
+     与「只有两处代码改动（① 归还点 / ③ 异常只计数）」一致。
+  3. `LiveHTTPServer.handle_error()` 覆写：异常**只计数**（`/live/health.handler_errors` +
+     `handler_error_kinds`），**不倒 traceback 进 stderr**；
+     **【r3 追加 · FIX-6】** 另留**有界**诊断样本（首 `HANDLER_ERROR_SAMPLES_MAX`=8 条、
+     每条 `repr(exc)` ≤ `HANDLER_ERROR_REPR_MAX`=200 字符）⇒ `/live/health.handler_errors_last`；
+     `finish()` 吞掉的异常补计数 `finish_errors` / `finish_error_kinds`
+     （此前「连上即断」的噪声从「有痕迹」变成「完全无痕迹」= 运维可见性净下降）。
+  并发上限（accept 层连接配额 + 请求级在途配额）与 `daemon_threads` **不变** —— 只补回收侧。
+- **归因更正（r3 · FIX-4 / Sentinel MEDIUM-2 + Raven §2.6）**：`hold` regime 的 **pre-fix 红读数是
+  r3 形态**（把 r4 的 accept 层配额**一并**退回），**不用于归因 r5**；只退回 r5 时 `hold` 仍
+  `all_pass=true`（实测 fd_total_peak 73 不变）。⇒ **r5 的有效性由单测 ①② 钉住**（`归还点晚于
+  close_request` / `异常只计数且不写 stderr`），**fd 天花板由 r4 的 accept 配额兜住**；
+  `hold` 只证明「accept 配额有效」。**不得**再用 `hold` 的 pre-fix 红声称「r5 加固有效」。
+- 后果与迁移：
+  - `/live/health` 新增两个字段（`handler_errors` / `handler_error_kinds`）：**纯追加**，
+    既有读者不受影响；「连上即断」不再产生 stderr 噪声 => 运行日志体积从 ~100MB/臂 降到 KB 级。
+  - 依赖「stderr 里能看到 handler traceback」的排障脚本失效：改用 `/live/health.handler_errors`。
+- 如何验证：`cd 02_source/v0_skeleton/kernel && python3 -m pytest tests/test_m52_f7_fd_accounting.py -q`
+  （**5 条不变式**，r3 起如实分组：**① 归还点晚于关闭 / ② 异常只计数** = r5 本轮新增；
+  **③ churn 后配额回零且峰值有界**（r4 引入）/ **④ socket 超时同时约束读写**（r4 之前既有）=
+  **既有不变式，非本轮新增**；**⑤ 有界诊断样本 + finish 计数** = r3 新增）；
+  负载侧 `python3 <ws>/spikes/m52-f7/f7_observer_load.py --runs 3 --modes live,run --regimes arch,immediate`
+  （12 臂 fd 峰值读数）。**pre-fix 负对照**：`/tmp` 副本上把 `process_request` 退回 r3
+  （accept 层不判配额）=> 单测 1/2 必红（实测 444 字节 traceback 落 stderr）。
+  **r3 复跑读数**：只退 r5 的副本上 ①②⑤ 红、③④ 绿（`03` 的 M5.2-r3 段 FIX-3）；删掉
+  `setup()` 的 `settimeout` 行 ⇒ ④ 单独必红（1 failed / 4 passed）。
+- 如何回退：1) 把 `release_accept()` 挪回 handler 的 `finish()`；
+  2) ~~删 `setup()` 里的写超时~~ **【r3 更正】该条不存在** —— 不要删 `setup()` 里那行
+  `settimeout(REQUEST_IDLE_TIMEOUT_S)`（删了连接就无任何超时，④ 必红）；
+  3) 删 `handle_error()` 覆写（恢复 stdlib 默认）与 `/live/health` 的新字段
+  （`handler_errors` / `handler_error_kinds` / `handler_errors_last` / `finish_errors`）。
+
+---
+
+## ADR-020 交付 CLI 的内核链入口：`--memory-chain` / `--capability-chain`（默认 off）
+
+**背景**（M5.2 r3 · FIX-1 · **Raven R-C1 = CRITICAL**）：内核**实现了** AC-3 的接线
+（`tick.py` 收 `memory_store` / `capability_registry` / `budget_ledger`；`step()` 的 [5] 段写库并 emit
+`memory.written`；`_appraise_emotions()` 走 `CapabilityRegistry.invoke`），但**交付面没有任何入口传值**
+—— `cli.py` 的 `run` / `replay` / `verify` 三处 `WorldKernel(...)` 构造都不传，
+全树传值点只有 3 处且**全在测试/脚手架**。⇒ 交付命令的事件清单里**永远没有** `memory.written`，
+`emotion.appraise` **永远零调用**（AC-3 断链①②④ 在交付形态下不可执行），
+而 `03` 却对一个无命令、无读数的条目记了 `PASS`。
+
+**选项**
+1. **在 `cli.py` 的 `run`/`live` 路径加显式开关，按需构造并传入**（默认 off）；
+2. 不加开关，把 AC-3 的交付口径改成「内核层接线 + 单测证据」，并把断链④ 显式降级；
+3. 让开关默认 **on**（接线成为默认行为）。
+
+**决定**：**取 1**。新增三个参数（`run` 与 `live` 各一套）：
+- `--memory-chain`：构造内核侧 `MemoryStore(<out>/kernel_memory.sqlite, write_enabled=True)`
+  （`init_schema()` 后传入 `memory_store`）⇒ 事件清单出现 `memory.written`；
+- `--capability-chain`：构造 `CapabilityRegistry`（数据驱动发现 + 四类 adapter）与 `BudgetLedger`
+  并传入 ⇒ `emotion.appraise` 走既有 capability 通道（预算 / provider 路由 / `output_schema` /
+  fallback / journal 全部复用，**不新增旁路情绪函数**）；
+- `--emotion-pressure-threshold <float>`：情绪评估的**调用条件**（主导需求缺口 >= 该值）。
+  缺省 = `WorldKernel` 默认（`URGENCY_THRESHOLD = 0.6`）；**实测需求缺口 ~0.06**
+  ⇒ 要让能力链**真的被调用**必须显式调低（数据参数，非按 NPC 特判）。
+
+**不取 3 的理由**（默认必须 off）：不带开关的路径要与改前**逐字节一致**（回归护栏）；
+接线会改变行为读数（AC-10：10a 0.3031→0.3810、10d1 0.3250→0.2444）⇒
+**不能**把「接线」变成默认，否则门禁口径与交付配置再次错位。
+
+**`--memory` 的语义区分（硬性，防误读）**：`run --memory` 打开的是**认知层自己的** `MemoryStore`
+（`<out>/cognition/memory.sqlite`，`_run_cognition` 里消费），**不是**内核 tick 的那个
+⇒ **打开它不会让 `memory.written` 出现在事件清单里**。两者已在 `--help` 文本与 `06` 中逐字区分。
+
+**`replay` / `verify` 为什么不接线**：两者是**确定性与比对路径**（`verify` 会把日志事件流与重放
+逐条比对）——接线会改变被比对的事件流本身，使「同一日志重放一致」这条判据失去意义。
+⇒ 本轮只在 `run` / `live` 加入口；`replay`/`verify` 保持原样（这也是它们**不需要**该开关的原因）。
+
+**后果**
+- [OK] AC-3 断链①②④ 在交付形态下**可执行**：`run --memory-chain` 30 tick ⇒ `memory.written` **300**
+  条（`episodic` 150 / `working` 150）、`store.write_count` 300、`fetch_episodes` 读回 **30 条/NPC**；
+  输出 JSON 新增 `kernel_chain` 结构化读数块（`memory_written_by_layer` / `episodes_readback` /
+  `emotion_appraise_calls` / `emotion_fallbacks` / `capability_journal_kinds`）。
+- [注意] **非回放路径的 provider 优先级 = `remote_api`（priority 10）**：`run --capability-chain`
+  不带 `--replay` 时会尝试远端（需 `HERMES_CUSTOM_TOKENFAB_API_KEY`），**非确定性**；
+  要可复算/离线的情绪读数请用 `--replay`（cassette 缺失 ⇒ `CassetteMiss` fail-closed）
+  或直接用 `tools/emotion_fallbacks_probe.py`（三条臂都**不触网**）。
+- [注意] 默认阈值 0.6 下，实测需求缺口 ~0.06 ⇒ **能力链打开了也不会被调用**（零调用是数据驱动的
+  结果，不是接线失败）——这条已写进 `--help` 与 `06`，避免下一轮把「零调用」误判成「没接线」。
+- [注意] 内存链会在 `<out>` 里新增 `kernel_memory.sqlite`（开关 on 时才有）；默认 off ⇒ 零新文件。
+- 新增 `tools/emotion_fallbacks_probe.py`：三条**可运行**的 fail-closed 读数
+  （① 无 provider ⇒ `CapabilityError`；② 预算耗尽 ⇒ `on_budget_exhausted`；
+  ③ cassette miss ⇒ `CassetteMiss` **不被吞**），落 `emotion_fallbacks` + registry journal。
+- 新增 `tools/cognition_participation_probe.py`：**非门禁**探测器，使「认知层长跑退化为
+  只调 `emotion.appraise`」（Raven §2.4 / 上抛项 B-9）可复算（改前树 60 tick 15 次 / 交付 5 次）。
+
+**如何验证**
+- ①（带开关）：`cd <ws>/02_source/v0_skeleton/kernel && PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. python3 -m deephealing_kernel run --pack districts/xingfu-xiaoqu --seed 20260921 --ticks 30 --events <out>/events.jsonl --memory-chain`
+  ⇒ exit 0；`memory.written = 300`；`episodes_readback = {npc-001..005: 30}`。
+- ②（不带开关）：同一命令（去掉 `--memory-chain`）在交付树与**r3 改前树**上 ⇒ 事件清单**逐行 diff = 0**。
+- ③（fail-closed）：`python3 tools/emotion_fallbacks_probe.py --kernel-root <kernel> --pack <pack> --ticks 3`
+  ⇒ exit 0、`all_pass=true`、三条臂各自的 `emotion_fallback_reasons` 读数。
+- 负对照（有牙）：把 `_build_kernel_chain` 的返回值改成 `({}, state)`（等价「不传」）⇒ ① 的
+  `memory.written` 归零（读数见 `03` 的 M5.2-r3 段 FIX-1）。

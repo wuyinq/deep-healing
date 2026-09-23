@@ -1,0 +1,305 @@
+{
+ "all_pass": true,
+ "arms": {
+  "A_no_experience_short": {
+   "action_histogram": {
+    "rest": 125,
+    "talk": 173,
+    "walk": 147,
+    "work": 152
+   },
+   "branch_convergence": 0.033334,
+   "branch_histogram": {
+    "explore": 149,
+    "restore": 190,
+    "socialize": 143,
+    "work": 118
+   },
+   "event_digest": "f42533a82ef6f2e4f691803af8634ac5a6e9ea8c74d7352800654e83d30feec6",
+   "injected_for": null,
+   "memory_read_decisions": 0,
+   "name": "A_no_experience_short",
+   "needs_pressure_first_quarter": 0.206153,
+   "needs_pressure_last_quarter": 0.040431,
+   "needs_trend": -0.165722,
+   "outdoor_share": 0.491667,
+   "relations_final": {
+    "npc-001": {
+     "npc-002": 0.35,
+     "npc-003": 0.1,
+     "npc-005": 1.0
+    },
+    "npc-002": {
+     "npc-001": 0.35,
+     "npc-003": 0.8,
+     "npc-004": 1.0
+    },
+    "npc-003": {
+     "npc-001": 0.1,
+     "npc-002": 1.0,
+     "npc-004": 0.2,
+     "npc-005": 0.55
+    },
+    "npc-004": {
+     "npc-001": 0.9,
+     "npc-002": 1.0,
+     "npc-005": 0.2
+    },
+    "npc-005": {
+     "npc-001": 0.5,
+     "npc-003": 0.55,
+     "npc-004": 0.2
+    }
+   },
+   "state_hash": "a320dc8009362e8cb48e80d89673e4df534f8cab9ce5c52f24bd6e49eef4f08f",
+   "ticks": 120,
+   "top_branch_share": 0.316667,
+   "walk_share": 0.246231,
+   "window_action_histogram": {
+    "rest": 125,
+    "talk": 173,
+    "walk": 147,
+    "work": 152
+   },
+   "window_outdoor_share": 0.491667,
+   "window_walk_share": 0.246231
+  },
+  "B_no_experience_long": {
+   "action_histogram": {
+    "rest": 503,
+    "talk": 690,
+    "walk": 583,
+    "work": 597
+   },
+   "branch_convergence": -0.001667,
+   "branch_histogram": {
+    "explore": 594,
+    "restore": 767,
+    "socialize": 573,
+    "work": 466
+   },
+   "event_digest": "56c8c5e5e24f14b673245767fa7958d38eb4e9b9a9920f21de9263db272a5b67",
+   "injected_for": null,
+   "memory_read_decisions": 0,
+   "name": "B_no_experience_long",
+   "needs_pressure_first_quarter": 0.084552,
+   "needs_pressure_last_quarter": 0.040441,
+   "needs_trend": -0.044111,
+   "outdoor_share": 0.377083,
+   "relations_final": {
+    "npc-001": {
+     "npc-002": 0.35,
+     "npc-003": 0.1,
+     "npc-005": 1.0
+    },
+    "npc-002": {
+     "npc-001": 0.35,
+     "npc-003": 1.0,
+     "npc-004": 1.0
+    },
+    "npc-003": {
+     "npc-001": 0.1,
+     "npc-002": 1.0,
+     "npc-004": 1.0,
+     "npc-005": 0.55
+    },
+    "npc-004": {
+     "npc-001": 1.0,
+     "npc-002": 1.0,
+     "npc-003": 0.85,
+     "npc-005": 0.2
+    },
+    "npc-005": {
+     "npc-001": 1.0,
+     "npc-003": 0.55,
+     "npc-004": 0.2
+    }
+   },
+   "state_hash": "cb4ac3e6e92a81a8ce6a50fad824cf700670fb0546471754bd8ba46134c0571d",
+   "ticks": 480,
+   "top_branch_share": 0.319583,
+   "walk_share": 0.245681,
+   "window_action_histogram": {
+    "rest": 125,
+    "talk": 173,
+    "walk": 147,
+    "work": 152
+   },
+   "window_outdoor_share": 0.491667,
+   "window_walk_share": 0.246231
+  },
+  "C_with_experience": {
+   "action_histogram": {
+    "rest": 475,
+    "talk": 629,
+    "walk": 708,
+    "work": 561
+   },
+   "branch_convergence": 0.006667,
+   "branch_histogram": {
+    "explore": 545,
+    "restore": 792,
+    "socialize": 578,
+    "work": 485
+   },
+   "event_digest": "19cea16fd259d6f8b7e9df4cc187142462e4bf2390ed152c1ffb664f30c90761",
+   "injected_for": "npc-003",
+   "memory_read_decisions": 480,
+   "name": "C_with_experience",
+   "needs_pressure_first_quarter": 0.087062,
+   "needs_pressure_last_quarter": 0.040442,
+   "needs_trend": -0.04662,
+   "outdoor_share": 0.3125,
+   "relations_final": {
+    "npc-001": {
+     "npc-002": 0.35,
+     "npc-003": 0.1,
+     "npc-005": 1.0
+    },
+    "npc-002": {
+     "npc-001": 0.35,
+     "npc-003": 1.0,
+     "npc-004": 1.0
+    },
+    "npc-003": {
+     "npc-001": 0.1,
+     "npc-002": 1.0,
+     "npc-004": 1.0,
+     "npc-005": 0.55
+    },
+    "npc-004": {
+     "npc-001": 1.0,
+     "npc-002": 1.0,
+     "npc-003": 1.0,
+     "npc-005": 0.2
+    },
+    "npc-005": {
+     "npc-001": 1.0,
+     "npc-003": 0.55,
+     "npc-004": 0.2
+    }
+   },
+   "state_hash": "eaf9c706ae9cd572f0e4a90c5043438eb68660ea75831ea312bb02e986303e24",
+   "ticks": 480,
+   "top_branch_share": 0.33,
+   "walk_share": 0.298357,
+   "window_action_histogram": {
+    "rest": 120,
+    "talk": 162,
+    "walk": 170,
+    "work": 145
+   },
+   "window_outdoor_share": 0.491667,
+   "window_walk_share": 0.284757
+  }
+ },
+ "criteria": {
+  "experience_effect": {
+   "pass": true,
+   "reading": {
+    "first_divergence_tick_in_window": 90,
+    "window_walk_share_B": 0.246231,
+    "window_walk_share_C": 0.284757
+   }
+  },
+  "experience_effect_exceeds_tick_effect": {
+   "pass": true,
+   "reading": {
+    "window_outdoor_gap_A_vs_B": 0.0,
+    "window_outdoor_gap_C_vs_B": 0.0,
+    "window_walk_gap_A_vs_B": 0.0,
+    "window_walk_gap_C_vs_B": 0.038526
+   }
+  },
+  "no_spontaneous_healing": {
+   "pass": true,
+   "reading": {
+    "branch_convergence_B": -0.001667,
+    "branch_convergence_C": 0.006667,
+    "ceiling": 0.6,
+    "convergence_tolerance": 0.05,
+    "needs_trend_B_aux": -0.044111,
+    "needs_trend_C_aux": -0.04662,
+    "top_branch_share_B": 0.319583
+   }
+  },
+  "tick_count_is_not_the_cause": {
+   "pass": true,
+   "reading": {
+    "window": 120,
+    "window_actions_A": 597,
+    "window_actions_B": 597,
+    "window_prefix_identical": true
+   }
+  }
+ },
+ "explanation_chain": {
+  "by_action": {
+   "walk": 0.19
+  },
+  "decision": {
+   "bt_branch": "work",
+   "chosen_action": "walk",
+   "dominant_need": "esteem",
+   "utility_ranking": [
+    {
+     "action": "walk",
+     "need": "self_actualization",
+     "score": 0.288701
+    },
+    {
+     "action": "work",
+     "need": "esteem",
+     "score": 0.107237
+    },
+    {
+     "action": "talk",
+     "need": "belonging",
+     "score": 0.095355
+    }
+   ]
+  },
+  "key_experience": {
+   "importance": 0.95,
+   "kind": "walk",
+   "npc_id": "npc-003"
+  },
+  "memory_ref_chain": [
+   "episode:walk@ref=1"
+  ],
+  "npc_id": "npc-003",
+  "observable_action": {
+   "with_experience": {
+    "action": "walk",
+    "target_entity": "courtyard-01"
+   },
+   "without_experience": {
+    "action": "work",
+    "target_entity": "courtyard-01"
+   }
+  },
+  "tick": 90,
+  "utility_delta": 0.19
+ },
+ "injected_importance": 0.95,
+ "injected_kind": "walk",
+ "outdoor_threshold_mm": 1500,
+ "sample_every": 5,
+ "scope": {
+  "kernel_root": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260923-002-deephealing-m5-2-character-loop/02_source/v0_skeleton/kernel",
+  "pack": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260923-002-deephealing-m5-2-character-loop/02_source/v0_skeleton/districts/xingfu-xiaoqu"
+ },
+ "seed": 20260921,
+ "short_ticks": 120,
+ "status": "measured",
+ "target_selection": {
+  "counts": {
+   "npc-001": 19,
+   "npc-002": 62,
+   "npc-003": 152
+  },
+  "rule": "max(count of decisions where injected action is a top-3 runner-up); tie -> smallest npc_id",
+  "selected": "npc-003"
+ },
+ "ticks": 480
+}

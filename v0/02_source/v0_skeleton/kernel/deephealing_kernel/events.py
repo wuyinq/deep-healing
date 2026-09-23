@@ -42,6 +42,9 @@ EVENT_TYPES = (
     "task.state_changed",
     "memory.written",
     "snapshot.taken",
+    # **M5.2 r1 追加**（ADR-018）：关系（友善度）运行时演进的可追溯记录。
+    # 追加式：不改既有类型的语义，只在末尾新增（`events.schema.json` 的 enum 同步只加）。
+    "relation.changed",
 )
 
 # capability.safety.redact_fields 的契约实例（`cassette.schema.json` / capability 清单口径）

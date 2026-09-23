@@ -1,0 +1,3062 @@
+{
+  "tag": "with",
+  "url": "http://127.0.0.1:8806",
+  "npc": "npc-006",
+  "executable_path": "/Users/wooyinq/Library/Caches/ms-playwright/chromium-1234/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+  "ready": {
+    "tick": 25,
+    "npcs": 1
+  },
+  "shots": {
+    "desktop": "spikes/m52-live/shots/desktop-1440x900.png",
+    "narrow": "spikes/m52-live/shots/narrow-390x844.png"
+  },
+  "shot_timing_ms": {
+    "desktop": 7692,
+    "narrow": 9009,
+    "total": 17924
+  },
+  "recording_seconds_requested": 17,
+  "video_path": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260923-002-deephealing-m5-2-character-loop/spikes/m52-live/rec/page@9f24fb2d28e32edc254468e70662e9aa.webm",
+  "overflow": {
+    "desktop": {
+      "innerWidth": 1440,
+      "innerHeight": 900,
+      "documentElement": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "overflowX": 0
+      },
+      "body": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "overflowX": 0
+      },
+      "hud": {
+        "scrollWidth": 384,
+        "clientWidth": 384,
+        "overflowX": 0
+      },
+      "causal_trace": {
+        "scrollWidth": 352,
+        "clientWidth": 352,
+        "overflowX": 0
+      },
+      "hud_rect": {
+        "x": 16,
+        "y": 16,
+        "width": 384,
+        "height": 599
+      },
+      "hud_visible": true,
+      "hud_text_head": "OBSERVE\nSURFACE\ncausal trace · 徐琴（屠夫之家 · 五楼 1052） (npc-006) · complete\n  1 事件  : seq 62 t16 npc.action(rest → room-1052)\n  2 记忆  : seq 63 t16 memory.written layer=episodic ref=16 kind=rest importance=0.144619\n  3 决策  : seq 97 t25 chosen=rest utility_delta=0.19 signals=[episode:rest@ref=16]\n  4 行动  : seq 98 t25 npc.action(rest → room-1052)\n切换读法 切换模式\ntick 26\ntick 26 · 0.0ms · tokens 0 · $0.0000\nlive",
+      "trace_text": "causal trace · 徐琴（屠夫之家 · 五楼 1052） (npc-006) · complete\n  1 事件  : seq 62 t16 npc.action(rest → room-1052)\n  2 记忆  : seq 63 t16 memory.written layer=episodic ref=16 kind=rest importance=0.144619\n  3 决策  : seq 97 t25 chosen=rest utility_delta=0.19 signals=[episode:rest@ref=16]\n  4 行动  : seq 98 t25 npc.action(rest → room-1052)",
+      "write_controls": [],
+      "viewport": {
+        "client_width": 1440,
+        "client_height": 900,
+        "drawing_buffer_width": 1440,
+        "drawing_buffer_height": 900,
+        "pixel_ratio": 1,
+        "aspect": 1.6,
+        "webgl": true
+      }
+    },
+    "narrow": {
+      "innerWidth": 390,
+      "innerHeight": 844,
+      "documentElement": {
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "overflowX": 0
+      },
+      "body": {
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "overflowX": 0
+      },
+      "hud": {
+        "scrollWidth": 374,
+        "clientWidth": 374,
+        "overflowX": 0
+      },
+      "causal_trace": {
+        "scrollWidth": 342,
+        "clientWidth": 342,
+        "overflowX": 0
+      },
+      "hud_rect": {
+        "x": 8,
+        "y": 8,
+        "width": 374,
+        "height": 491.5
+      },
+      "hud_visible": true,
+      "hud_text_head": "OBSERVE\nSURFACE\ncausal trace · 徐琴（屠夫之家 · 五楼 1052） (npc-006) · complete\n  1 事件  : seq 62 t16 npc.action(rest → room-1052)\n  2 记忆  : seq 63 t16 memory.written layer=episodic ref=16 kind=rest importance=0.144619\n  3 决策  : seq 122 t31 chosen=rest utility_delta=0.19 signals=[episode:rest@ref=16]\n  4 行动  : seq 123 t31 npc.action(rest → room-1052)\n切换读法 切换模式\ntick 31\ntick 31 · 0.0ms · tokens 0 · $0.0000\nli",
+      "trace_text": "causal trace · 徐琴（屠夫之家 · 五楼 1052） (npc-006) · complete\n  1 事件  : seq 62 t16 npc.action(rest → room-1052)\n  2 记忆  : seq 63 t16 memory.written layer=episodic ref=16 kind=rest importance=0.144619\n  3 决策  : seq 122 t31 chosen=rest utility_delta=0.19 signals=[episode:rest@ref=16]\n  4 行动  : seq 123 t31 npc.action(rest → room-1052)",
+      "write_controls": [],
+      "viewport": {
+        "client_width": 390,
+        "client_height": 844,
+        "drawing_buffer_width": 390,
+        "drawing_buffer_height": 844,
+        "pixel_ratio": 1,
+        "aspect": 0.46208530805687204,
+        "webgl": true
+      }
+    }
+  },
+  "chain_at_narrow": {
+    "chain": {
+      "npc_id": "npc-006",
+      "event": {
+        "seq": 62,
+        "tick": 16,
+        "type": "npc.action",
+        "action": "rest",
+        "target_entity": "room-1052"
+      },
+      "memory": {
+        "seq": 63,
+        "tick": 16,
+        "ref": "16",
+        "kind": "rest",
+        "layer": "episodic",
+        "importance": 0.144619
+      },
+      "decision": {
+        "seq": 122,
+        "tick": 31,
+        "chosen_action": "rest",
+        "signals": [
+          "episode:rest@ref=16"
+        ],
+        "utility_delta": 0.19,
+        "by_action": {
+          "rest": 0.19
+        }
+      },
+      "action": {
+        "seq": 123,
+        "tick": 31,
+        "action": "rest",
+        "target_entity": "room-1052"
+      },
+      "unlinked_signal_refs": [],
+      "complete": true
+    },
+    "npcs": [
+      "npc-006"
+    ]
+  },
+  "chain_before_reload": {
+    "chain": {
+      "npc_id": "npc-006",
+      "event": {
+        "seq": 62,
+        "tick": 16,
+        "type": "npc.action",
+        "action": "rest",
+        "target_entity": "room-1052"
+      },
+      "memory": {
+        "seq": 63,
+        "tick": 16,
+        "ref": "16",
+        "kind": "rest",
+        "layer": "episodic",
+        "importance": 0.144619
+      },
+      "decision": {
+        "seq": 122,
+        "tick": 31,
+        "chosen_action": "rest",
+        "signals": [
+          "episode:rest@ref=16"
+        ],
+        "utility_delta": 0.19,
+        "by_action": {
+          "rest": 0.19
+        }
+      },
+      "action": {
+        "seq": 123,
+        "tick": 31,
+        "action": "rest",
+        "target_entity": "room-1052"
+      },
+      "unlinked_signal_refs": [],
+      "complete": true
+    },
+    "npcs": [
+      "npc-006"
+    ]
+  },
+  "chain_after_reload": {
+    "chain": {
+      "npc_id": "npc-006",
+      "event": {
+        "seq": 62,
+        "tick": 16,
+        "type": "npc.action",
+        "action": "rest",
+        "target_entity": "room-1052"
+      },
+      "memory": {
+        "seq": 63,
+        "tick": 16,
+        "ref": "16",
+        "kind": "rest",
+        "layer": "episodic",
+        "importance": 0.144619
+      },
+      "decision": {
+        "seq": 122,
+        "tick": 31,
+        "chosen_action": "rest",
+        "signals": [
+          "episode:rest@ref=16"
+        ],
+        "utility_delta": 0.19,
+        "by_action": {
+          "rest": 0.19
+        }
+      },
+      "action": {
+        "seq": 123,
+        "tick": 31,
+        "action": "rest",
+        "target_entity": "room-1052"
+      },
+      "unlinked_signal_refs": [],
+      "complete": true
+    },
+    "npcs": [
+      "npc-006"
+    ],
+    "events": [
+      {
+        "actor": "world",
+        "hash": "4de82c652c0b665814b26bc73f6381031af1cf88d47ec1f2c349048366667e3a",
+        "payload": {
+          "constants_digest": "6707894c6d381731a8b3995b8d33deafeab1b5af8a0a71dfb77f89e573679832",
+          "entity_count": 5,
+          "pack_id": "xingfu-xiaoqu-xuqin",
+          "pack_version": "0.1.0",
+          "plan_ticks": 100000,
+          "seed": 20260921,
+          "snapshot_every": 25
+        },
+        "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "seq": 0,
+        "tick": 0,
+        "type": "world.init"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "a5e0c36d59804d96faa540b2ac5ea60f8e5a3b9b0596e5ded3543ec20336d80d",
+        "payload": {
+          "bt_branch": "socialize",
+          "chosen_action": "talk",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.386333,
+          "dominant_need": "belonging",
+          "memory_influence": {
+            "by_action": {},
+            "read": true,
+            "signals": [],
+            "utility_delta": 0
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.6295
+            },
+            {
+              "action": "walk",
+              "need": "self_actualization",
+              "score": 0.545
+            },
+            {
+              "action": "rest",
+              "need": "physiology",
+              "score": 0.354
+            }
+          ],
+          "utility_score": 0.6295
+        },
+        "prev_hash": "4de82c652c0b665814b26bc73f6381031af1cf88d47ec1f2c349048366667e3a",
+        "seq": 1,
+        "tick": 1,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "4cb3ddcfeaddb35493d2aefb0f56d065703671cb7401adb70ef2c95f4a43b117",
+        "payload": {
+          "action": "talk",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "a5e0c36d59804d96faa540b2ac5ea60f8e5a3b9b0596e5ded3543ec20336d80d",
+        "seq": 2,
+        "tick": 1,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "e97ec71b2f3d17e632e750886cec116c6f4e3d8b4909699301b228054858bb13",
+        "payload": {
+          "importance": 0.386333,
+          "kind": "talk",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "1"
+        },
+        "prev_hash": "4cb3ddcfeaddb35493d2aefb0f56d065703671cb7401adb70ef2c95f4a43b117",
+        "seq": 3,
+        "tick": 1,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "5765d4d360055aefc0ce486e1be11cd61dd2e88003c174599e4a63ec09ae032a",
+        "payload": {
+          "importance": 0.386333,
+          "kind": "talk",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "1"
+        },
+        "prev_hash": "e97ec71b2f3d17e632e750886cec116c6f4e3d8b4909699301b228054858bb13",
+        "seq": 4,
+        "tick": 1,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "fc26b362c3b991c0fb76566a66ff6f94fccea864ea8ff7889a6a984e0e20b3c3",
+        "payload": {
+          "bt_branch": "restore",
+          "chosen_action": "walk",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.349334,
+          "dominant_need": "safety",
+          "memory_influence": {
+            "by_action": {},
+            "read": true,
+            "signals": [],
+            "utility_delta": 0
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "walk",
+              "need": "self_actualization",
+              "score": 0.551
+            },
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.45945
+            },
+            {
+              "action": "rest",
+              "need": "physiology",
+              "score": 0.3572
+            }
+          ],
+          "utility_score": 0.551
+        },
+        "prev_hash": "5765d4d360055aefc0ce486e1be11cd61dd2e88003c174599e4a63ec09ae032a",
+        "seq": 5,
+        "tick": 2,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "2f850654794380577df950db19c7343006c6f20a7db93754c40390895eef8d33",
+        "payload": {
+          "action": "walk",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "fc26b362c3b991c0fb76566a66ff6f94fccea864ea8ff7889a6a984e0e20b3c3",
+        "seq": 6,
+        "tick": 2,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "19402619664637c3b00f5900b1e76d701a0258363bfb1c9ba8385f452a6b3963",
+        "payload": {
+          "importance": 0.349334,
+          "kind": "walk",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "2"
+        },
+        "prev_hash": "2f850654794380577df950db19c7343006c6f20a7db93754c40390895eef8d33",
+        "seq": 7,
+        "tick": 2,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "9871bd55916c2f109f85662de13a0750ffdf5de172e917906590029c3b5ab8c7",
+        "payload": {
+          "importance": 0.349334,
+          "kind": "walk",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "2"
+        },
+        "prev_hash": "19402619664637c3b00f5900b1e76d701a0258363bfb1c9ba8385f452a6b3963",
+        "seq": 8,
+        "tick": 2,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "f011110745674f1ae4d0e9c6cce0dabb39eed8b0ac1e3e4d6b1554f4156ab26a",
+        "payload": {
+          "bt_branch": "restore",
+          "chosen_action": "talk",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.352,
+          "dominant_need": "safety",
+          "memory_influence": {
+            "by_action": {},
+            "read": true,
+            "signals": [],
+            "utility_delta": 0
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.46325
+            },
+            {
+              "action": "walk",
+              "need": "self_actualization",
+              "score": 0.4067
+            },
+            {
+              "action": "rest",
+              "need": "physiology",
+              "score": 0.3604
+            }
+          ],
+          "utility_score": 0.46325
+        },
+        "prev_hash": "9871bd55916c2f109f85662de13a0750ffdf5de172e917906590029c3b5ab8c7",
+        "seq": 9,
+        "tick": 3,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "97c32cdb4d505837b08bae51c908ceadd0ba02136ffe4bfc57d11db47aa22ac7",
+        "payload": {
+          "action": "talk",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "f011110745674f1ae4d0e9c6cce0dabb39eed8b0ac1e3e4d6b1554f4156ab26a",
+        "seq": 10,
+        "tick": 3,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "8b0573a812e3cc300b1a93cf8c2575a3de9a244a6e50e3e8d1796808706a5a32",
+        "payload": {
+          "importance": 0.352,
+          "kind": "talk",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "3"
+        },
+        "prev_hash": "97c32cdb4d505837b08bae51c908ceadd0ba02136ffe4bfc57d11db47aa22ac7",
+        "seq": 11,
+        "tick": 3,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "5a0be36b6158a0e99c93aa062a2b2a4dba46a9c34d61b0d7c595736d483ca631",
+        "payload": {
+          "importance": 0.352,
+          "kind": "talk",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "3"
+        },
+        "prev_hash": "8b0573a812e3cc300b1a93cf8c2575a3de9a244a6e50e3e8d1796808706a5a32",
+        "seq": 12,
+        "tick": 3,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "fc7eb745c2365cd78f0789cd3b56074d17ab659bfc57ea6a71954b165df6d321",
+        "payload": {
+          "bt_branch": "restore",
+          "chosen_action": "walk",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.354667,
+          "dominant_need": "safety",
+          "memory_influence": {
+            "by_action": {},
+            "read": true,
+            "signals": [],
+            "utility_delta": 0
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "walk",
+              "need": "self_actualization",
+              "score": 0.4127
+            },
+            {
+              "action": "rest",
+              "need": "physiology",
+              "score": 0.3636
+            },
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.343075
+            }
+          ],
+          "utility_score": 0.4127
+        },
+        "prev_hash": "5a0be36b6158a0e99c93aa062a2b2a4dba46a9c34d61b0d7c595736d483ca631",
+        "seq": 13,
+        "tick": 4,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "b0e16aa25679c5f2585f4b052382589c6b53f105687f982763cf38bef8553415",
+        "payload": {
+          "action": "walk",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "fc7eb745c2365cd78f0789cd3b56074d17ab659bfc57ea6a71954b165df6d321",
+        "seq": 14,
+        "tick": 4,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "3786a53a4a6d6dc066798adee28572bb5fe155b6d4e874569ce04b1736a197f8",
+        "payload": {
+          "importance": 0.354667,
+          "kind": "walk",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "4"
+        },
+        "prev_hash": "b0e16aa25679c5f2585f4b052382589c6b53f105687f982763cf38bef8553415",
+        "seq": 15,
+        "tick": 4,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "458aaed46fadf2b22cedb357087418933e5a95df47ab89d3aa3cbdb5a9e87bc2",
+        "payload": {
+          "importance": 0.354667,
+          "kind": "walk",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "4"
+        },
+        "prev_hash": "3786a53a4a6d6dc066798adee28572bb5fe155b6d4e874569ce04b1736a197f8",
+        "seq": 16,
+        "tick": 4,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "da2c4ddf988ac9f7856d24782a641a9b1ce3ccc1b78dcf6cf970ea1826d76d8f",
+        "payload": {
+          "bt_branch": "restore",
+          "chosen_action": "rest",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.357334,
+          "dominant_need": "safety",
+          "memory_influence": {
+            "by_action": {},
+            "read": true,
+            "signals": [],
+            "utility_delta": 0
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "rest",
+              "need": "physiology",
+              "score": 0.3668
+            },
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.346875
+            },
+            {
+              "action": "walk",
+              "need": "self_actualization",
+              "score": 0.30989
+            }
+          ],
+          "utility_score": 0.3668
+        },
+        "prev_hash": "458aaed46fadf2b22cedb357087418933e5a95df47ab89d3aa3cbdb5a9e87bc2",
+        "seq": 17,
+        "tick": 5,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "67bc8e4cc7795a9fa8d6b41389dc65d941462d67f2e79bd5f211579a4c8d9653",
+        "payload": {
+          "action": "rest",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "da2c4ddf988ac9f7856d24782a641a9b1ce3ccc1b78dcf6cf970ea1826d76d8f",
+        "seq": 18,
+        "tick": 5,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "3cbdc71f8a770571383ee4ad28e49a7744695db59a493480cfb2b331f5a6e823",
+        "payload": {
+          "importance": 0.357334,
+          "kind": "rest",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "5"
+        },
+        "prev_hash": "67bc8e4cc7795a9fa8d6b41389dc65d941462d67f2e79bd5f211579a4c8d9653",
+        "seq": 19,
+        "tick": 5,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "728763f208ede19b21f2ef41d3aff37aa51fd3ce35a2da5d21138c6830234eda",
+        "payload": {
+          "importance": 0.357334,
+          "kind": "rest",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "5"
+        },
+        "prev_hash": "3cbdc71f8a770571383ee4ad28e49a7744695db59a493480cfb2b331f5a6e823",
+        "seq": 20,
+        "tick": 5,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "b03d9f1809227af661c6d00b0fab85e455272ad85bbd8781fd0f8fece40f53d8",
+        "payload": {
+          "bt_branch": "restore",
+          "chosen_action": "talk",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.2528,
+          "dominant_need": "safety",
+          "memory_influence": {
+            "by_action": {},
+            "read": true,
+            "signals": [],
+            "utility_delta": 0
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.350675
+            },
+            {
+              "action": "walk",
+              "need": "self_actualization",
+              "score": 0.31589
+            },
+            {
+              "action": "rest",
+              "need": "physiology",
+              "score": 0.27496
+            }
+          ],
+          "utility_score": 0.350675
+        },
+        "prev_hash": "728763f208ede19b21f2ef41d3aff37aa51fd3ce35a2da5d21138c6830234eda",
+        "seq": 21,
+        "tick": 6,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "37d75df631fead8efc7b775aa14f4cc68082ed8b91d0f7e001fdd115a10f0342",
+        "payload": {
+          "action": "talk",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "b03d9f1809227af661c6d00b0fab85e455272ad85bbd8781fd0f8fece40f53d8",
+        "seq": 22,
+        "tick": 6,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "bb8cda318ee9c1ee87370c2fc7cd6f11025861834eb16b2e9c9f6fd1e4f4b53a",
+        "payload": {
+          "importance": 0.2528,
+          "kind": "talk",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "6"
+        },
+        "prev_hash": "37d75df631fead8efc7b775aa14f4cc68082ed8b91d0f7e001fdd115a10f0342",
+        "seq": 23,
+        "tick": 6,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "d753f15e48088e62e5c41d456b4ed5b9317477de047fa4af7d8ba41d37e788be",
+        "payload": {
+          "importance": 0.2528,
+          "kind": "talk",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "6"
+        },
+        "prev_hash": "bb8cda318ee9c1ee87370c2fc7cd6f11025861834eb16b2e9c9f6fd1e4f4b53a",
+        "seq": 24,
+        "tick": 6,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "7b4e746f618c451bbe0c078338fabfbe168660e2b89df949058a2203ff8d7431",
+        "payload": {
+          "bt_branch": "restore",
+          "chosen_action": "walk",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.255467,
+          "dominant_need": "safety",
+          "memory_influence": {
+            "by_action": {},
+            "read": true,
+            "signals": [],
+            "utility_delta": 0
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "walk",
+              "need": "self_actualization",
+              "score": 0.32189
+            },
+            {
+              "action": "rest",
+              "need": "physiology",
+              "score": 0.27816
+            },
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.264272
+            }
+          ],
+          "utility_score": 0.32189
+        },
+        "prev_hash": "d753f15e48088e62e5c41d456b4ed5b9317477de047fa4af7d8ba41d37e788be",
+        "seq": 25,
+        "tick": 7,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "41d6815670805c52c369f862f30d5cf88d524307cd843d49791f1c34f4e215dc",
+        "payload": {
+          "action": "walk",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "7b4e746f618c451bbe0c078338fabfbe168660e2b89df949058a2203ff8d7431",
+        "seq": 26,
+        "tick": 7,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "408fbcdbb00d67c29f81d97515859860d033effc9ed2d5a1721f9e66a269cfe5",
+        "payload": {
+          "importance": 0.255467,
+          "kind": "walk",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "7"
+        },
+        "prev_hash": "41d6815670805c52c369f862f30d5cf88d524307cd843d49791f1c34f4e215dc",
+        "seq": 27,
+        "tick": 7,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "e74bdae78220834b6a166ff35abf562c3aa97079dab319828a24718f8f432ba1",
+        "payload": {
+          "importance": 0.255467,
+          "kind": "walk",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "7"
+        },
+        "prev_hash": "408fbcdbb00d67c29f81d97515859860d033effc9ed2d5a1721f9e66a269cfe5",
+        "seq": 28,
+        "tick": 7,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "14fed16d3810c0a67390918fc635f977f906312f16ca79207e9743f0c2e5bcc5",
+        "payload": {
+          "bt_branch": "restore",
+          "chosen_action": "rest",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.258133,
+          "dominant_need": "safety",
+          "memory_influence": {
+            "by_action": {},
+            "read": true,
+            "signals": [],
+            "utility_delta": 0
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "rest",
+              "need": "physiology",
+              "score": 0.28136
+            },
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.268072
+            },
+            {
+              "action": "walk",
+              "need": "self_actualization",
+              "score": 0.246323
+            }
+          ],
+          "utility_score": 0.28136
+        },
+        "prev_hash": "e74bdae78220834b6a166ff35abf562c3aa97079dab319828a24718f8f432ba1",
+        "seq": 29,
+        "tick": 8,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "63fa411784081920ed5760fa74e183d89fea85ce366c39b09d18d9a4b6d1ae1d",
+        "payload": {
+          "action": "rest",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "14fed16d3810c0a67390918fc635f977f906312f16ca79207e9743f0c2e5bcc5",
+        "seq": 30,
+        "tick": 8,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "e6a9eef66b278a2fb4124b38b45a440cf6a0c42a931eb0ffd50671a8154c4ae1",
+        "payload": {
+          "importance": 0.258133,
+          "kind": "rest",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "8"
+        },
+        "prev_hash": "63fa411784081920ed5760fa74e183d89fea85ce366c39b09d18d9a4b6d1ae1d",
+        "seq": 31,
+        "tick": 8,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "2f52a7c4ada4ce6c8b22dcc27d391d781ad753749cdde65c98bace3bcf786d99",
+        "payload": {
+          "importance": 0.258133,
+          "kind": "rest",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "8"
+        },
+        "prev_hash": "e6a9eef66b278a2fb4124b38b45a440cf6a0c42a931eb0ffd50671a8154c4ae1",
+        "seq": 32,
+        "tick": 8,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "426fa67b5ad0ac6562adc49945309461a633d5c838aefbdc17ed7a590aed36f1",
+        "payload": {
+          "bt_branch": "work",
+          "chosen_action": "work",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.220267,
+          "dominant_need": "esteem",
+          "memory_influence": {
+            "by_action": {},
+            "read": true,
+            "signals": [],
+            "utility_delta": 0
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "work",
+              "need": "esteem",
+              "score": 0.3804
+            },
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.271873
+            },
+            {
+              "action": "walk",
+              "need": "self_actualization",
+              "score": 0.252323
+            }
+          ],
+          "utility_score": 0.3804
+        },
+        "prev_hash": "2f52a7c4ada4ce6c8b22dcc27d391d781ad753749cdde65c98bace3bcf786d99",
+        "seq": 33,
+        "tick": 9,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "871b75e5aaccf86c5fb490139e78d6860b9782d50bafcf481325d4cbde9b2f63",
+        "payload": {
+          "action": "work",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "426fa67b5ad0ac6562adc49945309461a633d5c838aefbdc17ed7a590aed36f1",
+        "seq": 34,
+        "tick": 9,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "31b2a9c38519501abaf9d32ba8c6d687a04c26452b21abdd42c54336871d4726",
+        "payload": {
+          "importance": 0.220267,
+          "kind": "work",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "9"
+        },
+        "prev_hash": "871b75e5aaccf86c5fb490139e78d6860b9782d50bafcf481325d4cbde9b2f63",
+        "seq": 35,
+        "tick": 9,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "f19e5eb5e9e3f498272961fbf7e4ad5e46807903850d4c6806b66c7c0d6d6db7",
+        "payload": {
+          "importance": 0.220267,
+          "kind": "work",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "9"
+        },
+        "prev_hash": "31b2a9c38519501abaf9d32ba8c6d687a04c26452b21abdd42c54336871d4726",
+        "seq": 36,
+        "tick": 9,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "69c014bb71bfe19f1d47edc1aac432f03675648e846717a3d14b0aa4814d4251",
+        "payload": {
+          "bt_branch": "restore",
+          "chosen_action": "talk",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.186027,
+          "dominant_need": "safety",
+          "memory_influence": {
+            "by_action": {},
+            "read": true,
+            "signals": [],
+            "utility_delta": 0
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.275672
+            },
+            {
+              "action": "walk",
+              "need": "self_actualization",
+              "score": 0.258323
+            },
+            {
+              "action": "rest",
+              "need": "physiology",
+              "score": 0.218352
+            }
+          ],
+          "utility_score": 0.275672
+        },
+        "prev_hash": "f19e5eb5e9e3f498272961fbf7e4ad5e46807903850d4c6806b66c7c0d6d6db7",
+        "seq": 37,
+        "tick": 10,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "f0dc39ffafb13d28da3d539b63c0fa6c6fcdb577c2ade158fe5d218913fe7379",
+        "payload": {
+          "action": "talk",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "69c014bb71bfe19f1d47edc1aac432f03675648e846717a3d14b0aa4814d4251",
+        "seq": 38,
+        "tick": 10,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "73c2eea60eb3629cf516517de56464476de6ab5dd4bdba47dd52ca6cd1c13c91",
+        "payload": {
+          "importance": 0.186027,
+          "kind": "talk",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "10"
+        },
+        "prev_hash": "f0dc39ffafb13d28da3d539b63c0fa6c6fcdb577c2ade158fe5d218913fe7379",
+        "seq": 39,
+        "tick": 10,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "abbafa2ae45a5d1046449f2155fef8e732b02d34ae8d9f8d9f54be0f90975bcd",
+        "payload": {
+          "importance": 0.186027,
+          "kind": "talk",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "10"
+        },
+        "prev_hash": "73c2eea60eb3629cf516517de56464476de6ab5dd4bdba47dd52ca6cd1c13c91",
+        "seq": 40,
+        "tick": 10,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "481db17c7a2b660bf1cc25cb7c00b6ffb53a5be509f8e93e8e99ace8a46742db",
+        "payload": {
+          "bt_branch": "restore",
+          "chosen_action": "walk",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.188693,
+          "dominant_need": "safety",
+          "memory_influence": {
+            "by_action": {},
+            "read": true,
+            "signals": [],
+            "utility_delta": 0
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "walk",
+              "need": "self_actualization",
+              "score": 0.264323
+            },
+            {
+              "action": "rest",
+              "need": "physiology",
+              "score": 0.221552
+            },
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.211771
+            }
+          ],
+          "utility_score": 0.264323
+        },
+        "prev_hash": "abbafa2ae45a5d1046449f2155fef8e732b02d34ae8d9f8d9f54be0f90975bcd",
+        "seq": 41,
+        "tick": 11,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "c351e57c3f25d10d58402a0674d64885cf8dd2bb87bc3df60c725162a99d21a2",
+        "payload": {
+          "action": "walk",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "481db17c7a2b660bf1cc25cb7c00b6ffb53a5be509f8e93e8e99ace8a46742db",
+        "seq": 42,
+        "tick": 11,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "08a0e89c369c54a0619813473cb47803749dc4c5b058bda30587b49d7ce49380",
+        "payload": {
+          "importance": 0.188693,
+          "kind": "walk",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "11"
+        },
+        "prev_hash": "c351e57c3f25d10d58402a0674d64885cf8dd2bb87bc3df60c725162a99d21a2",
+        "seq": 43,
+        "tick": 11,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "b60ff6d549134d201f391ba9dd90336df76f107f674644753c22e9781aeabdce",
+        "payload": {
+          "importance": 0.188693,
+          "kind": "walk",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "11"
+        },
+        "prev_hash": "08a0e89c369c54a0619813473cb47803749dc4c5b058bda30587b49d7ce49380",
+        "seq": 44,
+        "tick": 11,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "9b616f919b43e50b3fe945815f1dc7c0700bad0f97b88065cbbe1bce04b639aa",
+        "payload": {
+          "bt_branch": "restore",
+          "chosen_action": "rest",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.19136,
+          "dominant_need": "safety",
+          "memory_influence": {
+            "by_action": {},
+            "read": true,
+            "signals": [],
+            "utility_delta": 0
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "rest",
+              "need": "physiology",
+              "score": 0.224752
+            },
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.215571
+            },
+            {
+              "action": "walk",
+              "need": "self_actualization",
+              "score": 0.206026
+            }
+          ],
+          "utility_score": 0.224752
+        },
+        "prev_hash": "b60ff6d549134d201f391ba9dd90336df76f107f674644753c22e9781aeabdce",
+        "seq": 45,
+        "tick": 12,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "2996cc8f7d4f9d23c7a970ba39dd3621d23089c544e6bd3be8d35348dd5653dd",
+        "payload": {
+          "action": "rest",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "9b616f919b43e50b3fe945815f1dc7c0700bad0f97b88065cbbe1bce04b639aa",
+        "seq": 46,
+        "tick": 12,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "3fde7d7601aa39c31c093bf2670a5085b1b57919e3b873e62a010d8cd089d734",
+        "payload": {
+          "importance": 0.19136,
+          "kind": "rest",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "12"
+        },
+        "prev_hash": "2996cc8f7d4f9d23c7a970ba39dd3621d23089c544e6bd3be8d35348dd5653dd",
+        "seq": 47,
+        "tick": 12,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "fd4a98461cb730b76fb93ebdeb2e81ebc53c8c3d444bc3727cbf2cd8e19cc4b1",
+        "payload": {
+          "importance": 0.19136,
+          "kind": "rest",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "12"
+        },
+        "prev_hash": "3fde7d7601aa39c31c093bf2670a5085b1b57919e3b873e62a010d8cd089d734",
+        "seq": 48,
+        "tick": 12,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "6b6f8b331e129cd75800c37edfa29331144419cc238bfb76027f082418784c30",
+        "payload": {
+          "bt_branch": "work",
+          "chosen_action": "work",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.161653,
+          "dominant_need": "esteem",
+          "memory_influence": {
+            "by_action": {},
+            "read": true,
+            "signals": [],
+            "utility_delta": 0
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "work",
+              "need": "esteem",
+              "score": 0.29248
+            },
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.219371
+            },
+            {
+              "action": "walk",
+              "need": "self_actualization",
+              "score": 0.212026
+            }
+          ],
+          "utility_score": 0.29248
+        },
+        "prev_hash": "fd4a98461cb730b76fb93ebdeb2e81ebc53c8c3d444bc3727cbf2cd8e19cc4b1",
+        "seq": 49,
+        "tick": 13,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "d981278f0a08ed2e92fc6763ae83a5df77ba1e5d37ce8a6a3626cbff7e58e993",
+        "payload": {
+          "action": "work",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "6b6f8b331e129cd75800c37edfa29331144419cc238bfb76027f082418784c30",
+        "seq": 50,
+        "tick": 13,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "6af9d37c21ac4106526ca510ce4e5a84e36f292ee23f8b22154c7ad6cb7bcd3e",
+        "payload": {
+          "importance": 0.161653,
+          "kind": "work",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "13"
+        },
+        "prev_hash": "d981278f0a08ed2e92fc6763ae83a5df77ba1e5d37ce8a6a3626cbff7e58e993",
+        "seq": 51,
+        "tick": 13,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "636e3f97448957462cfd73772292af70ec6794bc17b01991971bd21078045f9e",
+        "payload": {
+          "importance": 0.161653,
+          "kind": "work",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "13"
+        },
+        "prev_hash": "6af9d37c21ac4106526ca510ce4e5a84e36f292ee23f8b22154c7ad6cb7bcd3e",
+        "seq": 52,
+        "tick": 13,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "c8007233d38d4827bee406294b5f8956c03a51c4da3e0e9ffbcc0d83b099267b",
+        "payload": {
+          "bt_branch": "restore",
+          "chosen_action": "talk",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.139285,
+          "dominant_need": "safety",
+          "memory_influence": {
+            "by_action": {},
+            "read": true,
+            "signals": [],
+            "utility_delta": 0
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.223171
+            },
+            {
+              "action": "walk",
+              "need": "self_actualization",
+              "score": 0.218026
+            },
+            {
+              "action": "rest",
+              "need": "physiology",
+              "score": 0.178726
+            }
+          ],
+          "utility_score": 0.223171
+        },
+        "prev_hash": "636e3f97448957462cfd73772292af70ec6794bc17b01991971bd21078045f9e",
+        "seq": 53,
+        "tick": 14,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "81bab59e714bdb60abe11cb238921f27e3d23819b356563af67853e4e2a85d23",
+        "payload": {
+          "action": "talk",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "c8007233d38d4827bee406294b5f8956c03a51c4da3e0e9ffbcc0d83b099267b",
+        "seq": 54,
+        "tick": 14,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "f42515abf96ce41e4788376ceef924d8b2ee5cfe526e548d7cba3ebd6777139e",
+        "payload": {
+          "importance": 0.139285,
+          "kind": "talk",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "14"
+        },
+        "prev_hash": "81bab59e714bdb60abe11cb238921f27e3d23819b356563af67853e4e2a85d23",
+        "seq": 55,
+        "tick": 14,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "c07a68afb19f0a2a823c225220a1a4b3d500ff370920c66fc29961e339d3bc5f",
+        "payload": {
+          "importance": 0.139285,
+          "kind": "talk",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "14"
+        },
+        "prev_hash": "f42515abf96ce41e4788376ceef924d8b2ee5cfe526e548d7cba3ebd6777139e",
+        "seq": 56,
+        "tick": 14,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "d2b4df51712fc23cf27bcaac6011f9af3090f5bad2687aa591f744ee56806a54",
+        "payload": {
+          "bt_branch": "restore",
+          "chosen_action": "walk",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.141952,
+          "dominant_need": "safety",
+          "memory_influence": {
+            "by_action": {},
+            "read": true,
+            "signals": [],
+            "utility_delta": 0
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "walk",
+              "need": "self_actualization",
+              "score": 0.224026
+            },
+            {
+              "action": "rest",
+              "need": "physiology",
+              "score": 0.181926
+            },
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.175019
+            }
+          ],
+          "utility_score": 0.224026
+        },
+        "prev_hash": "c07a68afb19f0a2a823c225220a1a4b3d500ff370920c66fc29961e339d3bc5f",
+        "seq": 57,
+        "tick": 15,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "9e60632d12f55775c3cce738fd2ace1a6fac78bebc8c3fea2532a7e96ab45267",
+        "payload": {
+          "action": "walk",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "d2b4df51712fc23cf27bcaac6011f9af3090f5bad2687aa591f744ee56806a54",
+        "seq": 58,
+        "tick": 15,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "d4c32768e5d930ec5db4c062598cc98997a56617eea72d557305bd370f2bc7e0",
+        "payload": {
+          "importance": 0.141952,
+          "kind": "walk",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "15"
+        },
+        "prev_hash": "9e60632d12f55775c3cce738fd2ace1a6fac78bebc8c3fea2532a7e96ab45267",
+        "seq": 59,
+        "tick": 15,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "b5bf1ed9b5caf7811a460afff542d8cba90d33c4b4b60dae5c81a8bd5f258ee2",
+        "payload": {
+          "importance": 0.141952,
+          "kind": "walk",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "15"
+        },
+        "prev_hash": "d4c32768e5d930ec5db4c062598cc98997a56617eea72d557305bd370f2bc7e0",
+        "seq": 60,
+        "tick": 15,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "447e7627202d3e24de5bbe048f183ecee8715d7759a3fcc843292f1e5129f8d9",
+        "payload": {
+          "bt_branch": "restore",
+          "chosen_action": "rest",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.144619,
+          "dominant_need": "safety",
+          "memory_influence": {
+            "by_action": {},
+            "read": true,
+            "signals": [],
+            "utility_delta": 0
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "rest",
+              "need": "physiology",
+              "score": 0.185126
+            },
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.178819
+            },
+            {
+              "action": "walk",
+              "need": "self_actualization",
+              "score": 0.177818
+            }
+          ],
+          "utility_score": 0.185126
+        },
+        "prev_hash": "b5bf1ed9b5caf7811a460afff542d8cba90d33c4b4b60dae5c81a8bd5f258ee2",
+        "seq": 61,
+        "tick": 16,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "b33d0c67ca776ca786c45f1705271b7c73d5ffe9ebeaa280aede71dd68df230e",
+        "payload": {
+          "action": "rest",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "447e7627202d3e24de5bbe048f183ecee8715d7759a3fcc843292f1e5129f8d9",
+        "seq": 62,
+        "tick": 16,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "b918cecbdab088e83f64705a54de9dbfc99ffa0abdc2cd1a92d83ae4a9c0f3cc",
+        "payload": {
+          "importance": 0.144619,
+          "kind": "rest",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "16"
+        },
+        "prev_hash": "b33d0c67ca776ca786c45f1705271b7c73d5ffe9ebeaa280aede71dd68df230e",
+        "seq": 63,
+        "tick": 16,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "ef8af554fd84af58dd6a80a8eb1bb2406a281afd1e46f6064c367685486c1ade",
+        "payload": {
+          "importance": 0.144619,
+          "kind": "rest",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "16"
+        },
+        "prev_hash": "b918cecbdab088e83f64705a54de9dbfc99ffa0abdc2cd1a92d83ae4a9c0f3cc",
+        "seq": 64,
+        "tick": 16,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "137fd90db8f54283cf339ef4f4cbf34254a8b8381f33585337e7f3d1aa4d54c1",
+        "payload": {
+          "bt_branch": "work",
+          "chosen_action": "work",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.120624,
+          "dominant_need": "esteem",
+          "memory_influence": {
+            "by_action": {},
+            "read": true,
+            "signals": [],
+            "utility_delta": 0
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "work",
+              "need": "esteem",
+              "score": 0.230936
+            },
+            {
+              "action": "walk",
+              "need": "self_actualization",
+              "score": 0.183818
+            },
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.182619
+            }
+          ],
+          "utility_score": 0.230936
+        },
+        "prev_hash": "ef8af554fd84af58dd6a80a8eb1bb2406a281afd1e46f6064c367685486c1ade",
+        "seq": 65,
+        "tick": 17,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "611d5ce09edebbf227bcb1bc11811f0261a4a0e6f38b6d39c8f31eed783b9b65",
+        "payload": {
+          "action": "work",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "137fd90db8f54283cf339ef4f4cbf34254a8b8381f33585337e7f3d1aa4d54c1",
+        "seq": 66,
+        "tick": 17,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "348e376e3a470d8ba007b55c557afd291604a183464d3e6673b8181a2ac567ca",
+        "payload": {
+          "importance": 0.120624,
+          "kind": "work",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "17"
+        },
+        "prev_hash": "611d5ce09edebbf227bcb1bc11811f0261a4a0e6f38b6d39c8f31eed783b9b65",
+        "seq": 67,
+        "tick": 17,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "77f6491b41fdba7ab51725b95b66d3b433f4b5d4b23345fe7da2e7ff9ded4950",
+        "payload": {
+          "importance": 0.120624,
+          "kind": "work",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "17"
+        },
+        "prev_hash": "348e376e3a470d8ba007b55c557afd291604a183464d3e6673b8181a2ac567ca",
+        "seq": 68,
+        "tick": 17,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "115deef579dccf61a2bf185c16d5fd0bf3bc8eb4a7f943e9255992ee3ebf3872",
+        "payload": {
+          "bt_branch": "restore",
+          "chosen_action": "walk",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.106567,
+          "dominant_need": "safety",
+          "memory_influence": {
+            "by_action": {},
+            "read": true,
+            "signals": [],
+            "utility_delta": 0
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "walk",
+              "need": "self_actualization",
+              "score": 0.189818
+            },
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.186419
+            },
+            {
+              "action": "rest",
+              "need": "physiology",
+              "score": 0.150989
+            }
+          ],
+          "utility_score": 0.189818
+        },
+        "prev_hash": "77f6491b41fdba7ab51725b95b66d3b433f4b5d4b23345fe7da2e7ff9ded4950",
+        "seq": 69,
+        "tick": 18,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "6200093a4b3cc8ae839deadd8849f9dfd39668abf5fc4c4f681daabc59cf1e9f",
+        "payload": {
+          "action": "walk",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "115deef579dccf61a2bf185c16d5fd0bf3bc8eb4a7f943e9255992ee3ebf3872",
+        "seq": 70,
+        "tick": 18,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "ee4e36252c595e3ee53e792269337e144fe0641ec338d3136a6809a43a2010a2",
+        "payload": {
+          "importance": 0.106567,
+          "kind": "walk",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "18"
+        },
+        "prev_hash": "6200093a4b3cc8ae839deadd8849f9dfd39668abf5fc4c4f681daabc59cf1e9f",
+        "seq": 71,
+        "tick": 18,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "8851bc45d50cdc11008bdc8bdb1a575667a92e776808b874944a60c49cf14d88",
+        "payload": {
+          "importance": 0.106567,
+          "kind": "walk",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "18"
+        },
+        "prev_hash": "ee4e36252c595e3ee53e792269337e144fe0641ec338d3136a6809a43a2010a2",
+        "seq": 72,
+        "tick": 18,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "96fcb5f9b3f37345e0b329314fec434de93a7a403befdae3de210e53f8f0a414",
+        "payload": {
+          "bt_branch": "restore",
+          "chosen_action": "talk",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.109233,
+          "dominant_need": "safety",
+          "memory_influence": {
+            "by_action": {},
+            "read": true,
+            "signals": [],
+            "utility_delta": 0
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.190219
+            },
+            {
+              "action": "rest",
+              "need": "physiology",
+              "score": 0.154189
+            },
+            {
+              "action": "walk",
+              "need": "self_actualization",
+              "score": 0.153872
+            }
+          ],
+          "utility_score": 0.190219
+        },
+        "prev_hash": "8851bc45d50cdc11008bdc8bdb1a575667a92e776808b874944a60c49cf14d88",
+        "seq": 73,
+        "tick": 19,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "22e7d425750b03db47761a6e8255942834ffeb06f835146badb9edd46b817db9",
+        "payload": {
+          "action": "talk",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "96fcb5f9b3f37345e0b329314fec434de93a7a403befdae3de210e53f8f0a414",
+        "seq": 74,
+        "tick": 19,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "9bb2af1d743b524ea8b8babbb34ee9f663a40339f713bcfb35ae17bb7dad7231",
+        "payload": {
+          "importance": 0.109233,
+          "kind": "talk",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "19"
+        },
+        "prev_hash": "22e7d425750b03db47761a6e8255942834ffeb06f835146badb9edd46b817db9",
+        "seq": 75,
+        "tick": 19,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "ec79e93dcc70d0b64976c994f645cfc631be4edb410b3e060c892fa002bdde94",
+        "payload": {
+          "importance": 0.109233,
+          "kind": "talk",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "19"
+        },
+        "prev_hash": "9bb2af1d743b524ea8b8babbb34ee9f663a40339f713bcfb35ae17bb7dad7231",
+        "seq": 76,
+        "tick": 19,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "b5e686f41d443054a191bdb2430283b05906fcec9830a51afba14908d85f50d6",
+        "payload": {
+          "bt_branch": "restore",
+          "chosen_action": "walk",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.1119,
+          "dominant_need": "safety",
+          "memory_influence": {
+            "by_action": {},
+            "read": true,
+            "signals": [],
+            "utility_delta": 0
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "walk",
+              "need": "self_actualization",
+              "score": 0.159872
+            },
+            {
+              "action": "rest",
+              "need": "physiology",
+              "score": 0.157389
+            },
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.151953
+            }
+          ],
+          "utility_score": 0.159872
+        },
+        "prev_hash": "ec79e93dcc70d0b64976c994f645cfc631be4edb410b3e060c892fa002bdde94",
+        "seq": 77,
+        "tick": 20,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "5f6a10d6096a4500d9fccce8b213444def967d2ee838f54b9fb376f982990472",
+        "payload": {
+          "action": "walk",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "b5e686f41d443054a191bdb2430283b05906fcec9830a51afba14908d85f50d6",
+        "seq": 78,
+        "tick": 20,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "f4e4dc91d6a8402357b98ab1639d77827b2c23711944c35205ef5c0fef8af233",
+        "payload": {
+          "importance": 0.1119,
+          "kind": "walk",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "20"
+        },
+        "prev_hash": "5f6a10d6096a4500d9fccce8b213444def967d2ee838f54b9fb376f982990472",
+        "seq": 79,
+        "tick": 20,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "6d3c52e37b0a2072411e373723418021172e57ae6e6e62e89b57ab3f2239adcf",
+        "payload": {
+          "importance": 0.1119,
+          "kind": "walk",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "20"
+        },
+        "prev_hash": "f4e4dc91d6a8402357b98ab1639d77827b2c23711944c35205ef5c0fef8af233",
+        "seq": 80,
+        "tick": 20,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "249d9ea6a6e01b3aefe48bb516e2acab6418bb2f01e71b8c4ac2055dbd26632a",
+        "payload": {
+          "bt_branch": "restore",
+          "chosen_action": "rest",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.114567,
+          "dominant_need": "safety",
+          "memory_influence": {
+            "by_action": {
+              "rest": 0.19
+            },
+            "read": true,
+            "signals": [
+              "episode:rest@ref=16"
+            ],
+            "utility_delta": 0.19
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "rest",
+              "need": "physiology",
+              "score": 0.350589
+            },
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.155753
+            },
+            {
+              "action": "walk",
+              "need": "self_actualization",
+              "score": 0.132911
+            }
+          ],
+          "utility_score": 0.350589
+        },
+        "prev_hash": "6d3c52e37b0a2072411e373723418021172e57ae6e6e62e89b57ab3f2239adcf",
+        "seq": 81,
+        "tick": 21,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "c15d156d306061cee1ee5c50f34b892abc8aeb211af9304f0660a2a3460236c0",
+        "payload": {
+          "action": "rest",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "249d9ea6a6e01b3aefe48bb516e2acab6418bb2f01e71b8c4ac2055dbd26632a",
+        "seq": 82,
+        "tick": 21,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "0a0f58ec55f799ecd701cfd3992c7fd17d26d0a4b5bcd038ea05834a76500d62",
+        "payload": {
+          "importance": 0.114567,
+          "kind": "rest",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "21"
+        },
+        "prev_hash": "c15d156d306061cee1ee5c50f34b892abc8aeb211af9304f0660a2a3460236c0",
+        "seq": 83,
+        "tick": 21,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "a1ff5fc9e432a115c2d1c143e51b93ef7bc6cd26735ac2bf64c0dbeafc9913bb",
+        "payload": {
+          "importance": 0.114567,
+          "kind": "rest",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "21"
+        },
+        "prev_hash": "0a0f58ec55f799ecd701cfd3992c7fd17d26d0a4b5bcd038ea05834a76500d62",
+        "seq": 84,
+        "tick": 21,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "6d6d62f3067c858daa3bde9cb0f28eb92dbc2c0cbf6cc94da32e190762c2c7fd",
+        "payload": {
+          "bt_branch": "work",
+          "chosen_action": "rest",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.09377,
+          "dominant_need": "esteem",
+          "memory_influence": {
+            "by_action": {
+              "rest": 0.19
+            },
+            "read": true,
+            "signals": [
+              "episode:rest@ref=16"
+            ],
+            "utility_delta": 0.19
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "rest",
+              "need": "physiology",
+              "score": 0.320612
+            },
+            {
+              "action": "work",
+              "need": "esteem",
+              "score": 0.190655
+            },
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.159553
+            }
+          ],
+          "utility_score": 0.320612
+        },
+        "prev_hash": "a1ff5fc9e432a115c2d1c143e51b93ef7bc6cd26735ac2bf64c0dbeafc9913bb",
+        "seq": 85,
+        "tick": 22,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "311e2239b42e99a6c1982b1c820e690725701991435fa4ed7da1d56bde69cffd",
+        "payload": {
+          "action": "rest",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "6d6d62f3067c858daa3bde9cb0f28eb92dbc2c0cbf6cc94da32e190762c2c7fd",
+        "seq": 86,
+        "tick": 22,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "6e8bdaa9131947a840069ad72cfc9537455ddad195a3b3305f616274b1d14cd7",
+        "payload": {
+          "importance": 0.09377,
+          "kind": "rest",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "22"
+        },
+        "prev_hash": "311e2239b42e99a6c1982b1c820e690725701991435fa4ed7da1d56bde69cffd",
+        "seq": 87,
+        "tick": 22,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "8646fbe6552752e07677991a00c7b190c708a19e060db2657f0ea2b64e9f345d",
+        "payload": {
+          "importance": 0.09377,
+          "kind": "rest",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "22"
+        },
+        "prev_hash": "6e8bdaa9131947a840069ad72cfc9537455ddad195a3b3305f616274b1d14cd7",
+        "seq": 88,
+        "tick": 22,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "d6d7744be8906c6327b7eab15f20b64dd0f848c505215454dc34bbd6631827fa",
+        "payload": {
+          "bt_branch": "work",
+          "chosen_action": "rest",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.095637,
+          "dominant_need": "esteem",
+          "memory_influence": {
+            "by_action": {
+              "rest": 0.19
+            },
+            "read": true,
+            "signals": [
+              "episode:rest@ref=16"
+            ],
+            "utility_delta": 0.19
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "rest",
+              "need": "physiology",
+              "score": 0.299628
+            },
+            {
+              "action": "work",
+              "need": "esteem",
+              "score": 0.193455
+            },
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.163353
+            }
+          ],
+          "utility_score": 0.299628
+        },
+        "prev_hash": "8646fbe6552752e07677991a00c7b190c708a19e060db2657f0ea2b64e9f345d",
+        "seq": 89,
+        "tick": 23,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "102f7fd60f4b439a594e2be2ad1a277a135810f7595386fd328220da568c6951",
+        "payload": {
+          "action": "rest",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "d6d7744be8906c6327b7eab15f20b64dd0f848c505215454dc34bbd6631827fa",
+        "seq": 90,
+        "tick": 23,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "939947b7191cb4004df05ae30f05e9e52a8ce90dc2cbe66f54abdc3640a603c7",
+        "payload": {
+          "importance": 0.095637,
+          "kind": "rest",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "23"
+        },
+        "prev_hash": "102f7fd60f4b439a594e2be2ad1a277a135810f7595386fd328220da568c6951",
+        "seq": 91,
+        "tick": 23,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "aebcf657e8163630519bc5c45110b9c51025ae832606e9cc50eca25a39ae94a6",
+        "payload": {
+          "importance": 0.095637,
+          "kind": "rest",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "23"
+        },
+        "prev_hash": "939947b7191cb4004df05ae30f05e9e52a8ce90dc2cbe66f54abdc3640a603c7",
+        "seq": 92,
+        "tick": 23,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "8c31cbdd25d83a0b61ad81fecbc6f969aacccfedb33d330644260880c0103b13",
+        "payload": {
+          "bt_branch": "work",
+          "chosen_action": "rest",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.097504,
+          "dominant_need": "esteem",
+          "memory_influence": {
+            "by_action": {
+              "rest": 0.19
+            },
+            "read": true,
+            "signals": [
+              "episode:rest@ref=16"
+            ],
+            "utility_delta": 0.19
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "rest",
+              "need": "physiology",
+              "score": 0.284939
+            },
+            {
+              "action": "work",
+              "need": "esteem",
+              "score": 0.196255
+            },
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.167153
+            }
+          ],
+          "utility_score": 0.284939
+        },
+        "prev_hash": "aebcf657e8163630519bc5c45110b9c51025ae832606e9cc50eca25a39ae94a6",
+        "seq": 93,
+        "tick": 24,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "122f2759c77b82558e6b1727e35788536bda247338ae3fb2b83b68e11f6f463f",
+        "payload": {
+          "action": "rest",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "8c31cbdd25d83a0b61ad81fecbc6f969aacccfedb33d330644260880c0103b13",
+        "seq": 94,
+        "tick": 24,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "3beee3327b01a44d0e1b8423234a117385c11d123f1173f954d140f225bf4abb",
+        "payload": {
+          "importance": 0.097504,
+          "kind": "rest",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "24"
+        },
+        "prev_hash": "122f2759c77b82558e6b1727e35788536bda247338ae3fb2b83b68e11f6f463f",
+        "seq": 95,
+        "tick": 24,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "5236f6532abf3f9da420f799f274af28481de01b059f12ba52e7b9f7d99a9ea3",
+        "payload": {
+          "importance": 0.097504,
+          "kind": "rest",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "24"
+        },
+        "prev_hash": "3beee3327b01a44d0e1b8423234a117385c11d123f1173f954d140f225bf4abb",
+        "seq": 96,
+        "tick": 24,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "6d3e145bf13367d6f0d5ff8187b6d0cbd4f3880394b9d82594239a6d85f0f31f",
+        "payload": {
+          "bt_branch": "work",
+          "chosen_action": "rest",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.09937,
+          "dominant_need": "esteem",
+          "memory_influence": {
+            "by_action": {
+              "rest": 0.19
+            },
+            "read": true,
+            "signals": [
+              "episode:rest@ref=16"
+            ],
+            "utility_delta": 0.19
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "rest",
+              "need": "physiology",
+              "score": 0.274658
+            },
+            {
+              "action": "work",
+              "need": "esteem",
+              "score": 0.199055
+            },
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.170953
+            }
+          ],
+          "utility_score": 0.274658
+        },
+        "prev_hash": "5236f6532abf3f9da420f799f274af28481de01b059f12ba52e7b9f7d99a9ea3",
+        "seq": 97,
+        "tick": 25,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "a95ea43202f7d42b002a225f2471b3c6aef703fed60beef7f03451bc0f7f546c",
+        "payload": {
+          "action": "rest",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "6d3e145bf13367d6f0d5ff8187b6d0cbd4f3880394b9d82594239a6d85f0f31f",
+        "seq": 98,
+        "tick": 25,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "2ebd87a29eca7b5f5c2ccd5f03ebbd76b2c33d231b0e21fa3981c4ba7c61eb9f",
+        "payload": {
+          "importance": 0.09937,
+          "kind": "rest",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "25"
+        },
+        "prev_hash": "a95ea43202f7d42b002a225f2471b3c6aef703fed60beef7f03451bc0f7f546c",
+        "seq": 99,
+        "tick": 25,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "eb045ca2d427d20581a953c9185936ee1d0a26bb36450cb81c1371c765f4ba58",
+        "payload": {
+          "importance": 0.09937,
+          "kind": "rest",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "25"
+        },
+        "prev_hash": "2ebd87a29eca7b5f5c2ccd5f03ebbd76b2c33d231b0e21fa3981c4ba7c61eb9f",
+        "seq": 100,
+        "tick": 25,
+        "type": "memory.written"
+      },
+      {
+        "actor": "kernel",
+        "hash": "328d047812c14dd8cb672791f27141cf1f45fa32ffe280e43f7795c50aea8388",
+        "payload": {
+          "checkpoint_path": "checkpoints/000025.json",
+          "event_chain_hash": "eb045ca2d427d20581a953c9185936ee1d0a26bb36450cb81c1371c765f4ba58",
+          "rng_digests": {
+            "npc.npc-006.move": "09d6b1c495252695a4e0be6fdc3240f758adf06b442dbcafda45c8dfc2b3070d"
+          },
+          "rng_state_digest": "5c6c40416ddb625cba42c199082137bfd0fadbad35b60fc30abd55bccd737149",
+          "snapshot_tick": 25,
+          "state_hash": "de7b1c6a2ecff78726e5d56c88b43b212388729360ef6e5c413bcd5b4be1f623"
+        },
+        "prev_hash": "eb045ca2d427d20581a953c9185936ee1d0a26bb36450cb81c1371c765f4ba58",
+        "seq": 101,
+        "tick": 25,
+        "type": "snapshot.taken"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "662404c9555b2f19e566c571a7a3248f1572f883452fd0504ecabc51a691420c",
+        "payload": {
+          "bt_branch": "work",
+          "chosen_action": "rest",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.101237,
+          "dominant_need": "esteem",
+          "memory_influence": {
+            "by_action": {
+              "rest": 0.19
+            },
+            "read": true,
+            "signals": [
+              "episode:rest@ref=16"
+            ],
+            "utility_delta": 0.19
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "rest",
+              "need": "physiology",
+              "score": 0.26746
+            },
+            {
+              "action": "work",
+              "need": "esteem",
+              "score": 0.201855
+            },
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.174753
+            }
+          ],
+          "utility_score": 0.26746
+        },
+        "prev_hash": "328d047812c14dd8cb672791f27141cf1f45fa32ffe280e43f7795c50aea8388",
+        "seq": 102,
+        "tick": 26,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "17b9cf010413e1f9d665975d766ce393ef7e9412a8c01b85b5a591672778b23a",
+        "payload": {
+          "action": "rest",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "662404c9555b2f19e566c571a7a3248f1572f883452fd0504ecabc51a691420c",
+        "seq": 103,
+        "tick": 26,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "26fdfd2bd86a394fae860e1f2da0b9d73b2ae537b2df59113f43759be3c37507",
+        "payload": {
+          "importance": 0.101237,
+          "kind": "rest",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "26"
+        },
+        "prev_hash": "17b9cf010413e1f9d665975d766ce393ef7e9412a8c01b85b5a591672778b23a",
+        "seq": 104,
+        "tick": 26,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "d3ea51bd39d9348b9e227a9879833a88e2fb7450fb756a3b18c97f7860424b28",
+        "payload": {
+          "importance": 0.101237,
+          "kind": "rest",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "26"
+        },
+        "prev_hash": "26fdfd2bd86a394fae860e1f2da0b9d73b2ae537b2df59113f43759be3c37507",
+        "seq": 105,
+        "tick": 26,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "37463274adb9d9144f7026dc71d3c332a516726fee6f2db03937bed3d15d8534",
+        "payload": {
+          "bt_branch": "work",
+          "chosen_action": "rest",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.103104,
+          "dominant_need": "esteem",
+          "memory_influence": {
+            "by_action": {
+              "rest": 0.19
+            },
+            "read": true,
+            "signals": [
+              "episode:rest@ref=16"
+            ],
+            "utility_delta": 0.19
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "rest",
+              "need": "physiology",
+              "score": 0.262422
+            },
+            {
+              "action": "work",
+              "need": "esteem",
+              "score": 0.204655
+            },
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.178553
+            }
+          ],
+          "utility_score": 0.262422
+        },
+        "prev_hash": "d3ea51bd39d9348b9e227a9879833a88e2fb7450fb756a3b18c97f7860424b28",
+        "seq": 106,
+        "tick": 27,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "7348eb3f66fd9a64aedfd37af44e8ecb94e1b9f8fa0dc2478d5e81bf0baadd16",
+        "payload": {
+          "action": "rest",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "37463274adb9d9144f7026dc71d3c332a516726fee6f2db03937bed3d15d8534",
+        "seq": 107,
+        "tick": 27,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "056cf7181c6e6be473346217f23ee71e07c1088a89fb99f8299cd35652be32ac",
+        "payload": {
+          "importance": 0.103104,
+          "kind": "rest",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "27"
+        },
+        "prev_hash": "7348eb3f66fd9a64aedfd37af44e8ecb94e1b9f8fa0dc2478d5e81bf0baadd16",
+        "seq": 108,
+        "tick": 27,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "00c109f7e13d38cde1468eab68f4a75e72f597844a9c683c58907bd50248a38d",
+        "payload": {
+          "importance": 0.103104,
+          "kind": "rest",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "27"
+        },
+        "prev_hash": "056cf7181c6e6be473346217f23ee71e07c1088a89fb99f8299cd35652be32ac",
+        "seq": 109,
+        "tick": 27,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "70bd553de4c87b20d6579594968cff00101eef8546500cb11d513b4a64a83f5e",
+        "payload": {
+          "bt_branch": "work",
+          "chosen_action": "rest",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.10497,
+          "dominant_need": "esteem",
+          "memory_influence": {
+            "by_action": {
+              "rest": 0.19
+            },
+            "read": true,
+            "signals": [
+              "episode:rest@ref=16"
+            ],
+            "utility_delta": 0.19
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "rest",
+              "need": "physiology",
+              "score": 0.258895
+            },
+            {
+              "action": "work",
+              "need": "esteem",
+              "score": 0.207455
+            },
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.182353
+            }
+          ],
+          "utility_score": 0.258895
+        },
+        "prev_hash": "00c109f7e13d38cde1468eab68f4a75e72f597844a9c683c58907bd50248a38d",
+        "seq": 110,
+        "tick": 28,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "6399f6869c87fb87f3361573a0e67a55f6b3c9852ad57e1b212aaa22318c2d25",
+        "payload": {
+          "action": "rest",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "70bd553de4c87b20d6579594968cff00101eef8546500cb11d513b4a64a83f5e",
+        "seq": 111,
+        "tick": 28,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "a0ed595aa3a3cc2025186fa199aa7fcab2789c152f070f8384b71ecdd6d9e1d9",
+        "payload": {
+          "importance": 0.10497,
+          "kind": "rest",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "28"
+        },
+        "prev_hash": "6399f6869c87fb87f3361573a0e67a55f6b3c9852ad57e1b212aaa22318c2d25",
+        "seq": 112,
+        "tick": 28,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "891cf4378ce39eba72f8e4057197a9f00c46fb2ed14cdb50a81af353a9cccd63",
+        "payload": {
+          "importance": 0.10497,
+          "kind": "rest",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "28"
+        },
+        "prev_hash": "a0ed595aa3a3cc2025186fa199aa7fcab2789c152f070f8384b71ecdd6d9e1d9",
+        "seq": 113,
+        "tick": 28,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "9f3968537250f4b5ddee6abc61591ca280ed8efc015475330a33fe6d309661e3",
+        "payload": {
+          "bt_branch": "work",
+          "chosen_action": "rest",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.106837,
+          "dominant_need": "esteem",
+          "memory_influence": {
+            "by_action": {
+              "rest": 0.19
+            },
+            "read": true,
+            "signals": [
+              "episode:rest@ref=16"
+            ],
+            "utility_delta": 0.19
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "rest",
+              "need": "physiology",
+              "score": 0.256426
+            },
+            {
+              "action": "work",
+              "need": "esteem",
+              "score": 0.210255
+            },
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.186153
+            }
+          ],
+          "utility_score": 0.256426
+        },
+        "prev_hash": "891cf4378ce39eba72f8e4057197a9f00c46fb2ed14cdb50a81af353a9cccd63",
+        "seq": 114,
+        "tick": 29,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "723045836a7ca6a09b86a0609130ccff1691917c5d6b7cf86b0f5b6af9a26c8e",
+        "payload": {
+          "action": "rest",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "9f3968537250f4b5ddee6abc61591ca280ed8efc015475330a33fe6d309661e3",
+        "seq": 115,
+        "tick": 29,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "c5b050dc876fdc20f821e42c1e48d5a9f548c7cc9bc6282c43432c05e8fccf0f",
+        "payload": {
+          "importance": 0.106837,
+          "kind": "rest",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "29"
+        },
+        "prev_hash": "723045836a7ca6a09b86a0609130ccff1691917c5d6b7cf86b0f5b6af9a26c8e",
+        "seq": 116,
+        "tick": 29,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "269f8682d69105012da0eb393ce0b252f95c376f63aa9bb14d27e091d0372f35",
+        "payload": {
+          "importance": 0.106837,
+          "kind": "rest",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "29"
+        },
+        "prev_hash": "c5b050dc876fdc20f821e42c1e48d5a9f548c7cc9bc6282c43432c05e8fccf0f",
+        "seq": 117,
+        "tick": 29,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "7d45e72c593ee46639923927bc0939756c722be7f229bbda08a321fa8cb1a185",
+        "payload": {
+          "bt_branch": "work",
+          "chosen_action": "rest",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.108704,
+          "dominant_need": "esteem",
+          "memory_influence": {
+            "by_action": {
+              "rest": 0.19
+            },
+            "read": true,
+            "signals": [
+              "episode:rest@ref=16"
+            ],
+            "utility_delta": 0.19
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "rest",
+              "need": "physiology",
+              "score": 0.254698
+            },
+            {
+              "action": "work",
+              "need": "esteem",
+              "score": 0.213055
+            },
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.189953
+            }
+          ],
+          "utility_score": 0.254698
+        },
+        "prev_hash": "269f8682d69105012da0eb393ce0b252f95c376f63aa9bb14d27e091d0372f35",
+        "seq": 118,
+        "tick": 30,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "3a6630f7877caff85c1b99ed933bf3386882681678450fde87673d047057e4be",
+        "payload": {
+          "action": "rest",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "7d45e72c593ee46639923927bc0939756c722be7f229bbda08a321fa8cb1a185",
+        "seq": 119,
+        "tick": 30,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "c4886aaf5337300c64b21f8ea7e1ca9df812ebf9cb45a7d849375029acd8b88c",
+        "payload": {
+          "importance": 0.108704,
+          "kind": "rest",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "30"
+        },
+        "prev_hash": "3a6630f7877caff85c1b99ed933bf3386882681678450fde87673d047057e4be",
+        "seq": 120,
+        "tick": 30,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "d53c3b031434ac184cbc1220353a1a23237f5949a51841526d88827149fbbcee",
+        "payload": {
+          "importance": 0.108704,
+          "kind": "rest",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "30"
+        },
+        "prev_hash": "c4886aaf5337300c64b21f8ea7e1ca9df812ebf9cb45a7d849375029acd8b88c",
+        "seq": 121,
+        "tick": 30,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "263ad1f8bc7dbc3bc8ef65ea1916b4bfafe012cec7896d28823286ca7cc02663",
+        "payload": {
+          "bt_branch": "work",
+          "chosen_action": "rest",
+          "decision_source": "behaviour_tree",
+          "dominant_deficit": 0.11057,
+          "dominant_need": "esteem",
+          "memory_influence": {
+            "by_action": {
+              "rest": 0.19
+            },
+            "read": true,
+            "signals": [
+              "episode:rest@ref=16"
+            ],
+            "utility_delta": 0.19
+          },
+          "npc_id": "npc-006",
+          "schedule_is_driver": false,
+          "schedule_state": "resting",
+          "target_entity": "room-1052",
+          "utility_ranking": [
+            {
+              "action": "rest",
+              "need": "physiology",
+              "score": 0.253489
+            },
+            {
+              "action": "work",
+              "need": "esteem",
+              "score": 0.215855
+            },
+            {
+              "action": "talk",
+              "need": "belonging",
+              "score": 0.193753
+            }
+          ],
+          "utility_score": 0.253489
+        },
+        "prev_hash": "d53c3b031434ac184cbc1220353a1a23237f5949a51841526d88827149fbbcee",
+        "seq": 122,
+        "tick": 31,
+        "type": "npc.decision"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "108b008bc5e2ac2b01093834ae5e9a148e314ae5d674afff9613380059fabc60",
+        "payload": {
+          "action": "rest",
+          "decision_source": "behaviour_tree",
+          "duration_ticks": 1,
+          "npc_id": "npc-006",
+          "target_entity": "room-1052"
+        },
+        "prev_hash": "263ad1f8bc7dbc3bc8ef65ea1916b4bfafe012cec7896d28823286ca7cc02663",
+        "seq": 123,
+        "tick": 31,
+        "type": "npc.action"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "7a78e5ee404e218f65093c0d320024b64698a1c2b46ec19bbf85fd94de9de1af",
+        "payload": {
+          "importance": 0.11057,
+          "kind": "rest",
+          "layer": "episodic",
+          "npc_id": "npc-006",
+          "ref": "31"
+        },
+        "prev_hash": "108b008bc5e2ac2b01093834ae5e9a148e314ae5d674afff9613380059fabc60",
+        "seq": 124,
+        "tick": 31,
+        "type": "memory.written"
+      },
+      {
+        "actor": "npc-006",
+        "hash": "3db65b3bb71911ef05ee3b90e1f335d8009ccd902ecdd80c190c3cd9e609c650",
+        "payload": {
+          "importance": 0.11057,
+          "kind": "rest",
+          "layer": "working",
+          "npc_id": "npc-006",
+          "ref": "31"
+        },
+        "prev_hash": "7a78e5ee404e218f65093c0d320024b64698a1c2b46ec19bbf85fd94de9de1af",
+        "seq": 125,
+        "tick": 31,
+        "type": "memory.written"
+      }
+    ]
+  },
+  "reload_readback": {
+    "before_file": "spikes/m52-live/readback/before-with.json",
+    "after_file": "spikes/m52-live/readback/after-with.json",
+    "advanced_file": "spikes/m52-live/readback/after-advanced-with.json"
+  },
+  "console_total": 4,
+  "console_errors": [],
+  "page_errors": [],
+  "bad_responses": [
+    {
+      "status": "failed",
+      "url": "http://127.0.0.1:8806/live/stream",
+      "reason": "net::ERR_ABORTED"
+    }
+  ]
+}

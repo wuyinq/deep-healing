@@ -26,6 +26,16 @@ WORKING_CAPACITY = 16
 EPISODE_CAPACITY = 256
 LAYERS = ("working", "episodes", "facts")
 
+#: **store 词表 → 事件词表**的映射（M5.2 r1 · Raven C-2 冻结口径）。
+#: `events.schema.json` 对 `memory.written` 的 `then` 子句把 `layer` 钉成
+#: `working | episodic | semantic`，而 store 的 `LAYERS` 是 `working | episodes | facts`
+#: ⇒ **禁止**把 store 词表直接写进事件；本表是唯一权威映射，并有单测钉死。
+EVENT_LAYER_NAMES = {
+    "working": "working",
+    "episodes": "episodic",
+    "facts": "semantic",
+}
+
 SCHEMA = (
     """
     CREATE TABLE IF NOT EXISTS episodes (
@@ -80,6 +90,11 @@ class MemoryStore:
         self._episode_capacity = int(episode_capacity)
         self.write_count = 0
 
+    @property
+    def write_enabled(self) -> bool:
+        """写入开关（只读）。`False` ⇒ `remember` 一律返回 `None` 且**不触碰数据库**。"""
+        return self._write_enabled
+
     # ------------------------------------------------------------------ 连接
     def connect(self) -> sqlite3.Connection:
         self._path.parent.mkdir(parents=True, exist_ok=True)
@@ -121,15 +136,21 @@ class MemoryStore:
         return None
 
     def append_working(self, npc_id: str, tick: int, kind: str, text_summary: str,
-                       *, slot: str = "default") -> None:
-        """写入短期缓冲（环形，超容量按 tick 最旧淘汰）。"""
+                       *, slot: str = "default") -> int | None:
+        """写入短期缓冲（环形，超容量按 tick 最旧淘汰）。
+
+        **M5.2 r1 最小增量**：返回写入行的 `ref`（`None` = flag 关闭 / 未落库）。
+        原先返回 `None` ⇒ 调用方无法给出 `memory.written.payload.ref`（C-2 要求 `ref` 恒为
+        **string**）；返回 `int` 是**追加式**改动，忽略返回值的既有调用方行为不变。
+        """
         if not self._write_enabled:
-            return
+            return None
         with self.connect() as connection:
-            connection.execute(
+            cursor = connection.execute(
                 "INSERT INTO working(npc_id, slot, tick, kind, text_summary) VALUES (?,?,?,?,?)",
                 (npc_id, slot, int(tick), kind, text_summary),
             )
+            ref = int(cursor.lastrowid or 0)
             connection.execute(
                 "DELETE FROM working WHERE ref IN ("
                 "  SELECT ref FROM working WHERE npc_id=? AND slot=? ORDER BY tick DESC, ref DESC"
@@ -137,6 +158,7 @@ class MemoryStore:
                 (npc_id, slot, self._working_capacity),
             )
         self.write_count += 1
+        return ref
 
     def append_episode(self, npc_id: str, tick: int, kind: str, text_summary: str, importance: float,
                        refs: list[str], *, embedding: list[float] | None = None) -> int:

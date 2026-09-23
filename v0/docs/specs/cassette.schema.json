@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deephealing.local/schemas/cassette.schema.json",
+  "title": "DeepHealing Cassette Record",
+  "description": "原子能力的录制/回放单元（cassette）。一行一个记录（JSONL）。回放模式下能力调用必须命中同 key 记录，miss 默认 fail_closed（E_CASSETTE_MISS），保证回放不引入新随机。格式细节与 miss 策略见 cassette.format.md。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "key",
+    "capability_id",
+    "capability_version",
+    "provider",
+    "canonical_input_hash",
+    "output",
+    "meta",
+    "prev_hash",
+    "hash"
+  ],
+  "properties": {
+    "key": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "记录主键 = sha256(canonical_json({capability_id, capability_version, canonical_input_hash, provider}))。禁止加入 wall-clock / 进程 id / 会话 id 等非确定项。"
+    },
+    "capability_id": { "type": "string" },
+    "capability_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "版本升级即视为 key 变化 → 旧 cassette 自然 miss（fail-closed，不静默复用）。"
+    },
+    "provider": {
+      "type": "string",
+      "enum": ["remote_api", "local_model", "deterministic_rule", "cassette_replay"],
+      "description": "**录制源** provider。回放时以录制源 key 查找（回放 provider 本身不参与 key）。"
+    },
+    "canonical_input_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "sha256(canonical_json(input))，规范化规则同 snapshot.normalization。"
+    },
+    "output": {
+      "type": "object",
+      "description": "录制到的结构化输出（必须已通过能力 output_schema）。回放时逐字节返回本字段。"
+    },
+    "meta": { "$ref": "#/$defs/meta" },
+    "prev_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "cassette 文件内前一条记录的 key（genesis 为 64 个 0）。它是哈希链的一环：与 `hash` 一起用于检出**损坏 / 篡改**（链断裂即 E_CASSETTE_TAMPERED）。**强度边界**：链**无密钥**，只检损坏 / 篡改，**不是真实性保证**（真实性需外部锚定）；条文见 cassette.format.md §4.3 的 FROZEN-CASSETTE-INTEGRITY-1。"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "记录自校验 hash（**必填**）：sha256(prev_hash || canonical_json(记录去掉 hash 字段))，小写十六进制。校验时机（命中即校验 / 回放前置 / validate 前置）见 cassette.format.md §4.3；不符即 E_CASSETTE_TAMPERED。**强度边界**：本字段所在哈希链**无密钥**，只能检出损坏 / 篡改，**不是真实性保证**；真实性需外部锚定（快照链头签名）。条文见 cassette.format.md §4.3 的 FROZEN-CASSETTE-INTEGRITY-1。"
+    }
+  },
+  "$defs": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model", "tokens", "latency_ms", "recorded_at", "schema_version"],
+      "properties": {
+        "model": {
+          "type": ["string", "null"],
+          "description": "模型名（可空）。**严禁**写入 api key / base_url 中的凭据片段。"
+        },
+        "tokens": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["in", "out"],
+          "properties": {
+            "in": { "type": "integer", "minimum": 0 },
+            "out": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "latency_ms": { "type": "number", "minimum": 0 },
+        "recorded_at": {
+          "type": "string",
+          "description": "ISO-8601 录制时间。仅用于人读与新鲜度提示，**不得**参与 key 或任何 hash。"
+        },
+        "schema_version": { "type": "string", "const": "1.0.0" },
+        "redacted_fields": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "落盘前被脱敏的字段路径（自证脱敏发生过）。"
+        }
+      }
+    }
+  }
+}

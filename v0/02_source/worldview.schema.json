@@ -93,5 +93,5 @@
       }
     }
   },
-  "$comment": "IP 边界：id / 命名 / 文本全部自研；不引用小说人名、章节、台词；零血腥 / 怪物 / Jump Scare。深层态**不是**第二张地图或第二个 pack。"
+  "$comment": "保真度声明 IP-BOUNDARY-DECLARATION：原著人物 / 名称 / 情节 / 世界规则是本项目（内部 1:1 复刻）的核心依据，出处表见 fidelity/；仍禁逐字搬运原著正文段落（verbatim_body_paragraph 不可豁免）；呈现不走 Jump Scare。深层态**不是**第二张地图或第二个 pack。"
 }

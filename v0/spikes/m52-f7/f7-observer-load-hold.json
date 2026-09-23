@@ -1,0 +1,53 @@
+{
+ "all_pass": true,
+ "arms": [
+  {
+   "artifact_ok": true,
+   "artifacts": [
+    "live_state.json"
+   ],
+   "errno24": false,
+   "exit": 0,
+   "fatal_python_error": false,
+   "fd_peak_below_limit": true,
+   "fd_tcp_peak": 33,
+   "fd_total_peak": 73,
+   "mode": "live",
+   "observers": 300,
+   "pass": true,
+   "probe_nofile_raised": false,
+   "probe_nofile_soft": 4096,
+   "regime": "hold",
+   "served_200": 1500,
+   "tag": "hold-live-hold-run0",
+   "thread_peak": 0,
+   "wall_s": 3.86
+  },
+  {
+   "artifact_ok": true,
+   "artifacts": [
+    "live_state.json"
+   ],
+   "errno24": false,
+   "exit": 0,
+   "fatal_python_error": false,
+   "fd_peak_below_limit": true,
+   "fd_tcp_peak": 34,
+   "fd_total_peak": 73,
+   "mode": "live",
+   "observers": 300,
+   "pass": true,
+   "probe_nofile_raised": false,
+   "probe_nofile_soft": 4096,
+   "regime": "hold",
+   "served_200": 1500,
+   "tag": "hold-live-hold-run1",
+   "thread_peak": 0,
+   "wall_s": 3.55
+  }
+ ],
+ "fd_peak_limit": 1024,
+ "kernel_root": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260923-002-deephealing-m5-2-character-loop/02_source/v0_skeleton/kernel",
+ "observers": 300,
+ "regime_reference": "m4-r4-arch-f7-probe-reference.py (M4 §D-12)"
+}
