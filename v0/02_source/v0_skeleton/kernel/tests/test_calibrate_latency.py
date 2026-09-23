@@ -250,12 +250,26 @@ def test_registry_registers_three_frozen_artifacts():
     assert TOOL.resolve_registry_path(registry["environment_class_rule"]["path"]).stat().st_mtime < registry_path.stat().st_mtime
 
 
+_PATH_VALUE_RE = re.compile(r'"path"\s*:\s*"([^"]*)"')
+
+
+def _absolute_path_values(text: str) -> list[str]:
+    """registry 文本里**任何**以 `/` 开头的路径型取值（**位置无关**口径）。
+
+    ⚠️ 不得用 `/Users/` 之类的**具体前缀**当「绝对路径」的判据：那会把「本机前缀」误当成
+    「绝对路径」的同义词 —— 检出落在 `/Users` 之外（`/tmp`、`/home`、CI 容器）时，
+    夹具的前置断言自己先红，而三条负向断言全部空转（见 `ISS-20260923-001`）。
+    """
+    return [value for value in _PATH_VALUE_RE.findall(text) if value.startswith("/")]
+
+
 def test_registry_paths_are_relative_to_registry_dir():
     """R2 / P-9 / 3A-C3：registry 内**零绝对路径**，且每条 `path` 都能在运行时解析到真实文件。"""
     registry_path = SPIKE_DIR / "calibration.registry.json"
     text = registry_path.read_text(encoding="utf-8")
     registry = json.loads(text)
-    assert "/Users/" not in text, "registry 不得含任何绝对路径（换机/克隆后失效，且泄漏本地目录结构）"
+    absolute = _absolute_path_values(text)
+    assert not absolute, f"registry 不得含任何绝对路径（换机/克隆后失效，且泄漏本地目录结构）：{absolute}"
     for key in ("frozen_rule", "accepted_degradation_range", "environment_class_rule"):
         value = registry[key]["path"]
         assert not value.startswith("/"), f"{key}.path 必须是相对路径：{value}"
@@ -281,14 +295,14 @@ def test_registry_force_rewrite_migrates_absolute_paths():
             document[key]["path"] = str(SPIKE_DIR / Path(document[key]["path"]).name)  # 注回**绝对**路径
         registry_path.write_text(json.dumps(document, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
                                  encoding="utf-8")
-        assert "/Users/" in registry_path.read_text(encoding="utf-8"), "夹具未注入绝对路径"
+        assert _absolute_path_values(registry_path.read_text(encoding="utf-8")), "夹具未注入绝对路径"
 
     try:
         # ① 默认口径必须自动迁移
         inject_absolute_paths()
         assert TOOL.main(["registry"]) == 0
         migrated_text = registry_path.read_text(encoding="utf-8")
-        assert "/Users/" not in migrated_text, "默认口径下格式漂移必须被自动迁移"
+        assert not _absolute_path_values(migrated_text), "默认口径下格式漂移必须被自动迁移"
         migrated = json.loads(migrated_text)
         for key in keys:
             assert not migrated[key]["path"].startswith("/"), f"{key}.path 未迁移：{migrated[key]['path']}"
@@ -299,7 +313,7 @@ def test_registry_force_rewrite_migrates_absolute_paths():
         inject_absolute_paths()
         assert TOOL.main(["registry", "--force-rewrite"]) == 0
         forced_text = registry_path.read_text(encoding="utf-8")
-        assert "/Users/" not in forced_text
+        assert not _absolute_path_values(forced_text)
         assert json.loads(forced_text)["frozen_rule"]["sha256"] == FROZEN_RULE_SHA256
 
         # ③ 迁移后回到幂等：再跑两次（含 force）逐字节不变

@@ -99,6 +99,15 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m deephealing_kernel verify \
 4. **`V0_M2.sha256` 原样落盘（保持冻结真相）**：其 `02_source/v0_skeleton/kernel/tools/calibrate_latency.py`
    一条记录的是 **M2 拿到的输入** `e30be65b…`，而本仓库该文件是 **M1 后置修复版** `23fed40d…`
    （内容锚定，修掉位置耦合）——M3 未改动它。沿用 M1 先例：清单保持冻结真相，divergence 文档化。
+5. **M3 后置修复（`ISS-20260923-001`，已声明）**：`02_source/v0_skeleton/kernel/tests/test_calibrate_latency.py`
+   原把 **`/Users/` 前缀**当作「绝对路径」的判据 ⇒ 检出落在 `/Users` 之外（`/tmp`、`/home`、CI 容器）时
+   `test_registry_force_rewrite_migrates_absolute_paths` **必红**（夹具前置断言自己先失败），
+   且三条「不得含绝对路径」的负向断言**全部空转**（同类先例：M1 `f5f7762` 的位置耦合）。
+   已改为**位置无关**的「路径型取值是否以 `/` 开头」（比原来更强：任何绝对路径都抓，不再只抓 `/Users/`）；
+   负控已复验（把 helper 改成恒返回空 ⇒ 夹具前置断言变红）。
+   ⇒ 在本仓库跑 `shasum -c V0_M3.sha256` 现为 **201 OK / 1 FAILED**（`02_source` 149/150 OK），
+   **那 1 条 FAILED 是预期行为**（`466db840…` → `1a69ee09…`，沿用 M1 先例：清单保持冻结真相，divergence 文档化）。
+   **修复后非 `/Users` 检出全量套件 151 passed / 0 skipped**（原为 1 failed / 150 passed）。
 
 ## 已知限制（如实记录，未粉饰）
 
