@@ -1,0 +1,71 @@
+# verify — 交付面门禁（push / PR 自动跑）
+#
+# 为什么有它：仓库此前没有 CI，PR 开了也不会自动跑任何东西 ⇒ 门禁只能靠人手跑，
+#   「走分支 + 开 PR」的省事收益落不了地。本 workflow 把两条真门禁搬到 CI：
+#     1) verify_specs.sh —— 02_source 交付面门禁（必需文件 / JSON 解析 / manifest 覆盖 /
+#        能力标定 / pack.sig / 世界观契约 / IP 边界 / 保真度 / 几何装配路径 等，162 项）
+#     2) scene_assert.mjs —— 治愈系数值 + 两态共用几何 / 场景结构 / 相机判据
+#
+# 环境口径（刻意与本地开发对齐）：
+#   - node 26.x：scene_assert 直接 import .ts（类型擦除默认开启），与本地 `node -v` 同主版本
+#   - python 3.13 + jsonschema：schema_validate.py / validate_capability_schema.py 的引擎
+#   - jq：verify_specs.sh 逐文件解析 JSON（ubuntu-latest 预装，首步显式自检）
+#   - node 依赖装在**仓库根**（不是 02_source 内）：AC-M3-1e 要求 02_source 内零 node_modules，
+#     verify_specs 第 7e 节会把它判红。仓库当前无 lock 文件 ⇒ 按本地实测版本 pin three。
+#
+# 已知边界（不声称覆盖）：内核 pytest 套件与 web 渲染测试未纳入本轮；
+#   要加需另开一轮，并先确认用例集在干净检出上是绿的。
+
+name: verify
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 26.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+
+      - name: Setup Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: 环境自检（jq / node / python）
+        run: |
+          set -euo pipefail
+          jq --version
+          node -v
+          python -V
+
+      - name: Python 依赖（jsonschema 引擎）
+        run: python -m pip install --disable-pip-version-check "jsonschema==4.26.0"
+
+      - name: Node 依赖（提升到仓库根，绝不落进 02_source）
+        run: |
+          set -euo pipefail
+          npm install --no-save --no-package-lock --no-audit --no-fund three@0.180.0
+
+      - name: 交付面门禁 verify_specs
+        run: bash v0/02_source/verify_specs.sh
+
+      - name: 场景 / 几何 / 相机判据 scene_assert
+        working-directory: v0/02_source/v0_skeleton/web
+        run: node scripts/scene_assert.mjs
