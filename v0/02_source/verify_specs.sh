@@ -67,6 +67,14 @@ ok()   { PASS=$((PASS + 1)); say "PASS  $*"; }
 bad()  { FAIL=$((FAIL + 1)); printf 'FAIL  %s\n' "$*"; }
 skip() { SKIP=$((SKIP + 1)); say "SKIP  $*"; }
 
+# ---------- 临时文件（可移植） ----------
+# 缺陷（CI 首跑实测）：`mktemp -t <name>` 是 **BSD/macOS** 写法。GNU coreutils 的 mktemp
+#   要求模板里至少 3 个连续 `X`，`-t name` 在 Linux 上直接报
+#   `mktemp: too few X's in template` ⇒ 临时文件根本没建 ⇒ 工具 JSON 读不到 ⇒
+#   判据被读成 `field_unreadable (status=empty)`（5 条判据因此红，且失败文案指向判据本身，
+#   归因误导）。用**显式模板**（带 6 个 X）两边都能跑。
+tmpfile() { local d="${TMPDIR:-/tmp}"; mktemp "${d%/}/$1.XXXXXX"; }
+
 # ---------- 自证项统一判据（M5.1 r2.6 · PM m5-08 §三） ----------
 # 缺陷：自证项此前读**工具退出码**，而退出码把「真实树读数」与「探针读数」合成了一个
 #   （例：`fidelity_lint.py` 末行 `return 0 if (rc == 0 and prc == 0) else 1`）⇒
@@ -708,7 +716,7 @@ fi
 #   PM 参考件一致（每 5 tick 采样、>1500mm 判室外、seed=20260921、ticks=1440）。
 # 判据读 **JSON 判定字段**（不读工具退出码）；前置输入缺失 ⇒ `status=skipped_missing_input` ⇒
 #   本项记 **SKIP + 显式标记**（**不得**记 PASS）。逐 NPC 室外占比**一并公布**（REQ §4 硬性）。
-AC10_JSON="$(mktemp -t m52-ac10-gate)"
+AC10_JSON="$(tmpfile m52-ac10-gate)"
 PYTHONDONTWRITEBYTECODE=1 python3 v0_skeleton/tools/measure_behaviour_diversity.py \
   --kernel-root v0_skeleton/kernel --pack "$PACK_DIR" \
   --seed 20260921 --ticks 1440 --json "$AC10_JSON" >/dev/null 2>&1
@@ -735,7 +743,7 @@ selfproof "AC-10 criteria (revert C1 => single-branch dominance; revert C2+C3 =>
 # 三条对照臂：A 无经历·短 tick / B 无经历·长 tick / C 有经历·与 B 同 tick 数；
 # 判据 = ① 同窗口内 A==B（tick 数不是原因）② C 在该窗口内与 B 不同且有事件解释链
 # ③ 经历效应严格大于 tick 效应 ④ 无经历臂不得「被治愈」（不塌成单一分支、无收敛趋势）。
-AC4_JSON="$(mktemp -t m52-ac4-gate)"
+AC4_JSON="$(tmpfile m52-ac4-gate)"
 PYTHONDONTWRITEBYTECODE=1 python3 v0_skeleton/tools/contrast_scenario.py \
   --kernel-root v0_skeleton/kernel --pack "$PACK_DIR" \
   --seed 20260921 --ticks 480 --short-ticks 120 --json "$AC4_JSON" >/dev/null 2>&1
@@ -847,7 +855,7 @@ fi
 #   （实测 window∈{1,3,5}、min_importance∈{0.3,0.5,0.7} 均绿；读数见 `03` 的 M5.2-r3 段 FIX-5）。
 #   扫描开关只在工具进程内覆盖模块级常量 ⇒ **不写盘、不改交付面**（交付面常量未被改动）。
 for W in 0.10 0.20 0.30; do
-  AC10_W_JSON="$(mktemp -t m52-ac10-wired)"
+  AC10_W_JSON="$(tmpfile m52-ac10-wired)"
   PYTHONDONTWRITEBYTECODE=1 python3 v0_skeleton/tools/measure_behaviour_diversity.py \
     --kernel-root v0_skeleton/kernel --pack "$PACK_DIR" \
     --seed 20260921 --ticks 1440 --memory --weight "$W" --json "$AC10_W_JSON" >/dev/null 2>&1
