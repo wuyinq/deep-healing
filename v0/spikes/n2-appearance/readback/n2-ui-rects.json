@@ -1,0 +1,18 @@
+{
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "canvas": {
+    "x": 0,
+    "y": 0,
+    "width": 1440,
+    "height": 900
+  },
+  "hud": {
+    "x": 16,
+    "y": 16,
+    "width": 384,
+    "height": 581
+  }
+}

@@ -50,5 +50,73 @@
   "hidden_face": [
     "台灯亮到很晚，桌上那本书很久没翻页"
   ],
-  "v0_role": "「常规」活跃度样本 + 跨代关系的观察点（与 npc-003 的 relation.infer 用例相关）"
+  "v0_role": "「常规」活跃度样本 + 跨代关系的观察点（与 npc-003 的 relation.infer 用例相关）",
+  "appearance": {
+    "eyes": {
+      "color": {
+        "value": "#4b4239",
+        "design_fill": true,
+        "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+      }
+    },
+    "lips": {
+      "color": {
+        "value": "#806e64",
+        "design_fill": true,
+        "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+      }
+    },
+    "skin": {
+      "color": {
+        "value": "#e2d0ba",
+        "design_fill": true,
+        "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+      }
+    },
+    "hair": {
+      "color": {
+        "value": "#3d342c",
+        "design_fill": true,
+        "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+      },
+      "length": {
+        "value": "shoulder-length",
+        "design_fill": true,
+        "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+      }
+    },
+    "garment": {
+      "color": {
+        "value": "#726857",
+        "design_fill": true,
+        "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+      },
+      "cut": {
+        "value": "long-coat",
+        "design_fill": true,
+        "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+      }
+    },
+    "height_cm": {
+      "value": 162,
+      "design_fill": true,
+      "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+    },
+    "age_look": {
+      "value": "28-38",
+      "design_fill": true,
+      "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+    },
+    "build": {
+      "value": "slim",
+      "design_fill": true,
+      "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+    },
+    "states": [
+      {
+        "id": "daily",
+        "label": "日常态"
+      }
+    ]
+  }
 }

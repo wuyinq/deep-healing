@@ -21,28 +21,28 @@
     },
     {
       "path": "npcs/npc-001.json",
-      "sha256": "ced990d70fde6119b8eedc4a6779c2e63ec50e6ddb73c9ace64d9d68eb17b678",
-      "bytes": 1424
+      "sha256": "b270a07df2dbd830b783c7a6d5d3ae19ef003899dd17c5fa1bee2ac3efe3076a",
+      "bytes": 3588
     },
     {
       "path": "npcs/npc-002.json",
-      "sha256": "19ff55c2da63d7f01d87258a4e00c068228688a75a44cc15334c0a76151b7724",
-      "bytes": 1350
+      "sha256": "ebde691c33d5693eedd6b962c30b2f637320ee14a2a706c007deb692dbc5696e",
+      "bytes": 3511
     },
     {
       "path": "npcs/npc-003.json",
-      "sha256": "67dcf6004b390182feb27e14100d5f950d2af83e3dd6bc6f7be8bc35da754361",
-      "bytes": 1442
+      "sha256": "8324caefdef9c983303186ac4d576de3bc1db779429a1bb8b88c4628702a4f50",
+      "bytes": 3605
     },
     {
       "path": "npcs/npc-004.json",
-      "sha256": "66785a910b8def6769d73faad9bfea00082c948f48d00fc8453ea17035560962",
-      "bytes": 1486
+      "sha256": "59649af931514ee776b47aaddbefe44b35166b68eddb38371eea47d2710f4450",
+      "bytes": 3650
     },
     {
       "path": "npcs/npc-005.json",
-      "sha256": "5203991b3e6d7a36fcb8bb3ef383b0fd67cfa16af977a4c6128341bcf00e483a",
-      "bytes": 1384
+      "sha256": "d59ca5a5219a83aac21aae75e01fa548ce4c350d93163da78fe2f5eed9176dcc",
+      "bytes": 3545
     },
     {
       "path": "pack.json",

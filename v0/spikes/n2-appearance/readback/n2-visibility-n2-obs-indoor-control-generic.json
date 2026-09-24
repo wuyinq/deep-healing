@@ -1,0 +1,243 @@
+{
+  "shot": "n2-obs-indoor-control-generic.png",
+  "state": "daily",
+  "tolerance": 12,
+  "viewport_region": {
+    "x0": 0,
+    "y0": 0,
+    "x1": 1440,
+    "y1": 900,
+    "excluded_hud": [
+      16,
+      16,
+      400,
+      615
+    ]
+  },
+  "expected_material_hex_from_live_readback": {
+    "torso": "#791717",
+    "arm_l": "#791717",
+    "arm_r": "#791717",
+    "coat": "#791717",
+    "eyes": "#751313",
+    "hair": "#161413",
+    "head": "#bdb2aa",
+    "leg_l": "#791717",
+    "leg_r": "#791717",
+    "lips": "#8c161d"
+  },
+  "per_part": {
+    "arm_l": {
+      "material_hex": "#791717",
+      "pixels_within_tolerance": 0,
+      "bbox_within_tolerance": null,
+      "min_channel_distance_in_viewport": 43
+    },
+    "arm_r": {
+      "material_hex": "#791717",
+      "pixels_within_tolerance": 0,
+      "bbox_within_tolerance": null,
+      "min_channel_distance_in_viewport": 43
+    },
+    "coat": {
+      "material_hex": "#791717",
+      "pixels_within_tolerance": 0,
+      "bbox_within_tolerance": null,
+      "min_channel_distance_in_viewport": 43
+    },
+    "eyes": {
+      "material_hex": "#751313",
+      "pixels_within_tolerance": 0,
+      "bbox_within_tolerance": null,
+      "min_channel_distance_in_viewport": 47
+    },
+    "hair": {
+      "material_hex": "#161413",
+      "pixels_within_tolerance": 26551,
+      "bbox_within_tolerance": [
+        519,
+        18,
+        678,
+        195
+      ],
+      "min_channel_distance_in_viewport": 4
+    },
+    "head": {
+      "material_hex": "#bdb2aa",
+      "pixels_within_tolerance": 527,
+      "bbox_within_tolerance": [
+        430,
+        17,
+        777,
+        838
+      ],
+      "min_channel_distance_in_viewport": 5
+    },
+    "leg_l": {
+      "material_hex": "#791717",
+      "pixels_within_tolerance": 0,
+      "bbox_within_tolerance": null,
+      "min_channel_distance_in_viewport": 43
+    },
+    "leg_r": {
+      "material_hex": "#791717",
+      "pixels_within_tolerance": 0,
+      "bbox_within_tolerance": null,
+      "min_channel_distance_in_viewport": 43
+    },
+    "lips": {
+      "material_hex": "#8c161d",
+      "pixels_within_tolerance": 0,
+      "bbox_within_tolerance": null,
+      "min_channel_distance_in_viewport": 58
+    },
+    "torso": {
+      "material_hex": "#791717",
+      "pixels_within_tolerance": 0,
+      "bbox_within_tolerance": null,
+      "min_channel_distance_in_viewport": 43
+    }
+  },
+  "dominant_colors_in_viewport": [
+    {
+      "hex": "#f3efe8",
+      "pixels": 869068,
+      "bbox": [
+        0,
+        0,
+        1439,
+        899
+      ],
+      "share_of_viewport": 0.818304
+    },
+    {
+      "hex": "#251f17",
+      "pixels": 100325,
+      "bbox": [
+        431,
+        248,
+        773,
+        837
+      ],
+      "share_of_viewport": 0.094465
+    },
+    {
+      "hex": "#262017",
+      "pixels": 41689,
+      "bbox": [
+        436,
+        211,
+        775,
+        494
+      ],
+      "share_of_viewport": 0.039254
+    },
+    {
+      "hex": "#262018",
+      "pixels": 12037,
+      "bbox": [
+        597,
+        211,
+        776,
+        821
+      ],
+      "share_of_viewport": 0.011334
+    },
+    {
+      "hex": "#18120e",
+      "pixels": 8235,
+      "bbox": [
+        519,
+        18,
+        672,
+        195
+      ],
+      "share_of_viewport": 0.007754
+    },
+    {
+      "hex": "#18130e",
+      "pixels": 7525,
+      "bbox": [
+        553,
+        18,
+        672,
+        144
+      ],
+      "share_of_viewport": 0.007085
+    },
+    {
+      "hex": "#252017",
+      "pixels": 4941,
+      "bbox": [
+        431,
+        236,
+        773,
+        507
+      ],
+      "share_of_viewport": 0.004652
+    },
+    {
+      "hex": "#18120d",
+      "pixels": 4430,
+      "bbox": [
+        521,
+        60,
+        655,
+        195
+      ],
+      "share_of_viewport": 0.004171
+    },
+    {
+      "hex": "#17120d",
+      "pixels": 2767,
+      "bbox": [
+        523,
+        120,
+        598,
+        195
+      ],
+      "share_of_viewport": 0.002605
+    },
+    {
+      "hex": "#1f1812",
+      "pixels": 2261,
+      "bbox": [
+        549,
+        95,
+        644,
+        169
+      ],
+      "share_of_viewport": 0.002129
+    },
+    {
+      "hex": "#29231a",
+      "pixels": 1711,
+      "bbox": [
+        435,
+        219,
+        699,
+        830
+      ],
+      "share_of_viewport": 0.001611
+    },
+    {
+      "hex": "#5e503f",
+      "pixels": 1270,
+      "bbox": [
+        537,
+        196,
+        663,
+        205
+      ],
+      "share_of_viewport": 0.001196
+    }
+  ],
+  "character_region_pixels": 27078,
+  "character_region_bbox": [
+    430,
+    17,
+    777,
+    838
+  ],
+  "character_region_share_of_viewport": 0.025496
+}

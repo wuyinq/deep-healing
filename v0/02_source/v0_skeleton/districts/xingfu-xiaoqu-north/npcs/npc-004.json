@@ -56,5 +56,73 @@
   "hidden_face": [
     "洗衣服的时候会站着发一会儿呆：洗衣机今天转到同一格第三次"
   ],
-  "v0_role": "「深度」活跃度样本（叙事生成 + 反思高峰，是 token 预算的边界用例）"
+  "v0_role": "「深度」活跃度样本（叙事生成 + 反思高峰，是 token 预算的边界用例）",
+  "appearance": {
+    "eyes": {
+      "color": {
+        "value": "#48403a",
+        "design_fill": true,
+        "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+      }
+    },
+    "lips": {
+      "color": {
+        "value": "#786660",
+        "design_fill": true,
+        "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+      }
+    },
+    "skin": {
+      "color": {
+        "value": "#dcc9b1",
+        "design_fill": true,
+        "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+      }
+    },
+    "hair": {
+      "color": {
+        "value": "#33302b",
+        "design_fill": true,
+        "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+      },
+      "length": {
+        "value": "shoulder-length",
+        "design_fill": true,
+        "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+      }
+    },
+    "garment": {
+      "color": {
+        "value": "#655c4e",
+        "design_fill": true,
+        "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+      },
+      "cut": {
+        "value": "long-coat",
+        "design_fill": true,
+        "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+      }
+    },
+    "height_cm": {
+      "value": 170,
+      "design_fill": true,
+      "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+    },
+    "age_look": {
+      "value": "20-30",
+      "design_fill": true,
+      "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+    },
+    "build": {
+      "value": "average",
+      "design_fill": true,
+      "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+    },
+    "states": [
+      {
+        "id": "daily",
+        "label": "日常态"
+      }
+    ]
+  }
 }

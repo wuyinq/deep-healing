@@ -55,5 +55,73 @@
   "hidden_face": [
     "他记得所有住户的口味，却没人记得他吃什么"
   ],
-  "v0_role": "「常规」活跃度样本（社会接触触发最频繁，是记忆层增长的主要压力源）"
+  "v0_role": "「常规」活跃度样本（社会接触触发最频繁，是记忆层增长的主要压力源）",
+  "appearance": {
+    "eyes": {
+      "color": {
+        "value": "#4d443b",
+        "design_fill": true,
+        "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+      }
+    },
+    "lips": {
+      "color": {
+        "value": "#7f6d63",
+        "design_fill": true,
+        "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+      }
+    },
+    "skin": {
+      "color": {
+        "value": "#d5c2a9",
+        "design_fill": true,
+        "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+      }
+    },
+    "hair": {
+      "color": {
+        "value": "#4a3f34",
+        "design_fill": true,
+        "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+      },
+      "length": {
+        "value": "shoulder-length",
+        "design_fill": true,
+        "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+      }
+    },
+    "garment": {
+      "color": {
+        "value": "#6f6555",
+        "design_fill": true,
+        "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+      },
+      "cut": {
+        "value": "long-coat",
+        "design_fill": true,
+        "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+      }
+    },
+    "height_cm": {
+      "value": 178,
+      "design_fill": true,
+      "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+    },
+    "age_look": {
+      "value": "35-45",
+      "design_fill": true,
+      "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+    },
+    "build": {
+      "value": "stocky",
+      "design_fill": true,
+      "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+    },
+    "states": [
+      {
+        "id": "daily",
+        "label": "日常态"
+      }
+    ]
+  }
 }

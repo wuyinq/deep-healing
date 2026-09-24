@@ -1,0 +1,7 @@
+first-RED run names (r2 code + 5 new) = 61
+  其中本轮新增 = 5（去重后 5 条声明）
+r2 assertion-name set (reconstructed) = 56
+current assertion-name set            = 61
+REMOVED (in r2, not current) = 0 []
+ADDED   (in current, not r2) = 5 ['character_coat_reads_long', 'character_eyes_lips_protrude_from_face', 'character_face_visible_beyond_hair', 'character_hair_reads_long', 'character_mask_reads_half_face']
+duplicates in current output = 0

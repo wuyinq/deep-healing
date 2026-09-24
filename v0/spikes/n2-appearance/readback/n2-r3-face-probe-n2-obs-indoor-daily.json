@@ -1,0 +1,697 @@
+{
+  "shot": "n2-obs-indoor-daily.png",
+  "reading": "indoor_daily",
+  "npc": "npc-006",
+  "placement_m": [
+    4.756,
+    0.0,
+    15.0
+  ],
+  "camera": {
+    "position": [
+      5,
+      0.35,
+      17.4
+    ],
+    "quaternion": [
+      -0.11240035914472371,
+      0,
+      0,
+      0.9936630008529738
+    ],
+    "fov": 45,
+    "near": 0.1,
+    "far": 500,
+    "aspect": 1.6
+  },
+  "image_size": [
+    1440,
+    900
+  ],
+  "note": "正面 = 部件局部 +z 面；屏幕坐标由实测 cameraReport() 投影得到，像素色为 PNG 真实值",
+  "front_face_probe": [
+    {
+      "part": "head",
+      "front_z_local": 0.155,
+      "center_px": [
+        597.1,
+        128.7
+      ],
+      "rect_px": [
+        528.7,
+        48.8,
+        663.5,
+        206.1
+      ],
+      "corners_px": [
+        [
+          534.5,
+          206.1
+        ],
+        [
+          663.5,
+          206.1
+        ],
+        [
+          661.7,
+          48.8
+        ],
+        [
+          528.7,
+          48.8
+        ]
+      ],
+      "source_hex": "#dfd2c8",
+      "reference_material_hex": "#bdb2aa",
+      "dominant_inside_front_quad": [
+        {
+          "hex": "#61554a",
+          "pixels": 6893,
+          "share": 0.6469
+        },
+        {
+          "hex": "#3b0a08",
+          "pixels": 1603,
+          "share": 0.1504
+        },
+        {
+          "hex": "#470b0b",
+          "pixels": 926,
+          "share": 0.0869
+        }
+      ],
+      "center_px_color": "#61554a"
+    },
+    {
+      "part": "eyes",
+      "front_z_local": 0.175,
+      "center_px": [
+        595.5,
+        106.8
+      ],
+      "rect_px": [
+        546.5,
+        93.4,
+        644.2,
+        120.1
+      ],
+      "corners_px": [
+        [
+          547.4,
+          120.1
+        ],
+        [
+          644.2,
+          120.1
+        ],
+        [
+          643.8,
+          93.4
+        ],
+        [
+          546.5,
+          93.4
+        ]
+      ],
+      "source_hex": "#8b1919",
+      "reference_material_hex": "#751313",
+      "dominant_inside_front_quad": [
+        {
+          "hex": "#3b0a08",
+          "pixels": 971,
+          "share": 0.7036
+        },
+        {
+          "hex": "#3b0a09",
+          "pixels": 394,
+          "share": 0.2855
+        },
+        {
+          "hex": "#3b0b09",
+          "pixels": 15,
+          "share": 0.0109
+        }
+      ],
+      "center_px_color": "#3b0a08"
+    },
+    {
+      "part": "lips",
+      "front_z_local": 0.1725,
+      "center_px": [
+        596.9,
+        159.6
+      ],
+      "rect_px": [
+        568.9,
+        150.5,
+        624.8,
+        168.7
+      ],
+      "corners_px": [
+        [
+          569.4,
+          168.7
+        ],
+        [
+          624.8,
+          168.7
+        ],
+        [
+          624.5,
+          150.5
+        ],
+        [
+          568.9,
+          150.5
+        ]
+      ],
+      "source_hex": "#a51c24",
+      "reference_material_hex": "#8c161d",
+      "dominant_inside_front_quad": [
+        {
+          "hex": "#470b0b",
+          "pixels": 520,
+          "share": 1.0
+        }
+      ],
+      "center_px_color": "#470b0b"
+    },
+    {
+      "part": "hair",
+      "front_z_local": 0.135,
+      "center_px": [
+        599.7,
+        190.9
+      ],
+      "rect_px": [
+        504.2,
+        28.7,
+        689.4,
+        343.3
+      ],
+      "corners_px": [
+        [
+          517.3,
+          343.3
+        ],
+        [
+          689.4,
+          343.3
+        ],
+        [
+          687.4,
+          28.7
+        ],
+        [
+          504.2,
+          28.7
+        ]
+      ],
+      "source_hex": "#1c1a19",
+      "reference_material_hex": "#161413",
+      "dominant_inside_front_quad": [
+        {
+          "hex": "#61554a",
+          "pixels": 13076,
+          "share": 0.4496
+        },
+        {
+          "hex": "#0c0a08",
+          "pixels": 7128,
+          "share": 0.2451
+        },
+        {
+          "hex": "#0d0a08",
+          "pixels": 4797,
+          "share": 0.1649
+        }
+      ],
+      "center_px_color": "#61554a"
+    },
+    {
+      "part": "torso",
+      "front_z_local": 0.13,
+      "center_px": [
+        604.3,
+        371.3
+      ],
+      "rect_px": [
+        487.7,
+        211.1,
+        713.6,
+        521.6
+      ],
+      "corners_px": [
+        [
+          502.2,
+          521.6
+        ],
+        [
+          713.6,
+          521.6
+        ],
+        [
+          713.1,
+          211.1
+        ],
+        [
+          487.7,
+          211.1
+        ]
+      ],
+      "source_hex": "#8f1d1d",
+      "reference_material_hex": "#791717",
+      "dominant_inside_front_quad": [
+        {
+          "hex": "#3c0a08",
+          "pixels": 13154,
+          "share": 0.3778
+        },
+        {
+          "hex": "#0c0a08",
+          "pixels": 11453,
+          "share": 0.3289
+        },
+        {
+          "hex": "#3c0a09",
+          "pixels": 4945,
+          "share": 0.142
+        }
+      ],
+      "center_px_color": "#3c0a09"
+    },
+    {
+      "part": "coat",
+      "front_z_local": 0.12,
+      "center_px": [
+        607.5,
+        484.8
+      ],
+      "rect_px": [
+        464.9,
+        221.0,
+        737.5,
+        722.0
+      ],
+      "corners_px": [
+        [
+          490.6,
+          722.0
+        ],
+        [
+          735.8,
+          722.0
+        ],
+        [
+          737.5,
+          221.0
+        ],
+        [
+          464.9,
+          221.0
+        ]
+      ],
+      "source_hex": "#8f1d1d",
+      "reference_material_hex": "#791717",
+      "dominant_inside_front_quad": [
+        {
+          "hex": "#3c0a08",
+          "pixels": 48691,
+          "share": 0.7225
+        },
+        {
+          "hex": "#0c0a08",
+          "pixels": 7244,
+          "share": 0.1075
+        },
+        {
+          "hex": "#3c0a09",
+          "pixels": 5921,
+          "share": 0.0879
+        }
+      ],
+      "center_px_color": "#3c0a08"
+    },
+    {
+      "part": "arm_l",
+      "front_z_local": 0.075,
+      "center_px": [
+        468.4,
+        376.6
+      ],
+      "rect_px": [
+        430.1,
+        235.2,
+        504.6,
+        510.1
+      ],
+      "corners_px": [
+        [
+          446.1,
+          510.1
+        ],
+        [
+          504.6,
+          510.1
+        ],
+        [
+          492.0,
+          235.2
+        ],
+        [
+          430.1,
+          235.2
+        ]
+      ],
+      "source_hex": "#8f1d1d",
+      "reference_material_hex": "#791717",
+      "dominant_inside_front_quad": [
+        {
+          "hex": "#3c0a08",
+          "pixels": 9590,
+          "share": 0.9375
+        },
+        {
+          "hex": "#3c0a09",
+          "pixels": 558,
+          "share": 0.0546
+        },
+        {
+          "hex": "#f3efe8",
+          "pixels": 47,
+          "share": 0.0046
+        }
+      ],
+      "center_px_color": "#3c0a08"
+    },
+    {
+      "part": "leg_l",
+      "front_z_local": 0.1,
+      "center_px": [
+        565.0,
+        681.7
+      ],
+      "rect_px": [
+        520.6,
+        513.3,
+        606.3,
+        838.5
+      ],
+      "corners_px": [
+        [
+          534.4,
+          838.5
+        ],
+        [
+          606.3,
+          838.5
+        ],
+        [
+          597.8,
+          513.3
+        ],
+        [
+          520.6,
+          513.3
+        ]
+      ],
+      "source_hex": "#8f1d1d",
+      "reference_material_hex": "#791717",
+      "dominant_inside_front_quad": [
+        {
+          "hex": "#3c0a08",
+          "pixels": 7789,
+          "share": 0.56
+        },
+        {
+          "hex": "#3c0908",
+          "pixels": 6119,
+          "share": 0.44
+        }
+      ],
+      "center_px_color": "#3c0a08"
+    }
+  ],
+  "flat_blocks": [
+    {
+      "hex": "#f3efe8",
+      "pixels": 868073,
+      "bbox": [
+        0,
+        0,
+        1439,
+        899
+      ]
+    },
+    {
+      "hex": "#fcfbfa",
+      "pixels": 193293,
+      "bbox": [
+        16,
+        16,
+        399,
+        596
+      ]
+    },
+    {
+      "hex": "#3c0a08",
+      "pixels": 89271,
+      "bbox": [
+        431,
+        251,
+        772,
+        782
+      ]
+    },
+    {
+      "hex": "#3c0908",
+      "pixels": 19225,
+      "bbox": [
+        487,
+        636,
+        698,
+        837
+      ]
+    },
+    {
+      "hex": "#0c0a08",
+      "pixels": 16500,
+      "bbox": [
+        510,
+        160,
+        688,
+        342
+      ]
+    },
+    {
+      "hex": "#61554a",
+      "pixels": 15994,
+      "bbox": [
+        529,
+        49,
+        662,
+        205
+      ]
+    },
+    {
+      "hex": "#3d0b09",
+      "pixels": 15161,
+      "bbox": [
+        502,
+        211,
+        776,
+        746
+      ]
+    },
+    {
+      "hex": "#3c0a09",
+      "pixels": 12173,
+      "bbox": [
+        431,
+        234,
+        774,
+        509
+      ]
+    },
+    {
+      "hex": "#0d0a08",
+      "pixels": 10371,
+      "bbox": [
+        505,
+        29,
+        688,
+        315
+      ]
+    },
+    {
+      "hex": "#3c0b09",
+      "pixels": 8963,
+      "bbox": [
+        465,
+        94,
+        774,
+        469
+      ]
+    },
+    {
+      "hex": "#0e0b09",
+      "pixels": 3062,
+      "bbox": [
+        599,
+        29,
+        688,
+        261
+      ]
+    },
+    {
+      "hex": "#0d0b09",
+      "pixels": 2615,
+      "bbox": [
+        539,
+        29,
+        687,
+        180
+      ]
+    },
+    {
+      "hex": "#efefef",
+      "pixels": 2086,
+      "bbox": [
+        33,
+        208,
+        172,
+        230
+      ]
+    },
+    {
+      "hex": "#3b0a08",
+      "pixels": 1620,
+      "bbox": [
+        547,
+        94,
+        621,
+        119
+      ]
+    },
+    {
+      "hex": "#0d0b08",
+      "pixels": 1452,
+      "bbox": [
+        506,
+        29,
+        687,
+        212
+      ]
+    },
+    {
+      "hex": "#4f4b44",
+      "pixels": 1440,
+      "bbox": [
+        33,
+        292,
+        375,
+        446
+      ]
+    },
+    {
+      "hex": "#45403b",
+      "pixels": 1228,
+      "bbox": [
+        33,
+        84,
+        358,
+        584
+      ]
+    },
+    {
+      "hex": "#470b0b",
+      "pixels": 926,
+      "bbox": [
+        569,
+        151,
+        623,
+        167
+      ]
+    },
+    {
+      "hex": "#410d0b",
+      "pixels": 784,
+      "bbox": [
+        604,
+        722,
+        613,
+        830
+      ]
+    },
+    {
+      "hex": "#3b0a09",
+      "pixels": 640,
+      "bbox": [
+        598,
+        94,
+        643,
+        119
+      ]
+    },
+    {
+      "hex": "#62554a",
+      "pixels": 628,
+      "bbox": [
+        628,
+        49,
+        661,
+        84
+      ]
+    },
+    {
+      "hex": "#3b3630",
+      "pixels": 619,
+      "bbox": [
+        33,
+        245,
+        236,
+        584
+      ]
+    },
+    {
+      "hex": "#fbfaf9",
+      "pixels": 585,
+      "bbox": [
+        32,
+        32,
+        371,
+        583
+      ]
+    },
+    {
+      "hex": "#0c0908",
+      "pixels": 539,
+      "bbox": [
+        516,
+        311,
+        553,
+        342
+      ]
+    },
+    {
+      "hex": "#100d0b",
+      "pixels": 504,
+      "bbox": [
+        688,
+        36,
+        691,
+        209
+      ]
+    },
+    {
+      "hex": "#57524d",
+      "pixels": 462,
+      "bbox": [
+        33,
+        294,
+        375,
+        446
+      ]
+    }
+  ]
+}

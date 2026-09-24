@@ -1,0 +1,225 @@
+{
+  "threshold": 0,
+  "ui_rects": {
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "canvas": {
+      "x": 0,
+      "y": 0,
+      "width": 1440,
+      "height": 900
+    },
+    "hud": {
+      "x": 16,
+      "y": 16,
+      "width": 384,
+      "height": 581
+    }
+  },
+  "pairs": [
+    {
+      "left": "n2-obs-indoor-daily.png",
+      "right": "n2-obs-indoor-masked.png",
+      "note": "室内取证机位：日常态 vs 面具态（**达标判据**：diff > 0 且差异落在角色区域）",
+      "size": [
+        1440,
+        900
+      ],
+      "diff_pixels": 11186,
+      "diff_bbox": [
+        530,
+        43,
+        657,
+        131
+      ],
+      "diff_pixels_outside_hud": 11186,
+      "diff_bbox_outside_hud": [
+        530,
+        43,
+        657,
+        131
+      ],
+      "hud_rect": [
+        16,
+        16,
+        400,
+        597
+      ]
+    },
+    {
+      "left": "n2-obs-indoor-closeup-daily.png",
+      "right": "n2-obs-indoor-closeup-masked.png",
+      "note": "室内近景：日常态 vs 面具态（瞳/唇/面具可判读）",
+      "size": [
+        1440,
+        900
+      ],
+      "diff_pixels": 81969,
+      "diff_bbox": [
+        543,
+        196,
+        896,
+        430
+      ],
+      "diff_pixels_outside_hud": 81969,
+      "diff_bbox_outside_hud": [
+        543,
+        196,
+        896,
+        430
+      ],
+      "hud_rect": [
+        16,
+        16,
+        400,
+        597
+      ]
+    },
+    {
+      "left": "n2-obs-indoor-side-daily.png",
+      "right": "n2-obs-indoor-side-masked.png",
+      "note": "室内 3/4 侧向：日常态 vs 面具态（**达标判据**：diff > 0 且差异落在角色区域）",
+      "size": [
+        1440,
+        900
+      ],
+      "diff_pixels": 5320,
+      "diff_bbox": [
+        589,
+        138,
+        666,
+        213
+      ],
+      "diff_pixels_outside_hud": 5320,
+      "diff_bbox_outside_hud": [
+        589,
+        138,
+        666,
+        213
+      ],
+      "hud_rect": [
+        16,
+        16,
+        400,
+        597
+      ]
+    },
+    {
+      "left": "n2-obs-indoor-side-daily.png",
+      "right": "n2-obs-indoor-side-daily-2.png",
+      "note": "确定性自证：3/4 侧向机位 / 同一状态**重拍**（预期 diff == 0）",
+      "size": [
+        1440,
+        900
+      ],
+      "diff_pixels": 0,
+      "diff_bbox": null,
+      "diff_pixels_outside_hud": 0,
+      "diff_bbox_outside_hud": null,
+      "hud_rect": [
+        16,
+        16,
+        400,
+        597
+      ]
+    },
+    {
+      "left": "n2-default-wide-daily.png",
+      "right": "n2-default-wide-masked.png",
+      "note": "**默认交付取景**：日常态 vs 面具态（预期差异**只**落在 HUD 面板 ⇒ 玩家看不到人）",
+      "size": [
+        1440,
+        900
+      ],
+      "diff_pixels": 0,
+      "diff_bbox": null,
+      "diff_pixels_outside_hud": 0,
+      "diff_bbox_outside_hud": null,
+      "hud_rect": [
+        16,
+        16,
+        400,
+        597
+      ]
+    },
+    {
+      "left": "n2-obs-indoor-daily.png",
+      "right": "n2-obs-indoor-daily-2.png",
+      "note": "确定性自证：同一机位 / 同一状态**重拍**（预期 diff == 0）",
+      "size": [
+        1440,
+        900
+      ],
+      "diff_pixels": 0,
+      "diff_bbox": null,
+      "diff_pixels_outside_hud": 0,
+      "diff_bbox_outside_hud": null,
+      "hud_rect": [
+        16,
+        16,
+        400,
+        597
+      ]
+    },
+    {
+      "left": "n2-obs-indoor-daily.png",
+      "right": "n2-obs-indoor-control-generic.png",
+      "note": "对照臂：徐琴（pack）vs `setAppearance(null)` 通用人形（同一室内机位）",
+      "size": [
+        1440,
+        900
+      ],
+      "diff_pixels": 186315,
+      "diff_bbox": [
+        447,
+        18,
+        743,
+        838
+      ],
+      "diff_pixels_outside_hud": 186315,
+      "diff_bbox_outside_hud": [
+        447,
+        18,
+        743,
+        838
+      ],
+      "hud_rect": [
+        16,
+        16,
+        400,
+        597
+      ]
+    },
+    {
+      "left": "n2-default-wide-daily.png",
+      "right": "n2-obs-indoor-daily.png",
+      "note": "默认取景 vs 室内机位（同一状态）—— 证明取景真的不同",
+      "size": [
+        1440,
+        900
+      ],
+      "diff_pixels": 338503,
+      "diff_bbox": [
+        35,
+        18,
+        1439,
+        899
+      ],
+      "diff_pixels_outside_hud": 311981,
+      "diff_bbox_outside_hud": [
+        35,
+        18,
+        1439,
+        899
+      ],
+      "hud_rect": [
+        16,
+        16,
+        400,
+        597
+      ]
+    }
+  ]
+}

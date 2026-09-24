@@ -1,0 +1,28 @@
+{
+  "tag": "diag2",
+  "pack": "xingfu-xiaoqu-xuqin",
+  "seed": 20260921,
+  "run_seconds": 180,
+  "tick_ms": 200,
+  "ticks_reached": 836,
+  "final_state_hash": "e438ccde13d29d261f358ae4a445b1c994e249229f692ce7856fe26fc5a1e4b9",
+  "final_event_chain_hash": "62e9c1ede0385e99244613c8b832c401bdd615672d254d95b0ef5ae042a2e62a",
+  "events_total": 3378,
+  "events_backfilled": 0,
+  "driver_kinds": {
+    "bridge_meta": 1,
+    "event": 3378,
+    "ready": 1,
+    "snapshot": 34,
+    "tick_meta": 836,
+    "delta": 803,
+    "live": 836,
+    "bridge_stop": 1
+  },
+  "injection": null,
+  "tick_series_file": "spikes/n2-appearance/readback/tick-series-diag2.json",
+  "events_file": "spikes/n2-appearance/readback/events-diag2.jsonl",
+  "web_bundle": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260924-002-deephealing-xuqin-appearance/spikes/n2-appearance/build/web",
+  "driver": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260924-002-deephealing-xuqin-appearance/spikes/m52-live/tools/live_driver.py",
+  "source": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260924-002-deephealing-xuqin-appearance/02_source"
+}

@@ -1,0 +1,74 @@
+{
+  "tag": "n2-driven-mask",
+  "pack": "xingfu-xiaoqu-xuqin",
+  "npc": "npc-006",
+  "mask_tick_min": 130,
+  "reached_masked_without_injection": true,
+  "reading": {
+    "tick": 137,
+    "state_id": "masked",
+    "source": "pack",
+    "part_count": 11,
+    "part_names": [
+      "torso",
+      "arm_l",
+      "arm_r",
+      "coat",
+      "eyes",
+      "hair",
+      "head",
+      "leg_l",
+      "leg_r",
+      "lips",
+      "mask"
+    ],
+    "source_hex": {
+      "torso": "#8f1d1d",
+      "arm_l": "#8f1d1d",
+      "arm_r": "#8f1d1d",
+      "coat": "#8f1d1d",
+      "eyes": "#8b1919",
+      "hair": "#1c1a19",
+      "head": "#dfd2c8",
+      "leg_l": "#8f1d1d",
+      "leg_r": "#8f1d1d",
+      "lips": "#a51c24",
+      "mask": "#e9e4dc"
+    },
+    "material_hex": {
+      "torso": "#791717",
+      "arm_l": "#791717",
+      "arm_r": "#791717",
+      "coat": "#791717",
+      "eyes": "#751313",
+      "hair": "#161413",
+      "head": "#bdb2aa",
+      "leg_l": "#791717",
+      "leg_r": "#791717",
+      "lips": "#8c161d",
+      "mask": "#c6c2bb"
+    },
+    "messages": {
+      "total": 827,
+      "by_type": {
+        "tick_meta": 137,
+        "delta": 132,
+        "event": 553,
+        "snapshot": 5
+      },
+      "snapshot_count": 5,
+      "snapshot_targets": [
+        "room-1052",
+        "kitchen-01"
+      ]
+    }
+  },
+  "js_errors": {
+    "console_error": 0,
+    "pageerror": 0,
+    "total": 0
+  },
+  "errors": [],
+  "bad_responses": [],
+  "shot": "spikes/n2-appearance/shots/n2-desktop-1440x900-masked-driven.png"
+}

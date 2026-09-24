@@ -1,0 +1,22 @@
+src/main.ts(121,35): error TS2322: Type 'string | undefined' is not assignable to type 'string | null'.
+  Type 'undefined' is not assignable to type 'string | null'.
+src/main.ts(121,69): error TS2322: Type 'string | undefined' is not assignable to type 'string | null'.
+  Type 'undefined' is not assignable to type 'string | null'.
+src/main.ts(138,27): error TS2345: Argument of type 'string | null' is not assignable to parameter of type 'string'.
+  Type 'null' is not assignable to type 'string'.
+src/scene/lighting.ts(13,24): error TS7016: Could not find a declaration file for module 'three'. '/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-005-deephealing-v0-m3/node_modules/three/build/three.module.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/three` if it exists or add a new declaration (.d.ts) file containing `declare module 'three';`
+src/scene/world.ts(74,24): error TS7016: Could not find a declaration file for module 'three'. '/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260921-005-deephealing-v0-m3/node_modules/three/build/three.module.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/three` if it exists or add a new declaration (.d.ts) file containing `declare module 'three';`
+src/scene/world.ts(75,80): error TS5097: An import path can only end with a '.ts' extension when 'allowImportingTsExtensions' is enabled.
+src/scene/world.ts(79,8): error TS5097: An import path can only end with a '.ts' extension when 'allowImportingTsExtensions' is enabled.
+src/scene/world.ts(152,31): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/scene/world.ts(381,33): error TS2339: Property 'vertex_count' does not exist on type 'EntityBox'.
+src/scene/world.ts(988,41): error TS7006: Parameter 'group' implicitly has an 'any' type.
+src/ui/observe/trace.ts(95,18): error TS2322: Type 'string | null | undefined' is not assignable to type 'string | null'.
+  Type 'undefined' is not assignable to type 'string | null'.
+src/ui/observe/trace.ts(174,22): error TS18048: 'decisionEvent' is possibly 'undefined'.
+src/ui/observe/trace.ts(176,36): error TS2345: Argument of type 'RawEvent | undefined' is not assignable to parameter of type 'RawEvent'.
+  Type 'undefined' is not assignable to type 'RawEvent'.
+src/ui/observe/trace.ts(177,35): error TS18048: 'decisionEvent' is possibly 'undefined'.
+src/ui/observe/trace.ts(179,21): error TS18048: 'decisionEvent' is possibly 'undefined'.

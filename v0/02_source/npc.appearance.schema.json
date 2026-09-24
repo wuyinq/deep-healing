@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deephealing.local/schemas/npc.appearance.schema.json",
+  "title": "DeepHealing NPC 外形契约（内容包 npcs/*.json 的 appearance 块）",
+  "description": "N2（REQ-20260924-002 / W1a）。外形数据的**唯一契约**：权威来源 = 内容包 npcs/*.json 的 appearance 块（不随内核 state 下发 —— world.schema.json 的 $defs/entity 是 additionalProperties:false）。每个外形字段 = { value, source_facts? | design_fill?, design_note? }：source_facts 与 design_fill **互斥且必居其一**（不得把设计补全冒充原著，也不得给原著事实加 design_fill）。design_note 只允许写技术性说明与 CHR/章节编号，**禁止**出现引号包起来的原著正文句子（判据：v0_skeleton/tools/scan_ip_boundary.py 的 verbatim_body_paragraph 模式）。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["eyes", "lips", "skin", "hair", "garment", "height_cm", "build", "states"],
+  "allOf": [
+    {
+      "description": "N2-r2 / F-3（条件必填）：`states` 里任一条目声明 `mask: true` ⇒ `mask` 必填。此前 `mask` 不在 `required`，而 `$defs/state.mask` 是 boolean ⇒ 「面具态」可在缺面具数据时进入装配（校验器 `KeyError` / 装配未捕获异常）。",
+      "if": {
+        "required": ["states"],
+        "properties": {
+          "states": {
+            "contains": {
+              "type": "object",
+              "required": ["mask"],
+              "properties": { "mask": { "const": true } }
+            }
+          }
+        }
+      },
+      "then": { "required": ["mask"] }
+    }
+  ],
+  "properties": {
+    "eyes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["color"],
+      "properties": { "color": { "$ref": "#/$defs/colorField" } },
+      "description": "瞳色（徐琴 = 猩红，原著锚点）。"
+    },
+    "lips": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["color"],
+      "properties": { "color": { "$ref": "#/$defs/colorField" } },
+      "description": "唇色（徐琴 = 艳红／血红，原著锚点）。"
+    },
+    "skin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["color"],
+      "properties": { "color": { "$ref": "#/$defs/colorField" } },
+      "description": "肤色（徐琴 = 苍白，原著锚点）。"
+    },
+    "hair": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["color"],
+      "properties": {
+        "color": { "$ref": "#/$defs/colorField" },
+        "length": { "$ref": "#/$defs/textField" }
+      },
+      "description": "发色 / 发长。原著**无任何发型描写** ⇒ 徐琴该项必须标 design_fill。"
+    },
+    "garment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["color"],
+      "properties": {
+        "color": { "$ref": "#/$defs/colorField" },
+        "cut": { "$ref": "#/$defs/textField" }
+      },
+      "description": "外衣色 / 剪裁。徐琴外衣色 = 原著锚点（红），剪裁 = 设计补全。"
+    },
+    "height_cm": { "$ref": "#/$defs/numberField", "description": "身高（厘米）。原著未给数值 ⇒ 徐琴该项必须标 design_fill。" },
+    "age_look": { "$ref": "#/$defs/textField", "description": "年龄观感（文字档，如 \"25-30\"）。原著未给年龄 ⇒ 徐琴该项必须标 design_fill。" },
+    "build": {
+      "$ref": "#/$defs/buildField",
+      "description": "体型档（**枚举**，不再是自由文本 —— N2-r2 / F-2）。合法值 = 交付数据与兜底人形实际使用的三档：slim / average / stocky（`character.ts` 的 `defaultAppearanceFor()` 用 average；徐琴 slim；north npc-003 stocky）。"
+    },
+    "mask": {
+      "$ref": "#/$defs/mask",
+      "description": "面具（仅面具态存在）。number / number_label 挂 CHR-16 / CHR-17；形状与材质在事实册内**无对应 CHR 条目** ⇒ 必须标 design_fill + design_note（如实记 GAP，不得冒充原著）。"
+    },
+    "states": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "items": { "$ref": "#/$defs/state" },
+      "description": "形态列表（日常态 / 面具态）。when 只允许读**既有 state 字段**（schedule.target_entity / schedule.state / transform.room_id / tags），不新增状态字段。"
+    }
+  },
+  "$defs": {
+    "chrId": {
+      "type": "string",
+      "pattern": "^CHR-[0-9]{2}$",
+      "description": "事实册（fidelity/05-character-dossiers.md）的条目编号。"
+    },
+    "hex": {
+      "type": "string",
+      "pattern": "^#[0-9a-f]{6}$",
+      "description": "小写六位 hex（渲染层按此字面量构造材质；读回值随读法变，见 world.ts 的 source_hex / material_hex 拆分）。"
+    },
+    "colorField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value"],
+      "properties": {
+        "value": { "$ref": "#/$defs/hex" },
+        "source_facts": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/chrId" } },
+        "design_fill": { "const": true },
+        "design_note": { "type": "string", "minLength": 1, "maxLength": 300 }
+      },
+      "oneOf": [
+        { "required": ["source_facts"], "properties": { "design_fill": false } },
+        { "required": ["design_fill"], "properties": { "source_facts": false } }
+      ]
+    },
+    "buildField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value"],
+      "properties": {
+        "value": { "type": "string", "enum": ["slim", "average", "stocky"] },
+        "source_facts": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/chrId" } },
+        "design_fill": { "const": true },
+        "design_note": { "type": "string", "minLength": 1, "maxLength": 300 }
+      },
+      "oneOf": [
+        { "required": ["source_facts"], "properties": { "design_fill": false } },
+        { "required": ["design_fill"], "properties": { "source_facts": false } }
+      ],
+      "description": "体型档（N2-r2 / F-2）：`value` 是**枚举**，合法值 = slim / average / stocky。此前用自由文本 `textField` ⇒ `build=\"quadruped\"` 被静默放过（门禁第 1 轮 S-BUG-2）。枚举取值来源 = 交付数据与兜底人形**实际使用**的三档（不自造新档）。"
+    },
+    "textField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value"],
+      "properties": {
+        "value": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "source_facts": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/chrId" } },
+        "design_fill": { "const": true },
+        "design_note": { "type": "string", "minLength": 1, "maxLength": 300 }
+      },
+      "oneOf": [
+        { "required": ["source_facts"], "properties": { "design_fill": false } },
+        { "required": ["design_fill"], "properties": { "source_facts": false } }
+      ]
+    },
+    "numberField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value"],
+      "properties": {
+        "value": { "type": "number", "minimum": 60, "maximum": 250 },
+        "source_facts": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/chrId" } },
+        "design_fill": { "const": true },
+        "design_note": { "type": "string", "minLength": 1, "maxLength": 300 }
+      },
+      "oneOf": [
+        { "required": ["source_facts"], "properties": { "design_fill": false } },
+        { "required": ["design_fill"], "properties": { "source_facts": false } }
+      ]
+    },
+    "statePredicate": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "target_entity_in": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+        "schedule_state_in": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+        "room_id_in": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+        "tags_include": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+      },
+      "description": "纯谓词：只读既有 state 字段。target_entity 的类型是 string | null（null ⇒ 不命中任何 target_entity_in 列表）。"
+    },
+    "state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{1,31}$" },
+        "label": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "when": { "$ref": "#/$defs/statePredicate" },
+        "mask": { "type": "boolean" }
+      },
+      "description": "无 when 的条目 = 默认态（每日）。多个 when 命中时按 states 数组顺序取**第一个**命中项（确定性，无时间源）。"
+    },
+    "mask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["color", "number", "number_label", "shape", "material"],
+      "properties": {
+        "color": { "$ref": "#/$defs/colorField" },
+        "number": { "$ref": "#/$defs/textField" },
+        "number_label": { "$ref": "#/$defs/textField" },
+        "shape": { "$ref": "#/$defs/textField" },
+        "material": { "$ref": "#/$defs/textField" }
+      }
+    }
+  }
+}

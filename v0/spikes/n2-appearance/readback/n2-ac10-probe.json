@@ -1,0 +1,19 @@
+{
+  "delivery_manifest": "02_source/v0_skeleton/districts/xingfu-xiaoqu-xuqin/assets/manifest.json",
+  "probe_manifest": "spikes/n2-appearance/readback/n2-ac10-probe-manifest.json",
+  "probe_manifest_change": "assets[].id -> assets[].asset_id（3 条；其余逐字不变）",
+  "reading_delivery_manifest": {
+    "exit": 1,
+    "last_error_line": [
+      "KeyError: 'asset_id'"
+    ]
+  },
+  "reading_probe_manifest": {
+    "exit": 1,
+    "last_error_lines": [
+      "REJECT A3_UNKNOWN_MODEL_DEFAULT_DENY: prop-knife-plate :: (None, None) 不在许可表内 → 拒收",
+      "REJECT A4_BAD_CONTENT_HASH: prop-knife-plate :: content_hash 缺失或格式非法：None（期望 sha256:<64hex>）",
+      "REJECT A5_NOT_ADOPTED: prop-knife-plate :: review_status=None，只有 adopted 允许进 district pack"
+    ]
+  }
+}

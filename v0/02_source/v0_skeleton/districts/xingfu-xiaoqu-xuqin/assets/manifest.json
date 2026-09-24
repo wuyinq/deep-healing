@@ -43,5 +43,117 @@
     "runtime_allowed": ["proprietary-self-authored", "CC0-1.0", "CC-BY-4.0", "MIT", "Apache-2.0"],
     "offline_pipeline_only": ["GPL-3.0"],
     "note": "GPL 系只允许留在离线美术管线，不得进入运行时与交付产物。"
+  },
+  "character_refs": {
+    "character_id": "npc-006",
+    "character_label": "徐琴",
+    "sheet_min_images": 3,
+    "sheet_note": "art-bible §7：每个角色 ≥3 张参考图；本表 5 张（肖像 / 全身 / 面具态 / 三视图 ×2）",
+    "refs": [
+      {
+        "asset_id": "xuqin-ref-portrait-01",
+        "file": "assets/character-refs/xuqin-portrait-01.jpg",
+        "role": "portrait",
+        "content_hash": "sha256:597515ee822e2587b6ec17d68ba005310de3de3510bfd7a901dc980baf77c86a",
+        "content_hash_basis": "file_bytes",
+        "declared_format": "jpeg",
+        "declared_format_note": "源文件扩展名写作 .png，实际为 JPEG（file -b: JFIF baseline）",
+        "license": "unknown",
+        "runtime_usable": false,
+        "provenance": {
+          "origin": "external_reference",
+          "self_reported": true,
+          "verification_status": "not_claimed",
+          "note": "生成方式与产出模型未登记（参考图只有 JFIF 段，无 EXIF / 模型信息）⇒ 无法满足 verify_asset_pack.py 的 A3 许可查表（default-deny）⇒ 记 GAP，不放宽校验器；这些参考图只作离线设计参考，不进运行时资产集"
+        },
+        "gap": "asset-pack 门禁（A3 许可查表）未满足：产出模型未登记"
+      },
+      {
+        "asset_id": "xuqin-ref-fullbody-01",
+        "file": "assets/character-refs/xuqin-fullbody-01.jpg",
+        "role": "fullbody",
+        "content_hash": "sha256:68fa7f4c699b9dad221b4d18f000dc23fa97a67b592eeafe14740ef6e4d57a7d",
+        "content_hash_basis": "file_bytes",
+        "declared_format": "jpeg",
+        "declared_format_note": "源文件扩展名写作 .png，实际为 JPEG（file -b: JFIF baseline）",
+        "license": "unknown",
+        "runtime_usable": false,
+        "provenance": {
+          "origin": "external_reference",
+          "self_reported": true,
+          "verification_status": "not_claimed",
+          "note": "生成方式与产出模型未登记（参考图只有 JFIF 段，无 EXIF / 模型信息）⇒ 无法满足 verify_asset_pack.py 的 A3 许可查表（default-deny）⇒ 记 GAP，不放宽校验器；这些参考图只作离线设计参考，不进运行时资产集"
+        },
+        "gap": "asset-pack 门禁（A3 许可查表）未满足：产出模型未登记"
+      },
+      {
+        "asset_id": "xuqin-ref-mask-01",
+        "file": "assets/character-refs/xuqin-mask-01.jpg",
+        "role": "mask-state",
+        "content_hash": "sha256:84af6cd64b250a89e6e552c4830cadfcd4cf6edbfb940c1ef0a0eeffe11369c9",
+        "content_hash_basis": "file_bytes",
+        "declared_format": "jpeg",
+        "declared_format_note": "源文件扩展名写作 .png，实际为 JPEG（file -b: JFIF baseline）",
+        "license": "unknown",
+        "runtime_usable": false,
+        "provenance": {
+          "origin": "external_reference",
+          "self_reported": true,
+          "verification_status": "not_claimed",
+          "note": "生成方式与产出模型未登记（参考图只有 JFIF 段，无 EXIF / 模型信息）⇒ 无法满足 verify_asset_pack.py 的 A3 许可查表（default-deny）⇒ 记 GAP，不放宽校验器；这些参考图只作离线设计参考，不进运行时资产集"
+        },
+        "gap": "asset-pack 门禁（A3 许可查表）未满足：产出模型未登记"
+      },
+      {
+        "asset_id": "xuqin-ref-sheet-01",
+        "file": "assets/character-refs/xuqin-sheet-01.jpg",
+        "role": "sheet-front-side",
+        "content_hash": "sha256:6d0805c20d0111390062d5c6b8ce8844e7b592254c30489d2777b319f370716c",
+        "content_hash_basis": "file_bytes",
+        "declared_format": "jpeg",
+        "declared_format_note": "源文件扩展名写作 .png，实际为 JPEG（file -b: JFIF baseline）",
+        "license": "unknown",
+        "runtime_usable": false,
+        "provenance": {
+          "origin": "external_reference",
+          "self_reported": true,
+          "verification_status": "not_claimed",
+          "note": "生成方式与产出模型未登记（参考图只有 JFIF 段，无 EXIF / 模型信息）⇒ 无法满足 verify_asset_pack.py 的 A3 许可查表（default-deny）⇒ 记 GAP，不放宽校验器；这些参考图只作离线设计参考，不进运行时资产集"
+        },
+        "gap": "asset-pack 门禁（A3 许可查表）未满足：产出模型未登记"
+      },
+      {
+        "asset_id": "xuqin-ref-sheet-02",
+        "file": "assets/character-refs/xuqin-sheet-02.jpg",
+        "role": "sheet-detail",
+        "content_hash": "sha256:f1ef07019f72ffa136e4466ad25876bbe82f5452b353db5ab340d1cfb8008da3",
+        "content_hash_basis": "file_bytes",
+        "declared_format": "jpeg",
+        "declared_format_note": "源文件扩展名写作 .png，实际为 JPEG（file -b: JFIF baseline）",
+        "license": "unknown",
+        "runtime_usable": false,
+        "provenance": {
+          "origin": "external_reference",
+          "self_reported": true,
+          "verification_status": "not_claimed",
+          "note": "生成方式与产出模型未登记（参考图只有 JFIF 段，无 EXIF / 模型信息）⇒ 无法满足 verify_asset_pack.py 的 A3 许可查表（default-deny）⇒ 记 GAP，不放宽校验器；这些参考图只作离线设计参考，不进运行时资产集"
+        },
+        "gap": "asset-pack 门禁（A3 许可查表）未满足：产出模型未登记"
+      }
+    ],
+    "consumers": [
+      {
+        "asset_id": "xuqin-character-build",
+        "derived_from": [
+          "xuqin-ref-portrait-01",
+          "xuqin-ref-fullbody-01",
+          "xuqin-ref-mask-01",
+          "xuqin-ref-sheet-01",
+          "xuqin-ref-sheet-02"
+        ],
+        "note": "N2 程序化人形（web/src/scene/character.ts）的形象来源 = 本角色参考表；颜色锚点以 npcs/npc-006.json 的 appearance hex 为唯一来源（不硬编码在 TS 里）"
+      }
+    ],
+    "gate_gap": "生成方式与产出模型未登记（参考图只有 JFIF 段，无 EXIF / 模型信息）⇒ 无法满足 verify_asset_pack.py 的 A3 许可查表（default-deny）⇒ 记 GAP，不放宽校验器；这些参考图只作离线设计参考，不进运行时资产集"
   }
 }

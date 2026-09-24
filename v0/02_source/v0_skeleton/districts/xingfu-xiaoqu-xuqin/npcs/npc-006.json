@@ -88,5 +88,102 @@
     "affiliation.butcher_house_kitchen": ["CHR-09", "CHR-21"],
     "cognition_policy.capability_slots": ["CHR-03", "CHR-08"]
   },
+  "appearance": {
+    "eyes": {
+      "color": {
+        "value": "#8b1919",
+        "source_facts": ["CHR-22"]
+      }
+    },
+    "lips": {
+      "color": {
+        "value": "#a51c24",
+        "source_facts": ["CHR-06"]
+      }
+    },
+    "skin": {
+      "color": {
+        "value": "#dfd2c8",
+        "source_facts": ["CHR-06", "CHR-22"]
+      }
+    },
+    "hair": {
+      "color": {
+        "value": "#1c1a19",
+        "design_fill": true,
+        "design_note": "原著无任何发型/发色描写 ⇒ 黑长发为设计补全（与苍白皮肤 + 艳红唇形成明度对比）"
+      },
+      "length": {
+        "value": "shoulder-length",
+        "design_fill": true,
+        "design_note": "设计补全：过肩、日常松散"
+      }
+    },
+    "garment": {
+      "color": {
+        "value": "#8f1d1d",
+        "source_facts": ["CHR-05"]
+      },
+      "cut": {
+        "value": "long-coat",
+        "design_fill": true,
+        "design_note": "原著只写外衣/上衣；长款剪裁为设计补全（据点厨房身份见 CHR-21）"
+      }
+    },
+    "height_cm": {
+      "value": 168,
+      "design_fill": true,
+      "design_note": "原著未给身高数值 ⇒ 取成年女性中位偏上，匹配 CHR-01 的姐姐观感"
+    },
+    "age_look": {
+      "value": "25-30",
+      "design_fill": true,
+      "design_note": "原著未给年龄（CHR-19 在事实册内标 UNVERIFIED）⇒ 观感为设计补全"
+    },
+    "build": {
+      "value": "slim",
+      "design_fill": true,
+      "design_note": "原著未给体型数值档 ⇒ 设计补全（外形轻，见设计书 A5）"
+    },
+    "mask": {
+      "color": {
+        "value": "#e9e4dc",
+        "design_fill": true,
+        "design_note": "REQ AC-2 明文：面具颜色为设计补全（原著只给半张 / 猪脸 / 编号，未给颜色）"
+      },
+      "number": {
+        "value": "8",
+        "source_facts": ["CHR-16", "CHR-17"],
+        "design_note": "编号**值**（八号）锚 CHR-16 / CHR-17；「刻在面具上」这一**呈现方式**属设计补全（事实册内无对应 CHR 条目）"
+      },
+      "number_label": {
+        "value": "八号",
+        "source_facts": ["CHR-16", "CHR-17"],
+        "design_note": "编号**文字**锚 CHR-16 / CHR-17；「以八号标签呈现在面具正面」属设计补全（事实册内无对应 CHR 条目）"
+      },
+      "shape": {
+        "value": "half-face boar mask",
+        "design_fill": true,
+        "design_note": "锚点见 DESIGN-20260924-001 A9（ch229 / ch230 / ch240；此前写作 ch14221 系 L0 行号、非章节，PM 2026-09-24 自纠）；事实册 fidelity/05-character-dossiers.md 内无对应 CHR 条目 ⇒ 面具本体（形状）记 GAP，不冒充原著"
+      },
+      "material": {
+        "value": "matte bone-white",
+        "design_fill": true,
+        "design_note": "同 shape：事实册内无对应 CHR 条目 ⇒ 材质记 GAP，不冒充原著"
+      }
+    },
+    "states": [
+      {
+        "id": "daily",
+        "label": "日常态"
+      },
+      {
+        "id": "masked",
+        "label": "面具态",
+        "when": { "target_entity_in": ["kitchen-01"] },
+        "mask": true
+      }
+    ]
+  },
   "v0_role": "M5.2 人物闭环提案包的主人物：事件 → 记忆 → 决策链的可追溯样本（独立 pack，独立读数）"
 }

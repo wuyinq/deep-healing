@@ -1,0 +1,4 @@
+r3 assertion-name set (from measured green log) = 61
+r4 assertion-name set (from measured green log) = 65
+REMOVED (in r3, not r4) = 0 []
+ADDED   (in r4, not r3) = 4 ['character_gender_cues_present', 'character_hair_drapes_outside_shoulders', 'character_legs_read_below_coat', 'character_silhouette_narrows_at_waist']

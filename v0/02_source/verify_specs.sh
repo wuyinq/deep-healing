@@ -818,6 +818,23 @@ else
   skip "CHR provenance: dossiers missing at $CHR_DOSSIERS => SKIP (NOT PASS)"
 fi
 
+# ---------- 17b) NPC 外形契约（N2 / REQ-20260924-002 W1d；**只新增一条**，既有检查项逐字不动） ----------
+# 依据（设计 §9-B7 / §12 R-10）：`appearance.*.source_facts` 是**嵌套**字段，而既有
+#   `check_chr_provenance.py` 只读**顶层** `source_facts` / `source_fact_map`
+#   ⇒ 若不接入，AC-1 / AC-2 / AC-4 / AC-10 本轮**没有任何门禁级判据**（只剩自测日志）。
+# 口径：这是**加法**（REQ §2 明文只禁「`verify_specs.sh` 的**既有检查项语义**」被改）；
+#   本项**不**触碰任何既有检查项，且**只**新增这一条。
+# 读数 = 工具 JSON 的判定字段（`appearance_ok` + `probe_ok`），不是退出码；
+#   `probe_ok` 覆盖 6 条 /tmp 隔离负例（删 eyes.color / 去 design_fill / 伪造 CHR-99 /
+#   mask.number=9 / 顶层塞 appearance.* 新键 / 删被引用的参考图）。
+NA_OUT="$(PYTHONDONTWRITEBYTECODE=1 python3 v0_skeleton/tools/verify_npc_appearance.py --root . 2>/dev/null | grep -E '^\{' | tail -1)"
+if [ "$(printf '%s' "$NA_OUT" | jq -r '.appearance_ok' 2>/dev/null)" = "true" ] \
+   && [ "$(printf '%s' "$NA_OUT" | jq -r '.probe_ok' 2>/dev/null)" = "true" ]; then
+  ok "NPC appearance contract verified (schema + nested provenance + states/mask + character refs; 9 injected negatives fire)"
+else
+  bad "NPC appearance contract failed (appearance_ok=$(printf '%s' "$NA_OUT" | jq -r '.appearance_ok' 2>/dev/null), probe_ok=$(printf '%s' "$NA_OUT" | jq -r '.probe_ok' 2>/dev/null))"
+fi
+
 # ---------- 18) AC-10 记忆接线臂 + MEMORY_SIGNAL_* 敏感性断言（M5.2 r3 / FIX-5 · Raven §2.3） ----------
 # **口径声明（硬性）**：§15 的**交付门禁口径 = 记忆链关闭**（`memory_store=None`，unwired）——
 #   那是「交付特性未接线」的配置，不得读成「接线后也这样」。本节补**接线臂**读数

@@ -1,0 +1,120 @@
+{
+  "workdir": "/tmp/n2-r2-neg-1790216703",
+  "total": 16,
+  "fired": 16,
+  "not_fired": [],
+  "cases": [
+    {
+      "case": "baseline_delivery_tree_verifier",
+      "expected": "exit 0 / appearance_ok+probe_ok",
+      "exit": 0,
+      "fired": true,
+      "reading": "appearance_ok=True probe_ok=True probes=9"
+    },
+    {
+      "case": "baseline_delivery_tree_scene_assert",
+      "expected": "exit 0",
+      "exit": 0,
+      "fired": true,
+      "reading": "THREE.WebGLRenderer: Error creating WebGL context."
+    },
+    {
+      "case": "N-2b_build_quadruped",
+      "expected": "verifier exit != 0 且结构化 JSON 报 build 非法",
+      "exit": 1,
+      "fired": true,
+      "reading": "[\"v0_skeleton/districts/xingfu-xiaoqu-xuqin/npcs/npc-006.json: build/value: 'quadruped' is not one of ['slim', 'average', 'stocky']\"]"
+    },
+    {
+      "case": "N-3b_mask_missing_verifier",
+      "expected": "verifier exit != 0 且结构化 JSON 报 mask 必填",
+      "exit": 3,
+      "fired": true,
+      "reading": "[\"v0_skeleton/districts/xingfu-xiaoqu-xuqin/npcs/npc-006.json: <root>: 'mask' is a required property\"]"
+    },
+    {
+      "case": "N-3b_mask_missing_scene_assert",
+      "expected": "不崩（无 traceback）且显式降级断言在场",
+      "exit": 1,
+      "fired": true,
+      "reading": "crash=False | scene_assert: PASS=53 FAIL=3 | scene_assert: FAILED (character_states_daily_and_masked, mask_number_criterion_has_teeth, character_state_falls_back_to_daily_without_schedule) | PASS  mask_data_missing_degrades_explicitly (删 appearance.mask（states 仍声明 masked）⇒ 生效形态 daily / 结构化告警 E_MASK_DATA_MISSING / 部件数 10（无 mask 部件）/ 不抛异常； 还原后 daily)"
+    },
+    {
+      "case": "N-4b_mask_number_string",
+      "expected": "结构化拒收（非 0 + JSON，无 traceback）",
+      "exit": 1,
+      "fired": true,
+      "reading": "[\"appearance.mask.number(=None, expected '8')\"]"
+    },
+    {
+      "case": "N-9_three_anchors_missing",
+      "expected": "EXIT_BAD_INJECTION(3) + 结构化 JSON（无 traceback）",
+      "exit": 3,
+      "fired": true,
+      "reading": "{\"appearance_ok\": false, \"appearance_required_packs\": [\"xingfu-xiaoqu-xuqin\", \"xingfu-xiaoqu-north\"], \"checks\": {\"appearance_has_no_verbatim_paragraph\": {\"hits\": [], \"pass\": true}, \"appearance_provenance_is_nested\": {\"ex"
+    },
+    {
+      "case": "N-10_arm_l_material_tamper",
+      "expected": "character_material_hex_recomputable 必红",
+      "exit": 1,
+      "fired": true,
+      "reading": "FAIL  character_material_hex_recomputable (逐着色部件 11 项（10 日常 + 1 面具态）：head=#bdb2aa/#8e867f hair=#161413/#0e0c0c torso=#791717/#5a0e0e arm_l=#000000/#000000 arm_r=#791717/#5a0e0e leg_l=#791717/#5a0e0e leg_r=#791717/#5a0e0e coat=#791717/#5a0e0e eyes=#751313/#570c0c lips=#8c161d/#680e13 mask=#c6c2bb/#95928c（读回值 ≠ 包内 hex；随读法变）) | FAIL  character_material_hex_criterion_has_teeth (注入 arm_l 材质色偏差（**两读法一致*"
+    },
+    {
+      "case": "R1-1_remove_eyes_color",
+      "expected": "schema_valid 必红",
+      "exit": 3,
+      "fired": true,
+      "reading": "[\"v0_skeleton/districts/xingfu-xiaoqu-xuqin/npcs/npc-006.json: eyes: 'color' is a required property\"]"
+    },
+    {
+      "case": "R1-2_drop_hair_design_fill",
+      "expected": "schema_valid 必红",
+      "exit": 3,
+      "fired": true,
+      "reading": "[\"v0_skeleton/districts/xingfu-xiaoqu-xuqin/npcs/npc-006.json: hair/color: {'value': '#1c1a19', 'design_note': '原著无任何发型/发色描写 ⇒ 黑长发为设计补全（与苍白皮肤 + 艳红唇形成明度对比）'} is not valid under any of the given schemas\"]"
+    },
+    {
+      "case": "R1-3_forged_chr_99",
+      "expected": "source_facts_resolve 必红",
+      "exit": 1,
+      "fired": true,
+      "reading": "['v0_skeleton/districts/xingfu-xiaoqu-xuqin/npcs/npc-006.json:appearance.eyes.color:CHR-99']"
+    },
+    {
+      "case": "R1-4_mask_number_9",
+      "expected": "xuqin_required_fields 必红",
+      "exit": 1,
+      "fired": true,
+      "reading": "[\"appearance.mask.number(='9', expected '8')\"]"
+    },
+    {
+      "case": "R1-5_top_level_appearance_key",
+      "expected": "appearance_provenance_is_nested 必红",
+      "exit": 1,
+      "fired": true,
+      "reading": "['top-level source_facts/source_fact_map changed: cc0b29622fad5ad5602c4924cd56dae9cffea1732a5bf93e0017d66cb92fc7cf != a0997e45736befc1ebbcf0fa79160b7361a8e8f36e48ade802cd98a8d914da31']"
+    },
+    {
+      "case": "R1-6_env_palette_saturation",
+      "expected": "aesthetic_check 必红",
+      "exit": 1,
+      "fired": true,
+      "reading": "E_AESTHETIC_OUT_OF_RANGE: mat-kitchen-wall: saturation 60 > 45"
+    },
+    {
+      "case": "R1-7_ts_anchor_hex",
+      "expected": "character_ts_has_no_anchor_hex_literal 必红",
+      "exit": 1,
+      "fired": true,
+      "reading": "FAIL  character_ts_has_no_anchor_hex_literal (character.ts hex 字面量=[\"#d8c6ad\",\"#3a322b\",\"#4b4239\",\"#8b1919\",\"#7d6a60\",\"#e6e0d5\",\"#6e6455\",\"#5c5548\",\"#7a6f63\"])"
+    },
+    {
+      "case": "R1-8_verbatim_paragraph",
+      "expected": "scan_ip_boundary 必命中",
+      "exit": 1,
+      "fired": true,
+      "reading": "{\"d4_rule\": {\"long_cjk\": 60, \"min_cjk\": 24, \"sent_punct\": \"。！？；\"}, \"declaration_sentinel\": \"IP-BOUNDARY-DECLARATION\", \"exemptable_patterns\": [\"jump_scare\"], \"patterns\": [\"jump_scare\", \"verbatim_body_p"
+    }
+  ]
+}

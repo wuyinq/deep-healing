@@ -55,5 +55,73 @@
   "hidden_face": [
     "一夜没关灯：这层楼整晚只有这一扇窗是醒着的"
   ],
-  "v0_role": "「静默」活跃度基线样本（每日模型调用极少，走 deterministic_rule 优先）"
+  "v0_role": "「静默」活跃度基线样本（每日模型调用极少，走 deterministic_rule 优先）",
+  "appearance": {
+    "eyes": {
+      "color": {
+        "value": "#4a4139",
+        "design_fill": true,
+        "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+      }
+    },
+    "lips": {
+      "color": {
+        "value": "#7c6a60",
+        "design_fill": true,
+        "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+      }
+    },
+    "skin": {
+      "color": {
+        "value": "#d9c6ae",
+        "design_fill": true,
+        "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+      }
+    },
+    "hair": {
+      "color": {
+        "value": "#3b322a",
+        "design_fill": true,
+        "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+      },
+      "length": {
+        "value": "shoulder-length",
+        "design_fill": true,
+        "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+      }
+    },
+    "garment": {
+      "color": {
+        "value": "#6b6152",
+        "design_fill": true,
+        "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+      },
+      "cut": {
+        "value": "long-coat",
+        "design_fill": true,
+        "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+      }
+    },
+    "height_cm": {
+      "value": 172,
+      "design_fill": true,
+      "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+    },
+    "age_look": {
+      "value": "30-40",
+      "design_fill": true,
+      "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+    },
+    "build": {
+      "value": "average",
+      "design_fill": true,
+      "design_note": "住户基础外形：事实册内无对应 CHR 条目 ⇒ 设计补全，不冒充原著"
+    },
+    "states": [
+      {
+        "id": "daily",
+        "label": "日常态"
+      }
+    ]
+  }
 }

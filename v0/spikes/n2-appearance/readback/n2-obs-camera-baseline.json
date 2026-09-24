@@ -1,0 +1,376 @@
+{
+  "mode": "baseline",
+  "default_camera": {
+    "position": [
+      18,
+      14,
+      24
+    ],
+    "quaternion": [
+      -0.29124381474387206,
+      0.21922450358441972,
+      0.06875333830590932,
+      0.928649899517248
+    ],
+    "matrix_world": [
+      894427,
+      0,
+      -447214,
+      0,
+      -255391,
+      820900,
+      -510782,
+      0,
+      367118,
+      571072,
+      734235,
+      0,
+      18000000,
+      14000000,
+      24000000,
+      1000000
+    ],
+    "projection_matrix": [
+      1508883,
+      0,
+      0,
+      0,
+      0,
+      2414214,
+      0,
+      0,
+      0,
+      0,
+      -1000400,
+      -1000000,
+      0,
+      0,
+      -200040,
+      0
+    ],
+    "zoom": 1,
+    "view_offset": null,
+    "fov": 45,
+    "near": 0.1,
+    "far": 500,
+    "aspect": 1.6
+  },
+  "daily_aabb": {
+    "state_id": "daily",
+    "placement": [
+      5,
+      0,
+      15
+    ],
+    "boxes": [
+      {
+        "part": "torso",
+        "center": [
+          5,
+          0,
+          15
+        ],
+        "size": [
+          0.46,
+          0.66,
+          0.26
+        ],
+        "source_hex": "#8f1d1d"
+      },
+      {
+        "part": "head",
+        "center": [
+          5,
+          0.49,
+          15
+        ],
+        "size": [
+          0.26,
+          0.3,
+          0.26
+        ],
+        "source_hex": "#dfd2c8"
+      },
+      {
+        "part": "hair",
+        "center": [
+          5,
+          0.53,
+          14.99
+        ],
+        "size": [
+          0.3,
+          0.34,
+          0.3
+        ],
+        "source_hex": "#1c1a19"
+      },
+      {
+        "part": "arm_l",
+        "center": [
+          4.7,
+          -0.02,
+          15
+        ],
+        "size": [
+          0.13,
+          0.6,
+          0.15
+        ],
+        "source_hex": "#8f1d1d"
+      },
+      {
+        "part": "arm_r",
+        "center": [
+          5.3,
+          -0.02,
+          15
+        ],
+        "size": [
+          0.13,
+          0.6,
+          0.15
+        ],
+        "source_hex": "#8f1d1d"
+      },
+      {
+        "part": "leg_l",
+        "center": [
+          4.89,
+          -0.72,
+          15
+        ],
+        "size": [
+          0.17,
+          0.8,
+          0.2
+        ],
+        "source_hex": "#8f1d1d"
+      },
+      {
+        "part": "leg_r",
+        "center": [
+          5.11,
+          -0.72,
+          15
+        ],
+        "size": [
+          0.17,
+          0.8,
+          0.2
+        ],
+        "source_hex": "#8f1d1d"
+      },
+      {
+        "part": "coat",
+        "center": [
+          5,
+          -0.12,
+          15
+        ],
+        "size": [
+          0.56,
+          0.86,
+          0.34
+        ],
+        "source_hex": "#8f1d1d"
+      },
+      {
+        "part": "eyes",
+        "center": [
+          5,
+          0.53,
+          15.13
+        ],
+        "size": [
+          0.19,
+          0.05,
+          0.03
+        ],
+        "source_hex": "#8b1919"
+      },
+      {
+        "part": "lips",
+        "center": [
+          5,
+          0.43,
+          15.13
+        ],
+        "size": [
+          0.11,
+          0.035,
+          0.03
+        ],
+        "source_hex": "#a51c24"
+      }
+    ],
+    "min": [
+      4.635,
+      -1.12,
+      14.83
+    ],
+    "max": [
+      5.365,
+      0.7000000000000001,
+      15.17
+    ],
+    "center": [
+      5,
+      -0.21000000000000002,
+      15
+    ]
+  },
+  "state_id_reported": "daily",
+  "parts": [
+    {
+      "part": "torso",
+      "source_hex": "#8f1d1d",
+      "material_hex": "#791717",
+      "size": [
+        0.46,
+        0.66,
+        0.26
+      ],
+      "local_offset": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "part": "arm_l",
+      "source_hex": "#8f1d1d",
+      "material_hex": "#791717",
+      "size": [
+        0.13,
+        0.6,
+        0.15
+      ],
+      "local_offset": [
+        -0.3,
+        -0.02,
+        0
+      ]
+    },
+    {
+      "part": "arm_r",
+      "source_hex": "#8f1d1d",
+      "material_hex": "#791717",
+      "size": [
+        0.13,
+        0.6,
+        0.15
+      ],
+      "local_offset": [
+        0.3,
+        -0.02,
+        0
+      ]
+    },
+    {
+      "part": "coat",
+      "source_hex": "#8f1d1d",
+      "material_hex": "#791717",
+      "size": [
+        0.56,
+        0.86,
+        0.34
+      ],
+      "local_offset": [
+        0,
+        -0.12,
+        0
+      ]
+    },
+    {
+      "part": "eyes",
+      "source_hex": "#8b1919",
+      "material_hex": "#751313",
+      "size": [
+        0.19,
+        0.05,
+        0.03
+      ],
+      "local_offset": [
+        0,
+        0.53,
+        0.13
+      ]
+    },
+    {
+      "part": "hair",
+      "source_hex": "#1c1a19",
+      "material_hex": "#161413",
+      "size": [
+        0.3,
+        0.34,
+        0.3
+      ],
+      "local_offset": [
+        0,
+        0.53,
+        -0.01
+      ]
+    },
+    {
+      "part": "head",
+      "source_hex": "#dfd2c8",
+      "material_hex": "#bdb2aa",
+      "size": [
+        0.26,
+        0.3,
+        0.26
+      ],
+      "local_offset": [
+        0,
+        0.49,
+        0
+      ]
+    },
+    {
+      "part": "leg_l",
+      "source_hex": "#8f1d1d",
+      "material_hex": "#791717",
+      "size": [
+        0.17,
+        0.8,
+        0.2
+      ],
+      "local_offset": [
+        -0.11,
+        -0.72,
+        0
+      ]
+    },
+    {
+      "part": "leg_r",
+      "source_hex": "#8f1d1d",
+      "material_hex": "#791717",
+      "size": [
+        0.17,
+        0.8,
+        0.2
+      ],
+      "local_offset": [
+        0.11,
+        -0.72,
+        0
+      ]
+    },
+    {
+      "part": "lips",
+      "source_hex": "#a51c24",
+      "material_hex": "#8c161d",
+      "size": [
+        0.11,
+        0.035,
+        0.03
+      ],
+      "local_offset": [
+        0,
+        0.43,
+        0.13
+      ]
+    }
+  ]
+}

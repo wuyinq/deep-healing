@@ -1,0 +1,620 @@
+{
+  "shot": "n2-obs-indoor-side-daily.png",
+  "reading": "indoor_side_daily",
+  "npc": "npc-006",
+  "placement_m": [
+    4.756,
+    0.0,
+    15.0
+  ],
+  "camera": {
+    "position": [
+      6.9,
+      0.35,
+      16.8
+    ],
+    "quaternion": [
+      -0.0756003923072085,
+      0.4054429603229639,
+      0.033669572514759,
+      0.9103663803624458
+    ],
+    "fov": 45,
+    "near": 0.1,
+    "far": 500,
+    "aspect": 1.6
+  },
+  "image_size": [
+    1440,
+    900
+  ],
+  "note": "部件盒 8 角由实测 cameraReport() 投影；像素色为 PNG 真实值（低模盒即轮廓）",
+  "silhouette_probe": [
+    {
+      "part": "head",
+      "size": [
+        0.26,
+        0.3,
+        0.26
+      ],
+      "local_offset": [
+        0,
+        0.49,
+        0.025
+      ],
+      "screen_bbox": [
+        600.1,
+        141.3,
+        747.8,
+        272.6
+      ],
+      "screen_height_px": 131.4,
+      "screen_width_px": 147.7,
+      "bottom_px": [
+        674.5,
+        272.3
+      ],
+      "top_px": [
+        673.7,
+        149.8
+      ],
+      "face_centers_px": {
+        "front_+z": [
+          632.8,
+          209.8
+        ],
+        "side_+x": [
+          708.4,
+          209.6
+        ],
+        "side_-x": [
+          642.1,
+          213.5
+        ]
+      },
+      "source_hex": "#dfd2c8",
+      "screen_color_samples": {
+        "front_+z": {
+          "hex": "#61554a",
+          "pixels": 49,
+          "of": 49
+        },
+        "side_+x": {
+          "hex": "#0b0907",
+          "pixels": 49,
+          "of": 49
+        },
+        "side_-x": {
+          "hex": "#61554a",
+          "pixels": 49,
+          "of": 49
+        },
+        "bbox_center": {
+          "hex": "#0b0907",
+          "pixels": 21,
+          "of": 49
+        }
+      },
+      "column_profile_at_center_x": {
+        "#0b0907": 41,
+        "#221d19": 38,
+        "#3a312a": 25,
+        "#51463c": 17
+      }
+    },
+    {
+      "part": "hair",
+      "size": [
+        0.58,
+        0.72,
+        0.3
+      ],
+      "local_offset": [
+        0,
+        0.34,
+        -0.015
+      ],
+      "screen_bbox": [
+        569.8,
+        107.7,
+        812.1,
+        430.1
+      ],
+      "screen_height_px": 322.4,
+      "screen_width_px": 242.4,
+      "bottom_px": [
+        687.3,
+        412.3
+      ],
+      "top_px": [
+        685.9,
+        126.1
+      ],
+      "face_centers_px": {
+        "front_+z": [
+          640.0,
+          272.4
+        ],
+        "side_+x": [
+          766.2,
+          272.6
+        ],
+        "side_-x": [
+          618.3,
+          272.0
+        ]
+      },
+      "source_hex": "#1c1a19",
+      "screen_color_samples": {
+        "front_+z": {
+          "hex": "#0b0807",
+          "pixels": 21,
+          "of": 49
+        },
+        "side_+x": {
+          "hex": "#0d0a08",
+          "pixels": 49,
+          "of": 49
+        },
+        "side_-x": {
+          "hex": "#0b0807",
+          "pixels": 21,
+          "of": 49
+        },
+        "bbox_center": {
+          "hex": "#0b0807",
+          "pixels": 49,
+          "of": 49
+        }
+      },
+      "column_profile_at_center_x": {
+        "#0b0807": 198,
+        "#0b0907": 114,
+        "#3c0908": 5,
+        "#f3efe8": 5
+      }
+    },
+    {
+      "part": "torso",
+      "size": [
+        0.38,
+        0.66,
+        0.26
+      ],
+      "local_offset": [
+        0,
+        0,
+        0
+      ],
+      "screen_bbox": [
+        596.5,
+        275.7,
+        771.1,
+        551.3
+      ],
+      "screen_height_px": 275.6,
+      "screen_width_px": 174.6,
+      "bottom_px": [
+        683.6,
+        529.1
+      ],
+      "top_px": [
+        682.1,
+        276.3
+      ],
+      "face_centers_px": {
+        "front_+z": [
+          643.3,
+          409.5
+        ],
+        "side_+x": [
+          732.5,
+          412.3
+        ],
+        "side_-x": [
+          637.9,
+          398.7
+        ]
+      },
+      "source_hex": "#8f1d1d",
+      "screen_color_samples": {
+        "front_+z": {
+          "hex": "#0b0807",
+          "pixels": 49,
+          "of": 49
+        },
+        "side_+x": {
+          "hex": "#0d0a08",
+          "pixels": 49,
+          "of": 49
+        },
+        "side_-x": {
+          "hex": "#0b0807",
+          "pixels": 49,
+          "of": 49
+        },
+        "bbox_center": {
+          "hex": "#0b0807",
+          "pixels": 49,
+          "of": 49
+        }
+      },
+      "column_profile_at_center_x": {
+        "#0b0807": 149,
+        "#3c0908": 127,
+        "#300908": 1
+      }
+    },
+    {
+      "part": "arm_l",
+      "size": [
+        0.1,
+        0.4,
+        0.14
+      ],
+      "local_offset": [
+        -0.24,
+        0.08,
+        0
+      ],
+      "screen_bbox": [
+        593.4,
+        293.8,
+        658.4,
+        445.0
+      ],
+      "screen_height_px": 151.2,
+      "screen_width_px": 65.0,
+      "bottom_px": [
+        627.4,
+        440.1
+      ],
+      "top_px": [
+        625.3,
+        294.5
+      ],
+      "face_centers_px": {
+        "front_+z": [
+          605.6,
+          369.7
+        ],
+        "side_+x": [
+          637.5,
+          369.4
+        ],
+        "side_-x": [
+          615.4,
+          366.9
+        ]
+      },
+      "source_hex": "#8f1d1d",
+      "screen_color_samples": {
+        "front_+z": {
+          "hex": "#0b0807",
+          "pixels": 49,
+          "of": 49
+        },
+        "side_+x": {
+          "hex": "#0b0807",
+          "pixels": 49,
+          "of": 49
+        },
+        "side_-x": {
+          "hex": "#0b0807",
+          "pixels": 49,
+          "of": 49
+        },
+        "bbox_center": {
+          "hex": "#0b0807",
+          "pixels": 49,
+          "of": 49
+        }
+      },
+      "column_profile_at_center_x": {
+        "#0b0807": 121,
+        "#3c0908": 31,
+        "#170807": 1
+      }
+    },
+    {
+      "part": "arm_r",
+      "size": [
+        0.1,
+        0.4,
+        0.14
+      ],
+      "local_offset": [
+        0.24,
+        0.08,
+        0
+      ],
+      "screen_bbox": [
+        711.1,
+        297.1,
+        782.4,
+        469.1
+      ],
+      "screen_height_px": 172.0,
+      "screen_width_px": 71.4,
+      "bottom_px": [
+        746.2,
+        462.9
+      ],
+      "top_px": [
+        746.9,
+        298.0
+      ],
+      "face_centers_px": {
+        "front_+z": [
+          725.1,
+          383.5
+        ],
+        "side_+x": [
+          760.9,
+          383.1
+        ],
+        "side_-x": [
+          732.5,
+          379.9
+        ]
+      },
+      "source_hex": "#8f1d1d",
+      "screen_color_samples": {
+        "front_+z": {
+          "hex": "#0d0a08",
+          "pixels": 49,
+          "of": 49
+        },
+        "side_+x": {
+          "hex": "#0d0a08",
+          "pixels": 49,
+          "of": 49
+        },
+        "side_-x": {
+          "hex": "#0d0a08",
+          "pixels": 49,
+          "of": 49
+        },
+        "bbox_center": {
+          "hex": "#0d0a08",
+          "pixels": 49,
+          "of": 49
+        }
+      },
+      "column_profile_at_center_x": {
+        "#0d0a08": 129,
+        "#400b09": 40,
+        "#410b09": 3,
+        "#270a08": 1
+      }
+    },
+    {
+      "part": "coat",
+      "size": [
+        0.38,
+        1.12,
+        0.34
+      ],
+      "local_offset": [
+        0,
+        -0.25,
+        -0.05
+      ],
+      "screen_bbox": [
+        599.8,
+        282.8,
+        796.2,
+        735.9
+      ],
+      "screen_height_px": 453.2,
+      "screen_width_px": 196.3,
+      "bottom_px": [
+        698.5,
+        696.5
+      ],
+      "top_px": [
+        697.0,
+        284.1
+      ],
+      "face_centers_px": {
+        "front_+z": [
+          647.5,
+          506.1
+        ],
+        "side_+x": [
+          746.8,
+          508.4
+        ],
+        "side_-x": [
+          653.2,
+          486.4
+        ]
+      },
+      "source_hex": "#8f1d1d",
+      "screen_color_samples": {
+        "front_+z": {
+          "hex": "#3c0908",
+          "pixels": 49,
+          "of": 49
+        },
+        "side_+x": {
+          "hex": "#400b09",
+          "pixels": 49,
+          "of": 49
+        },
+        "side_-x": {
+          "hex": "#3c0908",
+          "pixels": 49,
+          "of": 49
+        },
+        "bbox_center": {
+          "hex": "#400b09",
+          "pixels": 49,
+          "of": 49
+        }
+      },
+      "column_profile_at_center_x": {
+        "#400b09": 276,
+        "#0b0807": 144,
+        "#410b09": 32,
+        "#180908": 1
+      }
+    },
+    {
+      "part": "leg_l",
+      "size": [
+        0.17,
+        0.8,
+        0.2
+      ],
+      "local_offset": [
+        -0.11,
+        -0.72,
+        0
+      ],
+      "screen_bbox": [
+        609.0,
+        508.0,
+        706.4,
+        816.4
+      ],
+      "screen_height_px": 308.4,
+      "screen_width_px": 97.4,
+      "bottom_px": [
+        660.1,
+        793.6
+      ],
+      "top_px": [
+        657.4,
+        518.4
+      ],
+      "face_centers_px": {
+        "front_+z": [
+          630.1,
+          667.8
+        ],
+        "side_+x": [
+          678.4,
+          667.3
+        ],
+        "side_-x": [
+          640.0,
+          651.1
+        ]
+      },
+      "source_hex": "#8f1d1d",
+      "screen_color_samples": {
+        "front_+z": {
+          "hex": "#3c0908",
+          "pixels": 49,
+          "of": 49
+        },
+        "side_+x": {
+          "hex": "#3c0908",
+          "pixels": 49,
+          "of": 49
+        },
+        "side_-x": {
+          "hex": "#3c0908",
+          "pixels": 49,
+          "of": 49
+        },
+        "bbox_center": {
+          "hex": "#3c0908",
+          "pixels": 49,
+          "of": 49
+        }
+      },
+      "column_profile_at_center_x": {
+        "#3c0908": 209,
+        "#400b09": 96,
+        "#f3efe8": 3,
+        "#9a7d79": 1
+      }
+    },
+    {
+      "part": "leg_r",
+      "size": [
+        0.17,
+        0.8,
+        0.2
+      ],
+      "local_offset": [
+        0.11,
+        -0.72,
+        0
+      ],
+      "screen_bbox": [
+        660.0,
+        521.3,
+        762.2,
+        848.0
+      ],
+      "screen_height_px": 326.8,
+      "screen_width_px": 102.2,
+      "bottom_px": [
+        711.5,
+        822.6
+      ],
+      "top_px": [
+        711.1,
+        532.9
+      ],
+      "face_centers_px": {
+        "front_+z": [
+          682.2,
+          690.8
+        ],
+        "side_+x": [
+          733.3,
+          690.3
+        ],
+        "side_-x": [
+          690.4,
+          672.3
+        ]
+      },
+      "source_hex": "#8f1d1d",
+      "screen_color_samples": {
+        "front_+z": {
+          "hex": "#3c0908",
+          "pixels": 49,
+          "of": 49
+        },
+        "side_+x": {
+          "hex": "#400b09",
+          "pixels": 49,
+          "of": 49
+        },
+        "side_-x": {
+          "hex": "#3c0908",
+          "pixels": 49,
+          "of": 49
+        },
+        "bbox_center": {
+          "hex": "#400b09",
+          "pixels": 49,
+          "of": 49
+        }
+      },
+      "column_profile_at_center_x": {
+        "#400b09": 322,
+        "#f3efe8": 4,
+        "#4b1b1b": 1,
+        "#9a7d79": 1
+      }
+    }
+  ],
+  "screen_ordering": {
+    "note": "屏幕纵向次序（y 越大越靠下；低模盒即轮廓）",
+    "hair_bottom_y_px": 412.3,
+    "torso_top_y_px": 276.3,
+    "hair_below_shoulder_px": 136.0,
+    "hair_height_px": 322.4,
+    "coat_bottom_y_px": 696.5,
+    "leg_bottom_y_px": 793.6,
+    "leg_visible_below_hem_px": 97.1,
+    "hair_wide_vs_torso_px": 67.8,
+    "hair_wide_vs_coat_px": 46.1
+  }
+}

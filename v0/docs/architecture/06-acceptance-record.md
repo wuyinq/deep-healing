@@ -493,3 +493,155 @@ r4 收口 → **detached 重门禁**（sentinel + raven）→ **PM 逐 AC 终验
 | 工作树 | `git status --porcelain` **空** |
 
 ⇒ 验证方式为**直问服务器**（`ls-remote`），非依赖本地远端跟踪引用，避免「本地以为推上去了」的假绿。
+
+
+---
+
+# 第六部分 · REQ-20260924-002（N2 · 徐琴人物形象落地）
+
+> 本部分按 PM 裁决 2 / 3 / 5 落成三件登记（**N2-r2 修复轮**，2026-09-24）。
+> 登记人：artisan（按 PM 裁决执行）；**登记 ≠ 验收** —— 逐 AC 终验仍由 PM 独立做。
+
+## 23. AC-10 口径变更登记（F-9 / PM 裁决 2）
+
+| 项 | 内容 |
+|---|---|
+| 变更时间 | **2026-09-24** |
+| 变更前口径 | AC-10 = 「**资产管线全绿**」：`verify_asset_pack.py` 对提案包 manifest 判 exit 0 |
+| 变更后口径 | AC-10 = 「**参考表 ≥3 张 + 每条 `derived_from` 可解析**」，由 `v0_skeleton/tools/verify_npc_appearance.py` 的判据 `character_refs_registered` 承载 |
+| 资产管线 | `verify_asset_pack.py` 全绿**另起一轮**（不在 N2 判据面内） |
+| **变更原因** | 在**授权写集内**、且**不伪造 provenance** 的前提下**不可达**。两条独立硬阻塞（实测）：<br>① **更靠前**的阻塞：`verify_asset_pack.py:110` 在**交付 manifest** 上抛 `KeyError: 'asset_id'` —— 工具期望 `assets[].asset_id`，交付 manifest 用 `assets[].id`（命令 ↔ 读数见 §23.1）；<br>② 越过①之后（自建 probe manifest）仍被许可 / 哈希 / 采纳三态拒：`A3_UNKNOWN_MODEL_DEFAULT_DENY` / `A4_BAD_CONTENT_HASH` / `A5_NOT_ADOPTED`（参考图为 JPEG、无 EXIF/模型信息 ⇒ 无法诚实声明产出模型；`asset.license.table.data.json` 不在本轮写集）。 |
+| 禁止事项 | **不得静默替换**：本条目**显式**记录「口径变了、为什么变、何时变」。原口径**不**被声称已达成 |
+
+### 23.1 命令 ↔ 读数（可复现）
+
+```bash
+# ① 交付 manifest（最早阻塞）
+cd <ws>/02_source/v0_skeleton
+PYTHONDONTWRITEBYTECODE=1 python3 tools/verify_asset_pack.py \
+  --pack districts/xingfu-xiaoqu-xuqin \
+  --manifest districts/xingfu-xiaoqu-xuqin/assets/manifest.json \
+  --license-table ../asset.license.table.data.json
+# exit=1；末行 KeyError: 'asset_id'（verify_asset_pack.py:110）
+# 原始输出留档：spikes/n2-appearance/readback/n2-f8-verify_asset_pack-keyerror.txt
+
+# ② probe manifest（仅把 assets[].id 改名为 asset_id，3 条；其余逐字不变）
+python3 spikes/n2-appearance/n2-ac10-probe.py --out spikes/n2-appearance
+# exit=1；结构化拒收 A3_UNKNOWN_MODEL_DEFAULT_DENY / A4_BAD_CONTENT_HASH / A5_NOT_ADOPTED
+# probe manifest 内容留档：spikes/n2-appearance/readback/n2-ac10-probe-manifest.json
+# 读数留档：spikes/n2-appearance/readback/n2-ac10-probe.json
+```
+
+**口径说明**：r1 的 `03` / `06` 曾把①记成「循环 `pack.sig` 依赖 + 许可 default-deny」—— 那两条**只能**出自**自建 probe manifest**；在**交付 manifest** 上更靠前的是上面那条 `KeyError`。本条目为**更正**，不是新增口径。
+
+## 24. 判据能力边界登记（F-10 / PM 裁决 3）
+
+**总声明（措辞硬性）**：`two_reads_*` 系列中的
+`two_reads_share_geometry` / `two_reads_share_scene_structure` /
+`two_reads_share_character_parts` / `two_reads_share_camera` / `two_reads_use_same_render_camera`
+是**跨读法一致性判据**：
+它们证明「表层读法与深层读法看到的是同一份几何 / 部件 / 相机」，**不是**完整性机制。
+**禁止**把 `scene_assert` 判绿读作「场景未被篡改」——判据源码本身在交付面内，判据侧改写只由**清单**这一独立机制发现。
+
+**分类订正（N2-r5 / B-6）**：`two_reads_character_criterion_has_teeth` **移出**上述清单 ——
+它是**命中能力自证**（注入「只作用于 `underneath` 读法」的部件差异 ⇒ 比较面**必红**），
+证明的是「该族判据**有牙**」，**不属一致性判据族**。
+
+| 编号 | 内容 | r2 后状态 |
+|---|---|---|
+| **I-9** | **非 `eyes` 部件材质色**：注入同时作用于两读法（两读法一致）时，`two_reads_*` 系列**零判据** | **已在 N2-r2 由 F-5 收窄并关闭**：`character_material_hex_recomputable` 从「只 `eyes`」扩到**逐着色部件**（head/hair/torso/arm_l/arm_r/leg_l/leg_r/coat/eyes/lips + 面具态 mask），按 `lighting.ts` 公式逐部件复算；注入 `arm_l` 两读法一致的材质色偏差 ⇒ 判据**必红**（读数见 `03_artisan_self_test.log` r2 段 / `spikes/n2-appearance/readback/n2-negatives-r2.json` 的 `N-10`）。**注**：本条状态更新来自同一轮的 F-5，属**显式**更新，非静默替换 |
+| **I-10** | **部件装配顺序**：`CHARACTER_PART_ORDER` 被置换而两读法一致时**零判据** | **仍为已知边界**（留给 N4；与 R-R7 同项）。`characterReport()` / `character_shapes` 的比较面是**排序后的多重集**，对顺序不敏感 |
+
+**边界性质（不得弱化）**：上表两项的**共同根因**是「一致性判据只比较两个读数之间是否一致」——
+**任何同时作用于两个读数的改动，都不在这类判据的射程内**。射程外的覆盖必须来自**复算型判据**
+（如 F-5 的 `character_material_hex_recomputable`）或**清单**，二者都在别处。
+
+## 25. 遗留清单（F-11 / PM 裁决 5）
+
+| 编号 | 内容 | 留给哪一轮 |
+|---|---|---|
+| **R-R2** | **自证项与树状态耦合**：`two_reads_character_criterion_has_teeth` / `character_fingerprint_detects_size_change` / **`character_material_hex_criterion_has_teeth`**（**r5 / Raven M2 补登**）把「基线相等」当前置 ⇒ 树本身脏时，自证项会**先红**（把「判据无牙」与「树脏」混成一类读数） | N4 |
+| **R-R3** | **`packId` 默认值与交付应用权威来源不同源**：`world.ts` 的 `queryPackId()` 兜底字面量 `'xingfu-xiaoqu'` vs `main.ts` 的会话值 ⇒ 两处可给出不同 pack（本轮只**登记**，不根治） | N4（根治：会话级 packId 同源） |
+| **R-R5** | **`apply(delta)` 不重算形态**：`delta` 只处理 `transform.pos_mm` ⇒ 若某 tick 只经 `delta` 把徐琴带到 `kitchen-01`，面具态要**等下一次 snapshot** 才出现 | N4 |
+| **R-R7** | **部件装配顺序零判据**（与 **I-10** 同项） | N4 |
+| **R-R8** | **主包 5 户几何完全相同、衣色 3 档** ⇒ `npc-001 ≡ npc-004`、`npc-002 ≡ npc-005`（视觉不可区分）。**与 F-12 同项** | N4（并入 R-B1 主包半） |
+| **L-14** | `02_source/manifest.txt:32` **文本漂移**：写「13 个文件」，实测 **14**。**判据不读该文本**（`verify_specs.sh` 只按 `path | 用途 | 生成方式` 做**覆盖**断言）⇒ **本轮不改**（改它要动 `manifest.txt` 文本，属无判据收益的改动） | 登记即止（不修） |
+| **S-BUG-6** | `verify_asset_pack.py` 对**内容包 manifest** 的失败形态是未捕获 `KeyError`（可读性差；**非产品缺陷**，`exit` 仍非 0）。本轮**只登记**，未改该工具（不在写集） | N4 |
+| **R-R5b** | `rebuild()` **不回收 geometry / material**：既有模式被放大 ~5×（`partMeshes` 随重建累积），**非本轮引入** | N4 |
+| **S-CLOSURE-M2** | **CRITICAL 修复的 guard 分支在交付树内无负对照**（Sentinel 收口复核 MEDIUM-2）：`scene_assert.mjs` 内**无**合成「缺 `mask`」的 in-file 负对照 ⇒ `maskGeometryAvailable` 的 FAIL 分支只在**外部注入**下可达；若未来守卫被改回解引用，**交付树内 67 条判据不会红**，只有 `/tmp` 负例组能发现（回归风险落在**门禁方法**而非交付物） | N4（建议按 `character_material_hex_criterion_has_teeth` 同形态补一条自带负对照的判据） |
+| **N2-横向界残留** | `hair` / `arm_*` 只加了**纵向**（高度）界，**横向**（宽 / 厚）**仍无独立上下界**（Raven 收口 LOW-1；同见 `06` R5-B2 末段） | N4（与 R-R2 一并） |
+
+**另记（本轮新增的可读性漂移，不修）**：`verify_specs.sh` §17b 的**标签文本**仍写
+「6 injected negatives fire」，而探针 case 数本轮由 6 增至 **9**。该标签**不参与任何判定**
+（§17b 只 `jq` 读 `.appearance_ok` / `.probe_ok`），且 `verify_specs.sh` 相对 HEAD **必须 0 行删除**
+（任务书 §4.8）⇒ **按 L-14 先例不改**，在此显式登记以免被读成「探针只有 6 条」。
+**r5 更新**：该标签已按 r5 任务书 §3 B-6 改为「**9** injected negatives fire」（**纯文字**；
+既有检查项语义**一字未动**，`verify_specs` 读数 `PASS=164 FAIL=0 SKIP=0` 与 r4 零差异）
+⇒ 本段「不改」的处置被 r5 的明确授权**取代**；**紧邻注释行**（仍写「覆盖 6 条 /tmp 隔离负例」）
+按任务书「**只许改这一处文字**」**未动**，保留为登记。
+
+---
+
+## 26. N2-r5 收口轮登记（2026-09-24；AC-9 口径落地 + 两条 CRITICAL 关闭 + 遗留）
+
+> 登记人：artisan（按 r5 任务书 + PM 11:20 裁决执行）；**登记 ≠ 验收** —— 逐 AC 终验仍由 PM 独立做。
+> 完整读数见 `<ws>/06_v0_n2_self_test.md` 附录 R5 段与 `<ws>/03_artisan_self_test.log` r5 段。
+
+### 26.1 AC-9 口径（**按 PM 2026-09-24 11:20 裁决逐字落地**；Raven C1 关闭）
+
+| 子句 | 结论 | 证据 |
+|---|---|---|
+| **AC-9 的机制子句** | **PASS（有证据）** | 外形**契约驱动装配**；**部件化**（日常 **10** / 面具 **11** 部件）；日常态/面具态**像素可区分**（室内宽 11,186 px / 近景 81,969 px / 侧向 5,320 px）；取证机位是**加法**且**默认取景逐字节未变**（同机位重拍 diff = 0） |
+| **AC-9 的「可辨识」视觉子句** | **载体移交 N4** | 理由：**方盒几何在任何机位都不可辨识** ⇒ 该子句的达成载体是**写实人体（N4 的 AC-5）**，不是相机或部件坐标。**这不是「改判 GAP 掩盖没做到」**，而是如实划出本轮能力的边界并指明下一轮承载者 |
+| 本轮是否为「可辨识」开新迭代 | **否** | 第 3 轮已是预算上限；r5 只做**工具健壮性 + 文档登记** |
+
+**两处均在场**（PM 要求写进 `06` **与** 本文件）：`<ws>/06_v0_n2_self_test.md` 附录 **R5-A2** 与本 §26.1；
+`06` §3.1 与 §6 的 AC-9 行已按同一口径**改写**（不再以「部件数 + 颜色 hex」当「可辨识」的 PASS 依据）。
+**保留**：**r4 截图 12 张全部保留**（`spikes/n2-appearance/shots/**`，mtime 12:03~12:04）作为「**方盒不可辨识**」的证据 ——
+N4 的起点对照，**不得删**。
+> **口径订正（Raven 收口 N-1，LOW）**：原写「r3 / r4 的截图全部保留」与磁盘**不符** —— r3 期 PNG 已被 r4 于 12:03
+> **同名重拍就地覆盖**；r3 的**读数**仍在（`readback/n2-r3-face-probe-*.json`）。准确口径 =「**r4 截图 12 张在 + r3 读数在**」。
+
+**关闭读数**：`grep -n '机制子句\|视觉子句' <ws>/06_v0_n2_self_test.md <ws>/docs/architecture/06-acceptance-record.md`
+⇒ **两处均命中**；`grep -n AC-9 <ws>/docs/architecture/06-acceptance-record.md` ⇒ 命中**本条**。
+
+### 26.2 r4 的授权来源（Raven M1 / r5-B8）—— 按 **PM 12:40 裁决 6-A 追认**
+
+> **本节已订正**：原措辞「越权 / 授权来源待 PM 追认或推翻」已被 **PM 12:40 裁决 6-A 明令作废**
+> （6-A：**不许**把 r4 写成「无授权」或「PM 未授权」）。订正执行者 = **architect 派单归属进程**（2026-09-24 13:0x CST）。
+
+**授权来源（PM 6-A 原文口径）**：**PM 12:40 裁决 6-A 追认 r4；PM 承担中途收窄未给中止指令的责任。**
+
+**事实链（保留，供追溯）**：
+- PM **10:20** 重启架构官时的授权原文 =「执行你裁决书 §3.1 的 **F-1 ~ F-12** 修复（写集照 §4）」；
+  而 **F-1 的字面即「让徐琴在实机画面里真的可见（能看出性别/发色/瞳色/衣着）」** ⇒ r4 的**主体在授权内**
+  （F-3 的 `mask` 降级、F-5 的材质判据扩容、取证补拍等 MEDIUM 修复均属该授权）；
+- PM **11:20** 中途收窄为「不得再为『可辨识』开新迭代」，但**未**下「中止 F-1 子项」的明确指令；
+- architect 的流程缺口（r4 派发前未重读 PM 更新过的裁决文件）**已如实登记**于 `.architect-dispatch-lock.md` §5.9，
+  并**按 6-A 的定性记录**（不再自称「越权」）。
+- **r4 的产出**：`hair` 加宽 / `torso` 收窄 / 侧向机位 ⇒ **更接近设计 B1/B6 取值**，判据为**纯追加**（既有断言零删除零改写）。
+
+**硬性确认（PM 6-A）**：**r4 是最后一轮**；此后不再为「可辨识」开任何迭代；
+AC-9 的「可辨识」视觉子句按 11:20 裁决**载体移交 N4（AC-5）**。
+
+### 26.3 r5 关闭项（代码面）
+
+| 编号 | 内容 | 关闭读数 |
+|---|---|---|
+| **Sentinel BUG-1（CRITICAL）** | `scene_assert.mjs` 在「声明 masked 但缺 `appearance.mask`」时**崩溃**（无 `PASS=/FAIL=` 汇总行 ⇒ `N-3b` 不判红） | 加与 `maskReadsHalfFace()` 同一守卫；`/tmp` 副本删 `mask` ⇒ exit **1**、`PASS=63 FAIL=4`、`crash=False`；负例组 **16/16**（`not_fired=[]`）；交付树 `PASS=67 FAIL=0` |
+| **Raven M3 / M4** | `hair` / `arm_*` 纵向长度**无界** | 新增 `character_hair_length_bounded_by_waist` / `character_arm_height_bounded_by_torso`；两个注入**各自只红对应一条** |
+| **Raven M5** | 根部件 `local_offset` 两侧**口径不同**（假红风险） | `world.ts` 统一为「相对放置点」= `[0,0,0]`；回退版可复现假红（两树差分） |
+| **Raven M8** | `maybeAutoLoadAppearance()` 置位早于 `npcIds.length === 0` ⇒ 一次性缺口 | 置位**移到**早退之后（`world.ts`）；**未**新增判据 |
+| **Raven M7** | 已被 PM 更正的错误锚点留在交付面 | `npc-006.json` 的 `design_note` 改为 `ch229 / ch230 / ch240`（并注明 `ch14221` 系行号）；颜色值**逐字节未动**；`pack.sig` 重签 |
+
+### 26.4 r5 遗留（**只登记，不修**）
+
+| 编号 | 内容 | 留给哪一轮 |
+|---|---|---|
+| **BUG-3** | 瞳色与衣着色同色不可分（`#3b0a08` vs `#3c0a08`，差 **1/255**）⇒ AC-9 的「瞳色」只有**弱**证据。**不得改颜色**（颜色锚点是原著事实） | N4（拉开明度差） |
+| **BUG-5** | 静态判据只扫 `character.ts`；`world.ts` **注释内**有锚点 hex ⇒ 覆盖面口径边界 | N4（可扩为「注释外零锚点 hex」） |
+| **BUG-6** | `spikes/n2-appearance/readback/` 内 r2 与 r4 读数并存 | 已在 `spikes/n2-appearance/notes/README.md` 补「**按 mtime 分轮，跨轮读数不可混用**」 |
+| **BUG-7** | `spikes/n2-appearance/n2-ac10-probe.py` 在 `--out` 指向工作区外时崩（`relative_to`） | 登记即止（**非交付面**） |
+| **B-4 设计文档侧** | `01_architecture_design.md` 仍保留旧锚点引用（`ch14221`） | **architect**（该文件不在 r5 写集） |
+| **B-6 文本漂移** | `verify_specs.sh` §17b 紧邻注释仍写「覆盖 6 条」；`manifest.txt` 的 `verify_npc_appearance.py` 一行仍写「含 6 条 /tmp 隔离负例自证」 | 登记即止（判据不读这些文本） |
+

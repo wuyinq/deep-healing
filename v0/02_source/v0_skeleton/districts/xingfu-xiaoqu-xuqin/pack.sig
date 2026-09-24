@@ -5,9 +5,34 @@
   "generated_by": "tools/pack_sign.py",
   "entries": [
     {
+      "path": "assets/character-refs/xuqin-fullbody-01.jpg",
+      "sha256": "68fa7f4c699b9dad221b4d18f000dc23fa97a67b592eeafe14740ef6e4d57a7d",
+      "bytes": 224494
+    },
+    {
+      "path": "assets/character-refs/xuqin-mask-01.jpg",
+      "sha256": "84af6cd64b250a89e6e552c4830cadfcd4cf6edbfb940c1ef0a0eeffe11369c9",
+      "bytes": 323563
+    },
+    {
+      "path": "assets/character-refs/xuqin-portrait-01.jpg",
+      "sha256": "597515ee822e2587b6ec17d68ba005310de3de3510bfd7a901dc980baf77c86a",
+      "bytes": 400589
+    },
+    {
+      "path": "assets/character-refs/xuqin-sheet-01.jpg",
+      "sha256": "6d0805c20d0111390062d5c6b8ce8844e7b592254c30489d2777b319f370716c",
+      "bytes": 267844
+    },
+    {
+      "path": "assets/character-refs/xuqin-sheet-02.jpg",
+      "sha256": "f1ef07019f72ffa136e4466ad25876bbe82f5452b353db5ab340d1cfb8008da3",
+      "bytes": 143155
+    },
+    {
       "path": "assets/manifest.json",
-      "sha256": "e6da81951bc472e59c4d8a62d6a955a49e96420d2659bfac54abb8ea7a5d2532",
-      "bytes": 1835
+      "sha256": "29db0bb8159151581c2d7aaf82fcddb9d4e5b58055d6479a4bde8dafa8b6fc5f",
+      "bytes": 8078
     },
     {
       "path": "buildings/kitchen-1052.json",
@@ -16,8 +41,8 @@
     },
     {
       "path": "npcs/npc-006.json",
-      "sha256": "5d13bebb40e8952a32f3c30c43680ece44582f211a2720bbaf10593c0484a778",
-      "bytes": 2966
+      "sha256": "168ee262f2c55132388db1ac2be5b0d77911f320a97337a2e60d2bbf522fa24f",
+      "bytes": 6151
     },
     {
       "path": "pack.json",

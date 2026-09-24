@@ -1,0 +1,60 @@
+{
+  "tag": "diag",
+  "pack": "xingfu-xiaoqu-xuqin",
+  "seed": 20260921,
+  "port": 8802,
+  "web": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260924-002-deephealing-xuqin-appearance/spikes/n2-appearance/build/web",
+  "source": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260924-002-deephealing-xuqin-appearance/02_source",
+  "runtime": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260924-002-deephealing-xuqin-appearance/spikes/n2-appearance/runtime/live-diag",
+  "run_seconds": 180,
+  "tick_ms": 200,
+  "ticks_reached": 839,
+  "final_state_hash": "68ad71e12c1e824f64604d9076b0c422bc938ac47433caff1ad2f0bd3427d19d",
+  "final_event_chain_hash": "4d5b0384f07bf633267300245de7082c07cb8855bf28f7e91aabfe84d8e49bf3",
+  "events_total": 3390,
+  "events_backfilled": 0,
+  "driver_kinds": {
+    "bridge_meta": 1,
+    "event": 3390,
+    "ready": 1,
+    "snapshot": 34,
+    "tick_meta": 839,
+    "delta": 806,
+    "live": 839,
+    "bridge_stop": 1
+  },
+  "sessions": 1,
+  "injection": null,
+  "driver_meta": {
+    "bridge_meta": {
+      "event_channel_supplied_by": "scaffold（交付面 kernel_bridge.py 无 event emit 点）",
+      "kind": "bridge_meta",
+      "memory_writes": true,
+      "npc_ids": [
+        "npc-006"
+      ],
+      "pack_copy": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260924-002-deephealing-xuqin-appearance/spikes/n2-appearance/runtime/live-diag/02_source/v0_skeleton/districts/xingfu-xiaoqu-xuqin",
+      "pack_id": "xingfu-xiaoqu-xuqin",
+      "scaffold": "spikes/m52-live/tools/live_scenario.py",
+      "seed": 20260921,
+      "seq": 0,
+      "snapshot_every": 25,
+      "source_copy": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260924-002-deephealing-xuqin-appearance/spikes/n2-appearance/runtime/live-diag/02_source",
+      "source_files": 208,
+      "tick": 0
+    },
+    "ready": {
+      "inject": "none",
+      "inject_at": 20,
+      "kind": "ready",
+      "memory_writes": "on",
+      "npc_ids": [
+        "npc-006"
+      ],
+      "pack": "xingfu-xiaoqu-xuqin",
+      "seed": 20260921,
+      "seq": 0,
+      "tick": 0
+    }
+  }
+}

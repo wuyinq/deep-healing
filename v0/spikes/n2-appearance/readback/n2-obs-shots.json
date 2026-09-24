@@ -1,0 +1,7139 @@
+{
+  "tag": "n2-obs-shots",
+  "pack": "xingfu-xiaoqu-xuqin",
+  "npc": "npc-006",
+  "wiring": "renderer reads the content pack READ-ONLY via ?pack= (world.ts lazy wiring); NOT delivered by the kernel state",
+  "observation_camera": {
+    "indoor_wide": {
+      "position_m": [
+        5,
+        0.35,
+        17.4
+      ],
+      "look_at_m": [
+        5,
+        -0.2,
+        15
+      ]
+    },
+    "indoor_closeup": {
+      "position_m": [
+        4.756,
+        0.58,
+        15.95
+      ],
+      "look_at_m": [
+        4.756,
+        0.45,
+        15.05
+      ]
+    },
+    "indoor_side": {
+      "position_m": [
+        6.9,
+        0.35,
+        16.8
+      ],
+      "look_at_m": [
+        4.9,
+        -0.1,
+        15
+      ]
+    }
+  },
+  "world_frozen_for_indoor_shots": true,
+  "resume_result": {
+    "stepping": true,
+    "tick": 0
+  },
+  "pause_result": {
+    "stepping": false,
+    "tick": 2
+  },
+  "frozen_projection": {
+    "tick": 2,
+    "entities": 5
+  },
+  "mask_injection": {
+    "injected_entities": 5,
+    "target_entity": "kitchen-01",
+    "schedule_state": "working"
+  },
+  "daily_injection": {
+    "injected_entities": 5,
+    "target_entity": "room-1052",
+    "schedule_state": "resting"
+  },
+  "mask_route_driven_shot": "driven_ticks (world resumed)",
+  "mask_trace_tail": [
+    {
+      "tick": 82,
+      "state_id": "masked",
+      "source": "pack"
+    },
+    {
+      "tick": 92,
+      "state_id": "masked",
+      "source": "pack"
+    },
+    {
+      "tick": 102,
+      "state_id": "masked",
+      "source": "pack"
+    },
+    {
+      "tick": 112,
+      "state_id": "masked",
+      "source": "pack"
+    },
+    {
+      "tick": 121,
+      "state_id": "masked",
+      "source": "pack"
+    },
+    {
+      "tick": 131,
+      "state_id": "masked",
+      "source": "pack"
+    }
+  ],
+  "shots": [
+    {
+      "name": "n2-default-wide-daily",
+      "file": "spikes/n2-appearance/shots/n2-default-wide-daily.png",
+      "note": "默认交付取景 · 日常态（**玩家看到的是 room-1052 盒，不是人**）"
+    },
+    {
+      "name": "n2-obs-indoor-daily",
+      "file": "spikes/n2-appearance/shots/n2-obs-indoor-daily.png",
+      "note": "室内取证机位（room-1052 内部，距角色 ~2.47 m）· 日常态"
+    },
+    {
+      "name": "n2-obs-indoor-daily-2",
+      "file": "spikes/n2-appearance/shots/n2-obs-indoor-daily-2.png",
+      "note": "同一室内机位 / 同一状态**重拍**（确定性自证：应与上一张逐像素相同）"
+    },
+    {
+      "name": "n2-obs-indoor-closeup-daily",
+      "file": "spikes/n2-appearance/shots/n2-obs-indoor-closeup-daily.png",
+      "note": "室内近景（距头部 ~0.95 m）· 日常态"
+    },
+    {
+      "name": "n2-obs-indoor-side-daily",
+      "file": "spikes/n2-appearance/shots/n2-obs-indoor-side-daily.png",
+      "note": "室内 3/4 侧向（距角色 ~2.5 m，偏离正面轴 ~50°）· 日常态：读「长发过肩长度 + 收腰 + 露腿」"
+    },
+    {
+      "name": "n2-obs-indoor-side-daily-2",
+      "file": "spikes/n2-appearance/shots/n2-obs-indoor-side-daily-2.png",
+      "note": "同一 3/4 侧向机位 / 同一状态**重拍**（确定性自证：应与上一张逐像素相同）"
+    },
+    {
+      "name": "n2-obs-indoor-closeup-masked",
+      "file": "spikes/n2-appearance/shots/n2-obs-indoor-closeup-masked.png",
+      "note": "室内近景 · 面具态（世界冻结 ⇒ 与近景日常态**同位置**）"
+    },
+    {
+      "name": "n2-obs-indoor-masked",
+      "file": "spikes/n2-appearance/shots/n2-obs-indoor-masked.png",
+      "note": "室内取证机位 · 面具态（世界冻结 ⇒ 与日常态**同位置**）"
+    },
+    {
+      "name": "n2-obs-indoor-side-masked",
+      "file": "spikes/n2-appearance/shots/n2-obs-indoor-side-masked.png",
+      "note": "室内 3/4 侧向 · 面具态（世界冻结 ⇒ 与侧向日常态**同位置**）"
+    },
+    {
+      "name": "n2-default-wide-masked",
+      "file": "spikes/n2-appearance/shots/n2-default-wide-masked.png",
+      "note": "默认交付取景 · 面具态（仍是盒子）"
+    },
+    {
+      "name": "n2-obs-indoor-control-generic",
+      "file": "spikes/n2-appearance/shots/n2-obs-indoor-control-generic.png",
+      "note": "对照臂：同一室内机位 + setAppearance(null) ⇒ 通用人形（非达标证据）"
+    },
+    {
+      "name": "n2-obs-indoor-masked-driven",
+      "file": "spikes/n2-appearance/shots/n2-obs-indoor-masked-driven.png",
+      "note": "室内取证机位 · 面具态（**驱动 ≥130 tick**，实机日程到 kitchen-01）"
+    }
+  ],
+  "summary": {
+    "default_wide_daily": {
+      "camera_position": [
+        18,
+        14,
+        24
+      ],
+      "npc_position_mm": {
+        "x": 4756,
+        "y": 0,
+        "z": 15000
+      },
+      "npc_source": "pack",
+      "npc_state": "daily",
+      "npc_parts": 10,
+      "degradations": [],
+      "tick": 2
+    },
+    "indoor_daily": {
+      "camera_position": [
+        5,
+        0.35,
+        17.4
+      ],
+      "npc_position_mm": {
+        "x": 4756,
+        "y": 0,
+        "z": 15000
+      },
+      "npc_source": "pack",
+      "npc_state": "daily",
+      "npc_parts": 10,
+      "degradations": [],
+      "tick": 2
+    },
+    "indoor_closeup_daily": {
+      "camera_position": [
+        4.756,
+        0.58,
+        15.95
+      ],
+      "npc_position_mm": {
+        "x": 4756,
+        "y": 0,
+        "z": 15000
+      },
+      "npc_source": "pack",
+      "npc_state": "daily",
+      "npc_parts": 10,
+      "degradations": [],
+      "tick": 2
+    },
+    "indoor_side_daily": {
+      "camera_position": [
+        6.9,
+        0.35,
+        16.8
+      ],
+      "npc_position_mm": {
+        "x": 4756,
+        "y": 0,
+        "z": 15000
+      },
+      "npc_source": "pack",
+      "npc_state": "daily",
+      "npc_parts": 10,
+      "degradations": [],
+      "tick": 2
+    },
+    "indoor_closeup_masked": {
+      "camera_position": [
+        4.756,
+        0.58,
+        15.95
+      ],
+      "npc_position_mm": {
+        "x": 4756,
+        "y": 0,
+        "z": 15000
+      },
+      "npc_source": "pack",
+      "npc_state": "masked",
+      "npc_parts": 11,
+      "degradations": [],
+      "tick": 2
+    },
+    "indoor_masked": {
+      "camera_position": [
+        5,
+        0.35,
+        17.4
+      ],
+      "npc_position_mm": {
+        "x": 4756,
+        "y": 0,
+        "z": 15000
+      },
+      "npc_source": "pack",
+      "npc_state": "masked",
+      "npc_parts": 11,
+      "degradations": [],
+      "tick": 2
+    },
+    "indoor_side_masked": {
+      "camera_position": [
+        6.9,
+        0.35,
+        16.8
+      ],
+      "npc_position_mm": {
+        "x": 4756,
+        "y": 0,
+        "z": 15000
+      },
+      "npc_source": "pack",
+      "npc_state": "masked",
+      "npc_parts": 11,
+      "degradations": [],
+      "tick": 2
+    },
+    "default_wide_masked": {
+      "camera_position": [
+        18,
+        14,
+        24
+      ],
+      "npc_position_mm": {
+        "x": 4756,
+        "y": 0,
+        "z": 15000
+      },
+      "npc_source": "pack",
+      "npc_state": "masked",
+      "npc_parts": 11,
+      "degradations": [],
+      "tick": 2
+    },
+    "default_camera_restored": [
+      18,
+      14,
+      24
+    ],
+    "control_generic": {
+      "camera_position": [
+        5,
+        0.35,
+        17.4
+      ],
+      "npc_position_mm": {
+        "x": 4756,
+        "y": 0,
+        "z": 15000
+      },
+      "npc_source": "fallback",
+      "npc_state": "daily",
+      "npc_parts": 10,
+      "degradations": [],
+      "tick": 2
+    },
+    "indoor_masked_driven": {
+      "camera_position": [
+        5,
+        0.35,
+        17.4
+      ],
+      "npc_position_mm": {
+        "x": 5261,
+        "y": 0,
+        "z": 15000
+      },
+      "npc_source": "pack",
+      "npc_state": "masked",
+      "npc_parts": 11,
+      "degradations": [],
+      "tick": 138
+    }
+  },
+  "readings": {
+    "default_wide_daily": {
+      "camera": {
+        "position": [
+          18,
+          14,
+          24
+        ],
+        "quaternion": [
+          -0.29124381474387206,
+          0.21922450358441972,
+          0.06875333830590932,
+          0.928649899517248
+        ],
+        "matrix_world": [
+          894427,
+          0,
+          -447214,
+          0,
+          -255391,
+          820900,
+          -510782,
+          0,
+          367118,
+          571072,
+          734235,
+          0,
+          18000000,
+          14000000,
+          24000000,
+          1000000
+        ],
+        "projection_matrix": [
+          1508883,
+          0,
+          0,
+          0,
+          0,
+          2414214,
+          0,
+          0,
+          0,
+          0,
+          -1000400,
+          -1000000,
+          0,
+          0,
+          -200040,
+          0
+        ],
+        "zoom": 1,
+        "view_offset": null,
+        "fov": 45,
+        "near": 0.1,
+        "far": 500,
+        "aspect": 1.6
+      },
+      "appearance": [
+        {
+          "entity_id": "npc-006",
+          "state_id": "daily",
+          "source": "pack",
+          "degradations": [],
+          "parts": [
+            {
+              "entity_id": "npc-006",
+              "part": "torso",
+              "name": "npc-006",
+              "is_root": true,
+              "parameters": {
+                "width": 0.38,
+                "height": 0.66,
+                "depth": 0.26,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.38,
+                0.66,
+                0.26
+              ],
+              "local_offset": [
+                0,
+                0,
+                0
+              ],
+              "position_attribute_digest": "02718222dcbc5e95",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "arm_l",
+              "name": "npc-006/arm_l",
+              "is_root": false,
+              "parameters": {
+                "width": 0.1,
+                "height": 0.4,
+                "depth": 0.14,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.1,
+                0.4,
+                0.14
+              ],
+              "local_offset": [
+                -0.24,
+                0.08,
+                0
+              ],
+              "position_attribute_digest": "bbd23c48dd21c24d",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "arm_r",
+              "name": "npc-006/arm_r",
+              "is_root": false,
+              "parameters": {
+                "width": 0.1,
+                "height": 0.4,
+                "depth": 0.14,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.1,
+                0.4,
+                0.14
+              ],
+              "local_offset": [
+                0.24,
+                0.08,
+                0
+              ],
+              "position_attribute_digest": "bbd23c48dd21c24d",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "coat",
+              "name": "npc-006/coat",
+              "is_root": false,
+              "parameters": {
+                "width": 0.38,
+                "height": 1.12,
+                "depth": 0.34,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.38,
+                1.12,
+                0.34
+              ],
+              "local_offset": [
+                0,
+                -0.25,
+                -0.05
+              ],
+              "position_attribute_digest": "cb20d111567b5125",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "eyes",
+              "name": "npc-006/eyes",
+              "is_root": false,
+              "parameters": {
+                "width": 0.19,
+                "height": 0.05,
+                "depth": 0.03,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.19,
+                0.05,
+                0.03
+              ],
+              "local_offset": [
+                0,
+                0.53,
+                0.16
+              ],
+              "position_attribute_digest": "90c61711af75f2cd",
+              "vertex_count": 24,
+              "source_hex": "#8b1919",
+              "material_hex": "#751313"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "hair",
+              "name": "npc-006/hair",
+              "is_root": false,
+              "parameters": {
+                "width": 0.58,
+                "height": 0.72,
+                "depth": 0.3,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.58,
+                0.72,
+                0.3
+              ],
+              "local_offset": [
+                0,
+                0.34,
+                -0.015
+              ],
+              "position_attribute_digest": "b2fcdb3c30cdbb65",
+              "vertex_count": 24,
+              "source_hex": "#1c1a19",
+              "material_hex": "#161413"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "head",
+              "name": "npc-006/head",
+              "is_root": false,
+              "parameters": {
+                "width": 0.26,
+                "height": 0.3,
+                "depth": 0.26,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.26,
+                0.3,
+                0.26
+              ],
+              "local_offset": [
+                0,
+                0.49,
+                0.025
+              ],
+              "position_attribute_digest": "fdcaa1107e157e6d",
+              "vertex_count": 24,
+              "source_hex": "#dfd2c8",
+              "material_hex": "#bdb2aa"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "leg_l",
+              "name": "npc-006/leg_l",
+              "is_root": false,
+              "parameters": {
+                "width": 0.17,
+                "height": 0.8,
+                "depth": 0.2,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.17,
+                0.8,
+                0.2
+              ],
+              "local_offset": [
+                -0.11,
+                -0.72,
+                0
+              ],
+              "position_attribute_digest": "a82f4dd30e57aec5",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "leg_r",
+              "name": "npc-006/leg_r",
+              "is_root": false,
+              "parameters": {
+                "width": 0.17,
+                "height": 0.8,
+                "depth": 0.2,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.17,
+                0.8,
+                0.2
+              ],
+              "local_offset": [
+                0.11,
+                -0.72,
+                0
+              ],
+              "position_attribute_digest": "a82f4dd30e57aec5",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "lips",
+              "name": "npc-006/lips",
+              "is_root": false,
+              "parameters": {
+                "width": 0.11,
+                "height": 0.035,
+                "depth": 0.03,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.11,
+                0.035,
+                0.03
+              ],
+              "local_offset": [
+                0,
+                0.43,
+                0.1575
+              ],
+              "position_attribute_digest": "8c8852375a117b2d",
+              "vertex_count": 24,
+              "source_hex": "#a51c24",
+              "material_hex": "#8c161d"
+            }
+          ]
+        }
+      ],
+      "character": [
+        {
+          "entity_id": "npc-006",
+          "part": "torso",
+          "name": "npc-006",
+          "is_root": true,
+          "parameters": {
+            "width": 0.38,
+            "height": 0.66,
+            "depth": 0.26,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.38,
+            0.66,
+            0.26
+          ],
+          "local_offset": [
+            0,
+            0,
+            0
+          ],
+          "position_attribute_digest": "02718222dcbc5e95",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "arm_l",
+          "name": "npc-006/arm_l",
+          "is_root": false,
+          "parameters": {
+            "width": 0.1,
+            "height": 0.4,
+            "depth": 0.14,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.1,
+            0.4,
+            0.14
+          ],
+          "local_offset": [
+            -0.24,
+            0.08,
+            0
+          ],
+          "position_attribute_digest": "bbd23c48dd21c24d",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "arm_r",
+          "name": "npc-006/arm_r",
+          "is_root": false,
+          "parameters": {
+            "width": 0.1,
+            "height": 0.4,
+            "depth": 0.14,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.1,
+            0.4,
+            0.14
+          ],
+          "local_offset": [
+            0.24,
+            0.08,
+            0
+          ],
+          "position_attribute_digest": "bbd23c48dd21c24d",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "coat",
+          "name": "npc-006/coat",
+          "is_root": false,
+          "parameters": {
+            "width": 0.38,
+            "height": 1.12,
+            "depth": 0.34,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.38,
+            1.12,
+            0.34
+          ],
+          "local_offset": [
+            0,
+            -0.25,
+            -0.05
+          ],
+          "position_attribute_digest": "cb20d111567b5125",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "eyes",
+          "name": "npc-006/eyes",
+          "is_root": false,
+          "parameters": {
+            "width": 0.19,
+            "height": 0.05,
+            "depth": 0.03,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.19,
+            0.05,
+            0.03
+          ],
+          "local_offset": [
+            0,
+            0.53,
+            0.16
+          ],
+          "position_attribute_digest": "90c61711af75f2cd",
+          "vertex_count": 24,
+          "source_hex": "#8b1919",
+          "material_hex": "#751313"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "hair",
+          "name": "npc-006/hair",
+          "is_root": false,
+          "parameters": {
+            "width": 0.58,
+            "height": 0.72,
+            "depth": 0.3,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.58,
+            0.72,
+            0.3
+          ],
+          "local_offset": [
+            0,
+            0.34,
+            -0.015
+          ],
+          "position_attribute_digest": "b2fcdb3c30cdbb65",
+          "vertex_count": 24,
+          "source_hex": "#1c1a19",
+          "material_hex": "#161413"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "head",
+          "name": "npc-006/head",
+          "is_root": false,
+          "parameters": {
+            "width": 0.26,
+            "height": 0.3,
+            "depth": 0.26,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.26,
+            0.3,
+            0.26
+          ],
+          "local_offset": [
+            0,
+            0.49,
+            0.025
+          ],
+          "position_attribute_digest": "fdcaa1107e157e6d",
+          "vertex_count": 24,
+          "source_hex": "#dfd2c8",
+          "material_hex": "#bdb2aa"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "leg_l",
+          "name": "npc-006/leg_l",
+          "is_root": false,
+          "parameters": {
+            "width": 0.17,
+            "height": 0.8,
+            "depth": 0.2,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.17,
+            0.8,
+            0.2
+          ],
+          "local_offset": [
+            -0.11,
+            -0.72,
+            0
+          ],
+          "position_attribute_digest": "a82f4dd30e57aec5",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "leg_r",
+          "name": "npc-006/leg_r",
+          "is_root": false,
+          "parameters": {
+            "width": 0.17,
+            "height": 0.8,
+            "depth": 0.2,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.17,
+            0.8,
+            0.2
+          ],
+          "local_offset": [
+            0.11,
+            -0.72,
+            0
+          ],
+          "position_attribute_digest": "a82f4dd30e57aec5",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "lips",
+          "name": "npc-006/lips",
+          "is_root": false,
+          "parameters": {
+            "width": 0.11,
+            "height": 0.035,
+            "depth": 0.03,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.11,
+            0.035,
+            0.03
+          ],
+          "local_offset": [
+            0,
+            0.43,
+            0.1575
+          ],
+          "position_attribute_digest": "8c8852375a117b2d",
+          "vertex_count": 24,
+          "source_hex": "#a51c24",
+          "material_hex": "#8c161d"
+        }
+      ],
+      "viewport": {
+        "client_width": 1440,
+        "client_height": 900,
+        "drawing_buffer_width": 1440,
+        "drawing_buffer_height": 900,
+        "pixel_ratio": 1,
+        "aspect": 1.6,
+        "webgl": true
+      },
+      "entityIds": [
+        "courtyard-01",
+        "gate-north",
+        "kitchen-01",
+        "npc-006",
+        "room-1052"
+      ],
+      "npc_position_mm": {
+        "x": 4756,
+        "y": 0,
+        "z": 15000
+      },
+      "tick": 2
+    },
+    "indoor_daily": {
+      "camera": {
+        "position": [
+          5,
+          0.35,
+          17.4
+        ],
+        "quaternion": [
+          -0.11240035914472371,
+          0,
+          0,
+          0.9936630008529738
+        ],
+        "matrix_world": [
+          1000000,
+          0,
+          0,
+          0,
+          0,
+          974732,
+          -223376,
+          0,
+          0,
+          223376,
+          974732,
+          0,
+          5000000,
+          350000,
+          17400000,
+          1000000
+        ],
+        "projection_matrix": [
+          1508883,
+          0,
+          0,
+          0,
+          0,
+          2414214,
+          0,
+          0,
+          0,
+          0,
+          -1000400,
+          -1000000,
+          0,
+          0,
+          -200040,
+          0
+        ],
+        "zoom": 1,
+        "view_offset": null,
+        "fov": 45,
+        "near": 0.1,
+        "far": 500,
+        "aspect": 1.6
+      },
+      "appearance": [
+        {
+          "entity_id": "npc-006",
+          "state_id": "daily",
+          "source": "pack",
+          "degradations": [],
+          "parts": [
+            {
+              "entity_id": "npc-006",
+              "part": "torso",
+              "name": "npc-006",
+              "is_root": true,
+              "parameters": {
+                "width": 0.38,
+                "height": 0.66,
+                "depth": 0.26,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.38,
+                0.66,
+                0.26
+              ],
+              "local_offset": [
+                0,
+                0,
+                0
+              ],
+              "position_attribute_digest": "02718222dcbc5e95",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "arm_l",
+              "name": "npc-006/arm_l",
+              "is_root": false,
+              "parameters": {
+                "width": 0.1,
+                "height": 0.4,
+                "depth": 0.14,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.1,
+                0.4,
+                0.14
+              ],
+              "local_offset": [
+                -0.24,
+                0.08,
+                0
+              ],
+              "position_attribute_digest": "bbd23c48dd21c24d",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "arm_r",
+              "name": "npc-006/arm_r",
+              "is_root": false,
+              "parameters": {
+                "width": 0.1,
+                "height": 0.4,
+                "depth": 0.14,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.1,
+                0.4,
+                0.14
+              ],
+              "local_offset": [
+                0.24,
+                0.08,
+                0
+              ],
+              "position_attribute_digest": "bbd23c48dd21c24d",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "coat",
+              "name": "npc-006/coat",
+              "is_root": false,
+              "parameters": {
+                "width": 0.38,
+                "height": 1.12,
+                "depth": 0.34,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.38,
+                1.12,
+                0.34
+              ],
+              "local_offset": [
+                0,
+                -0.25,
+                -0.05
+              ],
+              "position_attribute_digest": "cb20d111567b5125",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "eyes",
+              "name": "npc-006/eyes",
+              "is_root": false,
+              "parameters": {
+                "width": 0.19,
+                "height": 0.05,
+                "depth": 0.03,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.19,
+                0.05,
+                0.03
+              ],
+              "local_offset": [
+                0,
+                0.53,
+                0.16
+              ],
+              "position_attribute_digest": "90c61711af75f2cd",
+              "vertex_count": 24,
+              "source_hex": "#8b1919",
+              "material_hex": "#751313"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "hair",
+              "name": "npc-006/hair",
+              "is_root": false,
+              "parameters": {
+                "width": 0.58,
+                "height": 0.72,
+                "depth": 0.3,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.58,
+                0.72,
+                0.3
+              ],
+              "local_offset": [
+                0,
+                0.34,
+                -0.015
+              ],
+              "position_attribute_digest": "b2fcdb3c30cdbb65",
+              "vertex_count": 24,
+              "source_hex": "#1c1a19",
+              "material_hex": "#161413"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "head",
+              "name": "npc-006/head",
+              "is_root": false,
+              "parameters": {
+                "width": 0.26,
+                "height": 0.3,
+                "depth": 0.26,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.26,
+                0.3,
+                0.26
+              ],
+              "local_offset": [
+                0,
+                0.49,
+                0.025
+              ],
+              "position_attribute_digest": "fdcaa1107e157e6d",
+              "vertex_count": 24,
+              "source_hex": "#dfd2c8",
+              "material_hex": "#bdb2aa"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "leg_l",
+              "name": "npc-006/leg_l",
+              "is_root": false,
+              "parameters": {
+                "width": 0.17,
+                "height": 0.8,
+                "depth": 0.2,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.17,
+                0.8,
+                0.2
+              ],
+              "local_offset": [
+                -0.11,
+                -0.72,
+                0
+              ],
+              "position_attribute_digest": "a82f4dd30e57aec5",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "leg_r",
+              "name": "npc-006/leg_r",
+              "is_root": false,
+              "parameters": {
+                "width": 0.17,
+                "height": 0.8,
+                "depth": 0.2,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.17,
+                0.8,
+                0.2
+              ],
+              "local_offset": [
+                0.11,
+                -0.72,
+                0
+              ],
+              "position_attribute_digest": "a82f4dd30e57aec5",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "lips",
+              "name": "npc-006/lips",
+              "is_root": false,
+              "parameters": {
+                "width": 0.11,
+                "height": 0.035,
+                "depth": 0.03,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.11,
+                0.035,
+                0.03
+              ],
+              "local_offset": [
+                0,
+                0.43,
+                0.1575
+              ],
+              "position_attribute_digest": "8c8852375a117b2d",
+              "vertex_count": 24,
+              "source_hex": "#a51c24",
+              "material_hex": "#8c161d"
+            }
+          ]
+        }
+      ],
+      "character": [
+        {
+          "entity_id": "npc-006",
+          "part": "torso",
+          "name": "npc-006",
+          "is_root": true,
+          "parameters": {
+            "width": 0.38,
+            "height": 0.66,
+            "depth": 0.26,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.38,
+            0.66,
+            0.26
+          ],
+          "local_offset": [
+            0,
+            0,
+            0
+          ],
+          "position_attribute_digest": "02718222dcbc5e95",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "arm_l",
+          "name": "npc-006/arm_l",
+          "is_root": false,
+          "parameters": {
+            "width": 0.1,
+            "height": 0.4,
+            "depth": 0.14,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.1,
+            0.4,
+            0.14
+          ],
+          "local_offset": [
+            -0.24,
+            0.08,
+            0
+          ],
+          "position_attribute_digest": "bbd23c48dd21c24d",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "arm_r",
+          "name": "npc-006/arm_r",
+          "is_root": false,
+          "parameters": {
+            "width": 0.1,
+            "height": 0.4,
+            "depth": 0.14,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.1,
+            0.4,
+            0.14
+          ],
+          "local_offset": [
+            0.24,
+            0.08,
+            0
+          ],
+          "position_attribute_digest": "bbd23c48dd21c24d",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "coat",
+          "name": "npc-006/coat",
+          "is_root": false,
+          "parameters": {
+            "width": 0.38,
+            "height": 1.12,
+            "depth": 0.34,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.38,
+            1.12,
+            0.34
+          ],
+          "local_offset": [
+            0,
+            -0.25,
+            -0.05
+          ],
+          "position_attribute_digest": "cb20d111567b5125",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "eyes",
+          "name": "npc-006/eyes",
+          "is_root": false,
+          "parameters": {
+            "width": 0.19,
+            "height": 0.05,
+            "depth": 0.03,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.19,
+            0.05,
+            0.03
+          ],
+          "local_offset": [
+            0,
+            0.53,
+            0.16
+          ],
+          "position_attribute_digest": "90c61711af75f2cd",
+          "vertex_count": 24,
+          "source_hex": "#8b1919",
+          "material_hex": "#751313"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "hair",
+          "name": "npc-006/hair",
+          "is_root": false,
+          "parameters": {
+            "width": 0.58,
+            "height": 0.72,
+            "depth": 0.3,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.58,
+            0.72,
+            0.3
+          ],
+          "local_offset": [
+            0,
+            0.34,
+            -0.015
+          ],
+          "position_attribute_digest": "b2fcdb3c30cdbb65",
+          "vertex_count": 24,
+          "source_hex": "#1c1a19",
+          "material_hex": "#161413"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "head",
+          "name": "npc-006/head",
+          "is_root": false,
+          "parameters": {
+            "width": 0.26,
+            "height": 0.3,
+            "depth": 0.26,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.26,
+            0.3,
+            0.26
+          ],
+          "local_offset": [
+            0,
+            0.49,
+            0.025
+          ],
+          "position_attribute_digest": "fdcaa1107e157e6d",
+          "vertex_count": 24,
+          "source_hex": "#dfd2c8",
+          "material_hex": "#bdb2aa"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "leg_l",
+          "name": "npc-006/leg_l",
+          "is_root": false,
+          "parameters": {
+            "width": 0.17,
+            "height": 0.8,
+            "depth": 0.2,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.17,
+            0.8,
+            0.2
+          ],
+          "local_offset": [
+            -0.11,
+            -0.72,
+            0
+          ],
+          "position_attribute_digest": "a82f4dd30e57aec5",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "leg_r",
+          "name": "npc-006/leg_r",
+          "is_root": false,
+          "parameters": {
+            "width": 0.17,
+            "height": 0.8,
+            "depth": 0.2,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.17,
+            0.8,
+            0.2
+          ],
+          "local_offset": [
+            0.11,
+            -0.72,
+            0
+          ],
+          "position_attribute_digest": "a82f4dd30e57aec5",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "lips",
+          "name": "npc-006/lips",
+          "is_root": false,
+          "parameters": {
+            "width": 0.11,
+            "height": 0.035,
+            "depth": 0.03,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.11,
+            0.035,
+            0.03
+          ],
+          "local_offset": [
+            0,
+            0.43,
+            0.1575
+          ],
+          "position_attribute_digest": "8c8852375a117b2d",
+          "vertex_count": 24,
+          "source_hex": "#a51c24",
+          "material_hex": "#8c161d"
+        }
+      ],
+      "viewport": {
+        "client_width": 1440,
+        "client_height": 900,
+        "drawing_buffer_width": 1440,
+        "drawing_buffer_height": 900,
+        "pixel_ratio": 1,
+        "aspect": 1.6,
+        "webgl": true
+      },
+      "entityIds": [
+        "courtyard-01",
+        "gate-north",
+        "kitchen-01",
+        "npc-006",
+        "room-1052"
+      ],
+      "npc_position_mm": {
+        "x": 4756,
+        "y": 0,
+        "z": 15000
+      },
+      "tick": 2
+    },
+    "indoor_closeup_daily": {
+      "camera": {
+        "position": [
+          4.756,
+          0.58,
+          15.95
+        ],
+        "quaternion": [
+          -0.0716646466399096,
+          0,
+          0,
+          0.9974287836341886
+        ],
+        "matrix_world": [
+          1000000,
+          0,
+          0,
+          0,
+          0,
+          989728,
+          -142961,
+          0,
+          0,
+          142961,
+          989728,
+          0,
+          4756000,
+          580000,
+          15950000,
+          1000000
+        ],
+        "projection_matrix": [
+          1508883,
+          0,
+          0,
+          0,
+          0,
+          2414214,
+          0,
+          0,
+          0,
+          0,
+          -1000400,
+          -1000000,
+          0,
+          0,
+          -200040,
+          0
+        ],
+        "zoom": 1,
+        "view_offset": null,
+        "fov": 45,
+        "near": 0.1,
+        "far": 500,
+        "aspect": 1.6
+      },
+      "appearance": [
+        {
+          "entity_id": "npc-006",
+          "state_id": "daily",
+          "source": "pack",
+          "degradations": [],
+          "parts": [
+            {
+              "entity_id": "npc-006",
+              "part": "torso",
+              "name": "npc-006",
+              "is_root": true,
+              "parameters": {
+                "width": 0.38,
+                "height": 0.66,
+                "depth": 0.26,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.38,
+                0.66,
+                0.26
+              ],
+              "local_offset": [
+                0,
+                0,
+                0
+              ],
+              "position_attribute_digest": "02718222dcbc5e95",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "arm_l",
+              "name": "npc-006/arm_l",
+              "is_root": false,
+              "parameters": {
+                "width": 0.1,
+                "height": 0.4,
+                "depth": 0.14,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.1,
+                0.4,
+                0.14
+              ],
+              "local_offset": [
+                -0.24,
+                0.08,
+                0
+              ],
+              "position_attribute_digest": "bbd23c48dd21c24d",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "arm_r",
+              "name": "npc-006/arm_r",
+              "is_root": false,
+              "parameters": {
+                "width": 0.1,
+                "height": 0.4,
+                "depth": 0.14,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.1,
+                0.4,
+                0.14
+              ],
+              "local_offset": [
+                0.24,
+                0.08,
+                0
+              ],
+              "position_attribute_digest": "bbd23c48dd21c24d",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "coat",
+              "name": "npc-006/coat",
+              "is_root": false,
+              "parameters": {
+                "width": 0.38,
+                "height": 1.12,
+                "depth": 0.34,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.38,
+                1.12,
+                0.34
+              ],
+              "local_offset": [
+                0,
+                -0.25,
+                -0.05
+              ],
+              "position_attribute_digest": "cb20d111567b5125",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "eyes",
+              "name": "npc-006/eyes",
+              "is_root": false,
+              "parameters": {
+                "width": 0.19,
+                "height": 0.05,
+                "depth": 0.03,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.19,
+                0.05,
+                0.03
+              ],
+              "local_offset": [
+                0,
+                0.53,
+                0.16
+              ],
+              "position_attribute_digest": "90c61711af75f2cd",
+              "vertex_count": 24,
+              "source_hex": "#8b1919",
+              "material_hex": "#751313"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "hair",
+              "name": "npc-006/hair",
+              "is_root": false,
+              "parameters": {
+                "width": 0.58,
+                "height": 0.72,
+                "depth": 0.3,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.58,
+                0.72,
+                0.3
+              ],
+              "local_offset": [
+                0,
+                0.34,
+                -0.015
+              ],
+              "position_attribute_digest": "b2fcdb3c30cdbb65",
+              "vertex_count": 24,
+              "source_hex": "#1c1a19",
+              "material_hex": "#161413"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "head",
+              "name": "npc-006/head",
+              "is_root": false,
+              "parameters": {
+                "width": 0.26,
+                "height": 0.3,
+                "depth": 0.26,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.26,
+                0.3,
+                0.26
+              ],
+              "local_offset": [
+                0,
+                0.49,
+                0.025
+              ],
+              "position_attribute_digest": "fdcaa1107e157e6d",
+              "vertex_count": 24,
+              "source_hex": "#dfd2c8",
+              "material_hex": "#bdb2aa"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "leg_l",
+              "name": "npc-006/leg_l",
+              "is_root": false,
+              "parameters": {
+                "width": 0.17,
+                "height": 0.8,
+                "depth": 0.2,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.17,
+                0.8,
+                0.2
+              ],
+              "local_offset": [
+                -0.11,
+                -0.72,
+                0
+              ],
+              "position_attribute_digest": "a82f4dd30e57aec5",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "leg_r",
+              "name": "npc-006/leg_r",
+              "is_root": false,
+              "parameters": {
+                "width": 0.17,
+                "height": 0.8,
+                "depth": 0.2,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.17,
+                0.8,
+                0.2
+              ],
+              "local_offset": [
+                0.11,
+                -0.72,
+                0
+              ],
+              "position_attribute_digest": "a82f4dd30e57aec5",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "lips",
+              "name": "npc-006/lips",
+              "is_root": false,
+              "parameters": {
+                "width": 0.11,
+                "height": 0.035,
+                "depth": 0.03,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.11,
+                0.035,
+                0.03
+              ],
+              "local_offset": [
+                0,
+                0.43,
+                0.1575
+              ],
+              "position_attribute_digest": "8c8852375a117b2d",
+              "vertex_count": 24,
+              "source_hex": "#a51c24",
+              "material_hex": "#8c161d"
+            }
+          ]
+        }
+      ],
+      "character": [
+        {
+          "entity_id": "npc-006",
+          "part": "torso",
+          "name": "npc-006",
+          "is_root": true,
+          "parameters": {
+            "width": 0.38,
+            "height": 0.66,
+            "depth": 0.26,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.38,
+            0.66,
+            0.26
+          ],
+          "local_offset": [
+            0,
+            0,
+            0
+          ],
+          "position_attribute_digest": "02718222dcbc5e95",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "arm_l",
+          "name": "npc-006/arm_l",
+          "is_root": false,
+          "parameters": {
+            "width": 0.1,
+            "height": 0.4,
+            "depth": 0.14,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.1,
+            0.4,
+            0.14
+          ],
+          "local_offset": [
+            -0.24,
+            0.08,
+            0
+          ],
+          "position_attribute_digest": "bbd23c48dd21c24d",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "arm_r",
+          "name": "npc-006/arm_r",
+          "is_root": false,
+          "parameters": {
+            "width": 0.1,
+            "height": 0.4,
+            "depth": 0.14,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.1,
+            0.4,
+            0.14
+          ],
+          "local_offset": [
+            0.24,
+            0.08,
+            0
+          ],
+          "position_attribute_digest": "bbd23c48dd21c24d",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "coat",
+          "name": "npc-006/coat",
+          "is_root": false,
+          "parameters": {
+            "width": 0.38,
+            "height": 1.12,
+            "depth": 0.34,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.38,
+            1.12,
+            0.34
+          ],
+          "local_offset": [
+            0,
+            -0.25,
+            -0.05
+          ],
+          "position_attribute_digest": "cb20d111567b5125",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "eyes",
+          "name": "npc-006/eyes",
+          "is_root": false,
+          "parameters": {
+            "width": 0.19,
+            "height": 0.05,
+            "depth": 0.03,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.19,
+            0.05,
+            0.03
+          ],
+          "local_offset": [
+            0,
+            0.53,
+            0.16
+          ],
+          "position_attribute_digest": "90c61711af75f2cd",
+          "vertex_count": 24,
+          "source_hex": "#8b1919",
+          "material_hex": "#751313"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "hair",
+          "name": "npc-006/hair",
+          "is_root": false,
+          "parameters": {
+            "width": 0.58,
+            "height": 0.72,
+            "depth": 0.3,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.58,
+            0.72,
+            0.3
+          ],
+          "local_offset": [
+            0,
+            0.34,
+            -0.015
+          ],
+          "position_attribute_digest": "b2fcdb3c30cdbb65",
+          "vertex_count": 24,
+          "source_hex": "#1c1a19",
+          "material_hex": "#161413"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "head",
+          "name": "npc-006/head",
+          "is_root": false,
+          "parameters": {
+            "width": 0.26,
+            "height": 0.3,
+            "depth": 0.26,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.26,
+            0.3,
+            0.26
+          ],
+          "local_offset": [
+            0,
+            0.49,
+            0.025
+          ],
+          "position_attribute_digest": "fdcaa1107e157e6d",
+          "vertex_count": 24,
+          "source_hex": "#dfd2c8",
+          "material_hex": "#bdb2aa"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "leg_l",
+          "name": "npc-006/leg_l",
+          "is_root": false,
+          "parameters": {
+            "width": 0.17,
+            "height": 0.8,
+            "depth": 0.2,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.17,
+            0.8,
+            0.2
+          ],
+          "local_offset": [
+            -0.11,
+            -0.72,
+            0
+          ],
+          "position_attribute_digest": "a82f4dd30e57aec5",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "leg_r",
+          "name": "npc-006/leg_r",
+          "is_root": false,
+          "parameters": {
+            "width": 0.17,
+            "height": 0.8,
+            "depth": 0.2,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.17,
+            0.8,
+            0.2
+          ],
+          "local_offset": [
+            0.11,
+            -0.72,
+            0
+          ],
+          "position_attribute_digest": "a82f4dd30e57aec5",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "lips",
+          "name": "npc-006/lips",
+          "is_root": false,
+          "parameters": {
+            "width": 0.11,
+            "height": 0.035,
+            "depth": 0.03,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.11,
+            0.035,
+            0.03
+          ],
+          "local_offset": [
+            0,
+            0.43,
+            0.1575
+          ],
+          "position_attribute_digest": "8c8852375a117b2d",
+          "vertex_count": 24,
+          "source_hex": "#a51c24",
+          "material_hex": "#8c161d"
+        }
+      ],
+      "viewport": {
+        "client_width": 1440,
+        "client_height": 900,
+        "drawing_buffer_width": 1440,
+        "drawing_buffer_height": 900,
+        "pixel_ratio": 1,
+        "aspect": 1.6,
+        "webgl": true
+      },
+      "entityIds": [
+        "courtyard-01",
+        "gate-north",
+        "kitchen-01",
+        "npc-006",
+        "room-1052"
+      ],
+      "npc_position_mm": {
+        "x": 4756,
+        "y": 0,
+        "z": 15000
+      },
+      "tick": 2
+    },
+    "indoor_side_daily": {
+      "camera": {
+        "position": [
+          6.9,
+          0.35,
+          16.8
+        ],
+        "quaternion": [
+          -0.0756003923072085,
+          0.4054429603229639,
+          0.033669572514759,
+          0.9103663803624458
+        ],
+        "matrix_world": [
+          668965,
+          0,
+          -743294,
+          0,
+          -122607,
+          986302,
+          -110346,
+          0,
+          733112,
+          164950,
+          659801,
+          0,
+          6900000,
+          350000,
+          16800000,
+          1000000
+        ],
+        "projection_matrix": [
+          1508883,
+          0,
+          0,
+          0,
+          0,
+          2414214,
+          0,
+          0,
+          0,
+          0,
+          -1000400,
+          -1000000,
+          0,
+          0,
+          -200040,
+          0
+        ],
+        "zoom": 1,
+        "view_offset": null,
+        "fov": 45,
+        "near": 0.1,
+        "far": 500,
+        "aspect": 1.6
+      },
+      "appearance": [
+        {
+          "entity_id": "npc-006",
+          "state_id": "daily",
+          "source": "pack",
+          "degradations": [],
+          "parts": [
+            {
+              "entity_id": "npc-006",
+              "part": "torso",
+              "name": "npc-006",
+              "is_root": true,
+              "parameters": {
+                "width": 0.38,
+                "height": 0.66,
+                "depth": 0.26,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.38,
+                0.66,
+                0.26
+              ],
+              "local_offset": [
+                0,
+                0,
+                0
+              ],
+              "position_attribute_digest": "02718222dcbc5e95",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "arm_l",
+              "name": "npc-006/arm_l",
+              "is_root": false,
+              "parameters": {
+                "width": 0.1,
+                "height": 0.4,
+                "depth": 0.14,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.1,
+                0.4,
+                0.14
+              ],
+              "local_offset": [
+                -0.24,
+                0.08,
+                0
+              ],
+              "position_attribute_digest": "bbd23c48dd21c24d",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "arm_r",
+              "name": "npc-006/arm_r",
+              "is_root": false,
+              "parameters": {
+                "width": 0.1,
+                "height": 0.4,
+                "depth": 0.14,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.1,
+                0.4,
+                0.14
+              ],
+              "local_offset": [
+                0.24,
+                0.08,
+                0
+              ],
+              "position_attribute_digest": "bbd23c48dd21c24d",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "coat",
+              "name": "npc-006/coat",
+              "is_root": false,
+              "parameters": {
+                "width": 0.38,
+                "height": 1.12,
+                "depth": 0.34,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.38,
+                1.12,
+                0.34
+              ],
+              "local_offset": [
+                0,
+                -0.25,
+                -0.05
+              ],
+              "position_attribute_digest": "cb20d111567b5125",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "eyes",
+              "name": "npc-006/eyes",
+              "is_root": false,
+              "parameters": {
+                "width": 0.19,
+                "height": 0.05,
+                "depth": 0.03,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.19,
+                0.05,
+                0.03
+              ],
+              "local_offset": [
+                0,
+                0.53,
+                0.16
+              ],
+              "position_attribute_digest": "90c61711af75f2cd",
+              "vertex_count": 24,
+              "source_hex": "#8b1919",
+              "material_hex": "#751313"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "hair",
+              "name": "npc-006/hair",
+              "is_root": false,
+              "parameters": {
+                "width": 0.58,
+                "height": 0.72,
+                "depth": 0.3,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.58,
+                0.72,
+                0.3
+              ],
+              "local_offset": [
+                0,
+                0.34,
+                -0.015
+              ],
+              "position_attribute_digest": "b2fcdb3c30cdbb65",
+              "vertex_count": 24,
+              "source_hex": "#1c1a19",
+              "material_hex": "#161413"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "head",
+              "name": "npc-006/head",
+              "is_root": false,
+              "parameters": {
+                "width": 0.26,
+                "height": 0.3,
+                "depth": 0.26,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.26,
+                0.3,
+                0.26
+              ],
+              "local_offset": [
+                0,
+                0.49,
+                0.025
+              ],
+              "position_attribute_digest": "fdcaa1107e157e6d",
+              "vertex_count": 24,
+              "source_hex": "#dfd2c8",
+              "material_hex": "#bdb2aa"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "leg_l",
+              "name": "npc-006/leg_l",
+              "is_root": false,
+              "parameters": {
+                "width": 0.17,
+                "height": 0.8,
+                "depth": 0.2,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.17,
+                0.8,
+                0.2
+              ],
+              "local_offset": [
+                -0.11,
+                -0.72,
+                0
+              ],
+              "position_attribute_digest": "a82f4dd30e57aec5",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "leg_r",
+              "name": "npc-006/leg_r",
+              "is_root": false,
+              "parameters": {
+                "width": 0.17,
+                "height": 0.8,
+                "depth": 0.2,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.17,
+                0.8,
+                0.2
+              ],
+              "local_offset": [
+                0.11,
+                -0.72,
+                0
+              ],
+              "position_attribute_digest": "a82f4dd30e57aec5",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "lips",
+              "name": "npc-006/lips",
+              "is_root": false,
+              "parameters": {
+                "width": 0.11,
+                "height": 0.035,
+                "depth": 0.03,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.11,
+                0.035,
+                0.03
+              ],
+              "local_offset": [
+                0,
+                0.43,
+                0.1575
+              ],
+              "position_attribute_digest": "8c8852375a117b2d",
+              "vertex_count": 24,
+              "source_hex": "#a51c24",
+              "material_hex": "#8c161d"
+            }
+          ]
+        }
+      ],
+      "character": [
+        {
+          "entity_id": "npc-006",
+          "part": "torso",
+          "name": "npc-006",
+          "is_root": true,
+          "parameters": {
+            "width": 0.38,
+            "height": 0.66,
+            "depth": 0.26,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.38,
+            0.66,
+            0.26
+          ],
+          "local_offset": [
+            0,
+            0,
+            0
+          ],
+          "position_attribute_digest": "02718222dcbc5e95",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "arm_l",
+          "name": "npc-006/arm_l",
+          "is_root": false,
+          "parameters": {
+            "width": 0.1,
+            "height": 0.4,
+            "depth": 0.14,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.1,
+            0.4,
+            0.14
+          ],
+          "local_offset": [
+            -0.24,
+            0.08,
+            0
+          ],
+          "position_attribute_digest": "bbd23c48dd21c24d",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "arm_r",
+          "name": "npc-006/arm_r",
+          "is_root": false,
+          "parameters": {
+            "width": 0.1,
+            "height": 0.4,
+            "depth": 0.14,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.1,
+            0.4,
+            0.14
+          ],
+          "local_offset": [
+            0.24,
+            0.08,
+            0
+          ],
+          "position_attribute_digest": "bbd23c48dd21c24d",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "coat",
+          "name": "npc-006/coat",
+          "is_root": false,
+          "parameters": {
+            "width": 0.38,
+            "height": 1.12,
+            "depth": 0.34,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.38,
+            1.12,
+            0.34
+          ],
+          "local_offset": [
+            0,
+            -0.25,
+            -0.05
+          ],
+          "position_attribute_digest": "cb20d111567b5125",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "eyes",
+          "name": "npc-006/eyes",
+          "is_root": false,
+          "parameters": {
+            "width": 0.19,
+            "height": 0.05,
+            "depth": 0.03,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.19,
+            0.05,
+            0.03
+          ],
+          "local_offset": [
+            0,
+            0.53,
+            0.16
+          ],
+          "position_attribute_digest": "90c61711af75f2cd",
+          "vertex_count": 24,
+          "source_hex": "#8b1919",
+          "material_hex": "#751313"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "hair",
+          "name": "npc-006/hair",
+          "is_root": false,
+          "parameters": {
+            "width": 0.58,
+            "height": 0.72,
+            "depth": 0.3,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.58,
+            0.72,
+            0.3
+          ],
+          "local_offset": [
+            0,
+            0.34,
+            -0.015
+          ],
+          "position_attribute_digest": "b2fcdb3c30cdbb65",
+          "vertex_count": 24,
+          "source_hex": "#1c1a19",
+          "material_hex": "#161413"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "head",
+          "name": "npc-006/head",
+          "is_root": false,
+          "parameters": {
+            "width": 0.26,
+            "height": 0.3,
+            "depth": 0.26,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.26,
+            0.3,
+            0.26
+          ],
+          "local_offset": [
+            0,
+            0.49,
+            0.025
+          ],
+          "position_attribute_digest": "fdcaa1107e157e6d",
+          "vertex_count": 24,
+          "source_hex": "#dfd2c8",
+          "material_hex": "#bdb2aa"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "leg_l",
+          "name": "npc-006/leg_l",
+          "is_root": false,
+          "parameters": {
+            "width": 0.17,
+            "height": 0.8,
+            "depth": 0.2,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.17,
+            0.8,
+            0.2
+          ],
+          "local_offset": [
+            -0.11,
+            -0.72,
+            0
+          ],
+          "position_attribute_digest": "a82f4dd30e57aec5",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "leg_r",
+          "name": "npc-006/leg_r",
+          "is_root": false,
+          "parameters": {
+            "width": 0.17,
+            "height": 0.8,
+            "depth": 0.2,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.17,
+            0.8,
+            0.2
+          ],
+          "local_offset": [
+            0.11,
+            -0.72,
+            0
+          ],
+          "position_attribute_digest": "a82f4dd30e57aec5",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "lips",
+          "name": "npc-006/lips",
+          "is_root": false,
+          "parameters": {
+            "width": 0.11,
+            "height": 0.035,
+            "depth": 0.03,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.11,
+            0.035,
+            0.03
+          ],
+          "local_offset": [
+            0,
+            0.43,
+            0.1575
+          ],
+          "position_attribute_digest": "8c8852375a117b2d",
+          "vertex_count": 24,
+          "source_hex": "#a51c24",
+          "material_hex": "#8c161d"
+        }
+      ],
+      "viewport": {
+        "client_width": 1440,
+        "client_height": 900,
+        "drawing_buffer_width": 1440,
+        "drawing_buffer_height": 900,
+        "pixel_ratio": 1,
+        "aspect": 1.6,
+        "webgl": true
+      },
+      "entityIds": [
+        "courtyard-01",
+        "gate-north",
+        "kitchen-01",
+        "npc-006",
+        "room-1052"
+      ],
+      "npc_position_mm": {
+        "x": 4756,
+        "y": 0,
+        "z": 15000
+      },
+      "tick": 2
+    },
+    "indoor_closeup_masked": {
+      "camera": {
+        "position": [
+          4.756,
+          0.58,
+          15.95
+        ],
+        "quaternion": [
+          -0.0716646466399096,
+          0,
+          0,
+          0.9974287836341886
+        ],
+        "matrix_world": [
+          1000000,
+          0,
+          0,
+          0,
+          0,
+          989728,
+          -142961,
+          0,
+          0,
+          142961,
+          989728,
+          0,
+          4756000,
+          580000,
+          15950000,
+          1000000
+        ],
+        "projection_matrix": [
+          1508883,
+          0,
+          0,
+          0,
+          0,
+          2414214,
+          0,
+          0,
+          0,
+          0,
+          -1000400,
+          -1000000,
+          0,
+          0,
+          -200040,
+          0
+        ],
+        "zoom": 1,
+        "view_offset": null,
+        "fov": 45,
+        "near": 0.1,
+        "far": 500,
+        "aspect": 1.6
+      },
+      "appearance": [
+        {
+          "entity_id": "npc-006",
+          "state_id": "masked",
+          "source": "pack",
+          "degradations": [],
+          "parts": [
+            {
+              "entity_id": "npc-006",
+              "part": "torso",
+              "name": "npc-006",
+              "is_root": true,
+              "parameters": {
+                "width": 0.38,
+                "height": 0.66,
+                "depth": 0.26,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.38,
+                0.66,
+                0.26
+              ],
+              "local_offset": [
+                0,
+                0,
+                0
+              ],
+              "position_attribute_digest": "02718222dcbc5e95",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "arm_l",
+              "name": "npc-006/arm_l",
+              "is_root": false,
+              "parameters": {
+                "width": 0.1,
+                "height": 0.4,
+                "depth": 0.14,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.1,
+                0.4,
+                0.14
+              ],
+              "local_offset": [
+                -0.24,
+                0.08,
+                0
+              ],
+              "position_attribute_digest": "bbd23c48dd21c24d",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "arm_r",
+              "name": "npc-006/arm_r",
+              "is_root": false,
+              "parameters": {
+                "width": 0.1,
+                "height": 0.4,
+                "depth": 0.14,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.1,
+                0.4,
+                0.14
+              ],
+              "local_offset": [
+                0.24,
+                0.08,
+                0
+              ],
+              "position_attribute_digest": "bbd23c48dd21c24d",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "coat",
+              "name": "npc-006/coat",
+              "is_root": false,
+              "parameters": {
+                "width": 0.38,
+                "height": 1.12,
+                "depth": 0.34,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.38,
+                1.12,
+                0.34
+              ],
+              "local_offset": [
+                0,
+                -0.25,
+                -0.05
+              ],
+              "position_attribute_digest": "cb20d111567b5125",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "eyes",
+              "name": "npc-006/eyes",
+              "is_root": false,
+              "parameters": {
+                "width": 0.19,
+                "height": 0.05,
+                "depth": 0.03,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.19,
+                0.05,
+                0.03
+              ],
+              "local_offset": [
+                0,
+                0.53,
+                0.16
+              ],
+              "position_attribute_digest": "90c61711af75f2cd",
+              "vertex_count": 24,
+              "source_hex": "#8b1919",
+              "material_hex": "#751313"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "hair",
+              "name": "npc-006/hair",
+              "is_root": false,
+              "parameters": {
+                "width": 0.58,
+                "height": 0.72,
+                "depth": 0.3,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.58,
+                0.72,
+                0.3
+              ],
+              "local_offset": [
+                0,
+                0.34,
+                -0.015
+              ],
+              "position_attribute_digest": "b2fcdb3c30cdbb65",
+              "vertex_count": 24,
+              "source_hex": "#1c1a19",
+              "material_hex": "#161413"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "head",
+              "name": "npc-006/head",
+              "is_root": false,
+              "parameters": {
+                "width": 0.26,
+                "height": 0.3,
+                "depth": 0.26,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.26,
+                0.3,
+                0.26
+              ],
+              "local_offset": [
+                0,
+                0.49,
+                0.025
+              ],
+              "position_attribute_digest": "fdcaa1107e157e6d",
+              "vertex_count": 24,
+              "source_hex": "#dfd2c8",
+              "material_hex": "#bdb2aa"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "leg_l",
+              "name": "npc-006/leg_l",
+              "is_root": false,
+              "parameters": {
+                "width": 0.17,
+                "height": 0.8,
+                "depth": 0.2,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.17,
+                0.8,
+                0.2
+              ],
+              "local_offset": [
+                -0.11,
+                -0.72,
+                0
+              ],
+              "position_attribute_digest": "a82f4dd30e57aec5",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "leg_r",
+              "name": "npc-006/leg_r",
+              "is_root": false,
+              "parameters": {
+                "width": 0.17,
+                "height": 0.8,
+                "depth": 0.2,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.17,
+                0.8,
+                0.2
+              ],
+              "local_offset": [
+                0.11,
+                -0.72,
+                0
+              ],
+              "position_attribute_digest": "a82f4dd30e57aec5",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "lips",
+              "name": "npc-006/lips",
+              "is_root": false,
+              "parameters": {
+                "width": 0.11,
+                "height": 0.035,
+                "depth": 0.03,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.11,
+                0.035,
+                0.03
+              ],
+              "local_offset": [
+                0,
+                0.43,
+                0.1575
+              ],
+              "position_attribute_digest": "8c8852375a117b2d",
+              "vertex_count": 24,
+              "source_hex": "#a51c24",
+              "material_hex": "#8c161d"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "mask",
+              "name": "npc-006/mask",
+              "is_root": false,
+              "parameters": {
+                "width": 0.24,
+                "height": 0.16,
+                "depth": 0.05,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.24,
+                0.16,
+                0.05
+              ],
+              "local_offset": [
+                0,
+                0.565,
+                0.17
+              ],
+              "position_attribute_digest": "c8ac01d8be6210e5",
+              "vertex_count": 24,
+              "source_hex": "#e9e4dc",
+              "material_hex": "#c6c2bb"
+            }
+          ]
+        }
+      ],
+      "character": [
+        {
+          "entity_id": "npc-006",
+          "part": "torso",
+          "name": "npc-006",
+          "is_root": true,
+          "parameters": {
+            "width": 0.38,
+            "height": 0.66,
+            "depth": 0.26,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.38,
+            0.66,
+            0.26
+          ],
+          "local_offset": [
+            0,
+            0,
+            0
+          ],
+          "position_attribute_digest": "02718222dcbc5e95",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "arm_l",
+          "name": "npc-006/arm_l",
+          "is_root": false,
+          "parameters": {
+            "width": 0.1,
+            "height": 0.4,
+            "depth": 0.14,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.1,
+            0.4,
+            0.14
+          ],
+          "local_offset": [
+            -0.24,
+            0.08,
+            0
+          ],
+          "position_attribute_digest": "bbd23c48dd21c24d",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "arm_r",
+          "name": "npc-006/arm_r",
+          "is_root": false,
+          "parameters": {
+            "width": 0.1,
+            "height": 0.4,
+            "depth": 0.14,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.1,
+            0.4,
+            0.14
+          ],
+          "local_offset": [
+            0.24,
+            0.08,
+            0
+          ],
+          "position_attribute_digest": "bbd23c48dd21c24d",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "coat",
+          "name": "npc-006/coat",
+          "is_root": false,
+          "parameters": {
+            "width": 0.38,
+            "height": 1.12,
+            "depth": 0.34,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.38,
+            1.12,
+            0.34
+          ],
+          "local_offset": [
+            0,
+            -0.25,
+            -0.05
+          ],
+          "position_attribute_digest": "cb20d111567b5125",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "eyes",
+          "name": "npc-006/eyes",
+          "is_root": false,
+          "parameters": {
+            "width": 0.19,
+            "height": 0.05,
+            "depth": 0.03,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.19,
+            0.05,
+            0.03
+          ],
+          "local_offset": [
+            0,
+            0.53,
+            0.16
+          ],
+          "position_attribute_digest": "90c61711af75f2cd",
+          "vertex_count": 24,
+          "source_hex": "#8b1919",
+          "material_hex": "#751313"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "hair",
+          "name": "npc-006/hair",
+          "is_root": false,
+          "parameters": {
+            "width": 0.58,
+            "height": 0.72,
+            "depth": 0.3,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.58,
+            0.72,
+            0.3
+          ],
+          "local_offset": [
+            0,
+            0.34,
+            -0.015
+          ],
+          "position_attribute_digest": "b2fcdb3c30cdbb65",
+          "vertex_count": 24,
+          "source_hex": "#1c1a19",
+          "material_hex": "#161413"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "head",
+          "name": "npc-006/head",
+          "is_root": false,
+          "parameters": {
+            "width": 0.26,
+            "height": 0.3,
+            "depth": 0.26,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.26,
+            0.3,
+            0.26
+          ],
+          "local_offset": [
+            0,
+            0.49,
+            0.025
+          ],
+          "position_attribute_digest": "fdcaa1107e157e6d",
+          "vertex_count": 24,
+          "source_hex": "#dfd2c8",
+          "material_hex": "#bdb2aa"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "leg_l",
+          "name": "npc-006/leg_l",
+          "is_root": false,
+          "parameters": {
+            "width": 0.17,
+            "height": 0.8,
+            "depth": 0.2,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.17,
+            0.8,
+            0.2
+          ],
+          "local_offset": [
+            -0.11,
+            -0.72,
+            0
+          ],
+          "position_attribute_digest": "a82f4dd30e57aec5",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "leg_r",
+          "name": "npc-006/leg_r",
+          "is_root": false,
+          "parameters": {
+            "width": 0.17,
+            "height": 0.8,
+            "depth": 0.2,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.17,
+            0.8,
+            0.2
+          ],
+          "local_offset": [
+            0.11,
+            -0.72,
+            0
+          ],
+          "position_attribute_digest": "a82f4dd30e57aec5",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "lips",
+          "name": "npc-006/lips",
+          "is_root": false,
+          "parameters": {
+            "width": 0.11,
+            "height": 0.035,
+            "depth": 0.03,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.11,
+            0.035,
+            0.03
+          ],
+          "local_offset": [
+            0,
+            0.43,
+            0.1575
+          ],
+          "position_attribute_digest": "8c8852375a117b2d",
+          "vertex_count": 24,
+          "source_hex": "#a51c24",
+          "material_hex": "#8c161d"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "mask",
+          "name": "npc-006/mask",
+          "is_root": false,
+          "parameters": {
+            "width": 0.24,
+            "height": 0.16,
+            "depth": 0.05,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.24,
+            0.16,
+            0.05
+          ],
+          "local_offset": [
+            0,
+            0.565,
+            0.17
+          ],
+          "position_attribute_digest": "c8ac01d8be6210e5",
+          "vertex_count": 24,
+          "source_hex": "#e9e4dc",
+          "material_hex": "#c6c2bb"
+        }
+      ],
+      "viewport": {
+        "client_width": 1440,
+        "client_height": 900,
+        "drawing_buffer_width": 1440,
+        "drawing_buffer_height": 900,
+        "pixel_ratio": 1,
+        "aspect": 1.6,
+        "webgl": true
+      },
+      "entityIds": [
+        "courtyard-01",
+        "gate-north",
+        "kitchen-01",
+        "npc-006",
+        "room-1052"
+      ],
+      "npc_position_mm": {
+        "x": 4756,
+        "y": 0,
+        "z": 15000
+      },
+      "tick": 2
+    },
+    "indoor_masked": {
+      "camera": {
+        "position": [
+          5,
+          0.35,
+          17.4
+        ],
+        "quaternion": [
+          -0.11240035914472371,
+          0,
+          0,
+          0.9936630008529738
+        ],
+        "matrix_world": [
+          1000000,
+          0,
+          0,
+          0,
+          0,
+          974732,
+          -223376,
+          0,
+          0,
+          223376,
+          974732,
+          0,
+          5000000,
+          350000,
+          17400000,
+          1000000
+        ],
+        "projection_matrix": [
+          1508883,
+          0,
+          0,
+          0,
+          0,
+          2414214,
+          0,
+          0,
+          0,
+          0,
+          -1000400,
+          -1000000,
+          0,
+          0,
+          -200040,
+          0
+        ],
+        "zoom": 1,
+        "view_offset": null,
+        "fov": 45,
+        "near": 0.1,
+        "far": 500,
+        "aspect": 1.6
+      },
+      "appearance": [
+        {
+          "entity_id": "npc-006",
+          "state_id": "masked",
+          "source": "pack",
+          "degradations": [],
+          "parts": [
+            {
+              "entity_id": "npc-006",
+              "part": "torso",
+              "name": "npc-006",
+              "is_root": true,
+              "parameters": {
+                "width": 0.38,
+                "height": 0.66,
+                "depth": 0.26,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.38,
+                0.66,
+                0.26
+              ],
+              "local_offset": [
+                0,
+                0,
+                0
+              ],
+              "position_attribute_digest": "02718222dcbc5e95",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "arm_l",
+              "name": "npc-006/arm_l",
+              "is_root": false,
+              "parameters": {
+                "width": 0.1,
+                "height": 0.4,
+                "depth": 0.14,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.1,
+                0.4,
+                0.14
+              ],
+              "local_offset": [
+                -0.24,
+                0.08,
+                0
+              ],
+              "position_attribute_digest": "bbd23c48dd21c24d",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "arm_r",
+              "name": "npc-006/arm_r",
+              "is_root": false,
+              "parameters": {
+                "width": 0.1,
+                "height": 0.4,
+                "depth": 0.14,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.1,
+                0.4,
+                0.14
+              ],
+              "local_offset": [
+                0.24,
+                0.08,
+                0
+              ],
+              "position_attribute_digest": "bbd23c48dd21c24d",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "coat",
+              "name": "npc-006/coat",
+              "is_root": false,
+              "parameters": {
+                "width": 0.38,
+                "height": 1.12,
+                "depth": 0.34,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.38,
+                1.12,
+                0.34
+              ],
+              "local_offset": [
+                0,
+                -0.25,
+                -0.05
+              ],
+              "position_attribute_digest": "cb20d111567b5125",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "eyes",
+              "name": "npc-006/eyes",
+              "is_root": false,
+              "parameters": {
+                "width": 0.19,
+                "height": 0.05,
+                "depth": 0.03,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.19,
+                0.05,
+                0.03
+              ],
+              "local_offset": [
+                0,
+                0.53,
+                0.16
+              ],
+              "position_attribute_digest": "90c61711af75f2cd",
+              "vertex_count": 24,
+              "source_hex": "#8b1919",
+              "material_hex": "#751313"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "hair",
+              "name": "npc-006/hair",
+              "is_root": false,
+              "parameters": {
+                "width": 0.58,
+                "height": 0.72,
+                "depth": 0.3,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.58,
+                0.72,
+                0.3
+              ],
+              "local_offset": [
+                0,
+                0.34,
+                -0.015
+              ],
+              "position_attribute_digest": "b2fcdb3c30cdbb65",
+              "vertex_count": 24,
+              "source_hex": "#1c1a19",
+              "material_hex": "#161413"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "head",
+              "name": "npc-006/head",
+              "is_root": false,
+              "parameters": {
+                "width": 0.26,
+                "height": 0.3,
+                "depth": 0.26,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.26,
+                0.3,
+                0.26
+              ],
+              "local_offset": [
+                0,
+                0.49,
+                0.025
+              ],
+              "position_attribute_digest": "fdcaa1107e157e6d",
+              "vertex_count": 24,
+              "source_hex": "#dfd2c8",
+              "material_hex": "#bdb2aa"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "leg_l",
+              "name": "npc-006/leg_l",
+              "is_root": false,
+              "parameters": {
+                "width": 0.17,
+                "height": 0.8,
+                "depth": 0.2,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.17,
+                0.8,
+                0.2
+              ],
+              "local_offset": [
+                -0.11,
+                -0.72,
+                0
+              ],
+              "position_attribute_digest": "a82f4dd30e57aec5",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "leg_r",
+              "name": "npc-006/leg_r",
+              "is_root": false,
+              "parameters": {
+                "width": 0.17,
+                "height": 0.8,
+                "depth": 0.2,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.17,
+                0.8,
+                0.2
+              ],
+              "local_offset": [
+                0.11,
+                -0.72,
+                0
+              ],
+              "position_attribute_digest": "a82f4dd30e57aec5",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "lips",
+              "name": "npc-006/lips",
+              "is_root": false,
+              "parameters": {
+                "width": 0.11,
+                "height": 0.035,
+                "depth": 0.03,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.11,
+                0.035,
+                0.03
+              ],
+              "local_offset": [
+                0,
+                0.43,
+                0.1575
+              ],
+              "position_attribute_digest": "8c8852375a117b2d",
+              "vertex_count": 24,
+              "source_hex": "#a51c24",
+              "material_hex": "#8c161d"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "mask",
+              "name": "npc-006/mask",
+              "is_root": false,
+              "parameters": {
+                "width": 0.24,
+                "height": 0.16,
+                "depth": 0.05,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.24,
+                0.16,
+                0.05
+              ],
+              "local_offset": [
+                0,
+                0.565,
+                0.17
+              ],
+              "position_attribute_digest": "c8ac01d8be6210e5",
+              "vertex_count": 24,
+              "source_hex": "#e9e4dc",
+              "material_hex": "#c6c2bb"
+            }
+          ]
+        }
+      ],
+      "character": [
+        {
+          "entity_id": "npc-006",
+          "part": "torso",
+          "name": "npc-006",
+          "is_root": true,
+          "parameters": {
+            "width": 0.38,
+            "height": 0.66,
+            "depth": 0.26,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.38,
+            0.66,
+            0.26
+          ],
+          "local_offset": [
+            0,
+            0,
+            0
+          ],
+          "position_attribute_digest": "02718222dcbc5e95",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "arm_l",
+          "name": "npc-006/arm_l",
+          "is_root": false,
+          "parameters": {
+            "width": 0.1,
+            "height": 0.4,
+            "depth": 0.14,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.1,
+            0.4,
+            0.14
+          ],
+          "local_offset": [
+            -0.24,
+            0.08,
+            0
+          ],
+          "position_attribute_digest": "bbd23c48dd21c24d",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "arm_r",
+          "name": "npc-006/arm_r",
+          "is_root": false,
+          "parameters": {
+            "width": 0.1,
+            "height": 0.4,
+            "depth": 0.14,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.1,
+            0.4,
+            0.14
+          ],
+          "local_offset": [
+            0.24,
+            0.08,
+            0
+          ],
+          "position_attribute_digest": "bbd23c48dd21c24d",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "coat",
+          "name": "npc-006/coat",
+          "is_root": false,
+          "parameters": {
+            "width": 0.38,
+            "height": 1.12,
+            "depth": 0.34,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.38,
+            1.12,
+            0.34
+          ],
+          "local_offset": [
+            0,
+            -0.25,
+            -0.05
+          ],
+          "position_attribute_digest": "cb20d111567b5125",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "eyes",
+          "name": "npc-006/eyes",
+          "is_root": false,
+          "parameters": {
+            "width": 0.19,
+            "height": 0.05,
+            "depth": 0.03,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.19,
+            0.05,
+            0.03
+          ],
+          "local_offset": [
+            0,
+            0.53,
+            0.16
+          ],
+          "position_attribute_digest": "90c61711af75f2cd",
+          "vertex_count": 24,
+          "source_hex": "#8b1919",
+          "material_hex": "#751313"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "hair",
+          "name": "npc-006/hair",
+          "is_root": false,
+          "parameters": {
+            "width": 0.58,
+            "height": 0.72,
+            "depth": 0.3,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.58,
+            0.72,
+            0.3
+          ],
+          "local_offset": [
+            0,
+            0.34,
+            -0.015
+          ],
+          "position_attribute_digest": "b2fcdb3c30cdbb65",
+          "vertex_count": 24,
+          "source_hex": "#1c1a19",
+          "material_hex": "#161413"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "head",
+          "name": "npc-006/head",
+          "is_root": false,
+          "parameters": {
+            "width": 0.26,
+            "height": 0.3,
+            "depth": 0.26,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.26,
+            0.3,
+            0.26
+          ],
+          "local_offset": [
+            0,
+            0.49,
+            0.025
+          ],
+          "position_attribute_digest": "fdcaa1107e157e6d",
+          "vertex_count": 24,
+          "source_hex": "#dfd2c8",
+          "material_hex": "#bdb2aa"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "leg_l",
+          "name": "npc-006/leg_l",
+          "is_root": false,
+          "parameters": {
+            "width": 0.17,
+            "height": 0.8,
+            "depth": 0.2,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.17,
+            0.8,
+            0.2
+          ],
+          "local_offset": [
+            -0.11,
+            -0.72,
+            0
+          ],
+          "position_attribute_digest": "a82f4dd30e57aec5",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "leg_r",
+          "name": "npc-006/leg_r",
+          "is_root": false,
+          "parameters": {
+            "width": 0.17,
+            "height": 0.8,
+            "depth": 0.2,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.17,
+            0.8,
+            0.2
+          ],
+          "local_offset": [
+            0.11,
+            -0.72,
+            0
+          ],
+          "position_attribute_digest": "a82f4dd30e57aec5",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "lips",
+          "name": "npc-006/lips",
+          "is_root": false,
+          "parameters": {
+            "width": 0.11,
+            "height": 0.035,
+            "depth": 0.03,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.11,
+            0.035,
+            0.03
+          ],
+          "local_offset": [
+            0,
+            0.43,
+            0.1575
+          ],
+          "position_attribute_digest": "8c8852375a117b2d",
+          "vertex_count": 24,
+          "source_hex": "#a51c24",
+          "material_hex": "#8c161d"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "mask",
+          "name": "npc-006/mask",
+          "is_root": false,
+          "parameters": {
+            "width": 0.24,
+            "height": 0.16,
+            "depth": 0.05,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.24,
+            0.16,
+            0.05
+          ],
+          "local_offset": [
+            0,
+            0.565,
+            0.17
+          ],
+          "position_attribute_digest": "c8ac01d8be6210e5",
+          "vertex_count": 24,
+          "source_hex": "#e9e4dc",
+          "material_hex": "#c6c2bb"
+        }
+      ],
+      "viewport": {
+        "client_width": 1440,
+        "client_height": 900,
+        "drawing_buffer_width": 1440,
+        "drawing_buffer_height": 900,
+        "pixel_ratio": 1,
+        "aspect": 1.6,
+        "webgl": true
+      },
+      "entityIds": [
+        "courtyard-01",
+        "gate-north",
+        "kitchen-01",
+        "npc-006",
+        "room-1052"
+      ],
+      "npc_position_mm": {
+        "x": 4756,
+        "y": 0,
+        "z": 15000
+      },
+      "tick": 2
+    },
+    "indoor_side_masked": {
+      "camera": {
+        "position": [
+          6.9,
+          0.35,
+          16.8
+        ],
+        "quaternion": [
+          -0.0756003923072085,
+          0.4054429603229639,
+          0.033669572514759,
+          0.9103663803624458
+        ],
+        "matrix_world": [
+          668965,
+          0,
+          -743294,
+          0,
+          -122607,
+          986302,
+          -110346,
+          0,
+          733112,
+          164950,
+          659801,
+          0,
+          6900000,
+          350000,
+          16800000,
+          1000000
+        ],
+        "projection_matrix": [
+          1508883,
+          0,
+          0,
+          0,
+          0,
+          2414214,
+          0,
+          0,
+          0,
+          0,
+          -1000400,
+          -1000000,
+          0,
+          0,
+          -200040,
+          0
+        ],
+        "zoom": 1,
+        "view_offset": null,
+        "fov": 45,
+        "near": 0.1,
+        "far": 500,
+        "aspect": 1.6
+      },
+      "appearance": [
+        {
+          "entity_id": "npc-006",
+          "state_id": "masked",
+          "source": "pack",
+          "degradations": [],
+          "parts": [
+            {
+              "entity_id": "npc-006",
+              "part": "torso",
+              "name": "npc-006",
+              "is_root": true,
+              "parameters": {
+                "width": 0.38,
+                "height": 0.66,
+                "depth": 0.26,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.38,
+                0.66,
+                0.26
+              ],
+              "local_offset": [
+                0,
+                0,
+                0
+              ],
+              "position_attribute_digest": "02718222dcbc5e95",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "arm_l",
+              "name": "npc-006/arm_l",
+              "is_root": false,
+              "parameters": {
+                "width": 0.1,
+                "height": 0.4,
+                "depth": 0.14,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.1,
+                0.4,
+                0.14
+              ],
+              "local_offset": [
+                -0.24,
+                0.08,
+                0
+              ],
+              "position_attribute_digest": "bbd23c48dd21c24d",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "arm_r",
+              "name": "npc-006/arm_r",
+              "is_root": false,
+              "parameters": {
+                "width": 0.1,
+                "height": 0.4,
+                "depth": 0.14,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.1,
+                0.4,
+                0.14
+              ],
+              "local_offset": [
+                0.24,
+                0.08,
+                0
+              ],
+              "position_attribute_digest": "bbd23c48dd21c24d",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "coat",
+              "name": "npc-006/coat",
+              "is_root": false,
+              "parameters": {
+                "width": 0.38,
+                "height": 1.12,
+                "depth": 0.34,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.38,
+                1.12,
+                0.34
+              ],
+              "local_offset": [
+                0,
+                -0.25,
+                -0.05
+              ],
+              "position_attribute_digest": "cb20d111567b5125",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "eyes",
+              "name": "npc-006/eyes",
+              "is_root": false,
+              "parameters": {
+                "width": 0.19,
+                "height": 0.05,
+                "depth": 0.03,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.19,
+                0.05,
+                0.03
+              ],
+              "local_offset": [
+                0,
+                0.53,
+                0.16
+              ],
+              "position_attribute_digest": "90c61711af75f2cd",
+              "vertex_count": 24,
+              "source_hex": "#8b1919",
+              "material_hex": "#751313"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "hair",
+              "name": "npc-006/hair",
+              "is_root": false,
+              "parameters": {
+                "width": 0.58,
+                "height": 0.72,
+                "depth": 0.3,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.58,
+                0.72,
+                0.3
+              ],
+              "local_offset": [
+                0,
+                0.34,
+                -0.015
+              ],
+              "position_attribute_digest": "b2fcdb3c30cdbb65",
+              "vertex_count": 24,
+              "source_hex": "#1c1a19",
+              "material_hex": "#161413"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "head",
+              "name": "npc-006/head",
+              "is_root": false,
+              "parameters": {
+                "width": 0.26,
+                "height": 0.3,
+                "depth": 0.26,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.26,
+                0.3,
+                0.26
+              ],
+              "local_offset": [
+                0,
+                0.49,
+                0.025
+              ],
+              "position_attribute_digest": "fdcaa1107e157e6d",
+              "vertex_count": 24,
+              "source_hex": "#dfd2c8",
+              "material_hex": "#bdb2aa"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "leg_l",
+              "name": "npc-006/leg_l",
+              "is_root": false,
+              "parameters": {
+                "width": 0.17,
+                "height": 0.8,
+                "depth": 0.2,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.17,
+                0.8,
+                0.2
+              ],
+              "local_offset": [
+                -0.11,
+                -0.72,
+                0
+              ],
+              "position_attribute_digest": "a82f4dd30e57aec5",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "leg_r",
+              "name": "npc-006/leg_r",
+              "is_root": false,
+              "parameters": {
+                "width": 0.17,
+                "height": 0.8,
+                "depth": 0.2,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.17,
+                0.8,
+                0.2
+              ],
+              "local_offset": [
+                0.11,
+                -0.72,
+                0
+              ],
+              "position_attribute_digest": "a82f4dd30e57aec5",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "lips",
+              "name": "npc-006/lips",
+              "is_root": false,
+              "parameters": {
+                "width": 0.11,
+                "height": 0.035,
+                "depth": 0.03,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.11,
+                0.035,
+                0.03
+              ],
+              "local_offset": [
+                0,
+                0.43,
+                0.1575
+              ],
+              "position_attribute_digest": "8c8852375a117b2d",
+              "vertex_count": 24,
+              "source_hex": "#a51c24",
+              "material_hex": "#8c161d"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "mask",
+              "name": "npc-006/mask",
+              "is_root": false,
+              "parameters": {
+                "width": 0.24,
+                "height": 0.16,
+                "depth": 0.05,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.24,
+                0.16,
+                0.05
+              ],
+              "local_offset": [
+                0,
+                0.565,
+                0.17
+              ],
+              "position_attribute_digest": "c8ac01d8be6210e5",
+              "vertex_count": 24,
+              "source_hex": "#e9e4dc",
+              "material_hex": "#c6c2bb"
+            }
+          ]
+        }
+      ],
+      "character": [
+        {
+          "entity_id": "npc-006",
+          "part": "torso",
+          "name": "npc-006",
+          "is_root": true,
+          "parameters": {
+            "width": 0.38,
+            "height": 0.66,
+            "depth": 0.26,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.38,
+            0.66,
+            0.26
+          ],
+          "local_offset": [
+            0,
+            0,
+            0
+          ],
+          "position_attribute_digest": "02718222dcbc5e95",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "arm_l",
+          "name": "npc-006/arm_l",
+          "is_root": false,
+          "parameters": {
+            "width": 0.1,
+            "height": 0.4,
+            "depth": 0.14,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.1,
+            0.4,
+            0.14
+          ],
+          "local_offset": [
+            -0.24,
+            0.08,
+            0
+          ],
+          "position_attribute_digest": "bbd23c48dd21c24d",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "arm_r",
+          "name": "npc-006/arm_r",
+          "is_root": false,
+          "parameters": {
+            "width": 0.1,
+            "height": 0.4,
+            "depth": 0.14,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.1,
+            0.4,
+            0.14
+          ],
+          "local_offset": [
+            0.24,
+            0.08,
+            0
+          ],
+          "position_attribute_digest": "bbd23c48dd21c24d",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "coat",
+          "name": "npc-006/coat",
+          "is_root": false,
+          "parameters": {
+            "width": 0.38,
+            "height": 1.12,
+            "depth": 0.34,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.38,
+            1.12,
+            0.34
+          ],
+          "local_offset": [
+            0,
+            -0.25,
+            -0.05
+          ],
+          "position_attribute_digest": "cb20d111567b5125",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "eyes",
+          "name": "npc-006/eyes",
+          "is_root": false,
+          "parameters": {
+            "width": 0.19,
+            "height": 0.05,
+            "depth": 0.03,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.19,
+            0.05,
+            0.03
+          ],
+          "local_offset": [
+            0,
+            0.53,
+            0.16
+          ],
+          "position_attribute_digest": "90c61711af75f2cd",
+          "vertex_count": 24,
+          "source_hex": "#8b1919",
+          "material_hex": "#751313"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "hair",
+          "name": "npc-006/hair",
+          "is_root": false,
+          "parameters": {
+            "width": 0.58,
+            "height": 0.72,
+            "depth": 0.3,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.58,
+            0.72,
+            0.3
+          ],
+          "local_offset": [
+            0,
+            0.34,
+            -0.015
+          ],
+          "position_attribute_digest": "b2fcdb3c30cdbb65",
+          "vertex_count": 24,
+          "source_hex": "#1c1a19",
+          "material_hex": "#161413"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "head",
+          "name": "npc-006/head",
+          "is_root": false,
+          "parameters": {
+            "width": 0.26,
+            "height": 0.3,
+            "depth": 0.26,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.26,
+            0.3,
+            0.26
+          ],
+          "local_offset": [
+            0,
+            0.49,
+            0.025
+          ],
+          "position_attribute_digest": "fdcaa1107e157e6d",
+          "vertex_count": 24,
+          "source_hex": "#dfd2c8",
+          "material_hex": "#bdb2aa"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "leg_l",
+          "name": "npc-006/leg_l",
+          "is_root": false,
+          "parameters": {
+            "width": 0.17,
+            "height": 0.8,
+            "depth": 0.2,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.17,
+            0.8,
+            0.2
+          ],
+          "local_offset": [
+            -0.11,
+            -0.72,
+            0
+          ],
+          "position_attribute_digest": "a82f4dd30e57aec5",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "leg_r",
+          "name": "npc-006/leg_r",
+          "is_root": false,
+          "parameters": {
+            "width": 0.17,
+            "height": 0.8,
+            "depth": 0.2,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.17,
+            0.8,
+            0.2
+          ],
+          "local_offset": [
+            0.11,
+            -0.72,
+            0
+          ],
+          "position_attribute_digest": "a82f4dd30e57aec5",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "lips",
+          "name": "npc-006/lips",
+          "is_root": false,
+          "parameters": {
+            "width": 0.11,
+            "height": 0.035,
+            "depth": 0.03,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.11,
+            0.035,
+            0.03
+          ],
+          "local_offset": [
+            0,
+            0.43,
+            0.1575
+          ],
+          "position_attribute_digest": "8c8852375a117b2d",
+          "vertex_count": 24,
+          "source_hex": "#a51c24",
+          "material_hex": "#8c161d"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "mask",
+          "name": "npc-006/mask",
+          "is_root": false,
+          "parameters": {
+            "width": 0.24,
+            "height": 0.16,
+            "depth": 0.05,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.24,
+            0.16,
+            0.05
+          ],
+          "local_offset": [
+            0,
+            0.565,
+            0.17
+          ],
+          "position_attribute_digest": "c8ac01d8be6210e5",
+          "vertex_count": 24,
+          "source_hex": "#e9e4dc",
+          "material_hex": "#c6c2bb"
+        }
+      ],
+      "viewport": {
+        "client_width": 1440,
+        "client_height": 900,
+        "drawing_buffer_width": 1440,
+        "drawing_buffer_height": 900,
+        "pixel_ratio": 1,
+        "aspect": 1.6,
+        "webgl": true
+      },
+      "entityIds": [
+        "courtyard-01",
+        "gate-north",
+        "kitchen-01",
+        "npc-006",
+        "room-1052"
+      ],
+      "npc_position_mm": {
+        "x": 4756,
+        "y": 0,
+        "z": 15000
+      },
+      "tick": 2
+    },
+    "default_wide_masked": {
+      "camera": {
+        "position": [
+          18,
+          14,
+          24
+        ],
+        "quaternion": [
+          -0.29124381474387206,
+          0.21922450358441972,
+          0.06875333830590932,
+          0.928649899517248
+        ],
+        "matrix_world": [
+          894427,
+          0,
+          -447214,
+          0,
+          -255391,
+          820900,
+          -510782,
+          0,
+          367118,
+          571072,
+          734235,
+          0,
+          18000000,
+          14000000,
+          24000000,
+          1000000
+        ],
+        "projection_matrix": [
+          1508883,
+          0,
+          0,
+          0,
+          0,
+          2414214,
+          0,
+          0,
+          0,
+          0,
+          -1000400,
+          -1000000,
+          0,
+          0,
+          -200040,
+          0
+        ],
+        "zoom": 1,
+        "view_offset": null,
+        "fov": 45,
+        "near": 0.1,
+        "far": 500,
+        "aspect": 1.6
+      },
+      "appearance": [
+        {
+          "entity_id": "npc-006",
+          "state_id": "masked",
+          "source": "pack",
+          "degradations": [],
+          "parts": [
+            {
+              "entity_id": "npc-006",
+              "part": "torso",
+              "name": "npc-006",
+              "is_root": true,
+              "parameters": {
+                "width": 0.38,
+                "height": 0.66,
+                "depth": 0.26,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.38,
+                0.66,
+                0.26
+              ],
+              "local_offset": [
+                0,
+                0,
+                0
+              ],
+              "position_attribute_digest": "02718222dcbc5e95",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "arm_l",
+              "name": "npc-006/arm_l",
+              "is_root": false,
+              "parameters": {
+                "width": 0.1,
+                "height": 0.4,
+                "depth": 0.14,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.1,
+                0.4,
+                0.14
+              ],
+              "local_offset": [
+                -0.24,
+                0.08,
+                0
+              ],
+              "position_attribute_digest": "bbd23c48dd21c24d",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "arm_r",
+              "name": "npc-006/arm_r",
+              "is_root": false,
+              "parameters": {
+                "width": 0.1,
+                "height": 0.4,
+                "depth": 0.14,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.1,
+                0.4,
+                0.14
+              ],
+              "local_offset": [
+                0.24,
+                0.08,
+                0
+              ],
+              "position_attribute_digest": "bbd23c48dd21c24d",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "coat",
+              "name": "npc-006/coat",
+              "is_root": false,
+              "parameters": {
+                "width": 0.38,
+                "height": 1.12,
+                "depth": 0.34,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.38,
+                1.12,
+                0.34
+              ],
+              "local_offset": [
+                0,
+                -0.25,
+                -0.05
+              ],
+              "position_attribute_digest": "cb20d111567b5125",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "eyes",
+              "name": "npc-006/eyes",
+              "is_root": false,
+              "parameters": {
+                "width": 0.19,
+                "height": 0.05,
+                "depth": 0.03,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.19,
+                0.05,
+                0.03
+              ],
+              "local_offset": [
+                0,
+                0.53,
+                0.16
+              ],
+              "position_attribute_digest": "90c61711af75f2cd",
+              "vertex_count": 24,
+              "source_hex": "#8b1919",
+              "material_hex": "#751313"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "hair",
+              "name": "npc-006/hair",
+              "is_root": false,
+              "parameters": {
+                "width": 0.58,
+                "height": 0.72,
+                "depth": 0.3,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.58,
+                0.72,
+                0.3
+              ],
+              "local_offset": [
+                0,
+                0.34,
+                -0.015
+              ],
+              "position_attribute_digest": "b2fcdb3c30cdbb65",
+              "vertex_count": 24,
+              "source_hex": "#1c1a19",
+              "material_hex": "#161413"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "head",
+              "name": "npc-006/head",
+              "is_root": false,
+              "parameters": {
+                "width": 0.26,
+                "height": 0.3,
+                "depth": 0.26,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.26,
+                0.3,
+                0.26
+              ],
+              "local_offset": [
+                0,
+                0.49,
+                0.025
+              ],
+              "position_attribute_digest": "fdcaa1107e157e6d",
+              "vertex_count": 24,
+              "source_hex": "#dfd2c8",
+              "material_hex": "#bdb2aa"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "leg_l",
+              "name": "npc-006/leg_l",
+              "is_root": false,
+              "parameters": {
+                "width": 0.17,
+                "height": 0.8,
+                "depth": 0.2,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.17,
+                0.8,
+                0.2
+              ],
+              "local_offset": [
+                -0.11,
+                -0.72,
+                0
+              ],
+              "position_attribute_digest": "a82f4dd30e57aec5",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "leg_r",
+              "name": "npc-006/leg_r",
+              "is_root": false,
+              "parameters": {
+                "width": 0.17,
+                "height": 0.8,
+                "depth": 0.2,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.17,
+                0.8,
+                0.2
+              ],
+              "local_offset": [
+                0.11,
+                -0.72,
+                0
+              ],
+              "position_attribute_digest": "a82f4dd30e57aec5",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "lips",
+              "name": "npc-006/lips",
+              "is_root": false,
+              "parameters": {
+                "width": 0.11,
+                "height": 0.035,
+                "depth": 0.03,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.11,
+                0.035,
+                0.03
+              ],
+              "local_offset": [
+                0,
+                0.43,
+                0.1575
+              ],
+              "position_attribute_digest": "8c8852375a117b2d",
+              "vertex_count": 24,
+              "source_hex": "#a51c24",
+              "material_hex": "#8c161d"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "mask",
+              "name": "npc-006/mask",
+              "is_root": false,
+              "parameters": {
+                "width": 0.24,
+                "height": 0.16,
+                "depth": 0.05,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.24,
+                0.16,
+                0.05
+              ],
+              "local_offset": [
+                0,
+                0.565,
+                0.17
+              ],
+              "position_attribute_digest": "c8ac01d8be6210e5",
+              "vertex_count": 24,
+              "source_hex": "#e9e4dc",
+              "material_hex": "#c6c2bb"
+            }
+          ]
+        }
+      ],
+      "character": [
+        {
+          "entity_id": "npc-006",
+          "part": "torso",
+          "name": "npc-006",
+          "is_root": true,
+          "parameters": {
+            "width": 0.38,
+            "height": 0.66,
+            "depth": 0.26,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.38,
+            0.66,
+            0.26
+          ],
+          "local_offset": [
+            0,
+            0,
+            0
+          ],
+          "position_attribute_digest": "02718222dcbc5e95",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "arm_l",
+          "name": "npc-006/arm_l",
+          "is_root": false,
+          "parameters": {
+            "width": 0.1,
+            "height": 0.4,
+            "depth": 0.14,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.1,
+            0.4,
+            0.14
+          ],
+          "local_offset": [
+            -0.24,
+            0.08,
+            0
+          ],
+          "position_attribute_digest": "bbd23c48dd21c24d",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "arm_r",
+          "name": "npc-006/arm_r",
+          "is_root": false,
+          "parameters": {
+            "width": 0.1,
+            "height": 0.4,
+            "depth": 0.14,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.1,
+            0.4,
+            0.14
+          ],
+          "local_offset": [
+            0.24,
+            0.08,
+            0
+          ],
+          "position_attribute_digest": "bbd23c48dd21c24d",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "coat",
+          "name": "npc-006/coat",
+          "is_root": false,
+          "parameters": {
+            "width": 0.38,
+            "height": 1.12,
+            "depth": 0.34,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.38,
+            1.12,
+            0.34
+          ],
+          "local_offset": [
+            0,
+            -0.25,
+            -0.05
+          ],
+          "position_attribute_digest": "cb20d111567b5125",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "eyes",
+          "name": "npc-006/eyes",
+          "is_root": false,
+          "parameters": {
+            "width": 0.19,
+            "height": 0.05,
+            "depth": 0.03,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.19,
+            0.05,
+            0.03
+          ],
+          "local_offset": [
+            0,
+            0.53,
+            0.16
+          ],
+          "position_attribute_digest": "90c61711af75f2cd",
+          "vertex_count": 24,
+          "source_hex": "#8b1919",
+          "material_hex": "#751313"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "hair",
+          "name": "npc-006/hair",
+          "is_root": false,
+          "parameters": {
+            "width": 0.58,
+            "height": 0.72,
+            "depth": 0.3,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.58,
+            0.72,
+            0.3
+          ],
+          "local_offset": [
+            0,
+            0.34,
+            -0.015
+          ],
+          "position_attribute_digest": "b2fcdb3c30cdbb65",
+          "vertex_count": 24,
+          "source_hex": "#1c1a19",
+          "material_hex": "#161413"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "head",
+          "name": "npc-006/head",
+          "is_root": false,
+          "parameters": {
+            "width": 0.26,
+            "height": 0.3,
+            "depth": 0.26,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.26,
+            0.3,
+            0.26
+          ],
+          "local_offset": [
+            0,
+            0.49,
+            0.025
+          ],
+          "position_attribute_digest": "fdcaa1107e157e6d",
+          "vertex_count": 24,
+          "source_hex": "#dfd2c8",
+          "material_hex": "#bdb2aa"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "leg_l",
+          "name": "npc-006/leg_l",
+          "is_root": false,
+          "parameters": {
+            "width": 0.17,
+            "height": 0.8,
+            "depth": 0.2,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.17,
+            0.8,
+            0.2
+          ],
+          "local_offset": [
+            -0.11,
+            -0.72,
+            0
+          ],
+          "position_attribute_digest": "a82f4dd30e57aec5",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "leg_r",
+          "name": "npc-006/leg_r",
+          "is_root": false,
+          "parameters": {
+            "width": 0.17,
+            "height": 0.8,
+            "depth": 0.2,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.17,
+            0.8,
+            0.2
+          ],
+          "local_offset": [
+            0.11,
+            -0.72,
+            0
+          ],
+          "position_attribute_digest": "a82f4dd30e57aec5",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "lips",
+          "name": "npc-006/lips",
+          "is_root": false,
+          "parameters": {
+            "width": 0.11,
+            "height": 0.035,
+            "depth": 0.03,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.11,
+            0.035,
+            0.03
+          ],
+          "local_offset": [
+            0,
+            0.43,
+            0.1575
+          ],
+          "position_attribute_digest": "8c8852375a117b2d",
+          "vertex_count": 24,
+          "source_hex": "#a51c24",
+          "material_hex": "#8c161d"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "mask",
+          "name": "npc-006/mask",
+          "is_root": false,
+          "parameters": {
+            "width": 0.24,
+            "height": 0.16,
+            "depth": 0.05,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.24,
+            0.16,
+            0.05
+          ],
+          "local_offset": [
+            0,
+            0.565,
+            0.17
+          ],
+          "position_attribute_digest": "c8ac01d8be6210e5",
+          "vertex_count": 24,
+          "source_hex": "#e9e4dc",
+          "material_hex": "#c6c2bb"
+        }
+      ],
+      "viewport": {
+        "client_width": 1440,
+        "client_height": 900,
+        "drawing_buffer_width": 1440,
+        "drawing_buffer_height": 900,
+        "pixel_ratio": 1,
+        "aspect": 1.6,
+        "webgl": true
+      },
+      "entityIds": [
+        "courtyard-01",
+        "gate-north",
+        "kitchen-01",
+        "npc-006",
+        "room-1052"
+      ],
+      "npc_position_mm": {
+        "x": 4756,
+        "y": 0,
+        "z": 15000
+      },
+      "tick": 2
+    },
+    "control_generic": {
+      "camera": {
+        "position": [
+          5,
+          0.35,
+          17.4
+        ],
+        "quaternion": [
+          -0.11240035914472371,
+          0,
+          0,
+          0.9936630008529738
+        ],
+        "matrix_world": [
+          1000000,
+          0,
+          0,
+          0,
+          0,
+          974732,
+          -223376,
+          0,
+          0,
+          223376,
+          974732,
+          0,
+          5000000,
+          350000,
+          17400000,
+          1000000
+        ],
+        "projection_matrix": [
+          1508883,
+          0,
+          0,
+          0,
+          0,
+          2414214,
+          0,
+          0,
+          0,
+          0,
+          -1000400,
+          -1000000,
+          0,
+          0,
+          -200040,
+          0
+        ],
+        "zoom": 1,
+        "view_offset": null,
+        "fov": 45,
+        "near": 0.1,
+        "far": 500,
+        "aspect": 1.6
+      },
+      "appearance": [
+        {
+          "entity_id": "npc-006",
+          "state_id": "daily",
+          "source": "fallback",
+          "degradations": [],
+          "parts": [
+            {
+              "entity_id": "npc-006",
+              "part": "torso",
+              "name": "npc-006",
+              "is_root": true,
+              "parameters": {
+                "width": 0.38,
+                "height": 0.66,
+                "depth": 0.26,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.38,
+                0.66,
+                0.26
+              ],
+              "local_offset": [
+                0,
+                0,
+                0
+              ],
+              "position_attribute_digest": "02718222dcbc5e95",
+              "vertex_count": 24,
+              "source_hex": "#5c5548",
+              "material_hex": "#4d473c"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "arm_l",
+              "name": "npc-006/arm_l",
+              "is_root": false,
+              "parameters": {
+                "width": 0.1,
+                "height": 0.4,
+                "depth": 0.14,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.1,
+                0.4,
+                0.14
+              ],
+              "local_offset": [
+                -0.24,
+                0.08,
+                0
+              ],
+              "position_attribute_digest": "bbd23c48dd21c24d",
+              "vertex_count": 24,
+              "source_hex": "#5c5548",
+              "material_hex": "#4d473c"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "arm_r",
+              "name": "npc-006/arm_r",
+              "is_root": false,
+              "parameters": {
+                "width": 0.1,
+                "height": 0.4,
+                "depth": 0.14,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.1,
+                0.4,
+                0.14
+              ],
+              "local_offset": [
+                0.24,
+                0.08,
+                0
+              ],
+              "position_attribute_digest": "bbd23c48dd21c24d",
+              "vertex_count": 24,
+              "source_hex": "#5c5548",
+              "material_hex": "#4d473c"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "coat",
+              "name": "npc-006/coat",
+              "is_root": false,
+              "parameters": {
+                "width": 0.38,
+                "height": 1.12,
+                "depth": 0.34,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.38,
+                1.12,
+                0.34
+              ],
+              "local_offset": [
+                0,
+                -0.25,
+                -0.05
+              ],
+              "position_attribute_digest": "cb20d111567b5125",
+              "vertex_count": 24,
+              "source_hex": "#5c5548",
+              "material_hex": "#4d473c"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "eyes",
+              "name": "npc-006/eyes",
+              "is_root": false,
+              "parameters": {
+                "width": 0.19,
+                "height": 0.05,
+                "depth": 0.03,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.19,
+                0.05,
+                0.03
+              ],
+              "local_offset": [
+                0,
+                0.53,
+                0.16
+              ],
+              "position_attribute_digest": "90c61711af75f2cd",
+              "vertex_count": 24,
+              "source_hex": "#4b4239",
+              "material_hex": "#3e372f"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "hair",
+              "name": "npc-006/hair",
+              "is_root": false,
+              "parameters": {
+                "width": 0.58,
+                "height": 0.72,
+                "depth": 0.3,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.58,
+                0.72,
+                0.3
+              ],
+              "local_offset": [
+                0,
+                0.34,
+                -0.015
+              ],
+              "position_attribute_digest": "b2fcdb3c30cdbb65",
+              "vertex_count": 24,
+              "source_hex": "#3a322b",
+              "material_hex": "#302923"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "head",
+              "name": "npc-006/head",
+              "is_root": false,
+              "parameters": {
+                "width": 0.26,
+                "height": 0.3,
+                "depth": 0.26,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.26,
+                0.3,
+                0.26
+              ],
+              "local_offset": [
+                0,
+                0.49,
+                0.025
+              ],
+              "position_attribute_digest": "fdcaa1107e157e6d",
+              "vertex_count": 24,
+              "source_hex": "#d8c6ad",
+              "material_hex": "#b7a892"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "leg_l",
+              "name": "npc-006/leg_l",
+              "is_root": false,
+              "parameters": {
+                "width": 0.17,
+                "height": 0.8,
+                "depth": 0.2,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.17,
+                0.8,
+                0.2
+              ],
+              "local_offset": [
+                -0.11,
+                -0.72,
+                0
+              ],
+              "position_attribute_digest": "a82f4dd30e57aec5",
+              "vertex_count": 24,
+              "source_hex": "#5c5548",
+              "material_hex": "#4d473c"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "leg_r",
+              "name": "npc-006/leg_r",
+              "is_root": false,
+              "parameters": {
+                "width": 0.17,
+                "height": 0.8,
+                "depth": 0.2,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.17,
+                0.8,
+                0.2
+              ],
+              "local_offset": [
+                0.11,
+                -0.72,
+                0
+              ],
+              "position_attribute_digest": "a82f4dd30e57aec5",
+              "vertex_count": 24,
+              "source_hex": "#5c5548",
+              "material_hex": "#4d473c"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "lips",
+              "name": "npc-006/lips",
+              "is_root": false,
+              "parameters": {
+                "width": 0.11,
+                "height": 0.035,
+                "depth": 0.03,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.11,
+                0.035,
+                0.03
+              ],
+              "local_offset": [
+                0,
+                0.43,
+                0.1575
+              ],
+              "position_attribute_digest": "8c8852375a117b2d",
+              "vertex_count": 24,
+              "source_hex": "#7d6a60",
+              "material_hex": "#695950"
+            }
+          ]
+        }
+      ],
+      "character": [
+        {
+          "entity_id": "npc-006",
+          "part": "torso",
+          "name": "npc-006",
+          "is_root": true,
+          "parameters": {
+            "width": 0.38,
+            "height": 0.66,
+            "depth": 0.26,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.38,
+            0.66,
+            0.26
+          ],
+          "local_offset": [
+            0,
+            0,
+            0
+          ],
+          "position_attribute_digest": "02718222dcbc5e95",
+          "vertex_count": 24,
+          "source_hex": "#5c5548",
+          "material_hex": "#4d473c"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "arm_l",
+          "name": "npc-006/arm_l",
+          "is_root": false,
+          "parameters": {
+            "width": 0.1,
+            "height": 0.4,
+            "depth": 0.14,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.1,
+            0.4,
+            0.14
+          ],
+          "local_offset": [
+            -0.24,
+            0.08,
+            0
+          ],
+          "position_attribute_digest": "bbd23c48dd21c24d",
+          "vertex_count": 24,
+          "source_hex": "#5c5548",
+          "material_hex": "#4d473c"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "arm_r",
+          "name": "npc-006/arm_r",
+          "is_root": false,
+          "parameters": {
+            "width": 0.1,
+            "height": 0.4,
+            "depth": 0.14,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.1,
+            0.4,
+            0.14
+          ],
+          "local_offset": [
+            0.24,
+            0.08,
+            0
+          ],
+          "position_attribute_digest": "bbd23c48dd21c24d",
+          "vertex_count": 24,
+          "source_hex": "#5c5548",
+          "material_hex": "#4d473c"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "coat",
+          "name": "npc-006/coat",
+          "is_root": false,
+          "parameters": {
+            "width": 0.38,
+            "height": 1.12,
+            "depth": 0.34,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.38,
+            1.12,
+            0.34
+          ],
+          "local_offset": [
+            0,
+            -0.25,
+            -0.05
+          ],
+          "position_attribute_digest": "cb20d111567b5125",
+          "vertex_count": 24,
+          "source_hex": "#5c5548",
+          "material_hex": "#4d473c"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "eyes",
+          "name": "npc-006/eyes",
+          "is_root": false,
+          "parameters": {
+            "width": 0.19,
+            "height": 0.05,
+            "depth": 0.03,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.19,
+            0.05,
+            0.03
+          ],
+          "local_offset": [
+            0,
+            0.53,
+            0.16
+          ],
+          "position_attribute_digest": "90c61711af75f2cd",
+          "vertex_count": 24,
+          "source_hex": "#4b4239",
+          "material_hex": "#3e372f"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "hair",
+          "name": "npc-006/hair",
+          "is_root": false,
+          "parameters": {
+            "width": 0.58,
+            "height": 0.72,
+            "depth": 0.3,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.58,
+            0.72,
+            0.3
+          ],
+          "local_offset": [
+            0,
+            0.34,
+            -0.015
+          ],
+          "position_attribute_digest": "b2fcdb3c30cdbb65",
+          "vertex_count": 24,
+          "source_hex": "#3a322b",
+          "material_hex": "#302923"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "head",
+          "name": "npc-006/head",
+          "is_root": false,
+          "parameters": {
+            "width": 0.26,
+            "height": 0.3,
+            "depth": 0.26,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.26,
+            0.3,
+            0.26
+          ],
+          "local_offset": [
+            0,
+            0.49,
+            0.025
+          ],
+          "position_attribute_digest": "fdcaa1107e157e6d",
+          "vertex_count": 24,
+          "source_hex": "#d8c6ad",
+          "material_hex": "#b7a892"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "leg_l",
+          "name": "npc-006/leg_l",
+          "is_root": false,
+          "parameters": {
+            "width": 0.17,
+            "height": 0.8,
+            "depth": 0.2,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.17,
+            0.8,
+            0.2
+          ],
+          "local_offset": [
+            -0.11,
+            -0.72,
+            0
+          ],
+          "position_attribute_digest": "a82f4dd30e57aec5",
+          "vertex_count": 24,
+          "source_hex": "#5c5548",
+          "material_hex": "#4d473c"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "leg_r",
+          "name": "npc-006/leg_r",
+          "is_root": false,
+          "parameters": {
+            "width": 0.17,
+            "height": 0.8,
+            "depth": 0.2,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.17,
+            0.8,
+            0.2
+          ],
+          "local_offset": [
+            0.11,
+            -0.72,
+            0
+          ],
+          "position_attribute_digest": "a82f4dd30e57aec5",
+          "vertex_count": 24,
+          "source_hex": "#5c5548",
+          "material_hex": "#4d473c"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "lips",
+          "name": "npc-006/lips",
+          "is_root": false,
+          "parameters": {
+            "width": 0.11,
+            "height": 0.035,
+            "depth": 0.03,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.11,
+            0.035,
+            0.03
+          ],
+          "local_offset": [
+            0,
+            0.43,
+            0.1575
+          ],
+          "position_attribute_digest": "8c8852375a117b2d",
+          "vertex_count": 24,
+          "source_hex": "#7d6a60",
+          "material_hex": "#695950"
+        }
+      ],
+      "viewport": {
+        "client_width": 1440,
+        "client_height": 900,
+        "drawing_buffer_width": 1440,
+        "drawing_buffer_height": 900,
+        "pixel_ratio": 1,
+        "aspect": 1.6,
+        "webgl": true
+      },
+      "entityIds": [
+        "courtyard-01",
+        "gate-north",
+        "kitchen-01",
+        "npc-006",
+        "room-1052"
+      ],
+      "npc_position_mm": {
+        "x": 4756,
+        "y": 0,
+        "z": 15000
+      },
+      "tick": 2
+    },
+    "indoor_masked_driven": {
+      "camera": {
+        "position": [
+          5,
+          0.35,
+          17.4
+        ],
+        "quaternion": [
+          -0.11240035914472371,
+          0,
+          0,
+          0.9936630008529738
+        ],
+        "matrix_world": [
+          1000000,
+          0,
+          0,
+          0,
+          0,
+          974732,
+          -223376,
+          0,
+          0,
+          223376,
+          974732,
+          0,
+          5000000,
+          350000,
+          17400000,
+          1000000
+        ],
+        "projection_matrix": [
+          1508883,
+          0,
+          0,
+          0,
+          0,
+          2414214,
+          0,
+          0,
+          0,
+          0,
+          -1000400,
+          -1000000,
+          0,
+          0,
+          -200040,
+          0
+        ],
+        "zoom": 1,
+        "view_offset": null,
+        "fov": 45,
+        "near": 0.1,
+        "far": 500,
+        "aspect": 1.6
+      },
+      "appearance": [
+        {
+          "entity_id": "npc-006",
+          "state_id": "masked",
+          "source": "pack",
+          "degradations": [],
+          "parts": [
+            {
+              "entity_id": "npc-006",
+              "part": "torso",
+              "name": "npc-006",
+              "is_root": true,
+              "parameters": {
+                "width": 0.38,
+                "height": 0.66,
+                "depth": 0.26,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.38,
+                0.66,
+                0.26
+              ],
+              "local_offset": [
+                -0.145,
+                0,
+                0
+              ],
+              "position_attribute_digest": "02718222dcbc5e95",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "arm_l",
+              "name": "npc-006/arm_l",
+              "is_root": false,
+              "parameters": {
+                "width": 0.1,
+                "height": 0.4,
+                "depth": 0.14,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.1,
+                0.4,
+                0.14
+              ],
+              "local_offset": [
+                -0.24,
+                0.08,
+                0
+              ],
+              "position_attribute_digest": "bbd23c48dd21c24d",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "arm_r",
+              "name": "npc-006/arm_r",
+              "is_root": false,
+              "parameters": {
+                "width": 0.1,
+                "height": 0.4,
+                "depth": 0.14,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.1,
+                0.4,
+                0.14
+              ],
+              "local_offset": [
+                0.24,
+                0.08,
+                0
+              ],
+              "position_attribute_digest": "bbd23c48dd21c24d",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "coat",
+              "name": "npc-006/coat",
+              "is_root": false,
+              "parameters": {
+                "width": 0.38,
+                "height": 1.12,
+                "depth": 0.34,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.38,
+                1.12,
+                0.34
+              ],
+              "local_offset": [
+                0,
+                -0.25,
+                -0.05
+              ],
+              "position_attribute_digest": "cb20d111567b5125",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "eyes",
+              "name": "npc-006/eyes",
+              "is_root": false,
+              "parameters": {
+                "width": 0.19,
+                "height": 0.05,
+                "depth": 0.03,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.19,
+                0.05,
+                0.03
+              ],
+              "local_offset": [
+                0,
+                0.53,
+                0.16
+              ],
+              "position_attribute_digest": "90c61711af75f2cd",
+              "vertex_count": 24,
+              "source_hex": "#8b1919",
+              "material_hex": "#751313"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "hair",
+              "name": "npc-006/hair",
+              "is_root": false,
+              "parameters": {
+                "width": 0.58,
+                "height": 0.72,
+                "depth": 0.3,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.58,
+                0.72,
+                0.3
+              ],
+              "local_offset": [
+                0,
+                0.34,
+                -0.015
+              ],
+              "position_attribute_digest": "b2fcdb3c30cdbb65",
+              "vertex_count": 24,
+              "source_hex": "#1c1a19",
+              "material_hex": "#161413"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "head",
+              "name": "npc-006/head",
+              "is_root": false,
+              "parameters": {
+                "width": 0.26,
+                "height": 0.3,
+                "depth": 0.26,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.26,
+                0.3,
+                0.26
+              ],
+              "local_offset": [
+                0,
+                0.49,
+                0.025
+              ],
+              "position_attribute_digest": "fdcaa1107e157e6d",
+              "vertex_count": 24,
+              "source_hex": "#dfd2c8",
+              "material_hex": "#bdb2aa"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "leg_l",
+              "name": "npc-006/leg_l",
+              "is_root": false,
+              "parameters": {
+                "width": 0.17,
+                "height": 0.8,
+                "depth": 0.2,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.17,
+                0.8,
+                0.2
+              ],
+              "local_offset": [
+                -0.11,
+                -0.72,
+                0
+              ],
+              "position_attribute_digest": "a82f4dd30e57aec5",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "leg_r",
+              "name": "npc-006/leg_r",
+              "is_root": false,
+              "parameters": {
+                "width": 0.17,
+                "height": 0.8,
+                "depth": 0.2,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.17,
+                0.8,
+                0.2
+              ],
+              "local_offset": [
+                0.11,
+                -0.72,
+                0
+              ],
+              "position_attribute_digest": "a82f4dd30e57aec5",
+              "vertex_count": 24,
+              "source_hex": "#8f1d1d",
+              "material_hex": "#791717"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "lips",
+              "name": "npc-006/lips",
+              "is_root": false,
+              "parameters": {
+                "width": 0.11,
+                "height": 0.035,
+                "depth": 0.03,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.11,
+                0.035,
+                0.03
+              ],
+              "local_offset": [
+                0,
+                0.43,
+                0.1575
+              ],
+              "position_attribute_digest": "8c8852375a117b2d",
+              "vertex_count": 24,
+              "source_hex": "#a51c24",
+              "material_hex": "#8c161d"
+            },
+            {
+              "entity_id": "npc-006",
+              "part": "mask",
+              "name": "npc-006/mask",
+              "is_root": false,
+              "parameters": {
+                "width": 0.24,
+                "height": 0.16,
+                "depth": 0.05,
+                "widthSegments": 1,
+                "heightSegments": 1,
+                "depthSegments": 1
+              },
+              "size": [
+                0.24,
+                0.16,
+                0.05
+              ],
+              "local_offset": [
+                0,
+                0.565,
+                0.17
+              ],
+              "position_attribute_digest": "c8ac01d8be6210e5",
+              "vertex_count": 24,
+              "source_hex": "#e9e4dc",
+              "material_hex": "#c6c2bb"
+            }
+          ]
+        }
+      ],
+      "character": [
+        {
+          "entity_id": "npc-006",
+          "part": "torso",
+          "name": "npc-006",
+          "is_root": true,
+          "parameters": {
+            "width": 0.38,
+            "height": 0.66,
+            "depth": 0.26,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.38,
+            0.66,
+            0.26
+          ],
+          "local_offset": [
+            -0.145,
+            0,
+            0
+          ],
+          "position_attribute_digest": "02718222dcbc5e95",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "arm_l",
+          "name": "npc-006/arm_l",
+          "is_root": false,
+          "parameters": {
+            "width": 0.1,
+            "height": 0.4,
+            "depth": 0.14,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.1,
+            0.4,
+            0.14
+          ],
+          "local_offset": [
+            -0.24,
+            0.08,
+            0
+          ],
+          "position_attribute_digest": "bbd23c48dd21c24d",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "arm_r",
+          "name": "npc-006/arm_r",
+          "is_root": false,
+          "parameters": {
+            "width": 0.1,
+            "height": 0.4,
+            "depth": 0.14,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.1,
+            0.4,
+            0.14
+          ],
+          "local_offset": [
+            0.24,
+            0.08,
+            0
+          ],
+          "position_attribute_digest": "bbd23c48dd21c24d",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "coat",
+          "name": "npc-006/coat",
+          "is_root": false,
+          "parameters": {
+            "width": 0.38,
+            "height": 1.12,
+            "depth": 0.34,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.38,
+            1.12,
+            0.34
+          ],
+          "local_offset": [
+            0,
+            -0.25,
+            -0.05
+          ],
+          "position_attribute_digest": "cb20d111567b5125",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "eyes",
+          "name": "npc-006/eyes",
+          "is_root": false,
+          "parameters": {
+            "width": 0.19,
+            "height": 0.05,
+            "depth": 0.03,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.19,
+            0.05,
+            0.03
+          ],
+          "local_offset": [
+            0,
+            0.53,
+            0.16
+          ],
+          "position_attribute_digest": "90c61711af75f2cd",
+          "vertex_count": 24,
+          "source_hex": "#8b1919",
+          "material_hex": "#751313"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "hair",
+          "name": "npc-006/hair",
+          "is_root": false,
+          "parameters": {
+            "width": 0.58,
+            "height": 0.72,
+            "depth": 0.3,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.58,
+            0.72,
+            0.3
+          ],
+          "local_offset": [
+            0,
+            0.34,
+            -0.015
+          ],
+          "position_attribute_digest": "b2fcdb3c30cdbb65",
+          "vertex_count": 24,
+          "source_hex": "#1c1a19",
+          "material_hex": "#161413"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "head",
+          "name": "npc-006/head",
+          "is_root": false,
+          "parameters": {
+            "width": 0.26,
+            "height": 0.3,
+            "depth": 0.26,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.26,
+            0.3,
+            0.26
+          ],
+          "local_offset": [
+            0,
+            0.49,
+            0.025
+          ],
+          "position_attribute_digest": "fdcaa1107e157e6d",
+          "vertex_count": 24,
+          "source_hex": "#dfd2c8",
+          "material_hex": "#bdb2aa"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "leg_l",
+          "name": "npc-006/leg_l",
+          "is_root": false,
+          "parameters": {
+            "width": 0.17,
+            "height": 0.8,
+            "depth": 0.2,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.17,
+            0.8,
+            0.2
+          ],
+          "local_offset": [
+            -0.11,
+            -0.72,
+            0
+          ],
+          "position_attribute_digest": "a82f4dd30e57aec5",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "leg_r",
+          "name": "npc-006/leg_r",
+          "is_root": false,
+          "parameters": {
+            "width": 0.17,
+            "height": 0.8,
+            "depth": 0.2,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.17,
+            0.8,
+            0.2
+          ],
+          "local_offset": [
+            0.11,
+            -0.72,
+            0
+          ],
+          "position_attribute_digest": "a82f4dd30e57aec5",
+          "vertex_count": 24,
+          "source_hex": "#8f1d1d",
+          "material_hex": "#791717"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "lips",
+          "name": "npc-006/lips",
+          "is_root": false,
+          "parameters": {
+            "width": 0.11,
+            "height": 0.035,
+            "depth": 0.03,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.11,
+            0.035,
+            0.03
+          ],
+          "local_offset": [
+            0,
+            0.43,
+            0.1575
+          ],
+          "position_attribute_digest": "8c8852375a117b2d",
+          "vertex_count": 24,
+          "source_hex": "#a51c24",
+          "material_hex": "#8c161d"
+        },
+        {
+          "entity_id": "npc-006",
+          "part": "mask",
+          "name": "npc-006/mask",
+          "is_root": false,
+          "parameters": {
+            "width": 0.24,
+            "height": 0.16,
+            "depth": 0.05,
+            "widthSegments": 1,
+            "heightSegments": 1,
+            "depthSegments": 1
+          },
+          "size": [
+            0.24,
+            0.16,
+            0.05
+          ],
+          "local_offset": [
+            0,
+            0.565,
+            0.17
+          ],
+          "position_attribute_digest": "c8ac01d8be6210e5",
+          "vertex_count": 24,
+          "source_hex": "#e9e4dc",
+          "material_hex": "#c6c2bb"
+        }
+      ],
+      "viewport": {
+        "client_width": 1440,
+        "client_height": 900,
+        "drawing_buffer_width": 1440,
+        "drawing_buffer_height": 900,
+        "pixel_ratio": 1,
+        "aspect": 1.6,
+        "webgl": true
+      },
+      "entityIds": [
+        "courtyard-01",
+        "gate-north",
+        "kitchen-01",
+        "npc-006",
+        "room-1052"
+      ],
+      "npc_position_mm": {
+        "x": 5261,
+        "y": 0,
+        "z": 15000
+      },
+      "tick": 138
+    }
+  },
+  "js_errors": {
+    "main_page": {
+      "console_error": 0,
+      "pageerror": 0,
+      "total": 0
+    }
+  },
+  "bad_responses_main": []
+}

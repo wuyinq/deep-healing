@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260924-002-deephealing-xuqin-appearance/02_source/v0_skeleton/tools/verify_asset_pack.py", line 280, in <module>
+    sys.exit(main(sys.argv[1:]))
+             ~~~~^^^^^^^^^^^^^^
+  File "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260924-002-deephealing-xuqin-appearance/02_source/v0_skeleton/tools/verify_asset_pack.py", line 268, in main
+    result = check_pack(Path(args.pack), Path(args.manifest), Path(args.license_table),
+                        Path(args.runtime_tree) if args.runtime_tree else None)
+  File "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/REQ-20260924-002-deephealing-xuqin-appearance/02_source/v0_skeleton/tools/verify_asset_pack.py", line 110, in check_pack
+    entries = {entry["asset_id"]: entry for entry in assets}
+               ~~~~~^^^^^^^^^^^^
+KeyError: 'asset_id'
