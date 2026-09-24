@@ -55,8 +55,8 @@ jobs:
           node -v
           python -V
 
-      - name: Python 依赖（jsonschema 引擎）
-        run: python -m pip install --disable-pip-version-check "jsonschema==4.26.0"
+      - name: Python 依赖（jsonschema 引擎 + pytest）
+        run: python -m pip install --disable-pip-version-check "jsonschema==4.26.0" "pytest==9.1.1"
 
       - name: Node 依赖（提升到仓库根，绝不落进 02_source）
         run: |
