@@ -76,14 +76,20 @@ import {
   applyEnvironmentLighting, environmentReport as lightingEnvironmentReport, deriveLighting, healingMaterial,
   type Reading, type Tone,
 } from './lighting.ts';
+import { bindingForEntity, bindingReport as bindingReportOf } from './asset_binding.ts';
+import { createCharacterInstance, type CharacterInstance } from './character_instance.ts';
+import {
+  TICK_MS, apply as applyAuthorityStep, createPresentation, type Presentation,
+} from './presentation.ts';
 import {
   buildCharacterParts, resolveAppearanceTable, resolveMaskDegradation, stateIdFor,
   buildCharacterDetailParts,
   type CharacterAppearance, type CharacterPart,
 } from './character.ts';
 import {
-  SURFACES, loadSurfaceMaterials, loadSkinDetailMaterial, materialReport as materialsReport, envMapIntensityMin,
-  type SurfaceId,
+  SURFACES, SURFACE_IDS, SURFACE_IDS_EXT, SURFACES_EXT, loadSurfaceMaterials, loadExtSurfaceMaterial,
+  materialReport as materialsReport, envMapIntensityMin,
+  type SurfaceId, type ExtSurfaceId,
 } from './materials.ts';
 import { createPostFX, postfxReport as postfxChainReport, type PostFX } from './postfx.ts';
 
@@ -204,6 +210,29 @@ function sizeFor(kind: string): [number, number, number] {
   }
 }
 
+/**
+ * N5-r3 / A2：**有效可见性** —— 沿 `parent.visible` 链求与（照 `review/{sentinel,raven}` 的
+ * A5 探针算法）。three 的 `projectObject()` 遇 `object.visible === false` **整棵子树 return**
+ * （`three.cjs:75317`）⇒「这个对象真的会被画吗」必须沿祖先链判断，只看自身 `visible` 会漏判。
+ * 本函数是 `characterBoxVisibilityReport()` 的取数原语，并被 A2 的可见性锚/负对照复用。
+ */
+export function effectiveVisibility(object: THREE.Object3D | null | undefined): boolean {
+  let node: THREE.Object3D | null = object ?? null;
+  while (node) {
+    if (node.visible !== true) return false;
+    node = node.parent;
+  }
+  return true;
+}
+
+/** 该对象的**自身绘制**是否被材质可见性挡住（`material.visible === false` ⇒ 不画自身，子节点照画）。 */
+function materialVisible(object: THREE.Object3D): boolean {
+  const material = (object as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+  if (!material) return true;
+  if (Array.isArray(material)) return material.some((m) => m.visible !== false);
+  return material.visible !== false;
+}
+
 // ================================================================== N4 / W4：建筑部件面
 /**
  * **N4 建筑部件**（AC-4 的「建筑不再是盒体」）。
@@ -284,8 +313,11 @@ const CHARACTER_PART_SURFACE: Record<string, SurfaceId> = {
   // 与腿的暗红亮度几乎同值，读不出「鞋」。移出本表 ⇒ 材质回落 `healingMaterial(hex)` 的纯色中性近黑。
 };
 /**
- * N4 / W5：**裸露皮肤**部件（面/颈/手/耳/鼻）—— 用 `skin-pale-01` 皮肤细节贴图（**乘性层**，
- * 只叠细节、不改色锚点）。内容包规范肤色仍由 `source_hex × luminanceScale` 决定。
+ * N4 / W5 → **N5-r2 / A1 修正**：**裸露皮肤**部件（面/颈/手/耳/鼻）此前用 `skin-pale-01`
+ * 皮肤细节贴图（**乘性层**）。该贴图许可**未证实**（`license=unknown`），
+ * `provenance.json` 已声明 `runtime_excluded=true` —— r2 起**真剔除**：本集合只在
+ * `characterMaterial()` 里用于**排除**贴图路径（回落 `healingMaterial` 的规范色），
+ * 不再触发任何贴图加载。文件本体与登记行保留（历史登记 / AC-E-2b / N4 判据依赖）。
  */
 const CHARACTER_SKIN_PARTS = new Set(['head', 'neck', 'hand_l', 'hand_r', 'nose', 'ear_l', 'ear_r']);
 /** 窗洞（在 `-x` 后墙上；`+z` 侧敞开 ⇒ 默认取景能看进室内）。 */
@@ -847,6 +879,32 @@ function createRenderer(canvas: HTMLCanvasElement): { renderer: RendererLike; we
 }
 
 /**
+ * N5-r2 / B4（M-9 部分关闭）：**WebGL 不可用**的用户可见提示。
+ *
+ * r1 的缺陷（raven §A6 / `AC-I-4`）：取不到 WebGL 时**静默**退化为空渲染器
+ * ⇒ 用户看到 UI 正常但画布全黑、无任何解释。这里插入一条可见提示。
+ * 文案与 id 都是**机器可核**的常量（`grep` / 浏览器取证均可断言其存在）。
+ * Node 下无 `document` ⇒ 整段跳过（既有判据零影响）。
+ */
+export const WEBGL_UNAVAILABLE_NOTICE_ID = 'webgl-unavailable-notice';
+export const WEBGL_UNAVAILABLE_NOTICE_TEXT =
+  'WebGL 不可用：3D 场景无法渲染（画面将保持空白）。请启用浏览器硬件加速 / WebGL 后重载。';
+
+/** 插入 WebGL 不可用提示；返回是否已存在/已插入（`document` 不可得 ⇒ `false`，不抛）。 */
+export function installWebglUnavailableNotice(): boolean {
+  if (typeof document === 'undefined' || !document.body) return false;
+  if (document.getElementById(WEBGL_UNAVAILABLE_NOTICE_ID)) return true;
+  const box = document.createElement('div');
+  box.id = WEBGL_UNAVAILABLE_NOTICE_ID;
+  box.setAttribute('role', 'alert');
+  box.textContent = WEBGL_UNAVAILABLE_NOTICE_TEXT;
+  box.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:9999;padding:8px 12px;'
+    + 'background:rgba(18,18,18,.86);color:#f2e6d8;font:13px/1.5 system-ui,sans-serif;text-align:center;';
+  document.body.appendChild(box);
+  return true;
+}
+
+/**
  * N2：**部件读数**（从场景图的部件 mesh 层**读回**）。
  *
  * 颜色**拆两个字段**（R-01 / R-08 钉死）：
@@ -984,8 +1042,41 @@ export interface SceneHandle {
   environmentReport(): Record<string, unknown>;
   /** N4 / W2：后处理链读数（**配置面**，不构成画面证据）。 */
   postfxReport(): Record<string, unknown>;
-  /** N4 / W3：材质注册表 + 实际绑定读数（AC-3 的取数点）。 */
-  materialReport(): Array<Record<string, unknown>>;
+  /**
+   * N4 / W3：材质注册表 + 实际绑定读数（AC-3 的取数点）。
+   * **N5**：返回值升为带分区对象（`surfaces` / `surfaces_ext` / `classes` / `intersection`），
+   * 见 `materials.ts` 的 `materialReport()` 与 `01d` 的登记（`AC-F-5e` 的「取数源字段名映射」变更）。
+   */
+  materialReport(): {
+    schema_version: string;
+    surfaces: Array<Record<string, unknown>>;
+    surfaces_ext: Array<Record<string, unknown>>;
+    classes: Array<Record<string, unknown>>;
+    intersection: string[];
+  };
+  /** N5 / B-2：**绑定层读数**（`AC-A-2e` / `AC-I-1` / `AC-I-2` 的机读锚；纯数据 + 运行期 degradations）。 */
+  bindingReport(): ReturnType<typeof bindingReportOf>;
+  /** N5 / B-2：**角色实例读数**（逐 npc：Group 根 / glb_loaded / 槽位来源 / degradations）。 */
+  characterInstanceReport(): Array<Record<string, unknown>>;
+  /** N5 / B-3：**表现层读数**（权威写日志 / 偏差 / 相机口径；`AC-F-2b` / `AC-B-6` / `AC-H-2`）。 */
+  presentationReport(): Record<string, unknown>;
+  /**
+   * N5-r2 / A3 + N5-r3 / A6：**场景实际使用面**（从场景图 mesh 的材质表**真实遍历**取数，取代 r1 的
+   * 注册表 filter）。`AC-I-3g` 的机读面；`visible_*` 一路只统计**真的会被画**的表面（N-4 关闭）。
+   */
+  surfaceUsageReport(): {
+    scene_used_surfaces: string[]; legacy_used: string[]; ext_used: string[];
+    unregistered: string[]; ext_expected: string[];
+    visible_used_surfaces: string[]; visible_legacy_used: string[]; visible_ext_used: string[];
+    hidden_surfaces: string[];
+  };
+  /** N5-r3 / A1+A2：**人物可见性读数**（`glb_loaded=true` ⇒ 盒体不渲染 ∧ 实体根可见 ∧ GLB 有效可见）。 */
+  characterBoxVisibilityReport(): Array<Record<string, unknown>>;
+  /**
+   * N5 / B-2：宿主**注入** `GLTFLoader`（`null` ⇒ 回落盒体并记 `degradations`）。
+   * 由 `main.ts` 动态 import 后注入 —— `world.ts` 静态 import 它会让 Node 门禁路径踩到 DOM。
+   */
+  setCharacterLoader(loader: { load: (url: string, onLoad: (gltf: unknown) => void, onProgress?: unknown, onError?: (e: unknown) => void) => void } | null): void;
   startRenderLoop(): void;
   dispose(): void;
 }
@@ -996,6 +1087,8 @@ export function createScene(
 ): SceneHandle {
   const created = createRenderer(canvas);
   const webgl = created.webgl;
+  // N5-r2 / B4（M-9 部分关闭；AC-I-4）：WebGL 不可得时给出**用户可见提示**（r1 完全静默 ⇒ 画布全黑无解释）。
+  if (!webgl) installWebglUnavailableNotice();
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#f3efe8');
@@ -1062,6 +1155,24 @@ export function createScene(
    * Node / 无 WebGL（`postfx === null`）⇒ 走原直渲路径（既有判据语义零变化）。
    */
   function renderFrame(): void {
+    // N5 / B-3：表现层推进（**只读**权威容器）；把显示的插值误差落到角色实例的**局部**变换上，
+    // 绝不回写权威、绝不改实体根 mesh 的 `position`（避免「表现层变第二权威」）。
+    presentation.step(TICK_MS);
+    for (const [entityId, inst] of characterInstances) {
+      const shown = presentation.displayed().find((d) => d.entityId === entityId);
+      const parent = meshes.get(entityId);
+      if (shown && parent) {
+        inst.group.position.set(
+          shown.displayed_position_m[0] - parent.position.x,
+          shown.displayed_position_m[1] - parent.position.y,
+          shown.displayed_position_m[2] - parent.position.z,
+        );
+        inst.group.rotation.y = shown.facing_yaw_rad;
+      }
+      inst.update(TICK_MS);
+    }
+    // N5-r2 / A5：GLB 已加载 ⇒ 盒体部件隐藏（回落路径 glb_loaded=false 时保持可见）
+    syncCharacterVisibility();
     if (postfx) {
       postfx.render();
       return;
@@ -1201,6 +1312,24 @@ export function createScene(
 
   // ---------------------------------------------------------------- N4：材质（W3）与部件映射
   const textureLoader = webgl ? new THREE.TextureLoader() : null;
+
+  // ------------------------------------------------------------------ N5 / B-2 + B-3：角色实例与表现层
+  /**
+   * **角色实例注册表**（key = `entity_id`）。每个 npc 实体在装配时挂一个
+   * `character-instance:<entity_id>` 的 **`Group`** 子节点（`asset_binding.ts` 的绑定项决定内容）。
+   *
+   * `characterLoader` 由宿主**注入**（`setCharacterLoader()`）—— `world.ts` **不** import
+   * `GLTFLoader`，理由：`three/examples/jsm/loaders/GLTFLoader.js` 在 Node 下会触碰 DOM，
+   * 而 `scene_assert.mjs` 直接 import 本文件 ⇒ 静态 import 会污染既有 Node 门禁路径。
+   */
+  const characterInstances = new Map<string, CharacterInstance>();
+  let characterLoader: { load: (url: string, onLoad: (gltf: unknown) => void, onProgress?: unknown, onError?: (e: unknown) => void) => void } | null = null;
+  /** 表现层（S-2）：权威容器**只**由 `applyAuthorityStep()` 写；`step()` 只读。 */
+  const presentation: Presentation = createPresentation({
+    smoothingMs: TICK_MS,
+    /** 权威步速上限 = √((500+100)² \+ 500² \+ 500²) mm / 100 ms = 0.92736 m（PM C3 写死常数）。 */
+    epsAuthorityMaxStepM: 0.92736,
+  });
   const surfaceMaterialCache = new Map<string, THREE.MeshStandardMaterial>();
   const characterMaterialCache = new Map<string, THREE.MeshStandardMaterial>();
   /** N4 / W4：建筑部件 mesh（key = `"<实体 id>/<部件>"`）—— 与 `partMeshes` **分离**。 */
@@ -1209,6 +1338,210 @@ export function createScene(
   const detailPartMeshes = new Map<string, THREE.Mesh>();
   /** 非实体装饰 mesh（地面族）—— 不进 `meshes`，故不影响实体级判据。 */
   const decorMeshes: THREE.Mesh[] = [];
+
+  /**
+   * N5-r2 / A3（M-2 关闭）：`SURFACES_EXT` 的 **10 条表面在场景里的真实载体**。
+   *
+   * r1 的缺陷：`loadExtSurfaceMaterial` **零调用点**，ext 表面从未被任何 mesh 实例化
+   * ⇒ `I-3g` 的「场景使用面」只能取注册表并集（自比对 ⇒ 恒真）+ 画面里看不到玻璃/金属/木。
+   * 本表把它们**真正挂到场景物体**上：玻璃=窗玻璃与器皿、金属=栏杆与防盗门、
+   * 木=门框与桌面、布=亚麻窗帘、皮肤=角色实例节点上的可见肤色载体。
+   * 全部为**新增**物件；既有 `SURFACES` 覆盖的物体（墙/楼板/屋面/檐口 …）**一字未动**。
+   * `userData.surface` = ext 表面 id、`userData.surface_table = 'ext'` ⇒ 场景遍历可取数。
+   */
+  const EXT_SURFACE_PROPS: ReadonlyArray<{
+    name: string; surface: ExtSurfaceId; size: [number, number, number];
+    position: [number, number, number]; parent: 'world' | 'character';
+  }> = [
+    { name: 'window-glass', surface: 'glass_window_clear', size: [0.04, 1.30, 1.60], position: [-2.40, 1.75, 0.40], parent: 'world' },
+    { name: 'table-bottle', surface: 'glass_bottle', size: [0.12, 0.30, 0.12], position: [-1.45, 1.08, 1.10], parent: 'world' },
+    { name: 'porch-railing', surface: 'metal_railing', size: [4.60, 0.06, 0.06], position: [0.00, 0.55, 2.45], parent: 'world' },
+    { name: 'unit-door', surface: 'metal_door', size: [1.06, 2.06, 0.06], position: [0.60, 1.05, -2.42], parent: 'world' },
+    { name: 'door-frame', surface: 'wood_door_frame', size: [1.30, 2.20, 0.08], position: [0.60, 1.10, -2.47], parent: 'world' },
+    { name: 'table-top', surface: 'wood_table_top', size: [1.20, 0.06, 0.80], position: [-1.60, 0.90, 1.20], parent: 'world' },
+    { name: 'linen-curtain', surface: 'fabric_linen_curtain', size: [0.06, 2.20, 0.90], position: [-2.30, 1.60, 1.35], parent: 'world' },
+    { name: 'skin-face', surface: 'skin_face', size: [0.16, 0.18, 0.06], position: [0.00, 0.72, 0.16], parent: 'character' },
+    { name: 'skin-hand', surface: 'skin_hand', size: [0.10, 0.14, 0.08], position: [0.28, 0.30, 0.06], parent: 'character' },
+    { name: 'jacket-cloth', surface: 'fabric_cotton_jacket', size: [0.34, 0.34, 0.18], position: [0.00, 0.42, 0.06], parent: 'character' },
+  ];
+  /** ext 表面载体 mesh（key = `EXT_SURFACE_PROPS[].name`）。 */
+  const extPropMeshes = new Map<string, THREE.Mesh>();
+
+  /** 角色侧 ext 载体的宿主：第一个 npc 实体根 mesh（无 npc ⇒ 回落世界根，保证 10 条都实例化）。 */
+  function characterPropHost(): THREE.Object3D | null {
+    const npcIds = [...meshes.keys()]
+      .filter((id) => (meshes.get(id) as THREE.Mesh).userData.kind === 'npc')
+      .sort();
+    const first = npcIds[0];
+    if (!first) return null;
+    return (meshes.get(first) as THREE.Mesh | undefined) ?? null;
+  }
+
+  /**
+   * N5-r2 / A3：把 `SURFACES_EXT` 的每条表面挂到场景物体上（`rebuild()` 里调用）。
+   * `loader`/WebGL 不可得 ⇒ 材质回落 `healingMaterial`（**不抛**），但**挂载本身照做**
+   * ⇒ 「场景使用面」在 Node 与浏览器两侧都取得到真实读数。
+   */
+  function mountExtSurfaceProps(): void {
+    for (const mesh of extPropMeshes.values()) mesh.parent?.remove(mesh);
+    extPropMeshes.clear();
+    const tone = options.worldview[currentReading];
+    for (const prop of EXT_SURFACE_PROPS) {
+      const material = loadExtSurfaceMaterial(prop.surface, 1.2) ?? healingMaterial('#e8e4dc', tone, 0.6);
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(prop.size[0], prop.size[1], prop.size[2]), material);
+      mesh.name = `ext-surface:${prop.name}`;
+      mesh.position.set(prop.position[0], prop.position[1], prop.position[2]);
+      mesh.userData.surface = prop.surface;
+      mesh.userData.surface_table = 'ext';
+      mesh.userData.ext_prop = prop.name;
+      mesh.castShadow = prop.surface !== 'glass_window_clear';
+      mesh.receiveShadow = true;
+      const parent = prop.parent === 'character' ? (characterPropHost() ?? root) : root;
+      mesh.userData.character_prop = prop.parent === 'character' ? String((parent as THREE.Mesh).userData?.entity_id ?? '') : '';
+      parent.add(mesh);
+      extPropMeshes.set(prop.name, mesh);
+    }
+  }
+
+  /**
+   * N5-r2 / A5（M-3 / U-1 关闭）：`glb_loaded=true` ⇒ **盒体部件隐藏**（不得与 GLB 并存渲染）；
+   * `glb_loaded=false`（Node / 无 WebGL / 加载失败）⇒ 保留盒体**回落路径**。
+   * 只改 `visible`（**不删对象、不改几何、不动位置**）⇒ `characterReport()` / `assemblyReport()` /
+   * `entity_root_meshes_are_visible` 的取数面逐字段不变（Node 下 `glb_loaded` 恒 false ⇒ 全部可见）。
+   */
+  function syncCharacterVisibility(): void {
+    for (const [entityId, inst] of characterInstances) {
+      const loaded = inst.glbLoaded();
+      const rootMesh = meshes.get(entityId);
+      if (rootMesh) {
+        // N5-r3 / A1（C-2 / R2-C1 关闭）：**不得**改实体根 mesh 的 `visible`。
+        // r2 的 `rootMesh.visible = !loaded` 会让 three 的 `projectObject()` 在根这一层
+        // 直接 return ⇒ **整棵子树**（含挂在根下的 `character-instance:<id>` 与 GLB）不渲染
+        // ⇒ 真浏览器里人物整体消失（比 r1 更差）。R-2 注释与既有判据
+        // `entity_root_meshes_are_visible` 的 warning 文本逐字就是这条机制。
+        // 解耦口径（PM §2-A1 方向 ①）：实体根只当**载体**，`visible` 恒 `true`；
+        // 根自身的**躯干盒体几何**改由**材质可见性**隐藏 —— three 的 `material.visible`
+        // 守卫位于 `projectObject()` 的 mesh 分支内、`children` 递归**之前**
+        // （`three.cjs:75315-75423`）⇒ 只跳过自身绘制，子节点照常渲染。
+        const rootMaterial = rootMesh.material as THREE.Material | undefined;
+        if (rootMaterial) rootMaterial.visible = !loaded;
+      }
+      for (const name of [...partMeshes.keys(), ...detailPartMeshes.keys()]) {
+        const mesh = partMeshes.get(name) ?? detailPartMeshes.get(name);
+        // 实体根在 `partMeshes` 里以「根部件的名字」登记（= 躯干）⇒ 必须**排除**，
+        // 否则会绕回「改实体根 visible」的老路（GLB 又被一起藏掉）。
+        if (!mesh || mesh === rootMesh) continue;
+        if (String(mesh.userData.entity_id ?? '') !== entityId) continue;
+        mesh.visible = !loaded;
+      }
+      for (const prop of extPropMeshes.values()) {
+        if (String(prop.userData.character_prop ?? '') !== entityId) continue;
+        prop.visible = !loaded;
+      }
+    }
+  }
+
+  /**
+   * N5-r3 / A1+A2：**人物可见性读数**（机器可核的「加载后人物仍可见」锚面）。
+   *
+   * 每个字段都可**为假**（不恒真）：
+   *   - `box_parts_visible` = **真的会被画的**盒体部件数（自身 `visible` ∧ 材质可见性 ∧ 祖先链可见）
+   *     ⇒ `glb_loaded=true` 时必须为 0（盒体几何全部不渲染）；
+   *   - `box_root_visible` = 实体根 mesh 的 `object.visible`（R-2 冻结 ⇒ **恒为 true**）；
+   *   - `box_root_drawn` = 实体根**自身几何**是否真的入渲染表（材质可见性）⇒ 加载后为 false；
+   *   - `glb_subtree_effective_visible` = `character-instance:<id>` 的祖先链与 GLB 子树
+   *     **有效可见性**（沿 `parent.visible` 求与）⇒ 加载后必须为 true；
+   *   - `character_effective_visible` = 该实体**最终会不会产生像素**（加载后看 GLB，未加载看盒体）。
+   */
+  function characterBoxVisibilityReport(): Array<Record<string, unknown>> {
+    return [...characterInstances.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([entityId, inst]) => {
+      const rootMesh = meshes.get(entityId);
+      const names = [...partMeshes.keys(), ...detailPartMeshes.keys()];
+      const owned = names.filter((name) => {
+        const mesh = partMeshes.get(name) ?? detailPartMeshes.get(name);
+        return Boolean(mesh) && String(mesh?.userData.entity_id ?? '') === entityId;
+      });
+      // **可绘制** = 自身 `visible` ∧ 材质可见性 ∧ 祖先链可见（否则 three 不会把它放进渲染表）
+      const drawable = (mesh: THREE.Mesh | undefined): boolean => Boolean(mesh)
+        && mesh?.visible === true && materialVisible(mesh) && effectiveVisibility(mesh);
+      const visible = owned.filter((name) => drawable(partMeshes.get(name) ?? detailPartMeshes.get(name)));
+      const characterProps = [...extPropMeshes.values()]
+        .filter((mesh) => String(mesh.userData.character_prop ?? '') === entityId);
+      const glbMeshes: THREE.Mesh[] = [];
+      inst.group.traverse((object: THREE.Object3D) => {
+        if ((object as THREE.Mesh).isMesh) glbMeshes.push(object as THREE.Mesh);
+      });
+      const glbLoaded = inst.glbLoaded();
+      const groupEffective = effectiveVisibility(inst.group);
+      // 假 loader（空 Group）⇒ 没有 mesh 可查，退回「子树根是否有效可见」
+      const glbSubtreeEffective = glbMeshes.length === 0
+        ? groupEffective
+        : glbMeshes.some((mesh) => drawable(mesh));
+      const rootVisible = Boolean(rootMesh?.visible);
+      const rootEffective = effectiveVisibility(rootMesh);
+      const boxDrawable = visible.length > 0;
+      return {
+        entity_id: entityId,
+        glb_loaded: glbLoaded,
+        box_parts_total: owned.length,
+        box_parts_visible: visible.length,
+        box_parts_hidden: owned.length - visible.length,
+        box_parts_kept_names: visible.map((name) => String((partMeshes.get(name) ?? detailPartMeshes.get(name))?.userData.part ?? name)).sort(),
+        /** 实体根 mesh 的 `object.visible`（R-2 冻结 ⇒ 恒 true；A7 的真浏览器读数锚）。 */
+        box_root_visible: rootVisible,
+        /** 实体根**自身的**盒体几何是否真的入渲染表（`material.visible` 守卫）⇒ 加载后为 false。 */
+        box_root_drawn: rootEffective && Boolean(rootMesh) && materialVisible(rootMesh as THREE.Object3D),
+        /** `character-instance:<id>` 子树的有效可见性（沿祖先链）⇒ 加载后必须为 true。 */
+        glb_subtree_effective_visible: glbSubtreeEffective,
+        /** 实体根沿祖先链的有效可见性（根可见 ∧ 世界根可见）。 */
+        entity_root_effective_visible: rootEffective,
+        /** 人物最终是否会产生像素（加载后 = GLB 子树；未加载 = 盒体部件）。A2 的锚读它。 */
+        character_effective_visible: glbLoaded ? (rootEffective && glbSubtreeEffective) : (rootEffective && boxDrawable),
+        character_ext_props_visible: characterProps.filter((mesh) => drawable(mesh)).length,
+      };
+    });
+  }
+
+  /**
+   * N5-r3 / A6（N-4 关闭）：**场景实际使用面** —— 从场景图 mesh 的材质表**真实遍历**取数；
+   * 并**另出一路** `visible_*`：只统计「真的会被画」的表面（自身 `visible` ∧ 材质可见性 ∧
+   * 祖先链可见）。r2 的缺陷（raven N-4）：`surfaceUsageReport()` **不看 `visible`** ⇒
+   * A5 把整棵子树藏掉时 `ext_used` 依旧 `10/10`、门禁依旧绿，I-3g 读不到「表面被藏」。
+   * 取数口径：`scene_used_*` = 几何在场景里（结构面）；`visible_*` = 几何在场景里**且可见**（渲染面）。
+   */
+  function surfaceUsageReport(): {
+    scene_used_surfaces: string[]; legacy_used: string[]; ext_used: string[];
+    unregistered: string[]; ext_expected: string[];
+    visible_used_surfaces: string[]; visible_legacy_used: string[]; visible_ext_used: string[];
+    hidden_surfaces: string[];
+  } {
+    const used = new Set<string>();
+    const visibleUsed = new Set<string>();
+    scene.traverse((object: THREE.Object3D) => {
+      const mesh = object as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      const surfaceId = (mesh.userData ?? {}).surface;
+      if (typeof surfaceId !== 'string' || !surfaceId) return;
+      used.add(surfaceId);
+      if (mesh.visible === true && materialVisible(mesh) && effectiveVisibility(mesh)) visibleUsed.add(surfaceId);
+    });
+    const all = [...used].sort();
+    const allVisible = [...visibleUsed].sort();
+    const legacySet = new Set<string>(SURFACE_IDS as readonly string[]);
+    const extSet = new Set<string>(SURFACE_IDS_EXT as readonly string[]);
+    return {
+      scene_used_surfaces: all,
+      legacy_used: all.filter((id) => legacySet.has(id)),
+      ext_used: all.filter((id) => extSet.has(id)),
+      unregistered: all.filter((id) => !legacySet.has(id) && !extSet.has(id)),
+      ext_expected: [...SURFACE_IDS_EXT].sort(),
+      visible_used_surfaces: allVisible,
+      visible_legacy_used: allVisible.filter((id) => legacySet.has(id)),
+      visible_ext_used: allVisible.filter((id) => extSet.has(id)),
+      /** 在场景里但**不可见**的表面（N-4 的盲区读数；非空 ⇒ 有人把表面藏了）。 */
+      hidden_surfaces: all.filter((id) => !visibleUsed.has(id)),
+    };
+  }
 
   /** 建筑部件表面材质（真 PBR 贴图；Node / 无 WebGL ⇒ 回落纯色，**不抛**）。 */
   function surfaceMaterial(surface: SurfaceId): THREE.MeshStandardMaterial {
@@ -1238,12 +1571,13 @@ export function createScene(
     const tone = options.worldview[currentReading];
     const scale = deriveLighting(tone).luminanceScale;
     const surface = CHARACTER_PART_SURFACE[part];
-    const built = textureLoader
-      ? (CHARACTER_SKIN_PARTS.has(part)
-        ? loadSkinDetailMaterial(textureLoader, { luminanceScale: scale, tint: sourceHex })
-        : (surface
-          ? loadSurfaceMaterials(textureLoader, SURFACES[surface], { luminanceScale: scale, tint: sourceHex })
-          : null))
+    // N5-r2 / A1（CRITICAL-1「真剔除」）：裸肤部件**不再**走皮肤细节层函数
+    // （`skin-pale-01`，许可 `unknown` / 未证实）。贴图文件本体、`URLS` 登记项与
+    // `manifest.txt` 登记行**全部保留**（历史登记 / AC-E-2b 覆盖 / N4 判据依赖），
+    // 只从**运行时渲染路径**移除其消费 ⇒ `provenance.json` 的 `runtime_excluded=true` 成为事实。
+    // 裸肤部件的材质回落 `healingMaterial`（与既有降级路径同一形态，不引入新分支语义）。
+    const built = textureLoader && !CHARACTER_SKIN_PARTS.has(part) && surface
+      ? loadSurfaceMaterials(textureLoader, SURFACES[surface], { luminanceScale: scale, tint: sourceHex })
       : null;
     const material = built ?? healingMaterial(sourceHex, tone);
     material.envMapIntensity = 1.2;
@@ -1305,6 +1639,9 @@ export function createScene(
     partMeshes.clear();
     buildingPartMeshes.clear();
     detailPartMeshes.clear();
+    // N5 / B-2：角色实例随实体集重建（旧实例显式 dispose，避免指针残留）
+    for (const inst of characterInstances.values()) inst.dispose();
+    characterInstances.clear();
     addGroundDecor(state);
     const boxes = buildEntityBoxes(state, currentReading, { appearance: appearanceTable });
     boxes.forEach((box, index) => {
@@ -1314,6 +1651,11 @@ export function createScene(
         ? characterMaterial(box.source_hex ?? (palette[index % palette.length] as string), 'torso')
         : materialFor(index);
       const mesh = new THREE.Mesh(box.geometry, material);
+      // N5-r3 / A1：人物实体根 mesh 是**盒体（躯干几何）的载体**，`glb_loaded=true` 时它的盒体几何
+      // 由**材质可见性**隐藏（`object.visible` 恒 true ⇒ 子节点递归不受影响）。
+      // `characterMaterial()` 的返回值是**共享缓存**（key = `torso|<hex>|<reading>`）⇒ 必须**独占**
+      // 一份材质副本，否则隐藏一个角色会把同 hex 的其他角色的躯干一起藏掉。
+      if (box.character_root) mesh.material = (material as THREE.MeshStandardMaterial).clone();
       mesh.name = box.id;
       mesh.position.set(...box.position);
       // R4 / R3-C1：装配变换（缩放 + 旋转）**真写入** mesh —— 默认单位变换 ⇒ 语义不变；
@@ -1402,7 +1744,22 @@ export function createScene(
         mesh.add(partMesh);
         detailPartMeshes.set(part.name, partMesh);
       }
+      // ------------------------------------------------------------------ N5 / B-2：角色实例节点
+      // `entity_id` 绑**角色实例**，不再绑死到躯干盒体（REQ §三 S-1）。
+      // **纯加法**：既有的部件 mesh 一行未动；本节点是新增的 `Group` 子节点，
+      // 由 `asset_binding.ts` 的绑定项决定下面挂什么（有 loader ⇒ 真 GLB；无 ⇒ 空 Group + degradations）。
+      const instance = createCharacterInstance({
+        entityId: box.id,
+        gltfLoader: characterLoader,
+        extSurfaces: bindingForEntity(box.id)?.ext_surfaces as readonly never[] | undefined,
+      });
+      instance.group.position.set(0, 0, 0);
+      mesh.add(instance.group);
+      characterInstances.set(box.id, instance);
     });
+    // N5-r2 / A3 + A5：ext 表面载体挂载 + 盒体可见性同步（rebuild 之后立即对齐）
+    mountExtSurfaceProps();
+    syncCharacterVisibility();
   }
 
   /** N2：**部件读数**（从部件 mesh 层读回；`source_hex` 读法无关，`material_hex` 仅信息性）。 */
@@ -1550,9 +1907,26 @@ export function createScene(
   }
 
   /**
-   * N2：惰性自动接线（**只读**）。宿主未注入装配配置时，按实体 id 解析一次内容包
-   * （`?pack=` 兜底）。取不到 ⇒ 保持 `null`（退回确定性通用人形，**不伪造**）。
+   * N5 / S-2：把**权威**位置喂进表现层。
+   * **唯一**写入路径 = `presentation.ts` 的 `apply()`（AST 判据 `AC-F-2b` 核这一点）；
+   * 本函数只是调用方，不含任何权威语义。
    */
+  function feedAuthority(state: SceneState | undefined, tick: number): void {
+    const entities = (state?.entities ?? [])
+      .filter((entity) => entity.kind === 'npc')
+      .map((entity) => {
+        const pos = entity.transform?.pos_mm ?? { x: 0, y: 0, z: 0 };
+        return {
+          entityId: entity.id,
+          pos_m: [pos.x / MM, pos.y / MM, pos.z / MM] as [number, number, number],
+          stateId: stateIdFor(appearanceTable?.get(entity.id) ?? null, { entityId: entity.id, state: entity }),
+          tick,
+        };
+      });
+    if (entities.length === 0) return;
+    applyAuthorityStep(entities, tick);
+  }
+
   function maybeAutoLoadAppearance(): void {
     if (appearanceAutoLoadAttempted) return;
     const npcIds = [...new Set((latestState?.entities ?? [])
@@ -1709,6 +2083,7 @@ export function createScene(
       if (message.t === 'snapshot') {
         rebuild(message.state);
         maybeAutoLoadAppearance();
+        feedAuthority(message.state, message.tick);
         return;
       }
       if (message.t === 'delta') {
@@ -1720,6 +2095,7 @@ export function createScene(
           if (!pos) continue;
           mesh.position.set(pos.x / MM, pos.y / MM, pos.z / MM);
         }
+        feedAuthority(latestState, message.tick);
       }
     },
     setReading(reading) {
@@ -1789,6 +2165,20 @@ export function createScene(
     environmentReport: () => lightingEnvironmentReport(),
     postfxReport: () => postfxChainReport(),
     materialReport: () => materialsReport(),
+    // N5 / B-2 + B-3：绑定层 / 角色实例 / 表现层读数（纯加法）
+    bindingReport: () => bindingReportOf(),
+    characterInstanceReport: () => [...characterInstances.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([entityId, inst]) => ({ ...inst.report(), entity_id: entityId })),
+    presentationReport: () => presentation.report(),
+    // N5-r2 / A3 + A5：场景使用面（真实遍历）与盒体可见性读数
+    surfaceUsageReport,
+    characterBoxVisibilityReport,
+    setCharacterLoader: (loader) => {
+      characterLoader = loader;
+      // 注入后重建一次：既有 npc 实体立刻按新 loader 重新建实例（无 npc ⇒ 不做事）
+      if (latestState) rebuild(latestState);
+    },
     startRenderLoop() {
       const loop = () => {
         renderFrame();

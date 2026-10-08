@@ -1,0 +1,1716 @@
+{
+  "schema_version": "n5-provenance/1",
+  "pack_id": "xingfu-xiaoqu-xuqin",
+  "coverage": {
+    "asset_roots": [
+      "v0/02_source/v0_skeleton/web/assets",
+      "v0/02_source/v0_skeleton/districts/xingfu-xiaoqu-xuqin/assets"
+    ],
+    "excluded_patterns": [
+      "*/__pycache__/*",
+      "*.pyc",
+      "*/.pytest_cache/*",
+      "*/.DS_Store",
+      "*/node_modules/*",
+      "*/.venv/*",
+      "*/dist/*",
+      "attic-*/*"
+    ],
+    "non_asset_files": [
+      {
+        "path": "v0/02_source/v0_skeleton/web/assets/manifest.txt",
+        "why": "N4 资产**登记表**（人类可读 registry），不是被引用的素材；按 AC-E-2b 的「非资产文件 ⇒ 哈希清单口径」记入 assert_inputs.json"
+      },
+      {
+        "path": "v0/02_source/v0_skeleton/districts/xingfu-xiaoqu-xuqin/assets/manifest.json",
+        "why": "内容包**清单**（pack 元数据），同上按哈希清单口径覆盖"
+      },
+      {
+        "path": "v0/02_source/v0_skeleton/districts/xingfu-xiaoqu-xuqin/npcs/npc-006.json",
+        "why": "AC-E-2b 明文归入「非资产文件」（改按哈希清单口径）"
+      },
+      {
+        "path": "v0/02_source/v0_skeleton/web/src/scene/asset_binding.ts",
+        "why": "AC-E-2b 明文归入「非资产文件」（改按哈希清单口径）"
+      }
+    ]
+  },
+  "license_snapshots": {
+    "polyhaven_license": {
+      "path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+      "sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba",
+      "url": "https://polyhaven.com/license",
+      "fetched_at": "2026-10-08T03:27:00Z"
+    },
+    "cc0_legalcode": {
+      "path": "v0/spikes/n5-asset/frozen/license_evidence/cc0-1.0-legalcode.txt",
+      "sha256": "a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499",
+      "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "fetched_at": "2026-10-08T03:27:00Z"
+    },
+    "cc_by_4_0_legalcode": {
+      "path": "v0/spikes/n5-asset/frozen/license_evidence/cc-by-4.0-legalcode.txt",
+      "sha256": "9ba9550ad48438d0836ddab3da480b3b69ffa0aac7b7878b5a0039e7ab429411",
+      "url": "https://creativecommons.org/licenses/by/4.0/",
+      "fetched_at": "2026-10-08T03:23:00Z"
+    },
+    "cesiumman_readme": {
+      "path": "v0/spikes/n5-asset/frozen/license_evidence/cesiumman-README.md",
+      "sha256": "1bf7fa794013d2e0de8c244518936b04d95cba780f4510c8cceee4c23dbc04a8",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/CesiumMan/README.md",
+      "fetched_at": "2026-10-08T03:23:00Z"
+    }
+  },
+  "assets": [
+    {
+      "path": "grey_plaster/Diffuse.jpg",
+      "asset_id": "grey_plaster_diffuse",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Rob Tuytel",
+      "attribution": "Poly Haven — grey_plaster（Rob Tuytel），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex/grey_plaster/Diffuse.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "61b8e249bf65ff1156305b2afa06187c5910d29f726606d7760a28f9255670c1",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:wall_plaster",
+      "byte_size": 621388,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：wall_plaster 的 色图；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "grey_plaster/nor_gl.jpg",
+      "asset_id": "grey_plaster_nor_gl",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Rob Tuytel",
+      "attribution": "Poly Haven — grey_plaster（Rob Tuytel），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex/grey_plaster/nor_gl.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "6f97863d9992a4fc1b7ed6e4a24efaa7f51c50b0c7e0d864282fe2b6ef233bcf",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:wall_plaster",
+      "byte_size": 212246,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：wall_plaster 的 法线（OpenGL 朝向）；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "grey_plaster/arm.jpg",
+      "asset_id": "grey_plaster_arm",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Rob Tuytel",
+      "attribution": "Poly Haven — grey_plaster（Rob Tuytel），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex/grey_plaster/arm.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "dbdb0e0a5822e66f15be375d46618ac202d54cf199314805361915c32aa17c5d",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:wall_plaster",
+      "byte_size": 687381,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：wall_plaster 的 AO(R)/粗糙(G)/金属(B) 打包图；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "brick_wall_04/Diffuse.jpg",
+      "asset_id": "brick_wall_04_diffuse",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Dimitrios Savva",
+      "attribution": "Poly Haven — brick_wall_04（Dimitrios Savva），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex2/brick_wall_04/Diffuse.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "6b2c7692db921aaba2d08db8a2619e7787cf24c21d4c6874e4a3a14310711a3f",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:wall_brick",
+      "byte_size": 519086,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：wall_brick 的 色图；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "brick_wall_04/nor_gl.jpg",
+      "asset_id": "brick_wall_04_nor_gl",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Dimitrios Savva",
+      "attribution": "Poly Haven — brick_wall_04（Dimitrios Savva），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex2/brick_wall_04/nor_gl.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "ad5bae2b38888e7c2cc57d2466b7c0dd5992df57283c4272a1b66addf5e79db3",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:wall_brick",
+      "byte_size": 707028,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：wall_brick 的 法线（OpenGL 朝向）；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "brick_wall_04/arm.jpg",
+      "asset_id": "brick_wall_04_arm",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Dimitrios Savva",
+      "attribution": "Poly Haven — brick_wall_04（Dimitrios Savva），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex2/brick_wall_04/arm.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "0548bf329e8cc1d4891d4ec6060efa9b1979ed510f620e4eebe98720a1bc35ef",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:wall_brick",
+      "byte_size": 362939,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：wall_brick 的 AO/粗糙/金属 打包图；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "clay_roof_tiles_02/Diffuse.jpg",
+      "asset_id": "clay_roof_tiles_02_diffuse",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Amal Kumar",
+      "attribution": "Poly Haven — clay_roof_tiles_02（Amal Kumar），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex2/clay_roof_tiles_02/Diffuse.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "24e5fcfb82c51d9a5ed722fc8a867f835a72403f3a65f9acb5382e18c14cb3c4",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:roof_tile",
+      "byte_size": 473508,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：roof_tile 的 色图；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "clay_roof_tiles_02/nor_gl.jpg",
+      "asset_id": "clay_roof_tiles_02_nor_gl",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Amal Kumar",
+      "attribution": "Poly Haven — clay_roof_tiles_02（Amal Kumar），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex2/clay_roof_tiles_02/nor_gl.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "53d4cb8f46699cc86fc32a3d460b8d4b9de1e99eb31794ecfd3b762f1e8fab07",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:roof_tile",
+      "byte_size": 516485,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：roof_tile 的 法线（OpenGL 朝向）；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "clay_roof_tiles_02/arm.jpg",
+      "asset_id": "clay_roof_tiles_02_arm",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Amal Kumar",
+      "attribution": "Poly Haven — clay_roof_tiles_02（Amal Kumar），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex2/clay_roof_tiles_02/arm.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "9dbcd96f698fb055c532e18f7c5576acad0e456e50a4bc75884e3920a7eee691",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:roof_tile",
+      "byte_size": 241352,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：roof_tile 的 AO/粗糙/金属 打包图；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "brick_pavement/Diffuse.jpg",
+      "asset_id": "brick_pavement_diffuse",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Charlotte Baglioni",
+      "attribution": "Poly Haven — brick_pavement（Charlotte Baglioni），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex/brick_pavement/Diffuse.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "6d5b07aff4ab3ad51c13aafb00702751f7984cb79671a4c68c768b1f05e3a765",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:pavement_brick",
+      "byte_size": 401148,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：pavement_brick 的 色图；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "brick_pavement/nor_gl.jpg",
+      "asset_id": "brick_pavement_nor_gl",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Charlotte Baglioni",
+      "attribution": "Poly Haven — brick_pavement（Charlotte Baglioni），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex/brick_pavement/nor_gl.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "51c9508bef55ef7f6722b05a1e64640337455e608b3c754e222863100a9ef460",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:pavement_brick",
+      "byte_size": 451848,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：pavement_brick 的 法线（OpenGL 朝向）；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "brick_pavement/arm.jpg",
+      "asset_id": "brick_pavement_arm",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Charlotte Baglioni",
+      "attribution": "Poly Haven — brick_pavement（Charlotte Baglioni），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex/brick_pavement/arm.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "9f0581f2d03b7ec96c5b7cd00836d27e5b3823678eb168c44057b986f1aaeb32",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:pavement_brick",
+      "byte_size": 305454,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：pavement_brick 的 AO/粗糙/金属 打包图；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "asphalt_02/Diffuse.jpg",
+      "asset_id": "asphalt_02_diffuse",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Rob Tuytel",
+      "attribution": "Poly Haven — asphalt_02（Rob Tuytel），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex/asphalt_02/Diffuse.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "e66c372f602d9ac334084c450c7cc15d473a354cd90fb0a2122b5a365505e3ca",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:road_asphalt",
+      "byte_size": 664363,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：road_asphalt 的 色图；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "asphalt_02/nor_gl.jpg",
+      "asset_id": "asphalt_02_nor_gl",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Rob Tuytel",
+      "attribution": "Poly Haven — asphalt_02（Rob Tuytel），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex/asphalt_02/nor_gl.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "6b92a61afa74a9036946417064d591ca6d4a7c72d51ec55c035824ceaad942d7",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:road_asphalt",
+      "byte_size": 665797,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：road_asphalt 的 法线（OpenGL 朝向）；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "asphalt_02/arm.jpg",
+      "asset_id": "asphalt_02_arm",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Rob Tuytel",
+      "attribution": "Poly Haven — asphalt_02（Rob Tuytel），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex/asphalt_02/arm.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "af0b04e9d5665432a44077df50860d20e6e8db39e0e5ec580feb693d64c268e4",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:road_asphalt",
+      "byte_size": 601135,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：road_asphalt 的 AO/粗糙/金属 打包图；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "grass_ground/Diffuse.jpg",
+      "asset_id": "grass_ground_diffuse",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Charlotte Baglioni",
+      "attribution": "Poly Haven — grass_ground（Charlotte Baglioni），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex/grass_ground/Diffuse.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "2b48e1a2390994025ba5131f8386aba7d08a5e4bccd9ded3ff9c306b5d532eaf",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:ground_grass",
+      "byte_size": 474098,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：ground_grass 的 色图；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "grass_ground/nor_gl.jpg",
+      "asset_id": "grass_ground_nor_gl",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Charlotte Baglioni",
+      "attribution": "Poly Haven — grass_ground（Charlotte Baglioni），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex/grass_ground/nor_gl.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "5b203af3ed55a61854ae621f8f367150eaa3d4b503af2f4eb108a95e5089db41",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:ground_grass",
+      "byte_size": 715557,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：ground_grass 的 法线（OpenGL 朝向）；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "grass_ground/arm.jpg",
+      "asset_id": "grass_ground_arm",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Charlotte Baglioni",
+      "attribution": "Poly Haven — grass_ground（Charlotte Baglioni），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex/grass_ground/arm.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "28e8b596b2b676a62e2a8f0440e7cde1e2ab413af298c6d9d137633311af641c",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:ground_grass",
+      "byte_size": 426659,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：ground_grass 的 AO/粗糙/金属 打包图；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "brushed_concrete/Diffuse.jpg",
+      "asset_id": "brushed_concrete_diffuse",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Dimitrios Savva",
+      "attribution": "Poly Haven — brushed_concrete（Dimitrios Savva），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex/brushed_concrete/Diffuse.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "9c581da6fbb1699c6eba3db535d58d1bca00e290ef9c5f0737b5af8526287507",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:ground_wet+glass",
+      "byte_size": 482330,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：ground_wet+glass 的 色图；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "brushed_concrete/nor_gl.jpg",
+      "asset_id": "brushed_concrete_nor_gl",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Dimitrios Savva",
+      "attribution": "Poly Haven — brushed_concrete（Dimitrios Savva），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex/brushed_concrete/nor_gl.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "84362ef921d4a913d3b8a2a852302e086d27642879030f77aa61d00028443c8e",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:ground_wet+glass",
+      "byte_size": 392482,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：ground_wet+glass 的 法线（OpenGL 朝向）；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "brushed_concrete/arm.jpg",
+      "asset_id": "brushed_concrete_arm",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Dimitrios Savva",
+      "attribution": "Poly Haven — brushed_concrete（Dimitrios Savva），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex/brushed_concrete/arm.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "8c0cc1d8dd830af53db531a642283feea7eebcd7a273454d36f3ea8e10db361c",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:ground_wet+glass",
+      "byte_size": 341743,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：ground_wet+glass 的 AO/粗糙/金属 打包图；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "black_painted_planks/Diffuse.jpg",
+      "asset_id": "black_painted_planks_diffuse",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Dimitrios Savva",
+      "attribution": "Poly Haven — black_painted_planks（Dimitrios Savva），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex2/black_painted_planks/Diffuse.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "e8f55f69e9f9e2492772df248a9ec93dab33123e8e020c685a132b1b1b56fc90",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:wood_plank",
+      "byte_size": 313863,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：wood_plank 的 色图；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "black_painted_planks/nor_gl.jpg",
+      "asset_id": "black_painted_planks_nor_gl",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Dimitrios Savva",
+      "attribution": "Poly Haven — black_painted_planks（Dimitrios Savva），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex2/black_painted_planks/nor_gl.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "d7212e26d01527dc4f241ea2adb6b37d789f519a22517294fe9eb13d7a34ec3a",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:wood_plank",
+      "byte_size": 303479,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：wood_plank 的 法线（OpenGL 朝向）；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "black_painted_planks/arm.jpg",
+      "asset_id": "black_painted_planks_arm",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Dimitrios Savva",
+      "attribution": "Poly Haven — black_painted_planks（Dimitrios Savva），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex2/black_painted_planks/arm.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "6dee0f51abccfdb5606d818c7e6c29bde0168a10e61d4548f6fbb22db62c7c63",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:wood_plank",
+      "byte_size": 197914,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：wood_plank 的 AO/粗糙/金属 打包图；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "corrugated_iron_02/Diffuse.jpg",
+      "asset_id": "corrugated_iron_02_diffuse",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Sergej Majboroda",
+      "attribution": "Poly Haven — corrugated_iron_02（Sergej Majboroda），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex2/corrugated_iron_02/Diffuse.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "3599f3221822da7707b6a4ed7fc8297f41c27e1475d33ad193251ad959cdb36d",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:metal_corrugated",
+      "byte_size": 277389,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：metal_corrugated 的 色图；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "corrugated_iron_02/nor_gl.jpg",
+      "asset_id": "corrugated_iron_02_nor_gl",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Sergej Majboroda",
+      "attribution": "Poly Haven — corrugated_iron_02（Sergej Majboroda），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex2/corrugated_iron_02/nor_gl.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "cd53d087a934ef6b09b641fc368ac919659924cd8738d5d000e89d6fdacdc10c",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:metal_corrugated",
+      "byte_size": 219592,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：metal_corrugated 的 法线（OpenGL 朝向）；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "corrugated_iron_02/arm.jpg",
+      "asset_id": "corrugated_iron_02_arm",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Sergej Majboroda",
+      "attribution": "Poly Haven — corrugated_iron_02（Sergej Majboroda），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex2/corrugated_iron_02/arm.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "5c4bd1a5a3570c053e94a0de52f95d8fb703ffbd0d955b2a3c3c6ca639afe7c7",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:metal_corrugated",
+      "byte_size": 457438,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：metal_corrugated 的 AO/粗糙/金属 打包图；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "cotton_jersey/Diffuse.jpg",
+      "asset_id": "cotton_jersey_diffuse",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "colormass",
+      "attribution": "Poly Haven — cotton_jersey（colormass），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex2/cotton_jersey/Diffuse.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "012cb15ec6cc785884c368b255e9c1a8cd7aa569ebdc3a230e32c602bafd2d12",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:fabric_cotton",
+      "byte_size": 238128,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：fabric_cotton 的 色图；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "cotton_jersey/nor_gl.jpg",
+      "asset_id": "cotton_jersey_nor_gl",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "colormass",
+      "attribution": "Poly Haven — cotton_jersey（colormass），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex2/cotton_jersey/nor_gl.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "42e9d28b268c1f9a5088f1ceac6d7658ffd8b5bbb2b2ed2136bdb13c0e11dd33",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:fabric_cotton",
+      "byte_size": 240900,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：fabric_cotton 的 法线（OpenGL 朝向）；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "cotton_jersey/arm.jpg",
+      "asset_id": "cotton_jersey_arm",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "colormass",
+      "attribution": "Poly Haven — cotton_jersey（colormass），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex2/cotton_jersey/arm.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "3ac5fc7ae16b55ee732afdd7a5de7acedfdece2c93c282080d0fd4c3c17a34db",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:fabric_cotton",
+      "byte_size": 429500,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：fabric_cotton 的 AO/粗糙/金属 打包图；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "leather_red_02/coll2.jpg",
+      "asset_id": "leather_red_02_coll2",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Rob Tuytel",
+      "attribution": "Poly Haven — leather_red_02（Rob Tuytel），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex2/leather_red_02/coll2.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "393aee1dc2b109ccb0e557920b36f54ba2f9808a03ffffa056071dedd12ecca6",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:leather_red",
+      "byte_size": 574972,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：leather_red 的 色图（上游色图名为 coll2，不是 Diffuse）；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "leather_red_02/nor_gl.jpg",
+      "asset_id": "leather_red_02_nor_gl",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Rob Tuytel",
+      "attribution": "Poly Haven — leather_red_02（Rob Tuytel），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex2/leather_red_02/nor_gl.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "a7508d6230f744f82961abc596acbb7bae3ca34fe32c16f724db77f65d549928",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:leather_red",
+      "byte_size": 530227,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：leather_red 的 法线（OpenGL 朝向）；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "leather_red_02/arm.jpg",
+      "asset_id": "leather_red_02_arm",
+      "role": "surface",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Rob Tuytel",
+      "attribution": "Poly Haven — leather_red_02（Rob Tuytel），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/tex2/leather_red_02/arm.jpg（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "上游原始件不在交付树内（工作区只读包不进 git）；可核锚 = converted_sha256（字节哈希）"
+      },
+      "conversion": {
+        "tool": "sips (macOS)",
+        "version": "N4-r3 登记口径",
+        "params": "源 2048² 由 refs/asset-pack/<upstream>/<asset>/ 取用，经 sips 缩放至 1024² + JPEG q85（逐字见 v0/02_source/v0_skeleton/web/assets/manifest.txt 的「生成方式」列）"
+      },
+      "converted_sha256": "495d2e19373ffd69c4e593cc5b2c2b2c18e6148c9e7e22a7234bd4f64991733c",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "surface:leather_red",
+      "byte_size": 518789,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：leather_red 的 AO/粗糙/金属 打包图；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "hdri/kloofendal_overcast_puresky_2k.hdr",
+      "asset_id": "kloofendal_overcast_puresky_2k",
+      "role": "hdri",
+      "source_type": "cc0_library",
+      "license": "cc0-1.0",
+      "license_evidence": {
+        "url": "https://polyhaven.com/license",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:27:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/polyhaven-license.html",
+        "snapshot_sha256": "6f4f617c936d14d5a80db6a2ebec145c79277a760672501eef51bff7a0d4cbba"
+      },
+      "author": "Greg Zaal",
+      "attribution": "Poly Haven — kloofendal_overcast_puresky（Greg Zaal），CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/hdri/kloofendal_overcast_puresky_2k.hdr（工作区只读资产包）",
+        "sha256": null,
+        "sha256_unavailable_reason": "同表面族：上游原始件不在交付树内"
+      },
+      "conversion": {
+        "tool": "byte-exact copy",
+        "version": "N4-r3 登记口径",
+        "params": "字节逐字复制（4 335 717 B，未重编码）—— 见 web/assets/manifest.txt"
+      },
+      "converted_sha256": "312b1b04b7f10057a4f1418abc59d1166c8933cc93fc72051502edaf8d6b2fcd",
+      "converted_pixel_hash": null,
+      "editable_source": "none（CC0 扫描件，上游不提供工程源）；导出流程 = sips 缩放 + JPEG q85（见 conversion.params）",
+      "binding_ref": "environment:scene",
+      "byte_size": 4335717,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "用途：scene.background + scene.environment（HDRI 主导照明）；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "character/xuqin-body.glb",
+      "asset_id": "xuqin_body_cesiumman",
+      "role": "character",
+      "source_type": "cc_by_library",
+      "license": "cc-by-4.0",
+      "license_evidence": {
+        "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/CesiumMan/README.md",
+        "fetched": true,
+        "fetched_at": "2026-10-08T03:23:00Z",
+        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/cesiumman-README.md",
+        "snapshot_sha256": "1bf7fa794013d2e0de8c244518936b04d95cba780f4510c8cceee4c23dbc04a8"
+      },
+      "author": "Cesium",
+      "attribution": "© 2017 Cesium — CC BY 4.0 International（经 Khronos glTF-Sample-Assets 分发：Models/CesiumMan/glTF-Binary/CesiumMan.glb）",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "ai_generated": false,
+      "generator": null,
+      "generator_version": null,
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/CesiumMan/glTF-Binary/CesiumMan.glb",
+        "sha256": null,
+        "sha256_unavailable_reason": "下载件即交付件，字节与上游一致（curl 未重编码）；可核锚 = converted_sha256"
+      },
+      "conversion": {
+        "tool": "curl -L（byte-exact download，无重编码、无格式转换）",
+        "version": "curl (macOS 内置)",
+        "params": "直接落盘为 web/assets/character/xuqin-body.glb；容器 glTF binary v2，22 nodes / 1 mesh / 1 skin(19 joints) / 1 image / 1 animation(57 channels)，自包含无外部 uri"
+      },
+      "converted_sha256": "b7001eaeea8254bd44773bcd247e78696d94169388fbb2a1800fc69434e777d9",
+      "converted_pixel_hash": null,
+      "editable_source": "none（上游 GLB 为分发件，无 .blend 工程源）；导出流程 = 直接使用上游 GLB，本仓库不做二次导出",
+      "binding_ref": "binding:xuqin_default",
+      "byte_size": 438044,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "N5 / B-1 真实 rigged 人物资产（含骨骼 19 joints 与动画）。许可页 fetched=true，快照 sha256 为盘上真实抓取件；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+    },
+    {
+      "path": "character/skin-pale-01.jpg",
+      "asset_id": "skin-pale-01",
+      "role": "surface",
+      "source_type": "ai_generated",
+      "license": "unknown",
+      "license_evidence": {
+        "url": "none",
+        "fetched": false,
+        "fetched_at": null,
+        "snapshot_path": null,
+        "snapshot_sha256": null
+      },
+      "author": null,
+      "attribution": null,
+      "license_url": null,
+      "ai_generated": true,
+      "generator": "Seedream",
+      "generator_version": "doubao-seedream-5-0",
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/character/skin-pale-01.png（PM 提供）",
+        "sha256": null,
+        "sha256_unavailable_reason": "该只读包内 tex-manifest.json / tex2-manifest.json 均无此条目"
+      },
+      "conversion": {
+        "tool": "byte-exact copy",
+        "version": "N4-r3 登记口径",
+        "params": "字节逐字复制（504 506 B，md5 ca2406484d0bad2d6d474912e10d5ff8，未重编码）"
+      },
+      "converted_sha256": "c262e5301c855bbeb805162bca9f25d4c9c7e2641f593b43a50df2f2e3bf7a81",
+      "converted_pixel_hash": null,
+      "editable_source": "none（生成式图像无工程源）",
+      "binding_ref": null,
+      "byte_size": 504506,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "许可未证实（源包无条目、无许可页）+ 生成器不在许可表白名单 ⇒ 运行时剔除。**绝不**标 CC0（用户 §六 + C-4）。",
+      "generator_evidence": {
+        "source": "文件内嵌 C2PA 清单（JUMBF/CBOR）",
+        "assertion": "c2pa.actions.v2 → action=c2pa.created, softwareAgent.name=Volcengine_Ark_CN, softwareAgent.version=1.0.0, parameters.model_name=doubao-seedream-5-0, when=2026-09-24T01:38:21Z",
+        "digital_source_type": "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia",
+        "claim_generator": "c2pa-rs 0.78.4",
+        "extraction_command": "python3 v0/spikes/n5-asset/c2pa_scan.py --path v0/02_source/v0_skeleton/web/assets/character/skin-pale-01.jpg",
+        "cross_check": "与 web/assets/manifest.txt:67 的生成记录（generator=Seedream / model id doubao-seedream-5-0-260128）**不矛盾**（G-4c 的 EXIF/XMP 一致性）"
+      },
+      "runtime_excluded": true,
+      "license_disposition": "runtime_excluded",
+      "runtime_excluded_reason": "U-4 二选一执行 ⇒ **取 ②「从运行时剔除」**。理由：① 需要 prompt_digest，而 C2PA 清单与 web/assets/manifest.txt **都没有原始提示词** ⇒ prompt_digest **无法在不伪造的前提下填写**；且 (generator=doubao-seedream-5-0) 在 `asset.license.table.data.json` 中**查不到** ⇒ G-5 的 default-deny 判定为**拒收**。⇒ 该件不得进入运行时渲染路径（`world.ts` 不再调用 `loadSkinDetailMaterial`）。文件保留在树内**仅作历史登记**（E-2b 覆盖 + N4 判据 `skin_asset_is_ai_generated` 依赖 manifest 行），不参与 N5 运行时。"
+    },
+    {
+      "path": "assets/character-refs/xuqin-fullbody-01.jpg",
+      "asset_id": "xuqin-ref-xuqin-fullbody-01",
+      "role": "reference",
+      "source_type": "ai_generated",
+      "license": "unknown",
+      "license_evidence": {
+        "url": "none",
+        "fetched": false,
+        "fetched_at": null,
+        "snapshot_path": null,
+        "snapshot_sha256": null
+      },
+      "author": null,
+      "attribution": null,
+      "license_url": null,
+      "ai_generated": true,
+      "generator": "Seedream",
+      "generator_version": "doubao-seedream-5-0",
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/character-refs/xuqin-fullbody-01.jpg",
+        "sha256": null,
+        "sha256_unavailable_reason": "只读包不进交付树"
+      },
+      "conversion": {
+        "tool": "byte-exact copy / 内容包登记",
+        "version": "N4 登记口径",
+        "params": "见内容包 assets/manifest.json 与 v0/02_source/manifest.txt 的登记行"
+      },
+      "converted_sha256": "68fa7f4c699b9dad221b4d18f000dc23fa97a67b592eeafe14740ef6e4d57a7d",
+      "converted_pixel_hash": null,
+      "editable_source": "none（生成式图像无工程源）",
+      "binding_ref": "reference:A-1a",
+      "byte_size": 224494,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "A-1a 的风格/构图参考件（role=reference）；生成器由文件内嵌 C2PA 核出；prompt_digest 不可得 ⇒ 记 GAP（不伪造）；**G-5 default-deny**：`doubao-seedream-5-0` 不在 `asset.license.table.data.json` 的白名单内 ⇒ 按口径应**拒收**；本件是 N4 已验收的历史参考件（C-3：不改写 N4 结论），**不进运行时渲染路径**（`role=reference`，只作取证参考）⇒ 记为**上抛项**而非静默放行；许可证据 `fetched=false` ⇒ A-1a 的 `license_evidence.fetched == true` 记 GAP。",
+      "generator_evidence": {
+        "source": "文件内嵌 C2PA 清单（JUMBF/CBOR）",
+        "assertion": "c2pa.actions.v2 → c2pa.created, softwareAgent.name=Volcengine_Ark_CN, parameters.model_name=doubao-seedream-5-0",
+        "digital_source_type": "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia",
+        "extraction_command": "python3 v0/spikes/n5-asset/c2pa_scan.py --path v0/02_source/v0_skeleton/districts/xingfu-xiaoqu-xuqin/assets/character-refs/xuqin-fullbody-01.jpg",
+        "prompt_digest_unavailable_reason": "C2PA 清单不含原始提示词 ⇒ 记 GAP，不伪造 digest"
+      },
+      "license_disposition": "reference_only_escalated"
+    },
+    {
+      "path": "assets/character-refs/xuqin-mask-01.jpg",
+      "asset_id": "xuqin-ref-xuqin-mask-01",
+      "role": "reference",
+      "source_type": "ai_generated",
+      "license": "unknown",
+      "license_evidence": {
+        "url": "none",
+        "fetched": false,
+        "fetched_at": null,
+        "snapshot_path": null,
+        "snapshot_sha256": null
+      },
+      "author": null,
+      "attribution": null,
+      "license_url": null,
+      "ai_generated": true,
+      "generator": "Seedream",
+      "generator_version": "doubao-seedream-5-0",
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/character-refs/xuqin-mask-01.jpg",
+        "sha256": null,
+        "sha256_unavailable_reason": "只读包不进交付树"
+      },
+      "conversion": {
+        "tool": "byte-exact copy / 内容包登记",
+        "version": "N4 登记口径",
+        "params": "见内容包 assets/manifest.json 与 v0/02_source/manifest.txt 的登记行"
+      },
+      "converted_sha256": "84af6cd64b250a89e6e552c4830cadfcd4cf6edbfb940c1ef0a0eeffe11369c9",
+      "converted_pixel_hash": null,
+      "editable_source": "none（生成式图像无工程源）",
+      "binding_ref": "reference:A-1a",
+      "byte_size": 323563,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "A-1a 的风格/构图参考件（role=reference）；生成器由文件内嵌 C2PA 核出；prompt_digest 不可得 ⇒ 记 GAP（不伪造）；**G-5 default-deny**：`doubao-seedream-5-0` 不在 `asset.license.table.data.json` 的白名单内 ⇒ 按口径应**拒收**；本件是 N4 已验收的历史参考件（C-3：不改写 N4 结论），**不进运行时渲染路径**（`role=reference`，只作取证参考）⇒ 记为**上抛项**而非静默放行；许可证据 `fetched=false` ⇒ A-1a 的 `license_evidence.fetched == true` 记 GAP。",
+      "generator_evidence": {
+        "source": "文件内嵌 C2PA 清单（JUMBF/CBOR）",
+        "assertion": "c2pa.actions.v2 → c2pa.created, softwareAgent.name=Volcengine_Ark_CN, parameters.model_name=doubao-seedream-5-0",
+        "digital_source_type": "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia",
+        "extraction_command": "python3 v0/spikes/n5-asset/c2pa_scan.py --path v0/02_source/v0_skeleton/districts/xingfu-xiaoqu-xuqin/assets/character-refs/xuqin-mask-01.jpg",
+        "prompt_digest_unavailable_reason": "C2PA 清单不含原始提示词 ⇒ 记 GAP，不伪造 digest"
+      },
+      "license_disposition": "reference_only_escalated"
+    },
+    {
+      "path": "assets/character-refs/xuqin-portrait-01.jpg",
+      "asset_id": "xuqin-ref-xuqin-portrait-01",
+      "role": "reference",
+      "source_type": "ai_generated",
+      "license": "unknown",
+      "license_evidence": {
+        "url": "none",
+        "fetched": false,
+        "fetched_at": null,
+        "snapshot_path": null,
+        "snapshot_sha256": null
+      },
+      "author": null,
+      "attribution": null,
+      "license_url": null,
+      "ai_generated": true,
+      "generator": "Seedream",
+      "generator_version": "doubao-seedream-5-0",
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/character-refs/xuqin-portrait-01.jpg",
+        "sha256": null,
+        "sha256_unavailable_reason": "只读包不进交付树"
+      },
+      "conversion": {
+        "tool": "byte-exact copy / 内容包登记",
+        "version": "N4 登记口径",
+        "params": "见内容包 assets/manifest.json 与 v0/02_source/manifest.txt 的登记行"
+      },
+      "converted_sha256": "597515ee822e2587b6ec17d68ba005310de3de3510bfd7a901dc980baf77c86a",
+      "converted_pixel_hash": null,
+      "editable_source": "none（生成式图像无工程源）",
+      "binding_ref": "reference:A-1a",
+      "byte_size": 400589,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "A-1a 的风格/构图参考件（role=reference）；生成器由文件内嵌 C2PA 核出；prompt_digest 不可得 ⇒ 记 GAP（不伪造）；**G-5 default-deny**：`doubao-seedream-5-0` 不在 `asset.license.table.data.json` 的白名单内 ⇒ 按口径应**拒收**；本件是 N4 已验收的历史参考件（C-3：不改写 N4 结论），**不进运行时渲染路径**（`role=reference`，只作取证参考）⇒ 记为**上抛项**而非静默放行；许可证据 `fetched=false` ⇒ A-1a 的 `license_evidence.fetched == true` 记 GAP。",
+      "generator_evidence": {
+        "source": "文件内嵌 C2PA 清单（JUMBF/CBOR）",
+        "assertion": "c2pa.actions.v2 → c2pa.created, softwareAgent.name=Volcengine_Ark_CN, parameters.model_name=doubao-seedream-5-0",
+        "digital_source_type": "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia",
+        "extraction_command": "python3 v0/spikes/n5-asset/c2pa_scan.py --path v0/02_source/v0_skeleton/districts/xingfu-xiaoqu-xuqin/assets/character-refs/xuqin-portrait-01.jpg",
+        "prompt_digest_unavailable_reason": "C2PA 清单不含原始提示词 ⇒ 记 GAP，不伪造 digest"
+      },
+      "license_disposition": "reference_only_escalated"
+    },
+    {
+      "path": "assets/character-refs/xuqin-sheet-01.jpg",
+      "asset_id": "xuqin-ref-xuqin-sheet-01",
+      "role": "reference",
+      "source_type": "ai_generated",
+      "license": "unknown",
+      "license_evidence": {
+        "url": "none",
+        "fetched": false,
+        "fetched_at": null,
+        "snapshot_path": null,
+        "snapshot_sha256": null
+      },
+      "author": null,
+      "attribution": null,
+      "license_url": null,
+      "ai_generated": true,
+      "generator": "Seedream",
+      "generator_version": "doubao-seedream-5-0",
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/character-refs/xuqin-sheet-01.jpg",
+        "sha256": null,
+        "sha256_unavailable_reason": "只读包不进交付树"
+      },
+      "conversion": {
+        "tool": "byte-exact copy / 内容包登记",
+        "version": "N4 登记口径",
+        "params": "见内容包 assets/manifest.json 与 v0/02_source/manifest.txt 的登记行"
+      },
+      "converted_sha256": "6d0805c20d0111390062d5c6b8ce8844e7b592254c30489d2777b319f370716c",
+      "converted_pixel_hash": null,
+      "editable_source": "none（生成式图像无工程源）",
+      "binding_ref": "reference:A-1a",
+      "byte_size": 267844,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "A-1a 的风格/构图参考件（role=reference）；生成器由文件内嵌 C2PA 核出；prompt_digest 不可得 ⇒ 记 GAP（不伪造）；**G-5 default-deny**：`doubao-seedream-5-0` 不在 `asset.license.table.data.json` 的白名单内 ⇒ 按口径应**拒收**；本件是 N4 已验收的历史参考件（C-3：不改写 N4 结论），**不进运行时渲染路径**（`role=reference`，只作取证参考）⇒ 记为**上抛项**而非静默放行；许可证据 `fetched=false` ⇒ A-1a 的 `license_evidence.fetched == true` 记 GAP。",
+      "generator_evidence": {
+        "source": "文件内嵌 C2PA 清单（JUMBF/CBOR）",
+        "assertion": "c2pa.actions.v2 → c2pa.created, softwareAgent.name=Volcengine_Ark_CN, parameters.model_name=doubao-seedream-5-0",
+        "digital_source_type": "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia",
+        "extraction_command": "python3 v0/spikes/n5-asset/c2pa_scan.py --path v0/02_source/v0_skeleton/districts/xingfu-xiaoqu-xuqin/assets/character-refs/xuqin-sheet-01.jpg",
+        "prompt_digest_unavailable_reason": "C2PA 清单不含原始提示词 ⇒ 记 GAP，不伪造 digest"
+      },
+      "license_disposition": "reference_only_escalated"
+    },
+    {
+      "path": "assets/character-refs/xuqin-sheet-02.jpg",
+      "asset_id": "xuqin-ref-xuqin-sheet-02",
+      "role": "reference",
+      "source_type": "ai_generated",
+      "license": "unknown",
+      "license_evidence": {
+        "url": "none",
+        "fetched": false,
+        "fetched_at": null,
+        "snapshot_path": null,
+        "snapshot_sha256": null
+      },
+      "author": null,
+      "attribution": null,
+      "license_url": null,
+      "ai_generated": true,
+      "generator": "Seedream",
+      "generator_version": "doubao-seedream-5-0",
+      "prompt_digest": null,
+      "original": {
+        "path_or_url": "refs/asset-pack/character-refs/xuqin-sheet-02.jpg",
+        "sha256": null,
+        "sha256_unavailable_reason": "只读包不进交付树"
+      },
+      "conversion": {
+        "tool": "byte-exact copy / 内容包登记",
+        "version": "N4 登记口径",
+        "params": "见内容包 assets/manifest.json 与 v0/02_source/manifest.txt 的登记行"
+      },
+      "converted_sha256": "f1ef07019f72ffa136e4466ad25876bbe82f5452b353db5ab340d1cfb8008da3",
+      "converted_pixel_hash": null,
+      "editable_source": "none（生成式图像无工程源）",
+      "binding_ref": "reference:A-1a",
+      "byte_size": 143155,
+      "registered_at": "2026-10-08T03:28:02Z",
+      "first_registered_at": "2026-09-24T13:37:28+08:00",
+      "note": "A-1a 的风格/构图参考件（role=reference）；生成器由文件内嵌 C2PA 核出；prompt_digest 不可得 ⇒ 记 GAP（不伪造）；**G-5 default-deny**：`doubao-seedream-5-0` 不在 `asset.license.table.data.json` 的白名单内 ⇒ 按口径应**拒收**；本件是 N4 已验收的历史参考件（C-3：不改写 N4 结论），**不进运行时渲染路径**（`role=reference`，只作取证参考）⇒ 记为**上抛项**而非静默放行；许可证据 `fetched=false` ⇒ A-1a 的 `license_evidence.fetched == true` 记 GAP。",
+      "generator_evidence": {
+        "source": "文件内嵌 C2PA 清单（JUMBF/CBOR）",
+        "assertion": "c2pa.actions.v2 → c2pa.created, softwareAgent.name=Volcengine_Ark_CN, parameters.model_name=doubao-seedream-5-0",
+        "digital_source_type": "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia",
+        "extraction_command": "python3 v0/spikes/n5-asset/c2pa_scan.py --path v0/02_source/v0_skeleton/districts/xingfu-xiaoqu-xuqin/assets/character-refs/xuqin-sheet-02.jpg",
+        "prompt_digest_unavailable_reason": "C2PA 清单不含原始提示词 ⇒ 记 GAP，不伪造 digest"
+      },
+      "license_disposition": "reference_only_escalated"
+    }
+  ]
+}
