@@ -72,11 +72,20 @@
  */
 
 import * as THREE from 'three';
-import { applyHealingLighting, healingMaterial, type Reading, type Tone } from './lighting.ts';
+import {
+  applyEnvironmentLighting, environmentReport as lightingEnvironmentReport, deriveLighting, healingMaterial,
+  type Reading, type Tone,
+} from './lighting.ts';
 import {
   buildCharacterParts, resolveAppearanceTable, resolveMaskDegradation, stateIdFor,
+  buildCharacterDetailParts,
   type CharacterAppearance, type CharacterPart,
 } from './character.ts';
+import {
+  SURFACES, loadSurfaceMaterials, loadSkinDetailMaterial, materialReport as materialsReport, envMapIntensityMin,
+  type SurfaceId,
+} from './materials.ts';
+import { createPostFX, postfxReport as postfxChainReport, type PostFX } from './postfx.ts';
 
 export interface EntityBox {
   id: string;
@@ -88,6 +97,12 @@ export interface EntityBox {
   /** R4 / R3-C1：装配时**打算**写入 mesh 的旋转（四元数，默认 `[0,0,0,1]`）。 */
   quaternion: [number, number, number, number];
   geometry: THREE.BoxGeometry;
+  /**
+   * N4-r3 / R3-5：该盒体的**几何**为「底面落到世界地面」而上的位移（米）；非埋入实体为 0。
+   * 埋入实体（`portal`：锚点 y=0、盒体高 3 m ⇒ 底面 −1.5，比世界地面 −1.22 低 0.28 m）靠它
+   * 站到地面上，而不是被静默埋进地里。
+   */
+  ground_lift_m: number;
   /**
    * N2：**人物实体**的根 box = 躯干。其余部件经 `characterReport()` 暴露 ——
    * `buildEntityBoxes()` 仍保持「**每实体 1 个 box**」（R-06 钉死）。
@@ -187,6 +202,208 @@ function sizeFor(kind: string): [number, number, number] {
     case 'portal': return [2, 3, 0.4];
     default: return [4, 0.4, 4];
   }
+}
+
+// ================================================================== N4 / W4：建筑部件面
+/**
+ * **N4 建筑部件**（AC-4 的「建筑不再是盒体」）。
+ *
+ * 冻结面（Raven 预审 P-B / R-2 实证）：
+ *   - `buildEntityBoxes()` 仍**每实体 1 个根 mesh**；`structureReport().geometry` 分区**只**按实体根 mesh
+ *     建键（键数恒 == 实体数）⇒ 建筑部件**绝不**进 `meshes`，走**独立**映射 `buildingPartMeshes`；
+ *   - 根 mesh 仍是 **`BoxGeometry`**（顶点恒 24）；`room` 的根 mesh 退为**扁楼板/边界载体**
+ *     （`[5, 0.02, 5]`，见 `ROOM_CARRIER_SIZE`）—— **禁止** `visible=false`（R-2：three 的
+ *     `projectObject()` 遇 `visible===false` 直接 return，**整棵子树不渲染**，而 Node 判据全绿）；
+ *     **禁止** `PlaneGeometry`（顶点 4 ⇒ 会打红 `geometry_digest_detects_size_change` 的 `verticesUnchanged`）；
+ *   - `sizeFor('room')` **仍是 `[5, 3, 5]`**（`geometry_digest_detects_size_change` 探针的前提：
+ *     `sizeFor('room') ≠ sizeFor('npc')`），它现在表达**房间体积**，供部件布局使用。
+ *
+ * **娃娃屋剖切（REQ F8 必修）**：`room` 只在 **`-x`（后墙）** 与 **`-z`（侧墙）** 生成墙体，
+ * `+x` / `+z` 两面**不生成墙体** ⇒ 室内人物在默认取景下可见（此前是不透明盒体挡人）。
+ * 屋顶也按剖切口径只覆盖后半（`+z` 侧敞开），否则俯视取景看不到室内。
+ */
+export const BUILDING_PART_NAMES: readonly string[] = [
+  'floor_slab', 'wall', 'wall_side', 'window_opening', 'window_glass', 'door',
+  'eave', 'balcony', 'railing', 'pipe', 'roof_tile',
+] as const;
+
+/** `room` 根 mesh 的载体尺寸（**扁的 BoxGeometry**，R-2 冻结口径）。 */
+export const ROOM_CARRIER_SIZE: [number, number, number] = [5, 0.02, 5];
+
+/**
+ * **世界地面高度**（米，实体局部坐标）。
+ *
+ * 为什么是 -1.22：N2 的 `PART_TABLE` 是**冻结面**（`buildCharacterParts()` 一字不改），人物根 mesh =
+ * 躯干且**居中在实体位置上**（`geometry_positions_match_seeded_state` 要求 `mesh.position == pos_mm`）
+ * ⇒ 人物的脚在局部 `y = -1.22`。若把地面放在 `y = 0`，人物会被**埋到膝盖**（实机评图缺陷：特写里
+ * 看不到人）。⇒ 把地面（以及建筑楼板）降到 `y = -1.22`，人物自然站在地面上，建筑也落地。
+ * **不动**任何实体的 `pos_mm`、不动 N2 部件表、不动根 mesh 的 `position`。
+ */
+export const WORLD_FLOOR_Y = -1.22;
+
+interface SubBox {
+  size: [number, number, number];
+  /** 相对**部件中心**的局部偏移。 */
+  offset: [number, number, number];
+}
+
+export interface BuildingPart {
+  entity_id: string;
+  part: string;
+  /** 场景图对象名：`"<entity id>/<part>"`。 */
+  name: string;
+  /** 部件整体尺寸（米，相对房间实体位置）。 */
+  size: [number, number, number];
+  /** 相对根 mesh 的局部偏移（米）。 */
+  local_offset: [number, number, number];
+  surface: SurfaceId;
+  /** `box` = 单个 BoxGeometry；`merged_boxes` = 若干 BoxGeometry 合并（**洞口**由缺料表达）。 */
+  shape: 'box' | 'merged_boxes';
+  sub_boxes: SubBox[];
+}
+
+const ROOM_W = 5.0;
+const ROOM_H = 3.0;
+const ROOM_D = 5.0;
+const WALL_T = 0.2;
+/**
+ * 人物部件 → 材质表面（N4 / W5）。
+ * 衣物 = **真实布料贴图**（`cotton_jersey`）、外衣与鞋 = **真实红皮革贴图**（`leather_red_02`）；
+ * 裸露皮肤（头/手/颈/鼻/耳）**不加贴图**：资产包里的 `skin-pale-01.png` 实测是
+ * **非无缝的微距皮肤照片**（含树枝状皮下静脉 + 亮度渐变，经视觉核验确认不可平铺），
+ * 平铺会引入可见重复 ⇒ 皮肤保持内容包规范色（苍白），面部特征由几何表达（REQ 明文口径）。
+ */
+const CHARACTER_PART_SURFACE: Record<string, SurfaceId> = {
+  torso: 'fabric_cotton',
+  arm_l: 'fabric_cotton',
+  arm_r: 'fabric_cotton',
+  leg_l: 'fabric_cotton',
+  leg_r: 'fabric_cotton',
+  coat: 'leather_red',
+  // N4-r2 / M-8：**脚不再挂红色皮革贴图**（见 `character.ts` 的 `foot_*` 注释）—— 近黑 × 红皮革 = 暗红，
+  // 与腿的暗红亮度几乎同值，读不出「鞋」。移出本表 ⇒ 材质回落 `healingMaterial(hex)` 的纯色中性近黑。
+};
+/**
+ * N4 / W5：**裸露皮肤**部件（面/颈/手/耳/鼻）—— 用 `skin-pale-01` 皮肤细节贴图（**乘性层**，
+ * 只叠细节、不改色锚点）。内容包规范肤色仍由 `source_hex × luminanceScale` 决定。
+ */
+const CHARACTER_SKIN_PARTS = new Set(['head', 'neck', 'hand_l', 'hand_r', 'nose', 'ear_l', 'ear_r']);
+/** 窗洞（在 `-x` 后墙上；`+z` 侧敞开 ⇒ 默认取景能看进室内）。 */
+const WINDOW_HOLE = { width: 1.6, height: 1.3, center_y: 1.75, center_z: 0.4 } as const;
+/** 门洞（在 `-z` 侧墙上）。 */
+const DOOR_HOLE = { width: 1.1, height: 2.1, center_x: 0.6 } as const;
+
+const box = (size: [number, number, number], offset: [number, number, number]): SubBox => ({ size, offset });
+
+/** 把若干（已平移的）`BoxGeometry` 合并成一个 `BufferGeometry`（**本地实现**，不引入 jsm 依赖）。 */
+function mergeBoxGeometries(parts: SubBox[]): THREE.BufferGeometry {
+  const positions: number[] = [];
+  const normals: number[] = [];
+  const uvs: number[] = [];
+  const indices: number[] = [];
+  let vertexOffset = 0;
+  for (const part of parts) {
+    const geometry = new THREE.BoxGeometry(part.size[0], part.size[1], part.size[2]);
+    geometry.translate(part.offset[0], part.offset[1], part.offset[2]);
+    const position = geometry.getAttribute('position');
+    const normal = geometry.getAttribute('normal');
+    const uv = geometry.getAttribute('uv');
+    const index = geometry.getIndex();
+    for (let i = 0; i < position.count; i += 1) {
+      positions.push(position.getX(i), position.getY(i), position.getZ(i));
+      normals.push(normal.getX(i), normal.getY(i), normal.getZ(i));
+      uvs.push(uv.getX(i), uv.getY(i));
+    }
+    if (index) {
+      for (let i = 0; i < index.count; i += 1) indices.push(index.getX(i) + vertexOffset);
+    }
+    vertexOffset += position.count;
+    geometry.dispose();
+  }
+  const merged = new THREE.BufferGeometry();
+  merged.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  merged.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  merged.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  merged.setIndex(indices);
+  merged.computeBoundingBox();
+  return merged;
+}
+
+/**
+ * **建筑部件装配器**（纯函数，只读 `entity` 的 `kind`/`id` ⇒ 与读法**无关**）。
+ * 非 `room` 实体 ⇒ 空数组（本轮只把 `room` 做成建筑）。
+ */
+export function buildBuildingParts(entity: SceneStateEntity): BuildingPart[] {
+  if (entity.kind !== 'room') return [];
+  const id = entity.id;
+  const half = { x: ROOM_W / 2, z: ROOM_D / 2 };
+  const winZ = WINDOW_HOLE.center_z;
+  const winBottom = WINDOW_HOLE.center_y - WINDOW_HOLE.height / 2;
+  const winTop = WINDOW_HOLE.center_y + WINDOW_HOLE.height / 2;
+  const winLeft = winZ - WINDOW_HOLE.width / 2;
+  const winRight = winZ + WINDOW_HOLE.width / 2;
+  const doorLeft = DOOR_HOLE.center_x - DOOR_HOLE.width / 2;
+  const doorRight = DOOR_HOLE.center_x + DOOR_HOLE.width / 2;
+
+  const parts: BuildingPart[] = [];
+  // N4 / W4：**世界地面统一下沉**。人物的根 mesh = 躯干且**居中在实体锚点**（N2 冻结：脚在局部
+  // `WORLD_FLOOR_Y`），而建筑的局部 y 是以「锚点 = 楼板底面」写的 ⇒ 若不一起下沉，楼板会悬在
+  // 人物腰部、人物被埋到膝盖（实机评图缺陷）。⇒ 所有部件的局部 y 统加 `WORLD_FLOOR_Y`，
+  // 建筑与人物共用同一条地面。**只改 y 偏移，不动尺寸/形状/部件名**（`cutOpen`/洞口判据只看 x/z）。
+  const push = (part: string, size: [number, number, number], offset: [number, number, number],
+                surface: SurfaceId, shape: 'box' | 'merged_boxes', subBoxes: SubBox[]): void => {
+    const dropped: [number, number, number] = [offset[0], offset[1] + WORLD_FLOOR_Y, offset[2]];
+    parts.push({ entity_id: id, part, name: `${id}/${part}`, size, local_offset: dropped, surface, shape, sub_boxes: subBoxes });
+  };
+
+  // ① 楼板（给层高/落地感）
+  // N4-r2 / M-8 根因修复：楼板原来是「锚点以上 0..0.18」（offset y=+0.09）⇒ 下沉后顶面落在
+  // `WORLD_FLOOR_Y + 0.18 = −1.04`，比人物脚底（−1.22）**高 0.18 m** ⇒ **人物的脚整段埋在楼板里**
+  // （实测像素：腿/脚在 y≥692 之后直接变成楼板色，脚块永远看不见 —— 这才是 B-10「读不出脚」的真正根因，
+  // 不是颜色问题）。改为「锚点以下 −0.18..0」（offset y=−0.09）⇒ 楼板顶面**恰好等于** `WORLD_FLOOR_Y`，
+  // 与人物脚底、草地平面共面（楼板成为地基，人物站在楼板顶面上）。
+  push('floor_slab', [ROOM_W, 0.18, ROOM_D], [0, -0.09, 0], 'pavement_brick', 'box', []);
+  // ② 后墙（-x）：**中间留窗洞** ⇒ 由 4 个子盒拼成（洞口 = 缺料，不是贴面）
+  push('wall', [WALL_T, ROOM_H, ROOM_D], [-half.x + WALL_T / 2, ROOM_H / 2, 0], 'wall_plaster', 'merged_boxes', [
+    box([WALL_T, winBottom, ROOM_D], [0, winBottom / 2 - ROOM_H / 2, 0]),
+    box([WALL_T, ROOM_H - winTop, ROOM_D], [0, (winTop + ROOM_H) / 2 - ROOM_H / 2, 0]),
+    box([WALL_T, WINDOW_HOLE.height, winLeft + half.z], [0, WINDOW_HOLE.center_y - ROOM_H / 2, (-half.z + winLeft) / 2]),
+    box([WALL_T, WINDOW_HOLE.height, half.z - winRight], [0, WINDOW_HOLE.center_y - ROOM_H / 2, (winRight + half.z) / 2]),
+  ]);
+  // ③ 侧墙（-z）：**中间留门洞** ⇒ 由 3 个子盒拼成
+  push('wall_side', [ROOM_W, ROOM_H, WALL_T], [0, ROOM_H / 2, -half.z + WALL_T / 2], 'wall_brick', 'merged_boxes', [
+    box([doorLeft + half.x, ROOM_H, WALL_T], [(-half.x + doorLeft) / 2, 0, 0]),
+    box([half.x - doorRight, ROOM_H, WALL_T], [(doorRight + half.x) / 2, 0, 0]),
+    box([DOOR_HOLE.width, ROOM_H - DOOR_HOLE.height, WALL_T], [DOOR_HOLE.center_x, (DOOR_HOLE.height + ROOM_H) / 2 - ROOM_H / 2, 0]),
+  ]);
+  // ④ 窗洞的**洞口内衬**：沿 x 方向**贯穿墙体厚度** ⇒ 与「贴面」可机械区分
+  push('window_opening', [WALL_T, WINDOW_HOLE.height, WINDOW_HOLE.width],
+    [-half.x + WALL_T / 2, WINDOW_HOLE.center_y, winZ], 'wood_plank', 'merged_boxes', [
+      box([WALL_T, 0.04, WINDOW_HOLE.width], [0, -WINDOW_HOLE.height / 2 + 0.02, 0]),
+      box([WALL_T, 0.04, WINDOW_HOLE.width], [0, WINDOW_HOLE.height / 2 - 0.02, 0]),
+      box([WALL_T, WINDOW_HOLE.height, 0.04], [0, 0, -WINDOW_HOLE.width / 2 + 0.02]),
+      box([WALL_T, WINDOW_HOLE.height, 0.04], [0, 0, WINDOW_HOLE.width / 2 - 0.02]),
+    ]);
+  // ⑤ 内凹玻璃：**在洞口内、且退到墙体外面之后**（recess 0.035 m）⇒「内凹面在框后」
+  push('window_glass', [0.05, WINDOW_HOLE.height - 0.08, WINDOW_HOLE.width - 0.08],
+    [-half.x + WALL_T / 2 + 0.035, WINDOW_HOLE.center_y, winZ], 'glass', 'box', []);
+  // ⑥ 门（洞口内衬 + 内凹门扇）
+  push('door', [DOOR_HOLE.width, DOOR_HOLE.height, WALL_T],
+    [DOOR_HOLE.center_x, DOOR_HOLE.height / 2, -half.z + WALL_T / 2], 'wood_plank', 'merged_boxes', [
+      box([DOOR_HOLE.width, 0.04, WALL_T], [0, -DOOR_HOLE.height / 2 + 0.02, 0]),
+      box([DOOR_HOLE.width, 0.04, WALL_T], [0, DOOR_HOLE.height / 2 - 0.02, 0]),
+      box([0.04, DOOR_HOLE.height, WALL_T], [-DOOR_HOLE.width / 2 + 0.02, 0, 0]),
+      box([0.04, DOOR_HOLE.height, WALL_T], [DOOR_HOLE.width / 2 - 0.02, 0, 0]),
+      box([DOOR_HOLE.width - 0.12, DOOR_HOLE.height - 0.1, 0.05], [0, -0.02, 0.06]),
+    ]);
+  // ⑦ 雨檐（挑出敞开面）+ ⑧ 外廊/阳台 + ⑨ 栏杆 + ⑩ 管道
+  push('eave', [ROOM_W + 0.6, 0.14, 0.7], [0, ROOM_H, half.z + 0.35], 'wood_plank', 'box', []);
+  push('balcony', [2.2, 0.16, 1.3], [1.3, 2.0, half.z + 0.5], 'pavement_brick', 'box', []);
+  push('railing', [2.2, 0.9, 0.06], [1.3, 2.5, half.z + 1.12], 'metal_corrugated', 'box', []);
+  push('pipe', [0.14, 3.2, 0.14], [half.x + 0.05, 1.6, half.z - 0.1], 'metal_corrugated', 'box', []);
+  // ⑪ 屋顶瓦：按娃娃屋剖切口径**只覆盖后半**（+z 侧敞开 ⇒ 俯视也能看进室内）
+  push('roof_tile', [ROOM_W + 0.6, 0.26, ROOM_D * 0.76], [0, ROOM_H + 0.13, -ROOM_D * 0.18], 'roof_tile', 'box', []);
+  return parts;
 }
 
 // ------------------------------------------------------------------ 形状指纹（R3 / G2）
@@ -302,6 +519,7 @@ export function buildEntityBoxes(
         id: entity.id,
         kind: entity.kind,
         position,
+        ground_lift_m: 0,
         size,
         scale,
         quaternion,
@@ -311,7 +529,28 @@ export function buildEntityBoxes(
         state_id: stateIdFor(appearance, { entityId: entity.id, state: entity }),
       };
     }
-    const size = sizeFor(entity.kind);
+    const size = entity.kind === 'room' ? ROOM_CARRIER_SIZE : sizeFor(entity.kind);
+    // N4：`room` 的根 mesh 是**楼板载体**（§6 W4 冻结口径）。但实体锚点 `pos_mm` 是**房间中心**
+    // （N2 口径：房间 = 以锚点为中心的 5×3×5 体块 ⇒ 地面在锚点下方 1.5 m），而人物脚底在锚点下方
+    // 1.22 m ⇒ 载体若停在 `y=0`，它就横切在人物**胸口**：从低位机位看它像一整块楼板把头部挡光，
+    // 从高位看它又把下半身挡住 —— 任何机位都拍不到完整的人（实机评图缺陷）。
+    // ⇒ 把**几何**下移到世界地面（顶面 = `WORLD_FLOOR_Y`）。`mesh.position` 仍是 `pos_mm`
+    // ⇒ `geometry_positions_match_seeded_state` 逐字不变；仍是 24 顶点 `BoxGeometry` ⇒ §5.2 不变。
+    // N4-r3 / R3-5（关闭 Raven N-12 的**假关闭**）：r2 声称给 zone/prop/portal 补了石砌台基，但
+    // `addGroundDecor` 的守卫是 `if (height <= 0.05) continue;` —— 台基只补**悬空**的实体（底面高于
+    // 世界地面），对**埋进地面**的实体直接跳过。实测 `gate-north`（portal、盒体 [2,3,0.4]、锚点 y=0）
+    // 底面 = −1.5，比世界地面 −1.22 **低 0.28 m** ⇒ 它既没有台基、又埋在地里。**这是假关闭。**
+    // 修法：与 `room` 载体同源 —— 埋入的实体把**几何**上移到「底面 == 世界地面」。
+    // `mesh.position` 仍是 `pos_mm` ⇒ `geometry_positions_match_seeded_state` 逐字不变；仍 24 顶点。
+    const anchorY = (entity.transform?.pos_mm?.y ?? 0) / MM;
+    const boxBottom = anchorY - size[1] / 2;
+    const buried = entity.kind !== 'npc' && entity.kind !== 'room' && boxBottom < WORLD_FLOOR_Y;
+    const lift = buried ? WORLD_FLOOR_Y - boxBottom : 0;
+    const geometry = entity.kind === 'room'
+      ? new THREE.BoxGeometry(size[0], size[1], size[2]).translate(0, WORLD_FLOOR_Y - size[1] / 2, 0)
+      : lift > 0
+        ? new THREE.BoxGeometry(size[0], size[1], size[2]).translate(0, lift, 0)
+        : new THREE.BoxGeometry(size[0], size[1], size[2]);
     return {
       id: entity.id,
       kind: entity.kind,
@@ -319,9 +558,38 @@ export function buildEntityBoxes(
       size,
       scale,
       quaternion,
-      geometry: new THREE.BoxGeometry(size[0], size[1], size[2]),
+      geometry,
+      /** 几何为「底面落到世界地面」而上的位移（米）；非埋入实体为 0。R3-5 的几何读数。 */
+      ground_lift_m: round6(lift),
     };
   });
+}
+
+/**
+ * **非 `npc` / 非 `room` 实体的「底面 vs 世界地面」读数**（N4-r3 / R3-5 的几何读数）。
+ *
+ * 纯函数（不发请求、不建 mesh）：给定实体列表，逐条算出盒体底面高度与所需上移量。
+ * 用于判据 `entity_boxes_stand_on_world_floor`：任何非 `npc`/`room` 实体的底面**不得低于**世界地面
+ * （低于即为「埋进地面」，r2 的 `portal` 就是这样被静默漏掉的）。
+ */
+export function entityGroundReadings(
+  entities: readonly { id: string; kind: string; transform?: { pos_mm?: { y?: number } } }[],
+): Array<{ id: string; kind: string; box_bottom_y: number; lift_m: number; buried: boolean }> {
+  return entities
+    .filter((entity) => entity.kind !== 'npc' && entity.kind !== 'room')
+    .map((entity) => {
+      const size = sizeFor(entity.kind);
+      const anchorY = (entity.transform?.pos_mm?.y ?? 0) / MM;
+      const boxBottom = anchorY - size[1] / 2;
+      const buried = boxBottom < WORLD_FLOOR_Y;
+      return {
+        id: entity.id,
+        kind: entity.kind,
+        box_bottom_y: round6(boxBottom),
+        lift_m: buried ? round6(WORLD_FLOOR_Y - boxBottom) : 0,
+        buried,
+      };
+    });
 }
 
 /** N2：部件级**装配函数产物**（与 `characterReport()` 的 mesh 层读回逐项可比）。 */
@@ -447,6 +715,8 @@ export interface ViewportReport {
  * `aspect` 是**视口派生量** ⇒ 作为**信息性**读数（是否参与相等断言由 `scene_assert.mjs` 决定并在 `06` 声明）。
  */
 export interface CameraReport {
+  /** N4 / P-C：相机**身份**（`类型#uuid`）—— 供「场景渲染 pass 的相机 == 场景相机」判据比对。 */
+  identity: string;
   position: [number, number, number];
   quaternion: [number, number, number, number];
   /** `matrixWorld` 16 分量逐项（量化 `1e-6`）。 */
@@ -534,8 +804,18 @@ export interface StructureReport {
  * `identity` = 渲染时真正传入的那个相机（`类型#uuid`）⇒「第二相机」形态由此有牙。
  */
 export interface RenderCameraReport {
+  /** **场景渲染 pass** 的相机身份（N4 / P-C 修正后的语义；Node 直渲路径下即 `renderer.render(scene, camera)` 的入参）。 */
   identity: string | null;
+  /** 同上，**显式命名**（P-C：判据读这个字段，语义不再依赖「最后一次调用获胜」）。 */
+  scene_camera: string | null;
+  /** 场景渲染 pass 的次数（不含全屏 quad pass）。 */
+  scene_renders: number;
+  /** 场景渲染 pass 的次数（`scene_renders` 的别名，保持既有判据的取数字段）。 */
   renders: number;
+  /** **全部** `renderer.render()` 调用次数（含 postfx 链上的全屏 quad pass）。 */
+  total_renders: number;
+  /** 逐次渲染的 `{target, camera}`（`target` = `scene` 或对象类型）—— postfx 引入第二相机时由此可辨。 */
+  pass_cameras: Array<{ target: string; camera: string }>;
   reading: Reading | null;
 }
 
@@ -554,6 +834,12 @@ interface RendererLike {
 function createRenderer(canvas: HTMLCanvasElement): { renderer: RendererLike; webgl: boolean } {
   try {
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    // N4 / W1：**接触暗部**需要真的开阴影贴图（three 默认 `shadowMap.enabled = false`）；
+    // 色调映射用 ACESFilmic + exposure 1.02（参考实现口径）。两读法共用同一套配置 ⇒ 判据面零变化。
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.02;
     return { renderer: renderer as unknown as RendererLike, webgl: true };
   } catch {
     return { renderer: { setPixelRatio() {}, setSize() {}, render() {}, dispose() {} }, webgl: false };
@@ -609,6 +895,51 @@ export interface AppearanceEntityReport {
   parts: CharacterPartReport[];
 }
 
+/** N4 / W4：建筑部件读数（**从场景图 mesh 层读回**；部件装配只读 `state` ⇒ 两读法逐项相同）。 */
+export interface BuildingPartReport {
+  entity_id: string;
+  part: string;
+  name: string;
+  /** 部件整体尺寸（从 `geometry.boundingBox` 读回）。 */
+  size: [number, number, number];
+  /** 相对根 mesh 的局部偏移（米）。 */
+  local_offset: [number, number, number];
+  /** 部件在**根 mesh 局部坐标**下的 AABB（= `local_offset` + geometry 的 boundingBox）—— 洞口判据的取数面。 */
+  aabb_min: [number, number, number];
+  aabb_max: [number, number, number];
+  /** `box` = 单盒；`merged_boxes` = 由若干盒合并（洞口由缺料表达）。 */
+  shape: 'box' | 'merged_boxes';
+  surface: string;
+  vertex_count: number;
+  triangle_count: number;
+  parameters: Record<string, number>;
+  position_attribute_digest: string;
+}
+
+/** N4 / W4：逐建筑实体的部件清单。 */
+export interface BuildingEntityReport {
+  entity_id: string;
+  parts: BuildingPartReport[];
+  /** 去重后的部件类型名（AC-4 的「部件类型 ≥8」取数点）。 */
+  part_types: string[];
+}
+
+/** N4 / W5：N4 写实解剖部件读数（**从场景图 mesh 层读回**）。 */
+export interface CharacterDetailPartReport {
+  entity_id: string;
+  part: string;
+  name: string;
+  size: [number, number, number];
+  local_offset: [number, number, number];
+  parameters: Record<string, number>;
+  vertex_count: number;
+  position_attribute_digest: string;
+  /** **读法无关**（装配配置里的包内 hex）。 */
+  source_hex: string;
+  /** **信息性**：材质色的读回值（随读法变）。 */
+  material_hex: string;
+}
+
 export interface SceneHandle {
   apply(message: { t: string; tick: number; state?: SceneState; ops?: unknown[] }): void;
   setReading(reading: Reading): void;
@@ -645,6 +976,16 @@ export interface SceneHandle {
   viewport(): ViewportReport;
   /** 把画布尺寸同步到当前视口（`setSize` + DPR + camera.aspect）。 */
   resize(): ViewportReport;
+  /** N4 / W4：建筑部件读数（逐建筑实体；AC-4 的取数点）。 */
+  buildingReport(): BuildingEntityReport[];
+  /** N4 / W5：N4 写实解剖部件读数（AC-5 的取数点）。 */
+  characterDetailReport(): CharacterDetailPartReport[];
+  /** N4 / W1：环境照明读数（**配置面**，不构成画面证据）。 */
+  environmentReport(): Record<string, unknown>;
+  /** N4 / W2：后处理链读数（**配置面**，不构成画面证据）。 */
+  postfxReport(): Record<string, unknown>;
+  /** N4 / W3：材质注册表 + 实际绑定读数（AC-3 的取数点）。 */
+  materialReport(): Array<Record<string, unknown>>;
   startRenderLoop(): void;
   dispose(): void;
 }
@@ -658,39 +999,82 @@ export function createScene(
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#f3efe8');
-  scene.fog = new THREE.Fog('#e9e2d6', 40, 120);
+  // N4 / W1：雾必须与 HDRI 的**阴天冷灰**同调，否则地平线会读成「暖棕泥浆」而不是大气（实机评图缺陷 1）。
+  // 起雾距离也推远：默认机位（距目标 ~25 m）附近不应被雾洗平，远景仍保留薄雾。
+  scene.fog = new THREE.Fog('#d7dce0', 70, 340);
 
   const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 500);
   camera.position.set(DEFAULT_CAMERA_POSITION[0], DEFAULT_CAMERA_POSITION[1], DEFAULT_CAMERA_POSITION[2]);
   camera.lookAt(DEFAULT_CAMERA_LOOK_AT[0], DEFAULT_CAMERA_LOOK_AT[1], DEFAULT_CAMERA_LOOK_AT[2]);
 
   let currentReading: Reading = 'surface';
+  /** N4 / W2：后处理链（Node / 无 WebGL ⇒ `null`，走原直渲路径）。 */
+  let postfx: PostFX | null = null;
 
-  // ---------------------------------------------------------------- R5：渲染相机入参记录
-  // D-7「**禁止换相机**」的**字面形态**：全部渲染都经这个包装器 ⇒ 记录
-  // `renderer.render(scene, camera)` 的**实际入参**（「第二相机」形态由此可辨）。
-  // 渲染语义一字未改（纯透传；Node 无 WebGL 时底层仍是空渲染器）。
-  let renderCameraIdentity: string | null = null;
-  let renderCameraReading: Reading | null = null;
-  let renderCount = 0;
-  const renderer: RendererLike = {
-    setPixelRatio(value) { created.renderer.setPixelRatio(value); },
-    setSize(width, height, updateStyle) { created.renderer.setSize(width, height, updateStyle); },
-    render(target, usedCamera) {
-      created.renderer.render(target, usedCamera);
-      renderCameraIdentity = `${usedCamera.type}#${usedCamera.uuid}`;
-      renderCameraReading = currentReading;
-      renderCount += 1;
-    },
-    dispose() { created.renderer.dispose(); },
+  // ---------------------------------------------------------------- R5 / N4（P-C）：渲染相机入参记录
+  // D-7「**禁止换相机**」的**字面形态**：全部渲染都经这个记录点 ⇒ 记录
+  // `renderer.render(target, camera)` 的**实际入参**（「第二相机」形态由此可辨）。
+  //
+  // **N4 / P-C 修正（Raven 预审实证）**：接上 postfx 链后，一帧里会有**多次** `renderer.render`：
+  //   - `RenderPass` / `GTAOPass` → `renderer.render(scene, camera)`（**场景渲染 pass**）；
+  //   - `OutputPass` 的 `FullScreenQuad` → `renderer.render(mesh, orthoCamera)`（**全屏 quad 的正交相机**）。
+  // 若照旧「最后一次调用获胜」，记下的会是**全屏 quad 的相机**，判据恰好在它本该拦的形态上失牙。
+  // ⇒ 现在**只认目标是场景的那次调用**（`scene_camera`），非场景调用按 pass 分开记进 `pass_cameras`。
+  let sceneRenderCameraIdentity: string | null = null;
+  let sceneRenderCameraReading: Reading | null = null;
+  let sceneRenderCount = 0;
+  let totalRenderCount = 0;
+  /**
+   * N4-r2 / M-7（关闭 Raven N-4）：`passCameras` 改为**环形缓冲**。
+   *
+   * 缺陷：旧实现每帧 `push` 且**从不清空**。真 WebGL 下 postfx 一帧 ~3–4 次 `renderer.render`
+   * ⇒ 60 fps 下 ~200–240 条/秒 ⇒ 内存**无界增长**（取证 readback 实测 main=155 / xuqin=428 条，
+   * 序列化 14 037 / 38 336 字符），且 `renderCameraReport()` 每次返回**全量副本**、成本随运行时长线性上升。
+   * 修法：只保留最近 `PASS_CAMERA_LOG_LIMIT` 条（`total_renders` 仍是**累计计数** ⇒ 可观测性不丢）。
+   */
+  const PASS_CAMERA_LOG_LIMIT = 16;
+  const passCameras: Array<{ target: string; camera: string }> = [];
+  const recordPassCamera = (target: string, camera: string): void => {
+    passCameras.push({ target, camera });
+    if (passCameras.length > PASS_CAMERA_LOG_LIMIT) {
+      passCameras.splice(0, passCameras.length - PASS_CAMERA_LOG_LIMIT);
+    }
   };
+  const baseRenderer = created.renderer;
+  const baseRender = baseRenderer.render.bind(baseRenderer);
+  baseRenderer.render = (target: THREE.Scene, usedCamera: THREE.Camera) => {
+    baseRender(target, usedCamera);
+    const identity = `${usedCamera.type}#${usedCamera.uuid}`;
+    const targetKind = target === scene ? 'scene' : String((target as unknown as { type?: string })?.type ?? 'unknown');
+    recordPassCamera(targetKind, identity);
+    totalRenderCount += 1;
+    if (target === scene) {
+      sceneRenderCameraIdentity = identity;
+      sceneRenderCameraReading = currentReading;
+      sceneRenderCount += 1;
+    }
+  };
+  const renderer: RendererLike = baseRenderer;
 
-  /** R5：渲染一帧 —— **唯一**的 `renderer.render(scene, camera)` 调用点（相机入参由此可被记录）。 */
+  /**
+   * R5：渲染一帧 —— **唯一**的渲染入口。
+   * N4 / W2：接上 postfx 链后走 `composer.render()`（链内部仍经上面那个记录点调用 `renderer.render`）；
+   * Node / 无 WebGL（`postfx === null`）⇒ 走原直渲路径（既有判据语义零变化）。
+   */
   function renderFrame(): void {
+    if (postfx) {
+      postfx.render();
+      return;
+    }
     renderer.render(scene, camera);
   }
 
-  applyHealingLighting(scene, options.worldview.surface);
+  // N4 / W1：**HDRI 主导 + 人工灯辅助**（`applyHealingLighting` 作为既有导出保留、语义未改，本路径不再调用）。
+  applyEnvironmentLighting(scene, options.worldview.surface, {
+    webgl,
+    renderer: created.renderer,
+    envMapIntensityMin: envMapIntensityMin(),
+  });
 
   const root = new THREE.Group();
   root.name = 'world-root';
@@ -738,6 +1122,8 @@ export function createScene(
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
+    // N4 / W2：后处理链的 render target 必须跟着视口走（否则 AO 缓冲停在首帧尺寸）。
+    if (postfx) postfx.setSize(width, height);
     lastSize = { width, height };
     return viewport();
   }
@@ -766,6 +1152,7 @@ export function createScene(
     camera.updateMatrixWorld(true);
     const view = perspective.view;
     return {
+      identity: `${camera.type}#${camera.uuid}`,
       position: [camera.position.x, camera.position.y, camera.position.z],
       quaternion: [camera.quaternion.x, camera.quaternion.y, camera.quaternion.z, camera.quaternion.w],
       matrix_world: quantizeMatrix(camera.matrixWorld),
@@ -803,21 +1190,128 @@ export function createScene(
   }
   resize(); // 首帧就按真实视口设尺寸（此前停在 three 的默认 300×150）
 
+  // N4 / W2：postfx 必须用**这个**渲染器构造（其 `render` 已被记录点替换）⇒ 链上每一次
+  // `renderer.render` 都被记录（P-C）；`webgl === false` ⇒ `createPostFX` 返回 `null`。
+  postfx = createPostFX(renderer, scene, camera,
+    { width: lastSize.width, height: lastSize.height }, { webgl });
+
   function materialFor(index: number): THREE.MeshStandardMaterial {
     return healingMaterial(palette[index % palette.length] as string, options.worldview[currentReading]);
   }
 
+  // ---------------------------------------------------------------- N4：材质（W3）与部件映射
+  const textureLoader = webgl ? new THREE.TextureLoader() : null;
+  const surfaceMaterialCache = new Map<string, THREE.MeshStandardMaterial>();
+  const characterMaterialCache = new Map<string, THREE.MeshStandardMaterial>();
+  /** N4 / W4：建筑部件 mesh（key = `"<实体 id>/<部件>"`）—— 与 `partMeshes` **分离**。 */
+  const buildingPartMeshes = new Map<string, THREE.Mesh>();
+  /** N4 / W5：写实解剖部件 mesh —— 与 `partMeshes` **分离**。 */
+  const detailPartMeshes = new Map<string, THREE.Mesh>();
+  /** 非实体装饰 mesh（地面族）—— 不进 `meshes`，故不影响实体级判据。 */
+  const decorMeshes: THREE.Mesh[] = [];
+
+  /** 建筑部件表面材质（真 PBR 贴图；Node / 无 WebGL ⇒ 回落纯色，**不抛**）。 */
+  function surfaceMaterial(surface: SurfaceId): THREE.MeshStandardMaterial {
+    const key = `${surface}|${currentReading}`;
+    const cached = surfaceMaterialCache.get(key);
+    if (cached) return cached;
+    const tone = options.worldview[currentReading];
+    const scale = deriveLighting(tone).luminanceScale;
+    const built = textureLoader
+      ? loadSurfaceMaterials(textureLoader, SURFACES[surface], { luminanceScale: scale })
+      : null;
+    const material = built ?? healingMaterial('#cbc3b6', tone, 0.85);
+    material.envMapIntensity = Math.max(Number(material.envMapIntensity) || 0, SURFACES[surface].envMapIntensity);
+    surfaceMaterialCache.set(key, material);
+    return material;
+  }
+
+  /**
+   * 人物部件材质：**真实布料/皮革贴图 × 内容包规范色**。
+   * 关键口径：`material.color` 仍是 `source_hex × luminanceScale`（既有判据
+   * `character_material_hex_recomputable` 读的就是它）⇒ 贴图只做**乘性纹理**，不改色锚点语义。
+   */
+  function characterMaterial(sourceHex: string, part: string): THREE.MeshStandardMaterial {
+    const key = `${part}|${sourceHex}|${currentReading}`;
+    const cached = characterMaterialCache.get(key);
+    if (cached) return cached;
+    const tone = options.worldview[currentReading];
+    const scale = deriveLighting(tone).luminanceScale;
+    const surface = CHARACTER_PART_SURFACE[part];
+    const built = textureLoader
+      ? (CHARACTER_SKIN_PARTS.has(part)
+        ? loadSkinDetailMaterial(textureLoader, { luminanceScale: scale, tint: sourceHex })
+        : (surface
+          ? loadSurfaceMaterials(textureLoader, SURFACES[surface], { luminanceScale: scale, tint: sourceHex })
+          : null))
+      : null;
+    const material = built ?? healingMaterial(sourceHex, tone);
+    material.envMapIntensity = 1.2;
+    characterMaterialCache.set(key, material);
+    return material;
+  }
+
+  /**
+   * 地面族（草地 / 湿檐沟 / 人行道砖 / 沥青路）—— AC-3 的「地面 / 路面 / 人行道」承载面。
+   *
+   * N4：地面整体下沉到 `WORLD_FLOOR_Y`（人物脚底平面）。断面高差（路 < 草地 < 檐沟 ≈ 人行道）
+   * 逐项保留 —— 真实街道本来就有这道排水高差。
+   * 另外给**锚点居中的 zone/prop 实体**补石砌台基：它们的根 mesh 是 N2 冻结面（盒体**居中**在
+   * `pos_mm`，底面因此悬在 y≈-0.2/-0.3），若不加台基就会「浮」在地面上方一米 —— 台基是**本轮
+   * 新增的地面装饰**（与 `ground-*` 同类，不进任何冻结读数）。
+   */
+  function addGroundDecor(state: SceneState | undefined): void {
+    const items: Array<{ name: string; size: [number, number, number]; position: [number, number, number]; surface: SurfaceId }> = [
+      { name: 'ground-grass', size: [240, 0.04, 240], position: [0, -0.02, 0], surface: 'ground_grass' },
+      { name: 'ground-wet-kerb', size: [240, 0.11, 1.4], position: [0, 0.055, 17.6], surface: 'ground_wet' },
+      { name: 'ground-pavement', size: [240, 0.1, 2.6], position: [0, 0.05, 19.6], surface: 'pavement_brick' },
+      { name: 'ground-road', size: [240, 0.08, 5.6], position: [0, 0.04, 23.5], surface: 'road_asphalt' },
+    ];
+    for (const entity of state?.entities ?? []) {
+      const kind = entity.kind;
+      if (kind !== 'zone' && kind !== 'prop' && kind !== 'portal') continue;
+      const size = sizeFor(kind);
+      const pos = entity.transform?.pos_mm ?? { x: 0, y: 0, z: 0 };
+      const bottom = pos.y / MM - size[1] / 2;
+      const height = bottom - WORLD_FLOOR_Y;
+      if (height <= 0.05) continue;
+      items.push({
+        name: `plinth-${entity.id}`,
+        size: [size[0] + 0.5, height, size[2] + 0.5],
+        position: [pos.x / MM, WORLD_FLOOR_Y + height / 2, pos.z / MM],
+        surface: 'pavement_brick',
+      });
+    }
+    for (const item of items) {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(item.size[0], item.size[1], item.size[2]),
+        surfaceMaterial(item.surface));
+      mesh.name = item.name;
+      const drop = item.name.startsWith('ground-') ? WORLD_FLOOR_Y : 0;
+      mesh.position.set(item.position[0], item.position[1] + drop, item.position[2]);
+      mesh.receiveShadow = true;
+      mesh.castShadow = true;
+      mesh.userData.surface = item.surface;
+      root.add(mesh);
+      decorMeshes.push(mesh);
+    }
+  }
+
   function rebuild(state: SceneState | undefined): void {
     latestState = state;
+    for (const mesh of decorMeshes) root.remove(mesh);
+    decorMeshes.length = 0;
     for (const mesh of meshes.values()) root.remove(mesh);
     meshes.clear();
     partMeshes.clear();
+    buildingPartMeshes.clear();
+    detailPartMeshes.clear();
+    addGroundDecor(state);
     const boxes = buildEntityBoxes(state, currentReading, { appearance: appearanceTable });
     boxes.forEach((box, index) => {
       // N2：人物实体的根 mesh = 躯干，其材质色 = 装配配置里的**包内 hex**（读法无关的 source_hex）；
       // 静物仍走既有调色板。两读法只改 `luminanceScale` ⇒ 几何与部件表逐项相同。
       const material = box.character_root
-        ? healingMaterial(box.source_hex ?? (palette[index % palette.length] as string), options.worldview[currentReading])
+        ? characterMaterial(box.source_hex ?? (palette[index % palette.length] as string), 'torso')
         : materialFor(index);
       const mesh = new THREE.Mesh(box.geometry, material);
       mesh.name = box.id;
@@ -828,6 +1322,9 @@ export function createScene(
       mesh.quaternion.set(box.quaternion[0], box.quaternion[1], box.quaternion[2], box.quaternion[3]);
       mesh.userData.entity_id = box.id;
       mesh.userData.kind = box.kind;
+      // N4：实体根 mesh 参与阴影（接触暗部；**绝不**改 `visible`，R-2 冻结）
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
       if (box.character_root) {
         mesh.userData.part = 'torso';
         mesh.userData.source_hex = box.source_hex;
@@ -837,10 +1334,32 @@ export function createScene(
       }
       root.add(mesh);
       meshes.set(box.id, mesh);
+      const entity = (state?.entities ?? []).find((item) => item.id === box.id);
+      // N4 / W4：**建筑部件** = 根 mesh 的**子 mesh**，进**独立**映射（绝不进 `meshes`/`partMeshes`）。
+      if (entity) {
+        for (const part of buildBuildingParts(entity)) {
+          const geometry = part.shape === 'merged_boxes'
+            ? mergeBoxGeometries(part.sub_boxes)
+            : new THREE.BoxGeometry(part.size[0], part.size[1], part.size[2]);
+          const partMesh = new THREE.Mesh(geometry, surfaceMaterial(part.surface));
+          partMesh.name = part.name;
+          partMesh.position.set(part.local_offset[0], part.local_offset[1], part.local_offset[2]);
+          partMesh.userData.entity_id = box.id;
+          partMesh.userData.part = part.part;
+          partMesh.userData.surface = part.surface;
+          partMesh.userData.shape = part.shape;
+          partMesh.userData.part_size = [...part.size];
+          // 透明玻璃不投影（否则整扇窗在墙上留一块硬黑影）
+          const casts = part.surface !== 'glass';
+          partMesh.castShadow = casts;
+          partMesh.receiveShadow = true;
+          mesh.add(partMesh);
+          buildingPartMeshes.set(part.name, partMesh);
+        }
+      }
       if (box.kind !== 'npc') return;
       // N2（D3 / R-09）：其余部件 = **根 mesh 的子 mesh**，对象名 `"<实体 id>/<部件名>"`。
       // 部件名来自固定字段名表（`character.ts` 的 `CHARACTER_PART_NAMES`），**不含下标**。
-      const entity = (state?.entities ?? []).find((item) => item.id === box.id);
       const parts = buildCharacterParts(
         appearanceTable?.get(box.id) ?? null,
         { entityId: box.id, state: entity },
@@ -852,15 +1371,36 @@ export function createScene(
         }
         const partMesh = new THREE.Mesh(
           new THREE.BoxGeometry(part.size[0], part.size[1], part.size[2]),
-          healingMaterial(part.source_hex, options.worldview[currentReading]),
+          characterMaterial(part.source_hex, part.part),
         );
         partMesh.name = part.name;
         partMesh.position.set(part.local_offset[0], part.local_offset[1], part.local_offset[2]);
         partMesh.userData.entity_id = box.id;
         partMesh.userData.part = part.part;
         partMesh.userData.source_hex = part.source_hex;
+        partMesh.castShadow = true;
+        partMesh.receiveShadow = true;
         mesh.add(partMesh);
         partMeshes.set(part.name, partMesh);
+      }
+      // N4 / W5：**写实解剖部件**（手/脚/颈/鼻/眉/耳）—— 真的进场景图、真的被渲染。
+      for (const part of buildCharacterDetailParts(
+        appearanceTable?.get(box.id) ?? null,
+        { entityId: box.id, state: entity },
+      )) {
+        const partMesh = new THREE.Mesh(
+          new THREE.BoxGeometry(part.size[0], part.size[1], part.size[2]),
+          characterMaterial(part.source_hex, part.part),
+        );
+        partMesh.name = part.name;
+        partMesh.position.set(part.local_offset[0], part.local_offset[1], part.local_offset[2]);
+        partMesh.userData.entity_id = box.id;
+        partMesh.userData.part = part.part;
+        partMesh.userData.source_hex = part.source_hex;
+        partMesh.castShadow = true;
+        partMesh.receiveShadow = true;
+        mesh.add(partMesh);
+        detailPartMeshes.set(part.name, partMesh);
       }
     });
   }
@@ -927,6 +1467,86 @@ export function createScene(
           parts: all.filter((part) => part.entity_id === id),
         };
       });
+  }
+
+  /**
+   * N4 / W4：**建筑部件读数**（从建筑部件 mesh 层读回；与 `partMeshes` 分离 ⇒
+   * `characterReport()` 语义零改动）。
+   */
+  function buildingReport(): BuildingEntityReport[] {
+    const byEntity = new Map<string, BuildingPartReport[]>();
+    for (const name of [...buildingPartMeshes.keys()].sort()) {
+      const mesh = buildingPartMeshes.get(name) as THREE.Mesh;
+      const geometry = mesh.geometry as THREE.BufferGeometry;
+      if (!geometry.boundingBox) geometry.computeBoundingBox();
+      const bounds = geometry.boundingBox as THREE.Box3;
+      const entityId = String(mesh.userData.entity_id ?? '');
+      const attribute = geometry.getAttribute('position');
+      const index = geometry.getIndex();
+      const offset: [number, number, number] = [
+        round6(mesh.position.x), round6(mesh.position.y), round6(mesh.position.z),
+      ];
+      const parameters = geometry instanceof THREE.BoxGeometry
+        ? { ...(geometry.parameters as unknown as Record<string, number>) }
+        : {};
+      const entry: BuildingPartReport = {
+        entity_id: entityId,
+        part: String(mesh.userData.part ?? ''),
+        name,
+        size: [
+          round6(bounds.max.x - bounds.min.x), round6(bounds.max.y - bounds.min.y), round6(bounds.max.z - bounds.min.z),
+        ],
+        local_offset: offset,
+        aabb_min: [
+          round6(offset[0] + bounds.min.x), round6(offset[1] + bounds.min.y), round6(offset[2] + bounds.min.z),
+        ],
+        aabb_max: [
+          round6(offset[0] + bounds.max.x), round6(offset[1] + bounds.max.y), round6(offset[2] + bounds.max.z),
+        ],
+        shape: String(mesh.userData.shape ?? 'box') === 'merged_boxes' ? 'merged_boxes' : 'box',
+        surface: String(mesh.userData.surface ?? ''),
+        vertex_count: attribute.count,
+        triangle_count: index ? Math.round(index.count / 3) : Math.round(attribute.count / 3),
+        parameters,
+        position_attribute_digest: digestPositions(attribute.array as unknown as ArrayLike<number>),
+      };
+      const list = byEntity.get(entityId) ?? [];
+      list.push(entry);
+      byEntity.set(entityId, list);
+    }
+    return [...byEntity.keys()].sort().map((entityId) => {
+      const parts = byEntity.get(entityId) as BuildingPartReport[];
+      return {
+        entity_id: entityId,
+        parts,
+        part_types: [...new Set(parts.map((entry) => entry.part))].sort(),
+      };
+    });
+  }
+
+  /** N4 / W5：**N4 写实解剖部件读数**（从部件 mesh 层读回）。 */
+  function characterDetailReport(): CharacterDetailPartReport[] {
+    return [...detailPartMeshes.keys()].sort().map((name) => {
+      const mesh = detailPartMeshes.get(name) as THREE.Mesh;
+      const geometry = mesh.geometry as THREE.BoxGeometry;
+      const parameters = { ...(geometry.parameters as unknown as Record<string, number>) };
+      const attribute = geometry.getAttribute('position');
+      const material = mesh.material as THREE.MeshStandardMaterial;
+      return {
+        entity_id: String(mesh.userData.entity_id ?? ''),
+        part: String(mesh.userData.part ?? ''),
+        name,
+        size: [Number(parameters.width), Number(parameters.height), Number(parameters.depth)] as [number, number, number],
+        local_offset: [
+          round6(mesh.position.x), round6(mesh.position.y), round6(mesh.position.z),
+        ] as [number, number, number],
+        parameters,
+        vertex_count: attribute.count,
+        position_attribute_digest: digestPositions(attribute.array as unknown as ArrayLike<number>),
+        source_hex: String(mesh.userData.source_hex ?? ''),
+        material_hex: `#${material.color.getHexString()}`,
+      };
+    });
   }
 
   /**
@@ -1068,6 +1688,22 @@ export function createScene(
     };
   }
 
+  // N4 / D-7：**验收钩子**（真 WebGL 下自挂；`main.ts` 不在写集 ⇒ 由本模块负责）。
+  // Node 无 `window` ⇒ 整段跳过（判据走 `createScene()` 的句柄取数，不依赖钩子）。
+  if (typeof window !== 'undefined') {
+    const hooks = window as unknown as Record<string, unknown>;
+    hooks.__renderer = created.renderer;
+    hooks.__composer = postfx ? postfx.composer : null;
+    hooks.__gtaoPass = postfx ? postfx.gtao : null;
+    hooks.__n4 = {
+      materialReport: () => materialsReport(),
+      buildingReport: () => buildingReport(),
+      characterDetailReport: () => characterDetailReport(),
+      environmentReport: () => lightingEnvironmentReport(),
+      postfxReport: () => postfxChainReport(),
+    };
+  }
+
   return {
     apply(message) {
       if (message.t === 'snapshot') {
@@ -1088,7 +1724,11 @@ export function createScene(
     },
     setReading(reading) {
       currentReading = reading;
-      applyHealingLighting(scene, options.worldview[reading]);
+      applyEnvironmentLighting(scene, options.worldview[reading], {
+        webgl,
+        renderer: created.renderer,
+        envMapIntensityMin: envMapIntensityMin(),
+      });
       // 读法经 `READING_GEOMETRY_PROFILE` 真正参与一次装配；两读法配置等价 ⇒ 数值不变
       rebuild(latestState);
     },
@@ -1122,16 +1762,33 @@ export function createScene(
     },
     structureReport,
     renderCameraReport: () => ({
-      identity: renderCameraIdentity,
-      renders: renderCount,
-      reading: renderCameraReading,
+      identity: sceneRenderCameraIdentity,
+      scene_camera: sceneRenderCameraIdentity,
+      scene_renders: sceneRenderCount,
+      renders: sceneRenderCount,
+      total_renders: totalRenderCount,
+      pass_cameras: passCameras.map((entry) => ({ ...entry })),
+      reading: sceneRenderCameraReading,
     }),
     renderOnce() {
       renderFrame();
-      return { identity: renderCameraIdentity, renders: renderCount, reading: renderCameraReading };
+      return {
+        identity: sceneRenderCameraIdentity,
+        scene_camera: sceneRenderCameraIdentity,
+        scene_renders: sceneRenderCount,
+        renders: sceneRenderCount,
+        total_renders: totalRenderCount,
+        pass_cameras: passCameras.map((entry) => ({ ...entry })),
+        reading: sceneRenderCameraReading,
+      };
     },
     viewport,
     resize,
+    buildingReport,
+    characterDetailReport,
+    environmentReport: () => lightingEnvironmentReport(),
+    postfxReport: () => postfxChainReport(),
+    materialReport: () => materialsReport(),
     startRenderLoop() {
       const loop = () => {
         renderFrame();

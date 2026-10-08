@@ -1,0 +1,106 @@
+# N4 资产登记表（REQ-20260924-004 / W6）—— 路径相对 `web/assets/`
+# 每行三字段：相对路径 | 来源库 + asset id + 许可 + 取用方式 | 生成方式
+# 许可口径：Poly Haven 全站素材为 CC0 1.0（Public Domain Dedication），许可原文见 https://polyhaven.com/license
+#   —— 该结论沿用本仓库既有取证（dev_team_workspace/SPIKE-20260923-001-deephealing-visual-proto/assets.license.json，
+#      其中 license_evidence.fetched=true、source_url=https://polyhaven.com/license）。
+# 真实尺度依据（**两个不同的量，别混**）：
+#   ① **扫描覆盖** `scan_coverage_m` = Poly Haven 官方 API `https://api.polyhaven.com/info/<asset_id>`
+#      的 `dimensions` 字段（cm）/100 —— 「这张贴图在真实世界里覆盖多大一片」的**上游真值**，
+#      本表逐行抄录（写作「真实覆盖 N cm」）。取值日期 2026-09-24，原始读数落
+#      `v0/spikes/n4-art/readback/polyhaven-dimensions.json`。
+#   ② **材质基准** `repeat_basis_m` = `min(扫描覆盖, min(该表面的米数))` —— 「这张贴图在**这个表面上**
+#      被映射到多大一片」。r2 / M-2 起 `repeat = surface_size_m / repeat_basis_m`，因此恒有 `repeat ≥ 1`：
+#      贴图**永不被放大**到比源照片还大（不伪造真实覆盖），且图案在每个构件上**至少平铺一次**。
+#      为什么需要②：扫描覆盖是「源照片拍多大一片」，而**构件可能远小于它**。逐图视觉复核源贴图：
+#      `black_painted_planks` 16 m 里只有 ~8 条板缝（≈2 m/条）、`corrugated_iron_02` 27 m 里只有 ~32 道
+#      瓦楞（≈0.84 m/道）。r1 把这种贴图 1:1 铺到 1.1 m 的门 / 0.14 m 的落水管上，构件只显示贴图的
+#      百分之几 ⇒ 画面读作**纯色**（实测 `metal_corrugated` 的 repeat 只有 0.005185）。
+#      逐表面的 basis 与 repeat 实测读数落 `v0/spikes/n4-art/readback/material-basis-<tag>.json`。
+#      构件本就比扫描大的（墙 / 地面 / 屋顶）⇒ `basis = 扫描覆盖`，与 r1 读数**逐字相同**。
+#   ③ 上游两字段冲突的一件（**不静默取舍**）：`leather_red_02` 的 `dimensions` = 600 cm 与
+#      `scale` = "30x30 cm" 相差 20×。本表采用 `scale`（30 cm）：皮革是家具/服饰级材质，30 cm 的
+#      粒面尺度物理上成立、6 m 不成立；且采用 600 cm 会让 repeat 掉到 0.06（即 ①要修的形态）。
+#      两个字段都记在 `readback/polyhaven-dimensions.json`。
+# 与 `asset.manifest.schema.json` 的 `source_model` 字段语义偏差（**显式声明，不伪造模型 id**）：
+#   本表素材是**实拍扫描**（摄影 + 处理），不存在「产出该资产的模型 id」；
+#   门禁链从不把 `verify_asset_pack.py` 指向 `web/assets/`，故不改 `asset.license.table*.json`（不在写集）。
+#
+# N4 资产登记表（REQ-20260924-004 / W6）—— 路径相对 `web/assets/`
+# 每行四字段：相对路径 | 类别 + 来源/许可/用途 | 生成方式
+# **类别口径**（AC-8 的机器可核字段，**逐件标注**）：
+#   `cc0_photo`    —— CC0 1.0 实拍/实测件（Poly Haven 摄影扫描 + HDRI 拍摄）
+#   `ai_generated` —— AI 生成件（生成器 / 模型 id / 日期写在该行「生成记录」里）
+#   判据 `skin_asset_is_ai_generated`：`skin-pale-01` 的类别字段必须 == `ai_generated`，
+#   且该行**不得**出现 `cc0-1.0` / `Poly Haven` 字样（该素材无上游条目 ⇒ 许可未证实，不伪造）。
+# **许可口径**（只适用于 `cc0_photo` 类）：Poly Haven 全站素材为 CC0 1.0（Public Domain Dedication），
+#   许可原文见 https://polyhaven.com/license —— 该结论沿用本仓库既有取证
+#   （dev_team_workspace/SPIKE-20260923-001-deephealing-visual-proto/assets.license.json，
+#    其中 license_evidence.fetched=true、source_url=https://polyhaven.com/license）。
+# **真实尺度依据**（**三个不同的量，别混**；N4-r3 / R3-3 重写）：
+#   ① **扫描覆盖** `scan_coverage_m` = Poly Haven 官方 API `https://api.polyhaven.com/info/<asset_id>`
+#      的 `dimensions`（cm）/100 —— 「源照片拍多大一片」的上游读数，本表逐行抄录（写作「真实覆盖 N cm」）。
+#      取值日期 2026-09-24，原始读数落 `readback/polyhaven-dimensions.json`。
+#   ② **材质基准** `repeat_basis_m`（本表写作「**基准 N m**」）= 「这张贴图在**这个表面上**被映射到
+#      多大一片」的**声明值**，与构件尺寸**无关**。`repeat = surface_size_m / repeat_basis_m`。
+#      依据必须可核，逐表面带标签（`upstream` / `visually_corrected`）：
+#        `upstream`           —— 取①。适用于**没有可数图案单元**的贴图（灰泥 / 沥青 / 拉毛混凝土 /
+#                                草地 / 针织物 / 皮革粒面）—— 它们没有「一块砖」这样的尺度锚点。
+#        `visually_corrected` —— **独立测量**「贴图内图案单元数 × 该单元的物理参照尺寸」，
+#                                **必须附画面证据**（裁切图 + 读图结论）。
+#      为什么砖 / 板 / 瓦 / 瓦楞必须走 `visually_corrected`：上游 `dimensions` 对这些贴图**系统性偏大**
+#      约 5–20 倍。照抄①会让 `brick_wall_04` 的 13.9 m ÷ 贴图内 10 块砖 = **1.39 m 一块砖**（不可能）。
+#      r2 的旧规则 `basis = min(扫描覆盖, min(构件尺寸))` 已被 architect **打回**：它使 `repeat ≥ 1` 与
+#      `never_magnified` 成为**恒真式**（Raven N2-1），且 basis 由构件尺寸反推 ⇒ 与被验对象循环。
+#      r3 口径下 `repeat < 1` **是允许且正确的物理结果**（1.1 m 的门铺 1.68 m 基准的板贴图 ⇒ 只显示
+#      65% 的贴图）。代价（贴图放大倍数 = ①/②）逐表面给读数；`glass` 与 `fabric_cotton` 因此记 **GAP**。
+#      逐表面 basis / repeat / 放大倍数落 `readback/material-basis-<tag>.json`。
+#   ③ 上游两字段冲突的一件（**不静默取舍**）：`leather_red_02` 的 `dimensions` = 600 cm 与
+#      `scale` = "30x30 cm" 相差 20×。本表采用 `scale`（30 cm）：皮革粒面是微观纹理，30 cm 量级与
+#      「外套上看得见粒面」相符；600 cm 会让 0.38 m 的袖子只显示贴图 6%、粒面放大到 6 cm/颗。
+#      两字段都记在 `readback/polyhaven-dimensions.json`，代码侧登记见 `DECLARED_CONFLICTS`。
+# 与 `asset.manifest.schema.json` 的 `source_model` 字段语义偏差（**显式声明，不伪造模型 id**）：
+#   `cc0_photo` 类素材是**实拍扫描**（摄影 + 处理），不存在「产出该资产的模型 id」；
+#   `ai_generated` 类素材的模型 id 写在「生成记录」里（不塞进 `source_model`）。
+#   门禁链从不把 `verify_asset_pack.py` 指向 `web/assets/`，故不改 `asset.license.table*.json`（不在写集）。
+#
+hdri/kloofendal_overcast_puresky_2k.hdr | 类别 `cc0_photo` · Poly Haven · asset id `kloofendal_overcast_puresky` · CC0 1.0 · 作者 Greg Zaal · 用途：`scene.background` + `scene.environment`（HDRI 主导照明） | 字节逐字复制自工作区只读资产包 refs/asset-pack/hdri/（4 335 717 B，未重编码）
+character/skin-pale-01.jpg | 类别 `ai_generated` · **生成记录**：generator=Seedream（字节跳动「豆包」图像生成）· model id `doubao-seedream-5-0-260128` · 生成日期 2026-09-24 · 生成用途=人物裸肤乘性细节层 · 交付来源：工作区只读资产包 refs/asset-pack/character/skin-pale-01.png（PM 提供）· asset id `skin-pale-01` · **许可：未证实**（该包内 tex-manifest.json / tex2-manifest.json **都没有它的条目**，无来源库 / 作者 / 许可字段可复核；**不伪造**许可与模型 id）· 用途：人物**裸露皮肤**（面 / 颈 / 手 / 耳 / 鼻）的乘性细节层 | 字节逐字复制（504 506 B，md5 ca2406484d0bad2d6d474912e10d5ff8，未重编码）
+# 皮肤素材的取舍更正（**如实记录，避免「静默取舍」**）：初判曾以「非无缝微距皮肤照片、平铺会重复」为由剔除；
+#   经二次逐项核验（平场、无烘焙阴影、无镜面高光、无方向光梯度 ⇒ 技术画像符合可平铺 albedo/detail 图），
+#   改为**采用**，但只作**乘性细节层**（`loadSkinDetailMaterial`，`repeat` 固定 1×1、不给法线图、`metalness=0`），
+#   色锚点仍是内容包规范肤色 × `luminanceScale` ⇒ 既有 `character_material_hex_recomputable` 语义不变。
+#   已知残余：① 高光端被裁切 ⇒ 单独看偏亮，必须靠 `color` 乘性压回肤色；② 静脉/痣是低频高辨识特征，
+#   平铺重复可辨 ⇒ 因此不做多 repeat 平铺。**许可面未证实这一条已上抛 PM（§13 P-5）**。
+grey_plaster/Diffuse.jpg | 类别 `cc0_photo` · Poly Haven · asset id `grey_plaster` · CC0 1.0 · 作者 Rob Tuytel · 用途：`wall_plaster` 色图 · 真实覆盖 1000 cm · **基准 10 m**（依据 `upstream`：灰泥无可数图案单元 ⇒ 取上游 dimensions） | 由 refs/asset-pack/tex/grey_plaster/Diffuse.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+grey_plaster/nor_gl.jpg | 类别 `cc0_photo` · Poly Haven · asset id `grey_plaster` · CC0 1.0 · 作者 Rob Tuytel · 用途：`wall_plaster` 法线（OpenGL 朝向） · **基准 10 m**（依据 `upstream`：灰泥无可数图案单元 ⇒ 取上游 dimensions） | 由 refs/asset-pack/tex/grey_plaster/nor_gl.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+grey_plaster/arm.jpg | 类别 `cc0_photo` · Poly Haven · asset id `grey_plaster` · CC0 1.0 · 作者 Rob Tuytel · 用途：`wall_plaster` 的 AO(R)/粗糙(G)/金属(B) 打包图 · **基准 10 m**（依据 `upstream`：灰泥无可数图案单元 ⇒ 取上游 dimensions） | 由 refs/asset-pack/tex/grey_plaster/arm.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+brick_wall_04/Diffuse.jpg | 类别 `cc0_photo` · Poly Haven · asset id `brick_wall_04` · CC0 1.0 · 摄影 Dimitrios Savva · 用途：`wall_brick` 色图 · 真实覆盖 1390 cm · **基准 2.2 m**（依据 `visually_corrected`：裁切图 10 块砖/贴图宽 × 标准砖长 22 cm） | 由 refs/asset-pack/tex2/brick_wall_04/Diffuse.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+brick_wall_04/nor_gl.jpg | 类别 `cc0_photo` · Poly Haven · asset id `brick_wall_04` · CC0 1.0 · 摄影 Dimitrios Savva · 用途：`wall_brick` 法线 · **基准 2.2 m**（依据 `visually_corrected`：裁切图 10 块砖/贴图宽 × 标准砖长 22 cm） | 由 refs/asset-pack/tex2/brick_wall_04/nor_gl.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+brick_wall_04/arm.jpg | 类别 `cc0_photo` · Poly Haven · asset id `brick_wall_04` · CC0 1.0 · 摄影 Dimitrios Savva · 用途：`wall_brick` 的 AO/粗糙/金属 打包图 · **基准 2.2 m**（依据 `visually_corrected`：裁切图 10 块砖/贴图宽 × 标准砖长 22 cm） | 由 refs/asset-pack/tex2/brick_wall_04/arm.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+clay_roof_tiles_02/Diffuse.jpg | 类别 `cc0_photo` · Poly Haven · asset id `clay_roof_tiles_02` · CC0 1.0 · 作者 Amal Kumar · 用途：`roof_tile` 色图 · 真实覆盖 2500 cm · **基准 4.5 m**（依据 `visually_corrected`：裁切图 18 条瓦垄/贴图宽 × 筒瓦垄宽 25 cm） | 由 refs/asset-pack/tex2/clay_roof_tiles_02/Diffuse.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+clay_roof_tiles_02/nor_gl.jpg | 类别 `cc0_photo` · Poly Haven · asset id `clay_roof_tiles_02` · CC0 1.0 · 作者 Amal Kumar · 用途：`roof_tile` 法线 · **基准 4.5 m**（依据 `visually_corrected`：裁切图 18 条瓦垄/贴图宽 × 筒瓦垄宽 25 cm） | 由 refs/asset-pack/tex2/clay_roof_tiles_02/nor_gl.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+clay_roof_tiles_02/arm.jpg | 类别 `cc0_photo` · Poly Haven · asset id `clay_roof_tiles_02` · CC0 1.0 · 作者 Amal Kumar · 用途：`roof_tile` 的 AO/粗糙/金属 打包图 · **基准 4.5 m**（依据 `visually_corrected`：裁切图 18 条瓦垄/贴图宽 × 筒瓦垄宽 25 cm） | 由 refs/asset-pack/tex2/clay_roof_tiles_02/arm.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+brick_pavement/Diffuse.jpg | 类别 `cc0_photo` · Poly Haven · asset id `brick_pavement` · CC0 1.0 · 作者 Charlotte Baglioni · 用途：`pavement_brick` 色图 · 真实覆盖 2000 cm · **基准 2.1 m**（依据 `visually_corrected`：裁切图 10 块铺装砖/贴图宽 × 联锁砖长 21 cm） | 由 refs/asset-pack/tex/brick_pavement/Diffuse.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+brick_pavement/nor_gl.jpg | 类别 `cc0_photo` · Poly Haven · asset id `brick_pavement` · CC0 1.0 · 作者 Charlotte Baglioni · 用途：`pavement_brick` 法线 · **基准 2.1 m**（依据 `visually_corrected`：裁切图 10 块铺装砖/贴图宽 × 联锁砖长 21 cm） | 由 refs/asset-pack/tex/brick_pavement/nor_gl.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+brick_pavement/arm.jpg | 类别 `cc0_photo` · Poly Haven · asset id `brick_pavement` · CC0 1.0 · 作者 Charlotte Baglioni · 用途：`pavement_brick` 的 AO/粗糙/金属 打包图 · **基准 2.1 m**（依据 `visually_corrected`：裁切图 10 块铺装砖/贴图宽 × 联锁砖长 21 cm） | 由 refs/asset-pack/tex/brick_pavement/arm.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+asphalt_02/Diffuse.jpg | 类别 `cc0_photo` · Poly Haven · asset id `asphalt_02` · CC0 1.0 · 作者 Rob Tuytel · 用途：`road_asphalt` 色图 · 真实覆盖 3000 cm · **基准 30 m**（依据 `upstream`：沥青无可数图案单元 ⇒ 取上游 dimensions） | 由 refs/asset-pack/tex/asphalt_02/Diffuse.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+asphalt_02/nor_gl.jpg | 类别 `cc0_photo` · Poly Haven · asset id `asphalt_02` · CC0 1.0 · 作者 Rob Tuytel · 用途：`road_asphalt` 法线 · **基准 30 m**（依据 `upstream`：沥青无可数图案单元 ⇒ 取上游 dimensions） | 由 refs/asset-pack/tex/asphalt_02/nor_gl.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+asphalt_02/arm.jpg | 类别 `cc0_photo` · Poly Haven · asset id `asphalt_02` · CC0 1.0 · 作者 Rob Tuytel · 用途：`road_asphalt` 的 AO/粗糙/金属 打包图 · **基准 30 m**（依据 `upstream`：沥青无可数图案单元 ⇒ 取上游 dimensions） | 由 refs/asset-pack/tex/asphalt_02/arm.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+grass_ground/Diffuse.jpg | 类别 `cc0_photo` · Poly Haven · asset id `grass_ground` · CC0 1.0 · 作者 Charlotte Baglioni · 用途：`ground_grass` 色图 · 真实覆盖 2510 cm · **基准 25.1 m**（依据 `upstream`：草地无可数图案单元 ⇒ 取上游 dimensions） | 由 refs/asset-pack/tex/grass_ground/Diffuse.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+grass_ground/nor_gl.jpg | 类别 `cc0_photo` · Poly Haven · asset id `grass_ground` · CC0 1.0 · 作者 Charlotte Baglioni · 用途：`ground_grass` 法线 · **基准 25.1 m**（依据 `upstream`：草地无可数图案单元 ⇒ 取上游 dimensions） | 由 refs/asset-pack/tex/grass_ground/nor_gl.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+grass_ground/arm.jpg | 类别 `cc0_photo` · Poly Haven · asset id `grass_ground` · CC0 1.0 · 作者 Charlotte Baglioni · 用途：`ground_grass` 的 AO/粗糙/金属 打包图 · **基准 25.1 m**（依据 `upstream`：草地无可数图案单元 ⇒ 取上游 dimensions） | 由 refs/asset-pack/tex/grass_ground/arm.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+brushed_concrete/Diffuse.jpg | 类别 `cc0_photo` · Poly Haven · asset id `brushed_concrete` · CC0 1.0 · 摄影 Dimitrios Savva · 用途：`ground_wet` 与 `glass` 色图 · 真实覆盖 2500 cm · **基准 25 m**（依据 `upstream`：拉毛混凝土无可数图案单元 ⇒ 取上游 dimensions） | 由 refs/asset-pack/tex/brushed_concrete/Diffuse.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+brushed_concrete/nor_gl.jpg | 类别 `cc0_photo` · Poly Haven · asset id `brushed_concrete` · CC0 1.0 · 摄影 Dimitrios Savva · 用途：`ground_wet` 与 `glass` 法线 · **基准 25 m**（依据 `upstream`：拉毛混凝土无可数图案单元 ⇒ 取上游 dimensions） | 由 refs/asset-pack/tex/brushed_concrete/nor_gl.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+brushed_concrete/arm.jpg | 类别 `cc0_photo` · Poly Haven · asset id `brushed_concrete` · CC0 1.0 · 摄影 Dimitrios Savva · 用途：`ground_wet` 与 `glass` 的 AO/粗糙/金属 打包图 · **基准 25 m**（依据 `upstream`：拉毛混凝土无可数图案单元 ⇒ 取上游 dimensions） | 由 refs/asset-pack/tex/brushed_concrete/arm.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+black_painted_planks/Diffuse.jpg | 类别 `cc0_photo` · Poly Haven · asset id `black_painted_planks` · CC0 1.0 · 作者 Dimitrios Savva · 用途：`wood_plank`（门窗/雨檐/栏杆）色图 · 真实覆盖 1600 cm · **基准 1.68 m**（依据 `visually_corrected`：裁切图 14 条板缝/贴图宽 × 木板板宽 12 cm） | 由 refs/asset-pack/tex2/black_painted_planks/Diffuse.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+black_painted_planks/nor_gl.jpg | 类别 `cc0_photo` · Poly Haven · asset id `black_painted_planks` · CC0 1.0 · 作者 Dimitrios Savva · 用途：`wood_plank` 法线 · **基准 1.68 m**（依据 `visually_corrected`：裁切图 14 条板缝/贴图宽 × 木板板宽 12 cm） | 由 refs/asset-pack/tex2/black_painted_planks/nor_gl.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+black_painted_planks/arm.jpg | 类别 `cc0_photo` · Poly Haven · asset id `black_painted_planks` · CC0 1.0 · 作者 Dimitrios Savva · 用途：`wood_plank` 的 AO/粗糙/金属 打包图 · **基准 1.68 m**（依据 `visually_corrected`：裁切图 14 条板缝/贴图宽 × 木板板宽 12 cm） | 由 refs/asset-pack/tex2/black_painted_planks/arm.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+corrugated_iron_02/Diffuse.jpg | 类别 `cc0_photo` · Poly Haven · asset id `corrugated_iron_02` · CC0 1.0 · 摄影 Sergej Majboroda · 用途：`metal_corrugated`（管道）色图 · 真实覆盖 2700 cm · **基准 2.08 m**（依据 `visually_corrected`：裁切图 32 道瓦楞/贴图宽 × 肋距 6.5 cm） | 由 refs/asset-pack/tex2/corrugated_iron_02/Diffuse.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+corrugated_iron_02/nor_gl.jpg | 类别 `cc0_photo` · Poly Haven · asset id `corrugated_iron_02` · CC0 1.0 · 摄影 Sergej Majboroda · 用途：`metal_corrugated` 法线 · **基准 2.08 m**（依据 `visually_corrected`：裁切图 32 道瓦楞/贴图宽 × 肋距 6.5 cm） | 由 refs/asset-pack/tex2/corrugated_iron_02/nor_gl.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+corrugated_iron_02/arm.jpg | 类别 `cc0_photo` · Poly Haven · asset id `corrugated_iron_02` · CC0 1.0 · 摄影 Sergej Majboroda · 用途：`metal_corrugated` 的 AO/粗糙/金属 打包图 · **基准 2.08 m**（依据 `visually_corrected`：裁切图 32 道瓦楞/贴图宽 × 肋距 6.5 cm） | 由 refs/asset-pack/tex2/corrugated_iron_02/arm.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+cotton_jersey/Diffuse.jpg | 类别 `cc0_photo` · Poly Haven · asset id `cotton_jersey` · CC0 1.0 · 摄影 colormass · 用途：`fabric_cotton`（徐琴外衣/住户衣物）色图 · 真实覆盖 263.6 cm · **基准 2.636 m**（依据 `upstream`：针织物无可数图案单元 ⇒ 取上游 dimensions） | 由 refs/asset-pack/tex2/cotton_jersey/Diffuse.jpg（2048×2050）经 sips 缩放至 1024² + JPEG q85
+cotton_jersey/nor_gl.jpg | 类别 `cc0_photo` · Poly Haven · asset id `cotton_jersey` · CC0 1.0 · 摄影 colormass · 用途：`fabric_cotton` 法线 · **基准 2.636 m**（依据 `upstream`：针织物无可数图案单元 ⇒ 取上游 dimensions） | 由 refs/asset-pack/tex2/cotton_jersey/nor_gl.jpg（2048×2050）经 sips 缩放至 1024² + JPEG q85
+cotton_jersey/arm.jpg | 类别 `cc0_photo` · Poly Haven · asset id `cotton_jersey` · CC0 1.0 · 摄影 colormass · 用途：`fabric_cotton` 的 AO/粗糙/金属 打包图 · **基准 2.636 m**（依据 `upstream`：针织物无可数图案单元 ⇒ 取上游 dimensions） | 由 refs/asset-pack/tex2/cotton_jersey/arm.jpg（2048×2050）经 sips 缩放至 1024² + JPEG q85
+leather_red_02/coll2.jpg | 类别 `cc0_photo` · Poly Haven · asset id `leather_red_02` · CC0 1.0 · 作者 Rob Tuytel · 用途：`leather_red`（艳红外衣）色图 · 上游色图名为 `coll2`（**不是** `Diffuse`）· 真实覆盖 30 cm · **基准 0.3 m**（依据 `upstream`：取上游 `scale` 字段 30 cm（与 `dimensions` 600 cm 冲突，见③）） | 由 refs/asset-pack/tex2/leather_red_02/coll2.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+leather_red_02/nor_gl.jpg | 类别 `cc0_photo` · Poly Haven · asset id `leather_red_02` · CC0 1.0 · 作者 Rob Tuytel · 用途：`leather_red` 法线（OpenGL 朝向；同目录 `nor_dx.jpg` 为 DirectX 朝向，未采用） · **基准 0.3 m**（依据 `upstream`：取上游 `scale` 字段 30 cm（与 `dimensions` 600 cm 冲突，见③）） | 由 refs/asset-pack/tex2/leather_red_02/nor_gl.jpg（2048²）经 sips 缩放至 1024² + JPEG q85
+leather_red_02/arm.jpg | 类别 `cc0_photo` · Poly Haven · asset id `leather_red_02` · CC0 1.0 · 作者 Rob Tuytel · 用途：`leather_red` 的 AO/粗糙/金属 打包图 · **基准 0.3 m**（依据 `upstream`：取上游 `scale` 字段 30 cm（与 `dimensions` 600 cm 冲突，见③）） | 由 refs/asset-pack/tex2/leather_red_02/arm.jpg（2048²）经 sips 缩放至 1024² + JPEG q85

@@ -165,8 +165,24 @@ interface PartSpec {
  */
 const PART_TABLE: readonly PartSpec[] = [
   { part: 'torso', size: [0.38, 0.66, 0.26], offset: [0, 0, 0], color: 'garment' },
-  { part: 'head', size: [0.26, 0.30, 0.26], offset: [0, 0.49, 0.025], color: 'skin' },
-  { part: 'hair', size: [0.58, 0.72, 0.30], offset: [0, 0.34, -0.015], color: 'hair' },
+  // N4-r2 / M-4（关闭 Raven N-13 / 预审 R-3）：**真实头身比**在 11 条比例判据的可行域内落地。
+  // 目标 = 设计 §D-5 的「头高 ≈ 身高 1/7.5」。实测：`head` 高 h、头顶 = 0.50 + h/2、脚底 = −1.22
+  //   ⇒ 全高 = 1.72 + h/2；令 h / (1.72 + h/2) = 1/7.5 ⇒ h = 0.2457。
+  // 取 h = **0.245**（宽/深同步收到 0.24 保持头形比例）⇒ 实测头身比 = 0.245 / 1.8425 = **1/7.52**。
+  // 可行域逐条核算（**不动任何阈值**）：
+  //   · `character_mask_reads_half_face`：`mask.height 0.16 ≤ head.height × 0.7 = 0.1715` ✓（余量 11.5 mm）；
+  //     下半脸皮肤带 = mask.bottom_y 0.485 − head.bottom_y 0.3775 = **0.1075 m ≥ 0.08** ✓；
+  //   · `character_hair_reads_long`：发顶 0.68 ≥ 头顶 0.6225 ✓；发下缘 −0.02 低于肩线 0.33 共 350 mm ✓；
+  //   · `character_face_visible_beyond_hair`：脸前表面 0.145 > 发前表面 0.045（露 **100 mm**）✓；
+  //   · `character_realism_geometry_constraints`：颈 y∈[0.31,0.41] 仍跨躯干上缘 0.33 与头下缘 0.3775 ✓；
+  //   · 瞳/唇/眉/鼻全部仍落在头盒内（逐项见 `03` §M-4 的实测读数）。
+  { part: 'head', size: [0.24, 0.245, 0.24], offset: [0, 0.50, 0.025], color: 'skin' },
+  // N4 / W5（路线 a′ 可行域内）：`hair` 由 [0.58,0.72,0.30]@[0,0.34,-0.015] 收为 [0.50,0.70,0.24]@[0,0.33,-0.075]。
+  // 根因（实机评图）：原发盒前表面 z=0.135 只比脸前表面 0.155 落后 20 mm ⇒ 正面看是一整块黑碑、
+  // 脸是碑上贴的小方块。改为**向后收 60 mm + 减薄 60 mm** ⇒ 脸前表面凸出发前表面 110 mm，脸成为独立体块。
+  // 仍在 11 条比例判据可行域内：宽 0.50−躯干 0.38=0.12 ≥0.10、两侧各 0.06 ≥0.04、宽−外衣 0.12 ≥0.06、
+  // 下缘 −0.02 ≤0.0 且低于肩线 0.35 ≥0.10、上缘 0.68 ≥ 头顶 0.64（`hairReadsLong` 要求发顶不低于头顶）。
+  { part: 'hair', size: [0.50, 0.70, 0.24], offset: [0, 0.33, -0.075], color: 'hair' },
   { part: 'arm_l', size: [0.10, 0.40, 0.14], offset: [-0.24, 0.08, 0], color: 'garment' },
   { part: 'arm_r', size: [0.10, 0.40, 0.14], offset: [0.24, 0.08, 0], color: 'garment' },
   { part: 'leg_l', size: [0.17, 0.80, 0.20], offset: [-0.11, -0.72, 0], color: 'garment' },
@@ -454,4 +470,109 @@ export function normalizeAppearance(input: unknown): CharacterAppearance | null 
     mask,
     states,
   };
+}
+
+// ================================================================== N4 / W5：写实解剖部件面
+/**
+ * **N4 写实解剖部件**（AC-5 的「≥12 部件，含手/脚/发/衣/面部」）。
+ *
+ * 关键纪律（Raven 预审 R-1，`[实证]`）：N2 契约部件面**逐字冻结** ——
+ * `CHARACTER_PART_NAMES` / `PART_TABLE` / `buildCharacterParts()` / `DAILY_PART_COUNT` /
+ * `MASKED_PART_COUNT` 一行未改；N4 部件走**独立装配函数** + `world.ts` 的**独立映射**
+ * （`detailPartMeshes`），**不进** `partMeshes`。
+ * 为什么：`character_parts_fingerprints_recomputable` 比较「装配函数产物」与「mesh 读层回」两侧，
+ * 一旦往 `partMeshes` 加部件再靠过滤回 N2 名单，两侧必然不同集 ⇒ 既有判据必红。
+ *
+ * 几何口径（与 `PART_TABLE` 同一坐标系；角色正面 = **+z**；躯干 = 根 mesh）：
+ *   - `neck` 落在**躯干上缘与头下缘之间**（头身分段可读，且不是「头直接坐在肩上」）；
+ *   - `hand_l`/`hand_r` 接在**臂的下端**（前臂末端），不再读作「齐腕截断的圆柱」；
+ *   - `foot_l`/`foot_r` 接在**腿的下端且低于外衣下摆**（脚落地可读）；
+ *   - `nose`/`brow_l`/`brow_r`/`ear_l`/`ear_r` 是**面部特征**（几何表达，REQ 明确
+ *     `xuqin-face-01.png` 是正面参考图、不可直接贴 ⇒ 面部特征一律几何 + 材质色）。
+ * 全部尺寸/偏移按 `height_cm / BASE_HEIGHT_CM` **等比**缩放（与 N2 同口径，确定性、无随机）。
+ */
+export const N4_PART_NAMES: readonly string[] = [
+  'neck', 'hand_l', 'hand_r', 'foot_l', 'foot_r', 'nose', 'brow_l', 'brow_r', 'ear_l', 'ear_r',
+] as const;
+
+/** N4 部件装配顺序（固定；确定性，无遍历顺序依赖）。 */
+export const N4_PART_ORDER: readonly string[] = [
+  'neck', 'hand_l', 'hand_r', 'foot_l', 'foot_r', 'nose', 'brow_l', 'brow_r', 'ear_l', 'ear_r',
+  'pupil_l', 'pupil_r',
+] as const;
+
+const DETAIL_TABLE: readonly PartSpec[] = [
+  // 颈：躯干上缘 y=0.33 / 头下缘 y=0.34 ⇒ 颈盒 y∈[0.31,0.41] 跨在两段之间
+  { part: 'neck', size: [0.14, 0.10, 0.14], offset: [0, 0.36, 0.005], color: 'skin' },
+  // 手：臂盒 y∈[−0.12,0.28] ⇒ 手盒上缘贴臂下端 y=−0.12，整体在臂中心之下
+  { part: 'hand_l', size: [0.09, 0.14, 0.11], offset: [-0.24, -0.19, 0], color: 'skin' },
+  { part: 'hand_r', size: [0.09, 0.14, 0.11], offset: [0.24, -0.19, 0], color: 'skin' },
+  // 脚（N4-r2 / M-8 关闭 Sentinel B-10）：原实现 `color='garment'` 与腿/外衣**同色**且仅高 0.10 m
+  // ⇒ 画面里读不出「脚」（独立读图判「腿底直接截断落地」）。
+  // 第一版只改色锚点（`hair` 近黑）**不够**：近黑 × 红色皮革贴图 = 暗红，与腿的暗红在**亮度上几乎同值**
+  // （实测像素：腿 (48,18,20) vs 脚底 (15,2,2)，差别只在亮度渐变 ⇒ 读作「腿往下变暗」而不是「鞋」）。
+  // ⇒ 本轮两处一起改：
+  //   ① **前伸成鞋头**：深 0.20→0.34、前移到 z=0.10 ⇒ 鞋尖比腿**多伸出 0.17 m**，靠**轮廓**就能读出「鞋」；
+  //   ② **去掉红色皮革贴图**（从 `CHARACTER_PART_SURFACE` 移除）⇒ 材质回落到 `healingMaterial(hex)`
+  //      的**纯色**中性近黑，不再是「暗红」。
+  // 几何约束（`feetAtLegEndsBelowHem`，容差 20 mm）：腿底 −1.12、脚顶 −1.165+0.055=**−1.11**
+  //   ⇒ |−1.11 −(−1.12)| = 0.01 ≤ 0.02 ✓；脚底 **−1.22** = `WORLD_FLOOR_Y`（正好踩在世界地面上）。
+  { part: 'foot_l', size: [0.17, 0.11, 0.34], offset: [-0.11, -1.165, 0.10], color: 'hair' },
+  { part: 'foot_r', size: [0.17, 0.11, 0.34], offset: [0.11, -1.165, 0.10], color: 'hair' },
+  // 面部：鼻在瞳/唇之间并前伸（N4-r2 / M-8 关闭 Sentinel B-2：原鼻盒 y∈[0.43,0.52] 与唇盒
+  //   y∈[0.4125,0.4475] **几何相交**、且鼻在前 ⇒ 嘴中央被肤色块切出缺口。现鼻盒 y∈[0.45,0.505]，
+  //   与唇（上缘 0.4475）**留 2.5 mm 间隙**、与瞳（下缘 0.505）**恰好相接不相交**。）
+  // N4-r3 / R3-6：M-8 只保证了「不相交」，**没保证「贴住脸」** —— 原 z∈[0.16,0.21] 整段在头盒
+  //   前表面（z=0.145）**之外**，且 y 与 `eyes`（y∈[0.505,0.555]）、与 `lips`（y 上缘 0.4475）
+  //   都不重叠 ⇒ 鼻盒**悬空**（与任何主体盒 AABB 交集为零）。现把 z 收回到 `z∈[0.13,0.18]`：
+  //   与头盒重叠 15 mm（贴住脸），仍前伸 35 mm。M-8 的「不切唇」结论不变（y 间隙仍是 2.5 mm）。
+  { part: 'nose', size: [0.05, 0.055, 0.05], offset: [0, 0.4775, 0.155], color: 'skin' },
+  // N4-r3 / R3-6：眉原 z∈[0.158,0.178]、y∈[0.574,0.596] —— y 与 `eyes`（上缘 0.555）不重叠、
+  //   z 在头盒之外 ⇒ 同样**悬空**。现 z 收回到 `z∈[0.14,0.16]`（与头盒重叠 5 mm、前伸 15 mm）。
+  { part: 'brow_l', size: [0.08, 0.022, 0.02], offset: [-0.06, 0.585, 0.15], color: 'hair' },
+  { part: 'brow_r', size: [0.08, 0.022, 0.02], offset: [0.06, 0.585, 0.15], color: 'hair' },
+  // 耳（N4-r2 / M-8 关闭 Sentinel B-1）：原耳盒 x∈[±0.14±0.0175]、z∈[−0.03,0.03] 被 `hair`
+  //   盒（x∈[−0.25,0.25]、y∈[−0.02,0.68]、z∈[−0.195,0.045]）**逐轴完全包含** ⇒ 任何机位都看不见，
+  //   12 个 N4 部件里这 2 个对画面**零贡献**。r2 把耳**前移到 z=0.09**（z∈[0.06,0.12] > 发前表面
+  //   0.045）⇒ 逃出发盒 AABB —— 但**跑过头了**：x 留在 ±0.145 ⇒ 内侧面 −0.1275 落在头盒侧面
+  //   （−0.12）**之外**，与头盒 AABB **交集为零** ⇒ 耳**悬浮在头旁**（R3-6 点名的新缺陷）。
+  //   现把 x 收回到 ±0.125：内侧面 −0.1075 **进入头盒 12.5 mm**（贴住头），外侧面 −0.1425 仍外露
+  //   22.5 mm；z 保持 0.09（仍逃出发盒 ⇒ 可见）。「逃出发盒」与「贴住头」两个条件同时成立。
+  { part: 'ear_l', size: [0.035, 0.10, 0.06], offset: [-0.125, 0.49, 0.09], color: 'skin' },
+  { part: 'ear_r', size: [0.035, 0.10, 0.06], offset: [0.125, 0.49, 0.09], color: 'skin' },
+  // 瞳：`eyes` 盒（N2 冻结）x∈[−0.095,0.095]、前表面 z=0.175 ⇒ 瞳贴在其正前方（z∈[0.173,0.181]），
+  // 间距 0.045 落在两眼眶位置。颜色借 `hair` 锚点：内容包只提供 skin/hair/garment/eyes/lips/mask
+  // 六个锚点，**没有独立虹膜锚点** ⇒ 用「发色（本包近黑）」作瞳孔色，瞳色本体仍由 pack 的 `eyes` 锚点承载。
+  { part: 'pupil_l', size: [0.028, 0.028, 0.008], offset: [-0.045, 0.53, 0.177], color: 'hair' },
+  { part: 'pupil_r', size: [0.028, 0.028, 0.008], offset: [0.045, 0.53, 0.177], color: 'hair' },
+] as const;
+
+/**
+ * **N4 写实解剖部件装配器**（纯函数；与 `buildCharacterParts()` 同一确定性口径）。
+ * `appearance === null` ⇒ 使用 `defaultAppearanceFor(entityId)`（确定性通用人形兜底）。
+ * 与读法**无关**（读法只改光照与材质亮度）。
+ */
+export function buildCharacterDetailParts(
+  appearance: CharacterAppearance | null | undefined,
+  context: CharacterStateContext,
+): CharacterPart[] {
+  const resolved = appearance ?? defaultAppearanceFor(context.entityId);
+  const rawHeight = fieldValue(resolved.height_cm, BASE_HEIGHT_CM);
+  const heightCm = isFiniteNumber(rawHeight) ? Math.min(250, Math.max(60, rawHeight)) : BASE_HEIGHT_CM;
+  const scale = heightCm / BASE_HEIGHT_CM;
+  const parts: CharacterPart[] = [];
+  for (const name of N4_PART_ORDER) {
+    const spec = DETAIL_TABLE.find((item) => item.part === name);
+    if (!spec) continue;
+    parts.push({
+      entity_id: context.entityId,
+      part: spec.part,
+      name: `${context.entityId}/${spec.part}`,
+      is_root: false,
+      size: [round6(spec.size[0] * scale), round6(spec.size[1] * scale), round6(spec.size[2] * scale)],
+      local_offset: [round6(spec.offset[0] * scale), round6(spec.offset[1] * scale), round6(spec.offset[2] * scale)],
+      source_hex: colorForPart(spec, resolved),
+    });
+  }
+  return parts;
 }
