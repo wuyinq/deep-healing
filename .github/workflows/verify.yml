@@ -61,7 +61,11 @@ jobs:
       - name: Node 依赖（提升到仓库根，绝不落进 02_source）
         run: |
           set -euo pipefail
-          npm install --no-save --no-package-lock --no-audit --no-fund three@0.180.0
+          # three：渲染层主依赖（web/package.json dependencies，按本机实测版本 pin）。
+          # typescript：N5 判据的 authority_scan.mjs 用 TypeScript Compiler API 建 AST
+          #   （web/package.json devDependencies typescript ^5.6.0）；缺它该门禁会静默产出空输出
+          #   ⇒ field_unreadable ⇒ FAIL。CI 必须装齐**门禁实际用到的**工具依赖。
+          npm install --no-save --no-package-lock --no-audit --no-fund three@0.180.0 typescript@5.9.3
 
       - name: 交付面门禁 verify_specs
         run: bash v0/02_source/verify_specs.sh

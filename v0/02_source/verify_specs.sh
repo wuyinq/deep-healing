@@ -932,7 +932,8 @@ else
   # N5-r3 / A5：`--frozen` 让 `assert_inputs.json.f2a_frozen_uplink_call_sites` 真正参与判定
   # （r2 里它 0 消费者、`(F-2a)` 只是打印）。N5-r3 / L-2：补 `problems` 与写入点计数守卫
   # （`[]?` 真空迭代会读成 0 假绿）。
-  N5_AUTH="$( cd "$N5_WEB" && node "$N5_TOOLS/authority_scan.mjs" --root src --frozen scripts/assert_inputs.json 2>/dev/null )"
+  N5_AUTH_LOG="$N5_OUTDIR/authority.log"
+  N5_AUTH="$( cd "$N5_WEB" && node "$N5_TOOLS/authority_scan.mjs" --root src --frozen scripts/assert_inputs.json 2>"$N5_AUTH_LOG" )"
   N5_AUTH_UPLINK="$(printf '%s' "$N5_AUTH" | jq -r '.uplink_call_site_count // "unreadable"' 2>/dev/null)"
   N5_AUTH_FILES="$(printf '%s' "$N5_AUTH" | jq -r '.authority_write_file_count // "unreadable"' 2>/dev/null)"
   N5_AUTH_OUTSIDE="$(printf '%s' "$N5_AUTH" | jq -r '[.authority_write_sites[]? | select(.enclosing_function != "apply")] | length' 2>/dev/null)"
@@ -944,7 +945,8 @@ else
      && [ "$N5_AUTH_PROBS" = "0" ] && [ "$N5_F2A_MISMATCH" = "0" ]; then
     ok "N5 authority scan F-2a+F-2b (AST): authority_write_file_count=1, writes_outside_apply=0, write_sites=$N5_AUTH_SITES, uplink_call_sites=${N5_AUTH_UPLINK} (F-2a: 与 assert_inputs.json 冻结清单逐项一致 mismatch=0), problems=0"
   else
-    bad "N5 authority scan F-2a/F-2b: file_count=$N5_AUTH_FILES outside=$N5_AUTH_OUTSIDE write_sites=$N5_AUTH_SITES problems=$N5_AUTH_PROBS f2a_mismatch=$N5_F2A_MISMATCH (field_unreadable 亦记 FAIL)"
+    N5_AUTH_ERR="$(tail -1 "$N5_AUTH_LOG" 2>/dev/null)"
+    bad "N5 authority scan F-2a/F-2b: file_count=$N5_AUTH_FILES outside=$N5_AUTH_OUTSIDE write_sites=$N5_AUTH_SITES problems=$N5_AUTH_PROBS f2a_mismatch=$N5_F2A_MISMATCH (field_unreadable 亦记 FAIL; tool_stderr=${N5_AUTH_ERR:-<empty>})"
   fi
 
   # --- 19c) 资产来源：AC-G-* / AC-E-2b ---
