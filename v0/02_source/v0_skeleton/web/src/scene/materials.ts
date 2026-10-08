@@ -15,6 +15,7 @@
  */
 
 import * as THREE from 'three';
+import { materialClassReport } from './material_classes.ts';
 
 export type SurfaceId = 'wall_plaster' | 'wall_brick' | 'roof_tile' | 'pavement_brick'
   | 'road_asphalt' | 'ground_grass' | 'ground_wet' | 'wood_plank'
@@ -595,9 +596,15 @@ export function loadSurfaceMaterials(
 
 /**
  * **人物皮肤细节层**（W5）：`skin-pale-01` 是平场、无烘焙阴影/高光/方向光的皮肤细节贴图
- * （逐项复核见 `<ws>/03_artisan_self_test.log`）⇒ 只作**乘性细节层**用：绑定 `map`，色锚点仍是
- * `内容包规范肤色 × luminanceScale` ⇒ 既有 `character_material_hex_recomputable` 的语义**逐字不变**。
+ * ⇒ 只作**乘性细节层**用：绑定 `map`，色锚点仍是 `内容包规范肤色 × luminanceScale`。
  * 该表面**不进** `SURFACES`（不是建筑/场地表面，不参与 `material_*` 注册表判据）。
+ *
+ * @deprecated **N5-r2 / A1（CRITICAL-1）起已从运行时渲染路径移除**：该贴图许可未证实
+ *   （`license=unknown`），`provenance.json` 声明 `runtime_excluded=true` ⇒ r2 起**真剔除**。
+ *   本函数**零调用点**（`grep -rn 'loadSkinDetailMaterial' web/src` 只剩本定义）；
+ *   文件本体、`URLS` 登记项与 `manifest.txt` 登记行保留（历史登记 / AC-E-2b 覆盖 / N4 判据依赖）。
+ *   证据链更正（raven R-3'''）：原注释指向 `<ws>/03_artisan_self_test.log` 的逐项复核，
+ *   该日志并无此记录 ⇒ 已删除该悬空指向。
  */
 export function loadSkinDetailMaterial(
   loader: THREE.TextureLoader | null,
@@ -639,8 +646,31 @@ function bindingOf(spec0: SurfaceSpec): SurfaceBinding | null {
   };
 }
 
-/** 逐表面读数（AC-3 / D-7）：注册表 + 实际绑定 + `degradations`（**必须**暴露）。 */
-export function materialReport(): Array<Record<string, unknown>> {
+/**
+ * 逐表面读数（AC-3 / D-7）：注册表 + 实际绑定 + `degradations`（**必须**暴露）。
+ *
+ * **N5 变更（经登记的生产者侧变更，见 `01d`，`AC-F-5e`）**：返回值由「既有 12 条的数组」
+ * 升为**带分区的对象** —— `surfaces`（既有 12 条，**逐字段原样**）+ `surfaces_ext`
+ * （`SURFACES_EXT` 分区，`AC-A-3③` / `AC-I-3e` 的机读锚）+ `classes`（类别表）+ `intersection`。
+ * **等价性口径**：既有 12 条的**期望值/阈值常量逐字节不变**（旧数组原样搬到 `surfaces`）；
+ * 只有**取数源字段名**（数组 → 具名分区）变了 ⇒ 属 `AC-F-5e` 允许的「取数源字段名映射」类变更。
+ */
+export function materialReport(): {
+  schema_version: string;
+  surfaces: Array<Record<string, unknown>>;
+  surfaces_ext: Array<Record<string, unknown>>;
+  classes: Array<Record<string, unknown>>;
+  intersection: string[];
+} {
+  return {
+    schema_version: 'n5-material-report/2',
+    surfaces: surfaceReadouts(),
+    ...materialReportExtPartition(),
+  };
+}
+
+/** 既有 12 条表面读数（**逐字段原样**；`AC-I-3a` 的常量集合哈希不动）。 */
+export function surfaceReadouts(): Array<Record<string, unknown>> {
   return SURFACE_IDS.map((id) => {
     const spec0 = SURFACES[id];
     const urls = [spec0.maps.diffuse, spec0.maps.normal, spec0.maps.roughness,
@@ -686,4 +716,218 @@ export function materialReport(): Array<Record<string, unknown>> {
 /** 主材质 `envMapIntensity` 的最小值（AC-1 的机器读数；纯数据，Node 可读）。 */
 export function envMapIntensityMin(): number {
   return SURFACE_IDS.reduce((min, id) => Math.min(min, SURFACES[id].envMapIntensity), Number.POSITIVE_INFINITY);
+}
+
+// =====================================================================================
+// N5 / S-3 · `SURFACES_EXT` —— **按材质类别的真实响应**（纯加法，见 `AC-I-3b/c/d/f/g/h/i`）
+//
+// R7 硬红线：本区块**只新增**。既有 `INPUTS` / `SURFACES`(12) / `SURFACE_IDS` / `WET_SURFACES`
+// 与 `materialReport()` 的既有 12 条读数**一字未改**（由 `AC-I-3a` 的常量集合哈希承担）。
+// 新表面一律进本注册表，**禁止**把表面从 `SURFACES` 移出（拆范围拆绿 = FAIL）。
+// =====================================================================================
+
+export type ExtSurfaceId =
+  | 'skin_face' | 'skin_hand'
+  | 'fabric_cotton_jacket' | 'fabric_linen_curtain'
+  | 'glass_window_clear' | 'glass_bottle'
+  | 'metal_railing' | 'metal_door'
+  | 'wood_door_frame' | 'wood_table_top';
+
+/**
+ * 扩展表面声明。与 `SurfaceSpec` 的差别：
+ *   - **没有** `surface_size_m`/`repeat`（不承载扫描贴图；材质由 GLB 自带或纯参数表达）；
+ *   - **类别**（`class`）决定其声明区间（`material_classes.ts` 的 `MATERIAL_CLASSES`）；
+ *   - 玻璃必须给 `transmission` + `ior`（`AC-I-3i②`：光有低粗糙而没有透射参数 = 假玻璃）；
+ *   - 金属/布料可给 `anisotropy`（R-4 各向异性；`MeshPhysicalMaterial`）。
+ */
+export interface ExtSurfaceSpec {
+  readonly id: ExtSurfaceId;
+  /** 类别归属（与 `material_classes.ts` 的双射由 `material_class_check.py` 核）。 */
+  readonly class: 'skin' | 'fabric' | 'glass' | 'metal' | 'wood';
+  /** 实测/声明粗糙度（`I-3d`：必须落在其类别声明区间内）。 */
+  readonly roughness: number;
+  /** 实测/声明金属度。 */
+  readonly metalness: number;
+  /** 玻璃必填（`AC-I-3i②`）。 */
+  readonly transmission?: number;
+  /** 玻璃必填（`AC-I-3i②`）。 */
+  readonly ior?: number;
+  /** R-4 各向异性强度（0 = 关闭；金属/布料用）。 */
+  readonly anisotropy: number;
+  /** 各向异性朝向（弧度，R-4；与拉丝方向对齐）。 */
+  readonly anisotropy_rotation: number;
+  /** 该表面绑定在哪（人类可读的落点，供 `I-3g` 的场景使用面核对）。 */
+  readonly bound_to: string;
+  /** 为什么取这组值（可复核的物理依据）。 */
+  readonly note: string;
+}
+
+/**
+ * N5 新表面表（**10 条 / 5 类 / 每类 2 条**）。
+ * 数值一律取「该类真实材料的常见区间内、且满足 `I-3i` 定向约束」的代表值。
+ */
+export const SURFACES_EXT: Readonly<Record<ExtSurfaceId, ExtSurfaceSpec>> = {
+  skin_face: {
+    id: 'skin_face', class: 'skin', roughness: 0.42, metalness: 0.0,
+    anisotropy: 0.0, anisotropy_rotation: 0.0,
+    bound_to: '角色**盒体**的面部部件 `skin-face`（`world.ts` 的 `EXT_SURFACE_PROPS`，挂在实体根 mesh 下；'
+      + '**不是** GLB 的皮肤材质 —— GLB 自带材质，且加载后该盒体部件即被隐藏）',
+    note: '人体皮肤实测 roughness 0.3–0.6；取 0.42 保留次表面感的宽高光。满足 I-3i①（< 0.6）。',
+  },
+  skin_hand: {
+    id: 'skin_hand', class: 'skin', roughness: 0.48, metalness: 0.0,
+    anisotropy: 0.0, anisotropy_rotation: 0.0,
+    bound_to: '角色 GLB 的皮肤材质（手部，掌纹更粗）',
+    note: '手部角质层更厚 ⇒ 比面部略高。仍满足 I-3i①（< 0.6）。',
+  },
+  fabric_cotton_jacket: {
+    id: 'fabric_cotton_jacket', class: 'fabric', roughness: 0.88, metalness: 0.0,
+    anisotropy: 0.35, anisotropy_rotation: 0.0,
+    bound_to: '角色外套（针织物）',
+    note: '针织物高粗糙、零金属度；anisotropy 0.35 表达绒面掠射回光。区间 ⊆ 旧口径（B-G1 关闭证据）。',
+  },
+  fabric_linen_curtain: {
+    id: 'fabric_linen_curtain', class: 'fabric', roughness: 0.92, metalness: 0.0,
+    anisotropy: 0.25, anisotropy_rotation: 0.0,
+    bound_to: '场景窗帘（亚麻）',
+    note: '亚麻比针织更粗糙。区间 ⊆ 旧口径。',
+  },
+  glass_window_clear: {
+    id: 'glass_window_clear', class: 'glass', roughness: 0.06, metalness: 0.0,
+    transmission: 0.92, ior: 1.52,
+    anisotropy: 0.0, anisotropy_rotation: 0.0,
+    bound_to: '房间窗玻璃（平板）',
+    note: '钠钙玻璃 ior 1.50–1.54、roughness ≤ 0.1。满足 I-3i②（有 transmission/ior 且 ≤ 0.15）。',
+  },
+  glass_bottle: {
+    id: 'glass_bottle', class: 'glass', roughness: 0.11, metalness: 0.0,
+    transmission: 0.86, ior: 1.50,
+    anisotropy: 0.0, anisotropy_rotation: 0.0,
+    bound_to: '桌上玻璃器皿（曲面）',
+    note: '曲面玻璃因壁厚/折射稍粗糙。仍满足 I-3i②。',
+  },
+  metal_railing: {
+    id: 'metal_railing', class: 'metal', roughness: 0.28, metalness: 0.85,
+    anisotropy: 0.6, anisotropy_rotation: 0.0,
+    bound_to: '走廊栏杆（拉丝不锈钢）',
+    note: '拉丝不锈钢 metalness 0.8–0.9、roughness 0.25–0.4；anisotropy 0.6 表达拉丝方向。满足 I-3i③（≥ 0.6）。',
+  },
+  metal_door: {
+    id: 'metal_door', class: 'metal', roughness: 0.40, metalness: 0.78,
+    anisotropy: 0.45, anisotropy_rotation: 1.570796,
+    bound_to: '单元防盗门（涂装钢）',
+    note: '涂装钢光泽被漆膜压低。仍满足 I-3i③（≥ 0.6）。',
+  },
+  wood_door_frame: {
+    id: 'wood_door_frame', class: 'wood', roughness: 0.74, metalness: 0.0,
+    anisotropy: 0.2, anisotropy_rotation: 1.570796,
+    bound_to: '门框（清漆木）',
+    note: '清漆木 roughness 0.6–0.85。区间 ⊆ 旧口径（B-G1 关闭证据）。',
+  },
+  wood_table_top: {
+    id: 'wood_table_top', class: 'wood', roughness: 0.66, metalness: 0.0,
+    anisotropy: 0.3, anisotropy_rotation: 1.570796,
+    bound_to: '桌面（打蜡木）',
+    note: '打蜡后更光滑。仍 ⊆ 旧口径。',
+  },
+};
+
+export const SURFACE_IDS_EXT: readonly ExtSurfaceId[] = Object.keys(SURFACES_EXT) as ExtSurfaceId[];
+
+/** 扩展表面的实测读数（`I-3d` / `I-3i` 的判据输入；纯数据，Node 可读）。 */
+export function extSurfaceReport(): Array<Record<string, unknown>> {
+  return SURFACE_IDS_EXT.map((id) => {
+    const spec0 = SURFACES_EXT[id];
+    return {
+      id,
+      class: spec0.class,
+      roughness: Number(spec0.roughness.toFixed(6)),
+      metalness: Number(spec0.metalness.toFixed(6)),
+      transmission: spec0.transmission ?? null,
+      ior: spec0.ior ?? null,
+      anisotropy: spec0.anisotropy,
+      anisotropy_rotation: spec0.anisotropy_rotation,
+      bound_to: spec0.bound_to,
+      note: spec0.note,
+    };
+  });
+}
+
+/** `SURFACES ∩ SURFACES_EXT`（`AC-I-3f` 要求 == ∅）。 */
+export function surfaceIntersection(): string[] {
+  const ext = new Set<string>(SURFACE_IDS_EXT as readonly string[]);
+  return (SURFACE_IDS as readonly string[]).filter((id) => ext.has(id));
+}
+
+/** 扩展表面材质构建缓存（N5；Node 下恒空）。 */
+const extBuilt = new Map<string, THREE.MeshPhysicalMaterial>();
+
+/**
+ * 扩展表面的真实材质（`MeshPhysicalMaterial`，含 transmission/ior/anisotropy）。
+ * `loader === null`（Node / 无 WebGL）⇒ 返回 `null`（**不抛**）；调用方回落纯色。
+ * 只做**纯参数**材质：扩展表面不承载扫描贴图（贴图面由 GLB 自带的 baseColor 承担）。
+ */
+export function loadExtSurfaceMaterial(
+  surfaceId: ExtSurfaceId,
+  envMapIntensity = 1.2,
+): THREE.MeshPhysicalMaterial | null {
+  if (typeof (THREE as unknown as { MeshPhysicalMaterial?: unknown }).MeshPhysicalMaterial !== 'function') return null;
+  const spec0 = SURFACES_EXT[surfaceId];
+  const material = new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color('#ffffff'),
+    roughness: spec0.roughness,
+    metalness: spec0.metalness,
+    envMapIntensity,
+    transmission: spec0.transmission ?? 0,
+    ior: spec0.ior ?? 1.5,
+    thickness: spec0.transmission ? 0.15 : 0,
+    transparent: Boolean(spec0.transmission),
+  });
+  if (spec0.anisotropy > 0 && 'anisotropy' in material) {
+    (material as unknown as { anisotropy: number }).anisotropy = spec0.anisotropy;
+    (material as unknown as { anisotropyRotation: number }).anisotropyRotation = spec0.anisotropy_rotation;
+  }
+  extBuilt.set(surfaceId, material);
+  return material;
+}
+
+/** 扩展表面 → 实际绑定读数（从**真的**材质实例读回；Node 下恒 `null`）。 */
+export function extBindingOf(surfaceId: ExtSurfaceId): Record<string, unknown> | null {
+  const material = extBuilt.get(surfaceId);
+  if (!material) return null;
+  const m = material as unknown as { transmission?: number; ior?: number; anisotropy?: number };
+  return {
+    roughness: Number(material.roughness.toFixed(6)),
+    metalness: Number(material.metalness.toFixed(6)),
+    transmission: typeof m.transmission === 'number' ? m.transmission : null,
+    ior: typeof m.ior === 'number' ? m.ior : null,
+    anisotropy: typeof m.anisotropy === 'number' ? m.anisotropy : null,
+  };
+}
+
+/** 扩展表面分区（`AC-A-3③` 的机读锚；与 `materialReport().surfaces` 合起来 = `SURFACES ∪ SURFACES_EXT`）。 */
+export function materialReportExtPartition(): {
+  schema_version: string;
+  surfaces_ext: Array<Record<string, unknown>>;
+  classes: Array<Record<string, unknown>>;
+  intersection: string[];
+} {
+  return {
+    schema_version: 'n5-surfaces-ext/1',
+    surfaces_ext: SURFACE_IDS_EXT.map((id) => ({ ...extSurfaceReportEntry(id), bound: extBindingOf(id) })),
+    classes: CLASS_TABLE_FOR_REPORT(),
+    intersection: surfaceIntersection(),
+  };
+}
+
+/** 逐条扩展表面读数（**纯数据**，不读运行期绑定）。 */
+function extSurfaceReportEntry(id: ExtSurfaceId): Record<string, unknown> {
+  return extSurfaceReport().find((entry) => entry.id === id) as Record<string, unknown>;
+}
+
+/**
+ * 类别表读数（**纯数据**）。`material_classes.ts` **不** import 本文件 ⇒ 无初始化环。
+ */
+function CLASS_TABLE_FOR_REPORT(): Array<Record<string, unknown>> {
+  return materialClassReport();
 }

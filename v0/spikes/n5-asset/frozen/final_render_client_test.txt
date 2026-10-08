@@ -1,0 +1,34 @@
+TAP version 13
+# Subtest: test_out_of_order_delta_is_dropped
+ok 1 - test_out_of_order_delta_is_dropped
+  ---
+  duration_ms: 0.309292
+  type: 'test'
+  ...
+# Subtest: test_observe_session_submit_intent_rejected_locally
+ok 2 - test_observe_session_submit_intent_rejected_locally
+  ---
+  duration_ms: 0.059542
+  type: 'test'
+  ...
+# Subtest: test_apply_is_idempotent_for_the_same_message
+ok 3 - test_apply_is_idempotent_for_the_same_message
+  ---
+  duration_ms: 0.042917
+  type: 'test'
+  ...
+# Subtest: test_snapshot_then_delta_ordering_is_preserved
+ok 4 - test_snapshot_then_delta_ordering_is_preserved
+  ---
+  duration_ms: 0.075917
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 48.769666

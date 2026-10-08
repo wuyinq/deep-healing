@@ -35,6 +35,10 @@
 #  18) AC-10 记忆**接线臂** + MEMORY_SIGNAL_* 敏感性断言（M5.2 r3 / FIX-5 · Raven §2.3）
 #       —— 交付门禁口径 = 记忆链关闭（unwired，§15）；本节并列公布接线臂读数，
 #          并断言 MEMORY_SIGNAL_WEIGHT ∈ {0.10, 0.20, 0.30} 三档下五条判据均绿
+#  19) N5 阶段 B（r2）· 四件 N5 工具进门禁（A2 / raven M-1）
+#       —— `material_probe`+`material_class_check`（I-3*）、`authority_scan`（F-2a/F-2b）、
+#          `verify_asset_provenance`（G-*）、`f5_check`（F-5a/b/c）+ 模块本体负对照；
+#          工具不可得 / 前置缺失 ⇒ SKIP + 显式标记（不得记 PASS）
 #
 # 编号纪律（Raven M-4）：新增小节一律追加在正文末尾，并**同步登记到本索引**；
 #   定位一律用**精确标题串**（`grep -n '^# ---------- 14)'`），不靠「第 N 节」推断。
@@ -879,6 +883,109 @@ if [ "$(jq -r '.arm' "$AC10_JSON" 2>/dev/null)" = "unwired" ]; then
   ok "AC-10 delivery-gate arm is explicitly UNWIRED (memory chain off; wired readings published separately in this section)"
 else
   bad "AC-10 delivery-gate arm is not unwired (arm=$(jq -r '.arm // "unreadable"' "$AC10_JSON" 2>/dev/null)) — gate scope must be declared"
+fi
+
+# ---------- 19) N5（阶段 B）· 四件 N5 工具进门禁（A2 / raven M-1；**纯加法**，不改任何既有小节） ----------
+# 依据：raven §A1-R-6 实测 —— `authority_scan.mjs` / `material_class_check.py` /
+#   `verify_asset_provenance.py` / `f5_check.py` 对 `verify_specs.sh` 的**引用数 = 0**
+#   ⇒ `AC-F-2a/F-2b/F-2c`、`AC-I-3a~i`、`AC-G-*`、`AC-F-5a~e` 此前只有「artisan 手工跑过」这一层，
+#   **没有任何自动回归保护**（§18 的索引止于 `18)`）。
+# 口径（硬性）：
+#   1) 只**追加**本节；既有小节与小节语义**一字未动**；
+#   2) 判定读**工具的机读判定字段**（不是退出码）；
+#   3) 工具不可得 / 前置缺失 ⇒ **SKIP + 显式标记**（**不得**记 PASS）。
+N5_WS="$(cd "$HERE/../.." && pwd)"
+N5_TOOLS="$N5_WS/v0/spikes/n5-asset"
+N5_WEB="$HERE/v0_skeleton/web"
+if [ ! -d "$N5_TOOLS" ] || [ ! -d "$N5_WEB" ]; then
+  skip "N5 tools/prelude missing ($N5_TOOLS / $N5_WEB) => SKIP (NOT PASS)"
+elif ! command -v node >/dev/null 2>&1; then
+  skip "N5 tools: node unavailable => SKIP (NOT PASS)"
+else
+  N5_OUTDIR="$(mktemp -d "${TMPDIR:-/tmp}/n5-material.XXXXXX")"
+  # --- 19a) 场景使用面（真实遍历）+ 材质类别表：AC-I-3a~I-3i ---
+  ( cd "$N5_WEB" && node "$N5_TOOLS/material_probe.mjs" --out "$N5_OUTDIR" >"$N5_OUTDIR/probe.log" 2>&1 )
+  N5_PROBE_EXIT=$?
+  if [ "$N5_PROBE_EXIT" -ne 0 ] || [ ! -f "$N5_OUTDIR/material_report.json" ]; then
+    bad "N5 material probe: probe_failed (exit=$N5_PROBE_EXIT; $(tail -1 "$N5_OUTDIR/probe.log" 2>/dev/null))"
+  else
+    N5_MCC="$(PYTHONDONTWRITEBYTECODE=1 python3 "$HERE/v0_skeleton/tools/material_class_check.py" \
+      --report "$N5_OUTDIR/material_report.json" --json-out "$N5_OUTDIR/mcc.json" 2>&1)"
+    N5_MCC_FAILS="$(jq -r 'if (.failures | type) == "array" then (.failures | length) else "unreadable" end' "$N5_OUTDIR/mcc.json" 2>/dev/null)"
+    N5_MCC_WARNS="$(jq -r 'if (.warnings | type) == "array" then (.warnings | length) else "unreadable" end' "$N5_OUTDIR/mcc.json" 2>/dev/null)"
+    N5_SCENE="$(jq -r '.scene_used_surfaces | length' "$N5_OUTDIR/material_report.json" 2>/dev/null)"
+    N5_EXTUSED="$(jq -r '.scene_used_ext | length' "$N5_OUTDIR/material_report.json" 2>/dev/null)"
+    N5_UNREG="$(jq -r '.scene_unregistered | length' "$N5_OUTDIR/material_report.json" 2>/dev/null)"
+    N5_VISEXT="$(jq -r 'if (.scene_visible_ext | type) == "array" then (.scene_visible_ext | length) else "unreadable" end' "$N5_OUTDIR/material_report.json" 2>/dev/null)"
+    N5_VISLEGACY="$(jq -r 'if (.scene_visible_legacy | type) == "array" then (.scene_visible_legacy | length) else "unreadable" end' "$N5_OUTDIR/material_report.json" 2>/dev/null)"
+    N5_HIDDEN="$(jq -r 'if (.scene_hidden_surfaces | type) == "array" then (.scene_hidden_surfaces | length) else "unreadable" end' "$N5_OUTDIR/material_report.json" 2>/dev/null)"
+    if [ "$N5_MCC_FAILS" = "0" ]; then
+      # N5-r3 / A6：PASS 行**明写探针世界**（合成 snapshot，内核未运行）+ legacy 下界与可见面读数，
+      # 避免被读成「画面里真的用了 N 条表面」。
+      ok "N5 material registry/class table I-3a/b/c/d/e/f/g/h/i (failures=0 warnings=$N5_MCC_WARNS; 探针世界=合成 snapshot(1 npc, 无 zone/prop, 内核未运行) 用面=$N5_SCENE, ext 可见=$N5_VISEXT/$N5_EXTUSED, legacy 可见=$N5_VISLEGACY, hidden=$N5_HIDDEN, unregistered=$N5_UNREG; I-3h class-table sha256 == frozen)"
+    else
+      bad "N5 material registry/class table I-3*: failures=$N5_MCC_FAILS (${N5_MCC##*$'\n'})"
+    fi
+  fi
+
+  # --- 19b) 权威写入面（AST）：AC-F-2a / AC-F-2b ---
+  # N5-r3 / A5：`--frozen` 让 `assert_inputs.json.f2a_frozen_uplink_call_sites` 真正参与判定
+  # （r2 里它 0 消费者、`(F-2a)` 只是打印）。N5-r3 / L-2：补 `problems` 与写入点计数守卫
+  # （`[]?` 真空迭代会读成 0 假绿）。
+  N5_AUTH_LOG="$N5_OUTDIR/authority.log"
+  N5_AUTH="$( cd "$N5_WEB" && node "$N5_TOOLS/authority_scan.mjs" --root src --frozen scripts/assert_inputs.json 2>"$N5_AUTH_LOG" )"
+  N5_AUTH_UPLINK="$(printf '%s' "$N5_AUTH" | jq -r '.uplink_call_site_count // "unreadable"' 2>/dev/null)"
+  N5_AUTH_FILES="$(printf '%s' "$N5_AUTH" | jq -r '.authority_write_file_count // "unreadable"' 2>/dev/null)"
+  N5_AUTH_OUTSIDE="$(printf '%s' "$N5_AUTH" | jq -r '[.authority_write_sites[]? | select(.enclosing_function != "apply")] | length' 2>/dev/null)"
+  N5_AUTH_SITES="$(printf '%s' "$N5_AUTH" | jq -r 'if (.authority_write_sites | type) == "array" then (.authority_write_sites | length) else "unreadable" end' 2>/dev/null)"
+  N5_AUTH_PROBS="$(printf '%s' "$N5_AUTH" | jq -r 'if (.problems | type) == "array" then (.problems | length) else "unreadable" end' 2>/dev/null)"
+  N5_F2A_MISMATCH="$(printf '%s' "$N5_AUTH" | jq -r 'if (.f2a_frozen_comparison | type) == "object" then (.f2a_frozen_comparison.mismatch | tostring) else "unreadable" end' 2>/dev/null)"
+  if [ "$N5_AUTH_FILES" = "1" ] && [ "$N5_AUTH_OUTSIDE" = "0" ] \
+     && [ "$N5_AUTH_SITES" != "unreadable" ] && [ "$N5_AUTH_SITES" -ge 1 ] \
+     && [ "$N5_AUTH_PROBS" = "0" ] && [ "$N5_F2A_MISMATCH" = "0" ]; then
+    ok "N5 authority scan F-2a+F-2b (AST): authority_write_file_count=1, writes_outside_apply=0, write_sites=$N5_AUTH_SITES, uplink_call_sites=${N5_AUTH_UPLINK} (F-2a: 与 assert_inputs.json 冻结清单逐项一致 mismatch=0), problems=0"
+  else
+    N5_AUTH_ERR="$(tail -1 "$N5_AUTH_LOG" 2>/dev/null)"
+    bad "N5 authority scan F-2a/F-2b: file_count=$N5_AUTH_FILES outside=$N5_AUTH_OUTSIDE write_sites=$N5_AUTH_SITES problems=$N5_AUTH_PROBS f2a_mismatch=$N5_F2A_MISMATCH (field_unreadable 亦记 FAIL; tool_stderr=${N5_AUTH_ERR:-<empty>})"
+  fi
+
+  # --- 19c) 资产来源：AC-G-* / AC-E-2b ---
+  # 判定读工具 `--json-out` 的**机读字段** `failures`（不是退出码、也不是末行文本）。
+  N5_PROV_JSON="$N5_OUTDIR/provenance.json"
+  PYTHONDONTWRITEBYTECODE=1 python3 "$HERE/v0_skeleton/tools/verify_asset_provenance.py" \
+    --json-out "$N5_PROV_JSON" >"$N5_OUTDIR/prov.log" 2>&1
+  N5_PROV_FAILS="$(jq -r 'if (.failures | type) == "array" then (.failures | length) else "unreadable" end' "$N5_PROV_JSON" 2>/dev/null)"
+  N5_PROV_NUM="$(jq -r '"assets=\(.asset_count // "n/a") coverage_files=\(.coverage_root_files // "n/a") failures=\((.failures // []) | length) gaps=\((.gaps // []) | length)"' "$N5_PROV_JSON" 2>/dev/null)"
+  if [ "$N5_PROV_FAILS" = "0" ]; then
+    # N5-r3 / L-6：PASS 行**明写** `gaps` 的语义 —— `gaps` 是**非阻断**（含**许可未证实件**），
+    # `failures=0` 只代表字段级校验通过，**不代表「许可全部已证实」**。
+    ok "N5 asset provenance G-1/G-3/G-6 (E-2b): $N5_PROV_NUM (JSON 判定字段 failures=0; **gaps 非阻断**，其中含许可未证实件 ⇒ 不得读作「许可全部已证实」)"
+  else
+    bad "N5 asset provenance: failures=$N5_PROV_FAILS (${N5_PROV_NUM:-field_unreadable}) — 必须为 0"
+  fi
+
+  # --- 19d) 既有判据面「纯加法」：AC-F-5a / F-5b / F-5c ---
+  # N5-r3 / L-1：读 `.f5a` / `.f5b` / `.problems` 前加 `has(...)` 守卫 —— jq 的 `null | length` = 0
+  # ⇒ 键缺失会被读成 0（假绿）。守卫后缺键读成 `unreadable` ⇒ 走 `bad`。
+  N5_F5="$(PYTHONDONTWRITEBYTECODE=1 python3 "$N5_TOOLS/f5_check.py" --json-out "$N5_OUTDIR/f5.json" 2>&1)"
+  N5_F5_MISSING="$(jq -r 'if has("f5a") and (.f5a.missing | type) == "array" then (.f5a.missing | length) else "unreadable" end' "$N5_OUTDIR/f5.json" 2>/dev/null)"
+  N5_F5_DROPPED="$(jq -r 'if has("f5b") and (.f5b.dropped_count | type) == "number" then .f5b.dropped_count else "unreadable" end' "$N5_OUTDIR/f5.json" 2>/dev/null)"
+  N5_F5_PROBS="$(jq -r 'if has("problems") and (.problems | type) == "array" then (.problems | length) else "unreadable" end' "$N5_OUTDIR/f5.json" 2>/dev/null)"
+  N5_F5_FROZEN="$(jq -r 'if has("f5a") then (.f5a.frozen_count // "n/a") else "n/a" end' "$N5_OUTDIR/f5.json" 2>/dev/null)"
+  N5_F5_CURRENT="$(jq -r 'if has("f5a") then (.f5a.current_count // "n/a") else "n/a" end' "$N5_OUTDIR/f5.json" 2>/dev/null)"
+  if [ "$N5_F5_MISSING" = "0" ] && [ "$N5_F5_DROPPED" = "0" ] && [ "$N5_F5_PROBS" = "0" ]; then
+    ok "N5 pure-addition F-5a/F-5b/F-5c: frozen_names=$N5_F5_FROZEN ⊆ current=$N5_F5_CURRENT missing=0, constants dropped=0, deletions problems=0"
+  else
+    bad "N5 pure-addition F-5a/F-5b/F-5c: missing=$N5_F5_MISSING dropped=$N5_F5_DROPPED problems=$N5_F5_PROBS"
+  fi
+
+  # --- 19e) 模块本体负对照（A3 / A4② / A4④ / A5；`/tmp` 副本注入，作用于模块本身） ---
+  N5_NEG="$( cd "$N5_WEB" && node "$N5_TOOLS/r2_negative_controls.mjs" 2>&1 | tail -1 )"
+  if printf '%s' "$N5_NEG" | grep -q 'r2_negative_controls: OK'; then
+    ok "N5 module-level negative controls (A3/A4②/A4④/A5): ${N5_NEG}"
+  else
+    bad "N5 module-level negative controls: ${N5_NEG:-field_unreadable}"
+  fi
 fi
 
 # ---------- 汇总 ----------

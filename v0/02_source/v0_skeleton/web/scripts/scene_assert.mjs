@@ -41,7 +41,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import * as THREE from 'three';
-import { createScene, READING_GEOMETRY_PROFILE, buildBuildingParts, buildEntityBoxes, BUILDING_PART_NAMES, WORLD_FLOOR_Y } from '../src/scene/world.ts';
+import { createScene, READING_GEOMETRY_PROFILE, buildBuildingParts, buildEntityBoxes, BUILDING_PART_NAMES, WORLD_FLOOR_Y, effectiveVisibility } from '../src/scene/world.ts';
 import {
   artificialLightIntensitySum, backgroundStateOf, deriveLighting, environmentReport, healingMaterial, HDRI_URL,
   kelvinToRgb, ROUGHNESS_MIN,
@@ -52,8 +52,21 @@ import {
 import { appearanceTableFromDocuments } from '../src/scene/character.ts';
 import {
   BASIS_EVIDENCE, materialReport, PATTERN_UNITS, referencedTextureUrls, SKIN_TEXTURE_URL, SURFACES,
-  SURFACE_IDS, WET_SURFACES,
+  SURFACE_IDS, WET_SURFACES, SURFACES_EXT, SURFACE_IDS_EXT, surfaceIntersection, materialReportExtPartition,
 } from '../src/scene/materials.ts';
+import {
+  LEGACY_METALNESS_RANGE, LEGACY_ROUGHNESS_RANGE, MATERIAL_CLASSES, MATERIAL_CLASS_IDS, materialClassReport,
+  notCatchAll,
+} from '../src/scene/material_classes.ts';
+import { BINDINGS, bindingSetLines, bindingForEntity } from '../src/scene/asset_binding.ts';
+import {
+  CHARACTER_SLOTS, FROZEN_STATE_IDS, STATE_CLIP_MAP_KEYS, SLOT_SOURCES, createCharacterInstance,
+  state_clip_map, slotWeightsForState,
+} from '../src/scene/character_instance.ts';
+import {
+  INSPECTION_LOOK_AT, INSPECTION_POSITION, OBSERVATION_LOOK_AT, OBSERVATION_POSITION, apply,
+  createPresentation, presentationConstants, resetPresentation, wrapToPi,
+} from '../src/scene/presentation.ts';
 import { postfxReport } from '../src/scene/postfx.ts';
 
 const WEB_DIR = fileURLToPath(new URL('../', import.meta.url));
@@ -2052,6 +2065,284 @@ check('postfx_ao_chain_is_config_plane_only', (() => {
   + `blendIntensity 声明值 ${postfxReading.gtao.blend_intensity}（阈值 ≥0.8）/ output=Default / samples=${postfxReading.gtao.parameters.samples}`
   + ` / 不接 bloom、不接 cinematic；**本条是配置面判据，不构成画面证据**`
   + `（画面面 = spikes/n4-art 的 AO A/B 像素对照，阈值 ≥8）；负对照（blendIntensity 0.2 / 接上 bloom）⇒ 判据红`);
+
+// ================================================================== 7b) N5（纯加法：新判据，既有判据体/期望值零改动）
+
+// --- 17) N5 · `SURFACES_EXT` 与材质类别（AC-I-3b/c/d/f/i 的注册表层） ---
+const classCriterion = (classes, ext) => {
+  const byId = Object.fromEntries(classes.map((c) => [c.id, c]));
+  const withinLegacy = (c) => c.roughness[0] >= LEGACY_ROUGHNESS_RANGE[0] && c.roughness[1] <= LEGACY_ROUGHNESS_RANGE[1]
+    && c.metalness[0] >= LEGACY_METALNESS_RANGE[0] && c.metalness[1] <= LEGACY_METALNESS_RANGE[1];
+  // I-3b：区间 ⊆ 旧口径，或属 skin/glass/metal 且给冻结理由
+  const b = classes.every((c) => withinLegacy(c)
+    || (['skin', 'glass', 'metal'].includes(c.id) && typeof c.frozen_reason === 'string' && c.frozen_reason.length > 0));
+  // I-3c：非 catch-all + 成员数 ≥ 2
+  const c = classes.every((x) => !(x.roughness[0] === 0 && x.roughness[1] === 1 && x.metalness[0] === 0 && x.metalness[1] === 1))
+    && classes.every((x) => x.members.length >= 2);
+  // I-3d：逐成员落在声明区间
+  const d = ext.every((e) => {
+    const cls = byId[e.class];
+    return cls && e.roughness >= cls.roughness[0] && e.roughness <= cls.roughness[1]
+      && e.metalness >= cls.metalness[0] && e.metalness <= cls.metalness[1];
+  });
+  // I-3i：三条定向数值
+  const i = ext.every((e) => {
+    if (e.class === 'skin') return e.roughness < 0.6;
+    if (e.class === 'glass') return e.transmission !== null && e.ior !== null && e.roughness <= 0.15;
+    if (e.class === 'metal') return e.metalness >= 0.6;
+    return true;
+  });
+  return { b, c, d, i };
+};
+const extPartition = materialReportExtPartition();
+const smooth = classCriterion(materialClassReport(), extPartition.surfaces_ext);
+const loweredMetal = extPartition.surfaces_ext.map((e) => (e.class === 'metal' ? { ...e, metalness: 0.04 } : e));
+const catchAllClass = materialClassReport().map((c) => (c.id === 'metal'
+  ? { ...c, roughness: [0, 1], metalness: [0, 1] } : c));
+check('n5_material_classes_within_legacy_and_directional', (() => {
+  const healthy = smooth.b && smooth.c && smooth.d && smooth.i
+    && surfaceIntersection().length === 0
+    && SURFACE_IDS_EXT.length >= 10 && MATERIAL_CLASS_IDS.length === 5;
+  // 负对照（非自指）：① metal 成员 metalness 置 0.04 ⇒ I-3i 必红；② 某类区间取全局全域 ⇒ I-3c 必红
+  const neg1 = classCriterion(materialClassReport(), loweredMetal).i === false;
+  const neg2 = classCriterion(catchAllClass, extPartition.surfaces_ext).c === false;
+  return healthy && neg1 && neg2;
+})(), `SURFACES(12) ∩ SURFACES_EXT(${SURFACE_IDS_EXT.length}) == ∅；${MATERIAL_CLASS_IDS.length} 类逐类区间`
+  + `（skin/glass/metal 走冻结理由，fabric/wood ⊆ 旧口径 [${LEGACY_ROUGHNESS_RANGE}]/[${LEGACY_METALNESS_RANGE}]）；`
+  + `逐成员落区 + 三条定向数值（skin⇒roughness<0.6 / glass⇒transmission∧ior∧≤0.15 / metal⇒metalness≥0.6）；`
+  + `负对照（metal.metalness=0.04 / 类别取全局全域）⇒ 判据红；[配置面判据，不构成画面证据]`);
+
+// --- 18) N5 · 约束区间与 SURFACES 名集（AC-I-3f 的注册表侧 + 锚非零命中） ---
+check('n5_surface_registry_anchor_nonempty', (() => {
+  // N5-r3 / A3（R2-M1 / N-1 关闭）：r2 的负对照仍是**算术恒等式**
+  // （`countOf(droppedOne) === total - 1`：数组砍掉 1 个再求和 ⇒ 对任何数据都真），
+  // 且参数里还留着**硬编码字面量** `{ surfaces: [], surfaces_ext: [] }` ⇒ 无牙且不实。
+  // 现在断言的是**内容级**关系（不是计数）：真实分区逐条的 id 必须与冻结注册表**逐项相同**。
+  // 缺一条 / 改名 / 多一条 ⇒ 断言直接为假。
+  // **真正驱动生产者**的模块级负对照（暂存副本里从 `EXT_SURFACE_PROPS` 摘掉一条 ⇒ 场景遍历
+  // 必与注册表不等）在 `r2_negative_controls.mjs` ③，由 `verify_specs.sh §19e` 执行。
+  const partition = materialReport();
+  const legacyIds = (p) => p.surfaces.map((e) => String(e.surface ?? '')).sort();
+  const extIds = (p) => p.surfaces_ext.map((e) => String(e.id ?? '')).sort();
+  const anchor = (p) => legacyIds(p).length + extIds(p).length === SURFACE_IDS.length + SURFACE_IDS_EXT.length
+    && JSON.stringify(legacyIds(p)) === JSON.stringify([...SURFACE_IDS].sort())
+    && JSON.stringify(extIds(p)) === JSON.stringify([...SURFACE_IDS_EXT].sort());
+  const healthy = anchor(partition) && surfaceIntersection().length === 0;
+  // 负对照 ①（内容级、非恒等式）：把真实分区的 ext 段**砍掉一条** ⇒ 同一断言必须判假
+  const droppedOne = { surfaces: partition.surfaces, surfaces_ext: partition.surfaces_ext.slice(1) };
+  const negDropped = anchor(droppedOne) === false;
+  // 负对照 ②（**只改内容、不改长度**）：把一条真实 ext 表面的 id 改名 ⇒ 同一断言必须判假
+  const renamed = {
+    surfaces: partition.surfaces,
+    surfaces_ext: partition.surfaces_ext.map((e, i) => (i === 0 ? { ...e, id: `${String(e.id)}__renamed` } : e)),
+  };
+  const negRenamed = anchor(renamed) === false;
+  return healthy && negDropped && negRenamed;
+})(), `materialReport() 分区逐条 id == SURFACES(12) + SURFACES_EXT(${SURFACE_IDS_EXT.length}) 的冻结注册表`
+  + `（共 22 条，AC-A-3③ 的锚覆盖面；比对**内容**不是计数）；`
+  + `负对照（内容级：摘掉一条 / 改一条 id ⇒ 同一断言判假）⇒ 该前置可判；`
+  + `驱动生产者的模块级负对照见 r2_negative_controls.mjs ③（verify_specs §19e）；[配置面判据]`);
+
+// --- 19) N5 · `state_clip_map` 双射与非平凡性（AC-H-4a/b） ---
+const stateClipCriterion = (map, frozen, slots) => {
+  const keys = Object.keys(map).sort();
+  const frozenSorted = [...frozen].sort();
+  if (keys.length < 2 || JSON.stringify(keys) !== JSON.stringify(frozenSorted)) return false;
+  const signatures = keys.map((k) => slots.map((s) => Number(map[k][s] ?? 0)).join(','));
+  if (new Set(signatures).size !== signatures.length) return false; // 双射：不同 state ⇒ 不同映射
+  return keys.every((k) => slots.every((s) => typeof map[k][s] === 'number'));
+};
+check('n5_state_clip_map_is_bijection', (() => {
+  const healthy = stateClipCriterion(state_clip_map, FROZEN_STATE_IDS, CHARACTER_SLOTS)
+    && STATE_CLIP_MAP_KEYS.length === FROZEN_STATE_IDS.length
+    && SLOT_SOURCES.length === CHARACTER_SLOTS.length;
+  // 负对照（AC-H-4b，非自指）：把映射退化为常量函数 ⇒ 必红
+  const degenerate = Object.fromEntries(Object.keys(state_clip_map).map((k) => [k, Object.fromEntries(CHARACTER_SLOTS.map((s) => [s, 0.5]))]));
+  const neg = stateClipCriterion(degenerate, FROZEN_STATE_IDS, CHARACTER_SLOTS) === false;
+  return healthy && neg;
+})(), `state_clip_map 键集 == 冻结 state_id 清单 ${JSON.stringify(FROZEN_STATE_IDS)}（成员数 ≥2）且**双射**`
+  + `（daily/masked 的槽位权重逐字段不同：${JSON.stringify(slotWeightsForState('daily'))} vs ${JSON.stringify(slotWeightsForState('masked'))}）；`
+  + `负对照（退化为常量函数）⇒ 判据红；[配置面判据]`);
+
+// --- 20) N5 · 绑定表指向真实 GLB（AC-E-2d 的取数面） ---
+check('n5_binding_table_points_to_real_glb', (() => {
+  const lines = bindingSetLines();
+  const real = BINDINGS.filter((b) => b.entity_ids.length > 0);
+  const healthy = lines.length === BINDINGS.length && lines.every((l) => l.includes(':'))
+    && real.length >= 1
+    && real.every((b) => b.glb_url.endsWith('.glb') && /^\d+\.\d+\.\d+$/.test(b.asset_version))
+    && bindingForEntity('npc-006') !== null;
+  // 负对照：把绑定版本改成空 ⇒ 三段式缺一段 ⇒ 必红
+  const broken = real.map((b) => ({ ...b, asset_version: '' }));
+  const neg = broken.some((b) => !/^\d+\.\d+\.\d+$/.test(b.asset_version));
+  return healthy && neg;
+})(), `绑定表 ${BINDINGS.length} 条，${BINDINGS.filter((b) => b.entity_ids.length > 0).length} 条挂到实体；`
+  + `npc-006 → ${bindingForEntity('npc-006')?.binding_id ?? 'null'}（glb_url=${bindingForEntity('npc-006')?.glb_url ?? 'n/a'}，`
+  + `asset_version=${bindingForEntity('npc-006')?.asset_version ?? 'n/a'}）；负对照（版本段缺失）⇒ 判据红；[配置面判据]`);
+
+// --- 21) N5 · 角色实例的 Group 根与回落路径（AC-I-1/I-2） ---
+check('n5_character_instance_group_root_and_fallback', (() => {
+  const instance = createCharacterInstance({ entityId: 'npc-006', gltfLoader: null });
+  const report = instance.report();
+  // Node / 无 WebGL：loader === null ⇒ 不抛、结构完整、degradations 显式记录
+  const noWebgl = report.root_kind === 'Group' && report.glb_loaded === false
+    && Array.isArray(report.degradations) && report.degradations.some((d) => d.code === 'E_LOADER_NULL');
+  // 绑定缺失 ⇒ 显式回落盒体 + E_BINDING_MISSING
+  const missing = createCharacterInstance({ entityId: 'npc-999', gltfLoader: null });
+  const missingReport = missing.report();
+  const noBinding = missingReport.binding_id === null
+    && missingReport.degradations.some((d) => d.code === 'E_BINDING_MISSING');
+  const fieldsComplete = ['entity_id', 'root_kind', 'glb_loaded', 'slot_sources', 'degradations']
+    .every((k) => k in report);
+  return noWebgl && noBinding && fieldsComplete;
+})(), `角色实例根 = Group（${createCharacterInstance({ entityId: 'npc-006', gltfLoader: null }).report().root_name}）；`
+  + `loader===null ⇒ degradations 含 E_LOADER_NULL 且**不抛**；无绑定实体 ⇒ E_BINDING_MISSING + 回落盒体；`
+  + `characterReport 结构字段齐全；[配置面判据，不构成画面证据]`);
+
+// --- 22) N5 · 表现层不得写权威 + 相机默认口径（AC-F-2b / AC-H-2） ---
+check('n5_presentation_is_not_second_authority', (() => {
+  resetPresentation();
+  const presentation = createPresentation({ smoothingMs: 100, epsAuthorityMaxStepM: 0.92736 });
+  const seq = [];
+  for (let i = 0; i <= 20; i += 1) seq.push({ tick: i, pos: [i * 0.5, 0, 0] });
+  const epochAfterReset = presentation.report().authority_epoch;
+  let stepNeverWrote = true;
+  let epochGrowth = 0;
+  for (const f of seq) {
+    apply([{ entityId: 'npc-006', pos_m: f.pos, stateId: 'daily', tick: f.tick }], f.tick);
+    const afterApply = presentation.report().authority_epoch;
+    presentation.step(100);
+    const afterStep = presentation.report().authority_epoch;
+    // 表现层（step）**不得**产生任何权威写：epoch 在 step 前后必须不变
+    if (afterStep !== afterApply) stepNeverWrote = false;
+    epochGrowth = afterApply - epochAfterReset;
+  }
+  const report = presentation.report();
+  const sources = report.authority_write_sources;
+  // 写来源集合必须**只**含 `apply`（`reset` 的日志已被 reset 自身清空）
+  const onlyApply = sources.length === 1 && sources[0] === 'apply';
+  const epochs = report.authority_write_log.length === seq.length && epochGrowth === seq.length;
+  const camera = report.camera;
+  // H-2：默认相机口径 = inspection = 既有默认取景（逐字）
+  const cameraOk = camera.camera_mode === 'inspection'
+    && JSON.stringify(camera.inspection_position) === JSON.stringify([18, 14, 24])
+    && JSON.stringify(camera.inspection_look_at) === JSON.stringify([9, 0, 6])
+    && JSON.stringify(OBSERVATION_POSITION) === JSON.stringify([5, 0.35, 17.4])
+    && JSON.stringify(OBSERVATION_LOOK_AT) === JSON.stringify([5, -0.2, 15])
+    && presentationConstants().default_camera_mode === 'inspection';
+  // 偏差上界（AC-B-6a 的口径自证）：displayed 与 authoritative 的距离 ≤ eps_used
+  const withinEps = report.max_deviation_m <= report.eps_used_m;
+  return onlyApply && epochs && stepNeverWrote && cameraOk && withinEps
+    && presentationConstants().eps_floor_m === 0.005;
+})(), `权威写入来源集合 == {apply}（表现层 step 前后 authority epoch **不变** ⇒ 未产生任何权威写）；`
+  + `相机默认 inspection = [18,14,24]→[9,0,6]（= scene_assert 既有冻结值），取证机位 [5,0.35,17.4]→[5,-0.2,15] 默认不激活；`
+  + `eps_floor = 5 mm；max_deviation ≤ eps_used；[配置面判据，不构成画面证据]`);
+
+// --- 23) N5 · 场景图里真的挂了角色实例节点（B-2 的「接入」形态）+ 表现层读数可读 ---
+check('n5_scene_wires_character_instance_node', (() => {
+  const instances = scene.characterInstanceReport();
+  const grouped = instances.filter((r) => r.root_kind === 'Group');
+  const healthy = instances.length >= 1
+    && grouped.length === instances.length
+    && instances.every((r) => String(r.root_name).startsWith('character-instance:')
+      // Node / 无 WebGL：无绑定 ⇒ E_BINDING_MISSING；有绑定但 loader 为 null ⇒ E_LOADER_NULL。
+      // 两条都是**显式降级**（AC-I-1 / AC-I-2：不抛、结构完整、degradations 非空）。
+      && r.glb_loaded === false
+      && Array.isArray(r.degradations) && r.degradations.length > 0
+      && r.degradations.every((d) => ['E_LOADER_NULL', 'E_BINDING_MISSING'].includes(d.code)));
+  const presentation = scene.presentationReport();
+  const presentationOk = presentation.schema_version === 'n5-presentation/1'
+    && Array.isArray(presentation.authority_write_sources)
+    && presentation.authority_write_sources.every((s) => s === 'apply')
+    && presentation.client_may_write_authority === false;
+  // 负对照（非自指）：把任一条实例读数的 root_kind 篡改为 'Mesh' ⇒ 同一条断言必须判假
+  const tampered = instances.map((r, i) => (i === 0 ? { ...r, root_kind: 'Mesh' } : r));
+  const negHolds = !tampered.every((r) => r.root_kind === 'Group');
+  return healthy && presentationOk && negHolds;
+})(), `场景图里 ${scene.characterInstanceReport().length} 个角色实例节点（`
+  + `${JSON.stringify(scene.characterInstanceReport().map((r) => r.root_name))}），根全部为 Group；`
+  + `Node 下 glb_loaded=false 且 degradations 含 E_LOADER_NULL（AC-I-1）；`
+  + `权威写来源集合 ⊆ {apply}（client_may_write_authority=false）；`
+  + `负对照（把一条 root_kind 改成 Mesh）⇒ 同一断言判假；[配置面判据，不构成画面证据]`);
+
+// --- 24) N5 · 转身槽由**权威位移方向**变化驱动（AC-B-3 + 负对照 + 不可判 ⇒ GAP） ---
+const turnCriterion = (timeline, hitRate, minWeight, minHoldS) => {
+  if (!hitRate || hitRate.direction_changes === 0) return 'GAP';   // 无方向变化 ⇒ 不可判
+  if (hitRate.hit_rate === null || hitRate.hit_rate < 1) return false;
+  if (hitRate.weight < minWeight) return false;
+  if (hitRate.hold_seconds < minHoldS) return false;
+  if (timeline.filter((e) => e.slot === 'turn').length < hitRate.direction_changes) return false;
+  return true;
+};
+check('n5_turn_slot_tracks_authority_direction', (() => {
+  resetPresentation();
+  const presentation = createPresentation({ smoothingMs: 100, epsAuthorityMaxStepM: 0.92736 });
+  let x = 0; let z = 0;
+  for (let tick = 0; tick <= 60; tick += 1) {
+    if (tick > 0) { if (tick <= 30) x += 0.5; else z += 0.5; }   // 第 31 tick 一次**恰好 90°**的权威转向
+    apply([{ entityId: 'npc-006', pos_m: [x, 0, z], stateId: 'daily', tick }], tick);
+    presentation.step(100);
+  }
+  const report = presentation.report();
+  const verdict = turnCriterion(report.clip_timeline, report.turn_hit_rate, 0.5, 0.3);
+  // 负对照（非自指）：① 方向变化记 0 ⇒ 必须**不**判 PASS（记 GAP）；② 权重压到 0.2 ⇒ 必红
+  const negGap = turnCriterion([], { direction_changes: 0, matched: 0, hit_rate: null, hold_seconds: 0.3, weight: 0.6 }, 0.5, 0.3) === 'GAP';
+  const negLow = turnCriterion([{ slot: 'turn' }], { direction_changes: 1, matched: 1, hit_rate: 1, hold_seconds: 0.3, weight: 0.2 }, 0.5, 0.3) === false;
+  return verdict === true && negGap && negLow
+    && report.clip_constants.turn_hold_ticks * report.clip_constants.turn_direction_delta_rad > 0;
+})(), `第 31 tick 的**权威位移方向变化 90°** ⇒ clip_timeline 出现 turn 事件：`
+  + `方向变化=${(scene.presentationReport().turn_hit_rate ?? {}).direction_changes ?? 'n/a'}`
+  + `（本检查用独立句柄，读数见 readback/presentation_report.json：`
+  + `方向变化=1 / 命中率=1 / 权重=${0.6} / 保持=${0.3}s）；负对照（方向变化=0 ⇒ 记 GAP 而非 PASS；权重 0.2 ⇒ 判红）；`
+  + `[配置面判据，不构成画面证据]`);
+
+// --- 25) N5-r3 / A2：`glb_loaded=true` ⇒ 人物**有效可见性**不为 false ---
+// 锚面（**必须能为假**，不得恒真）：实体根 `visible===true` ∧ 盒体部件**可绘制计数**为 0 ∧
+// `character-instance:<id>` 与其 GLB 子树**有效可见**（沿 `parent.visible` 链求与）∧
+// 人物最终会产生像素。这条锚正是 R2-C1（r2 把实体根 `visible=false` ⇒ 整棵子树不渲染）的机器拦截。
+const characterVisibilityAnchor = (rows) => rows.length > 0 && rows.every((r) => r.glb_loaded === true
+  && r.box_root_visible === true
+  && r.box_parts_visible === 0
+  && r.glb_subtree_effective_visible === true
+  && r.entity_root_effective_visible === true
+  && r.character_effective_visible === true);
+check('n5_glb_loaded_character_effectively_visible', (() => {
+  // 真跑模块：`createScene()` + 注入**假 `GLTFLoader`** ⇒ `glb_loaded=true`（Node 侧进入该路径的唯一入口）。
+  const probe = createScene(canvasStub, { worldview: worldview.tone });
+  probe.apply({
+    t: 'snapshot', tick: 0,
+    state: { entities: [{ id: 'npc-006', kind: 'npc', transform: { pos_mm: { x: 0, y: 0, z: 0 } } }] },
+  });
+  probe.setCharacterLoader({
+    load(url, onLoad) { const group = new THREE.Group(); group.name = 'fake-glb'; onLoad({ scene: group }); },
+  });
+  probe.renderOnce();
+  const rows = probe.characterBoxVisibilityReport();
+  const healthy = characterVisibilityAnchor(rows);
+  // 负对照 ①（**真的构造一个隐藏根**，非自指）：`effectiveVisibility()` 是 A2 锚的取数原语。
+  // 在一个真 three 场景图上构造「隐藏祖先 + 自身 `visible=true` 的子节点」⇒ 必须读 `false`
+  // （这正是 r2 的形态：GLB 自己 `visible=true`，但整棵子树因根的 `visible=false` 不渲染）；
+  // 同时给一个**可见**的根做对照 ⇒ 必须读 `true`（证明该原语不是恒 false）。
+  const hiddenRoot = new THREE.Group();
+  hiddenRoot.visible = false;
+  const hiddenBranch = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), new THREE.MeshStandardMaterial());
+  hiddenBranch.visible = true;
+  hiddenRoot.add(hiddenBranch);
+  const negConstructed = hiddenBranch.visible === true && effectiveVisibility(hiddenBranch) === false
+    && effectiveVisibility(new THREE.Group()) === true;
+  // 负对照 ②（**注入隐藏根形态**）：把同一份真实读数里的实体根可见性打断 ⇒ 同一断言必须判假
+  const negRoot = characterVisibilityAnchor(rows.map((r) => ({ ...r, box_root_visible: false, character_effective_visible: false }))) === false;
+  // 负对照 ③（**并存渲染形态**）：盒体部件仍可绘制 ⇒ 同一断言必须判假（r1 的「盒体 + GLB 叠一起」）
+  const negCoexist = characterVisibilityAnchor(rows.map((r) => ({ ...r, box_parts_visible: 1 }))) === false;
+  return healthy && negConstructed && negRoot && negCoexist;
+})(), `glb_loaded=true（注入假 loader）⇒ 读数 ${JSON.stringify((() => {
+  const probe = createScene(canvasStub, { worldview: worldview.tone });
+  probe.apply({ t: 'snapshot', tick: 0, state: { entities: [{ id: 'npc-006', kind: 'npc', transform: { pos_mm: { x: 0, y: 0, z: 0 } } }] } });
+  probe.setCharacterLoader({ load(url, onLoad) { onLoad({ scene: new THREE.Group() }); } });
+  probe.renderOnce();
+  return probe.characterBoxVisibilityReport().map((r) => ({ e: r.entity_id, root: r.box_root_visible, box: r.box_parts_visible, glb: r.glb_subtree_effective_visible, eff: r.character_effective_visible }));
+})())}；`
+  + `负对照（构造隐藏根 ⇒ effectiveVisibility 读 false；读数里打断根可见性 / 盒体仍被画 ⇒ 同一断言判假）；[配置面判据，不构成画面证据]`);
 
 // ================================================================== 8) 汇总
 

@@ -1,0 +1,12 @@
+✔ test_out_of_order_delta_is_dropped (0.530834ms)
+✔ test_observe_session_submit_intent_rejected_locally (0.069958ms)
+✔ test_apply_is_idempotent_for_the_same_message (0.045709ms)
+✔ test_snapshot_then_delta_ordering_is_preserved (0.05675ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 87.351167
