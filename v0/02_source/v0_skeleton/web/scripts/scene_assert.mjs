@@ -37,13 +37,24 @@
  * 退出码：0 全通过；1 有断言失败；2 用法/环境错误。
  */
 
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import * as THREE from 'three';
-import { createScene, READING_GEOMETRY_PROFILE } from '../src/scene/world.ts';
-import { deriveLighting, healingMaterial, kelvinToRgb, ROUGHNESS_MIN } from '../src/scene/lighting.ts';
+import { createScene, READING_GEOMETRY_PROFILE, buildBuildingParts, buildEntityBoxes, BUILDING_PART_NAMES, WORLD_FLOOR_Y } from '../src/scene/world.ts';
+import {
+  artificialLightIntensitySum, backgroundStateOf, deriveLighting, environmentReport, healingMaterial, HDRI_URL,
+  kelvinToRgb, ROUGHNESS_MIN,
+} from '../src/scene/lighting.ts';
+import {
+  buildCharacterDetailParts, buildCharacterParts, CHARACTER_PART_ORDER, defaultAppearanceFor,
+} from '../src/scene/character.ts';
 import { appearanceTableFromDocuments } from '../src/scene/character.ts';
+import {
+  BASIS_EVIDENCE, materialReport, PATTERN_UNITS, referencedTextureUrls, SKIN_TEXTURE_URL, SURFACES,
+  SURFACE_IDS, WET_SURFACES,
+} from '../src/scene/materials.ts';
+import { postfxReport } from '../src/scene/postfx.ts';
 
 const WEB_DIR = fileURLToPath(new URL('../', import.meta.url));
 const PACK_DIR = `${WEB_DIR}../districts/xingfu-xiaoqu/`;
@@ -1215,7 +1226,834 @@ check('character_arm_height_bounded_by_torso',
   + `（阈值 ${round6(ARM_HEIGHT_MIN_TORSO_RATIO * dailyFace.torso.height)} m；实测比 ${armHeightRatio}）；`
   + `负对照：注入 arm.size[1]=0.06（短桩，比 ${round6(0.06 / dailyFace.torso.height)}）⇒ 判据红`);
 
-// ================================================================== 7) 汇总
+// ==================================================================
+// 7) N4 美术达成（REQ-20260924-004 / W7）—— **纯加法**：既有 67 条 `check()` 一字未改
+//
+// 口径声明（Raven 预审 R-6 / R-7）：
+//   - 本节里凡读「配置 / 注册表 / 读数」的判据，一律**显式标注为配置面判据，不构成画面证据**；
+//     画面面由 `v0/spikes/n4-art/` 的实机截图 + AO A/B 像素对照承担（见 `03`）。
+//   - 每条判据自带**负对照**（注入 → 变红 → 还原），负例优先取**非自指**形态
+//     （例：删**盘上**的贴图文件、注册表不动 ⇒ 必红）。
+// ==================================================================
+const ASSETS_DIR = `${WEB_DIR}assets/`;
+const ASSETS_MANIFEST = `${ASSETS_DIR}manifest.txt`;
+const assetsManifestText = readFileSync(ASSETS_MANIFEST, 'utf8');
+
+/** 静态 URL → 盘上路径（Node 下 `import.meta.url` 是 `file:`；浏览器构建里是 `/assets/...` ⇒ `null`）。 */
+function assetPathOf(url) {
+  if (typeof url !== 'string' || !url.startsWith('file:')) return null;
+  try {
+    return fileURLToPath(url);
+  } catch {
+    return null;
+  }
+}
+
+/** `true` / `false` / `null`（= 该环境下无法判定，例如浏览器构建里的根绝对路径）。 */
+function onDisk(url) {
+  const path = assetPathOf(url);
+  return path === null ? null : existsSync(path);
+}
+
+const mapUrlsOf = (spec) => [...new Set(
+  [spec.maps.diffuse, spec.maps.normal, spec.maps.roughness, spec.maps.metalness, spec.maps.ao]
+    .filter((value) => typeof value === 'string'),
+)];
+const mapsPresentOnDisk = (spec) => mapUrlsOf(spec).filter((url) => onDisk(url) === true);
+
+/** 图像尺寸（纯 Node 读文件头：JPEG SOF / PNG IHDR；零依赖、零 WebGL）。 */
+function imageSizeOf(path) {
+  const bytes = readFileSync(path);
+  if (bytes.length > 24 && bytes[0] === 0x89 && bytes[1] === 0x50) {
+    return { format: 'png', width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
+  }
+  let index = 2;
+  const sof = [0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf];
+  while (index < bytes.length - 1) {
+    if (bytes[index] !== 0xff) { index += 1; continue; }
+    const marker = bytes[index + 1];
+    if (sof.includes(marker)) {
+      return { format: 'jpeg', height: bytes.readUInt16BE(index + 5), width: bytes.readUInt16BE(index + 7) };
+    }
+    if (marker === 0xd8 || marker === 0xd9 || (marker >= 0xd0 && marker <= 0xd7)) { index += 2; continue; }
+    index += 2 + bytes.readUInt16BE(index + 2);
+  }
+  return null;
+}
+
+/** 登记表解析：`asset id` → 许可 + 类别 + 上游真实覆盖（cm）+ **声明的材质基准**（m）。
+ *  注意：同一 asset 有多行（diffuse / normal / arm），只有部分行写「真实覆盖 N cm」/「基准 N m」/
+ *  类别字段 ⇒ 必须**保留首个非空读数**，不能被后续空值行覆盖。 */
+const registeredAssets = new Map();
+for (const line of assetsManifestText.split('\n')) {
+  if (line.trim().startsWith('#')) continue;
+  const idMatch = line.match(/asset id `([^`]+)`/);
+  if (!idMatch) continue;
+  const coverage = line.match(/真实覆盖\s*([0-9.]+)\s*cm/);
+  const category = line.match(/类别 `([a-z0-9_]+)`/);
+  const basis = line.match(/\*\*基准\s*([0-9.]+)\s*m\*\*/);
+  const previous = registeredAssets.get(idMatch[1]);
+  registeredAssets.set(idMatch[1], {
+    cc0: line.includes('CC0 1.0') || Boolean(previous?.cc0),
+    coverage_cm: coverage ? Number(coverage[1]) : (previous?.coverage_cm ?? null),
+    category: category ? category[1] : (previous?.category ?? null),
+    basis_m: basis ? Number(basis[1]) : (previous?.basis_m ?? null),
+  });
+}
+
+/**
+ * 非自指负例的**零写盘**实现（N4-r2 / M-3 关闭 Raven N-3）。
+ *
+ * 旧实现 `unlinkSync` 真删交付树里的贴图、跑完再 `writeFileSync` 还原 —— 把只读门禁变成**写门禁**：
+ * ① 进程在删与写之间被 SIGKILL / OOM / CI 超时 / Ctrl-C 打断 ⇒ **交付树永久少一个贴图**，
+ *    下一次 `material_files_exist_on_disk` 必红、浏览器构建 404；② **并发不安全**：两方同时跑
+ *    （Sentinel + Raven / CI 两个 job）⇒ 一方的 `readFileSync` 撞 ENOENT 直接**崩**（不是判红）；
+ * ③ 写回**不保留 mtime** ⇒ 以 mtime 为锚的证据链漂移；④ 只读检出 ⇒ **抛错**而非判红。
+ * ⇒ 改为**在内存里**把某个 map URL 重指向一个**盘上不存在**的路径：注册表其余逐字不动，
+ * 同样**非自指**（不是手改一份读数的副本），且**零写盘**（本脚本因此对交付树零副作用）。
+ */
+const ABSENT_MAP_URL = new URL('../../assets/__absent_probe__/__absent__.jpg', import.meta.url).href;
+function withMapUrlRedirected(specs, index, mapKey, probe) {
+  const redirected = specs.map((spec, i) => (i === index
+    ? { ...spec, maps: { ...spec.maps, [mapKey]: ABSENT_MAP_URL } }
+    : spec));
+  return probe(redirected);
+}
+
+// --- 1) 每主要表面 ≥2 map（**盘上存在**口径 ⇒ 负例非自指：URL 重指向缺失路径、注册表不动） ---
+const allSpecs = SURFACE_IDS.map((id) => SURFACES[id]);
+const mapsPerSurfaceOf = (specs) => specs.map((spec, index) => ({
+  surface: SURFACE_IDS[index],
+  declared: mapUrlsOf(spec).length,
+  on_disk: mapsPresentOnDisk(spec).length,
+  diffuse_on_disk: onDisk(spec.maps.diffuse) === true,
+  normal_on_disk: onDisk(spec.maps.normal) === true,
+}));
+const mapsCriterion = (rows) => rows.every((row) => row.on_disk >= 2 && row.diffuse_on_disk && row.normal_on_disk);
+const mapsRows = mapsPerSurfaceOf(allSpecs);
+const wallPlasterIndex = SURFACE_IDS.indexOf('wall_plaster');
+check('material_maps_per_surface_at_least_two', (() => {
+  const healthy = mapsCriterion(mapsRows);
+  const degraded = withMapUrlRedirected(allSpecs, wallPlasterIndex, 'normal',
+    (specs) => mapsCriterion(mapsPerSurfaceOf(specs)));
+  return healthy === true && degraded === false;
+})(), `逐表面盘上 map 数=${JSON.stringify(mapsRows.map((row) => `${row.surface}:${row.on_disk}`))}`
+  + `（阈值 ≥2 且含 diffuse+normal）；负对照（**非自指 + 零写盘**：把 wall_plaster 的 normal URL `
+  + `重指向盘上不存在的 ../../assets/__absent_probe__/__absent__.jpg、注册表其余逐字不动）⇒ 判据红；`
+  + `**[配置面判据，不构成画面证据]**`);
+
+// --- 2) 盘上存在性：注册表里每一个 URL 都必须在盘上 ---
+const filesExistCriterion = (specs) => specs.every((spec) => mapUrlsOf(spec)
+  .every((url) => onDisk(url) === true));
+check('material_files_exist_on_disk', (() => {
+  const healthy = filesExistCriterion(allSpecs) === true;
+  const degraded = withMapUrlRedirected(allSpecs, SURFACE_IDS.indexOf('wall_brick'), 'roughness',
+    (specs) => filesExistCriterion(specs)) === false;
+  return healthy && degraded;
+})(), `注册表全部 ${allSpecs.reduce((n, spec) => n + mapUrlsOf(spec).length, 0)} 条 map URL`
+  + ` 经 fileURLToPath + fs.existsSync 逐条命中；负对照（**非自指 + 零写盘**：wall_brick 的 roughness URL `
+  + `重指向缺失路径）⇒ 判据红；**[配置面判据，不构成画面证据]**`);
+
+// --- 3) repeat 按真实尺度（basis 为**独立声明量**，依据可核；构件小于基准时 repeat<1 合法） ---
+// N4-r3 / R3-3（修复 architect 打回的 r2 口径）：旧规则 `basis = min(扫描覆盖, min(尺寸))` 把
+// `never_magnified`（basis ≤ 覆盖）与 `repeat ≥ 1`（basis ≤ 尺寸）变成**恒真式**（Raven N2-1），
+// 且 basis 由构件尺寸反推 ⇒ 与被验对象循环。r3 口径：
+//   ① `basis` == 登记表**声明值**（`**基准 N m**`）—— 与构件尺寸无关；
+//   ② `repeat == round6(surface_size_m / basis)` —— 机械派生，可复算；
+//   ③ 每个表面有依据标签 ∈ {`upstream`, `visually_corrected`}；`visually_corrected` **必须有画面证据路径**；
+//   ④ **不再断言** `repeat ≥ 1` / `never_magnified` —— 它们是待验命题，不是判据前提。
+const repeatCriterion = (specs) => specs.every((spec) => {
+  const [basisU, basisV] = spec.repeat_basis_m;
+  const [sizeU, sizeV] = spec.surface_size_m;
+  const registered = registeredAssets.get(spec.asset_id);
+  const declared = registered && registered.basis_m !== null ? registered.basis_m : null;
+  const basisOk = declared !== null
+    && Math.abs(basisU - round6(declared)) < 1e-6 && Math.abs(basisV - round6(declared)) < 1e-6;
+  const consistent = Math.abs(spec.repeat[0] - round6(sizeU / basisU)) < 1e-6
+    && Math.abs(spec.repeat[1] - round6(sizeV / basisV)) < 1e-6;
+  const evidence = spec.basis_evidence;
+  const tagOk = Boolean(evidence)
+    && (evidence.tag === 'upstream' || evidence.tag === 'visually_corrected');
+  const evidenceOk = tagOk && (evidence.tag === 'upstream'
+    ? evidence.evidence_path === null
+    : typeof evidence.evidence_path === 'string' && evidence.evidence_path.length > 0);
+  const rangeOk = basisU >= 0.05 && basisU <= 40 && basisV >= 0.05 && basisV <= 40;
+  return basisOk && consistent && tagOk && evidenceOk && rangeOk;
+});
+check('material_repeat_matches_real_scale', (() => {
+  const healthy = repeatCriterion(allSpecs) === true;
+  // 负例①：repeat 被改（+1）⇒ 与 size/basis 不再一致 ⇒ 必红
+  const tamperedRepeat = allSpecs.map((spec, index) => (index === 0
+    ? { ...spec, repeat: [spec.repeat[0] + 1, spec.repeat[1]] } : spec));
+  // 负例②：basis 被改（wood_plank 的基准折半）⇒ 与登记表声明值不符 ⇒ 必红
+  const tamperedBasis = allSpecs.map((spec) => (spec.asset_id === SURFACES.wood_plank.asset_id
+    ? { ...spec, repeat_basis_m: [spec.repeat_basis_m[0] / 2, spec.repeat_basis_m[1] / 2] } : spec));
+  // 负例③：把一个 `visually_corrected` 表面的画面证据路径抹掉 ⇒ 必红（R3-3 的「必须附画面证据」）
+  const tamperedEvidence = allSpecs.map((spec) => (spec.asset_id === SURFACES.wall_brick.asset_id
+    ? { ...spec, basis_evidence: { ...spec.basis_evidence, evidence_path: null } } : spec));
+  // 负例④：依据标签非法 ⇒ 必红
+  const tamperedTag = allSpecs.map((spec, index) => (index === 0
+    ? { ...spec, basis_evidence: { ...spec.basis_evidence, tag: 'invented' } } : spec));
+  return healthy && repeatCriterion(tamperedRepeat) === false
+    && repeatCriterion(tamperedBasis) === false
+    && repeatCriterion(tamperedEvidence) === false && repeatCriterion(tamperedTag) === false;
+})(), `逐表面 basis == 登记表「**基准 N m**」声明值 ∧ repeat == round6(size/basis) ∧ 依据标签 ∈ `
+  + `{upstream, visually_corrected} ∧ visually_corrected 附画面证据路径；`
+  + JSON.stringify(SURFACE_IDS.map((id) => `${id}=basis${SURFACES[id].repeat_basis_m[0]}m/r${SURFACES[id].repeat.join('x')}`
+    + `/${BASIS_EVIDENCE[id].tag}`))
+  + `；**不再断言 repeat ≥ 1 与 never_magnified**（r2 的恒真式已删）；`
+  + `负对照（4 条，均非自指）：① repeat+1；② wood_plank 基准折半；③ wall_brick 抹掉画面证据路径；`
+  + `④ 标签改成 invented ⇒ 全红；**[配置面判据，不构成画面证据；画面面见近景截图]**`);
+
+// --- 3b) 图案单元物理尺寸落在现实参照区间（R3-3 的「砖墙读作 20–24 cm」的**可复算内核**） ---
+// `pattern_unit_cm = basis_m × 100 / count_per_tile` —— 与构件尺寸无关。凡 `visually_corrected` 的表面
+// 都必须有图案单元表，且算出的单元尺寸必须落在现实参照区间内（砖 20–24 cm、板 10–15 cm、
+// 瓦楞肋距 5–8 cm …）。**这是「basis 声明得对不对」的证伪点**：basis 声明错 ⇒ 单元尺寸掉出区间。
+const patternUnitCriterion = (surfaces) => surfaces.every(({ id, basis_m }) => {
+  const unit = PATTERN_UNITS[id];
+  if (!unit) return false;
+  const cm = basis_m * 100 / unit.count_per_tile;
+  return cm >= unit.physical_reference_cm[0] && cm <= unit.physical_reference_cm[1];
+});
+const visuallyCorrected = SURFACE_IDS
+  .filter((id) => BASIS_EVIDENCE[id].tag === 'visually_corrected')
+  .map((id) => ({ id, basis_m: SURFACES[id].repeat_basis_m[0] }));
+check('material_pattern_units_within_physical_reference', (() => {
+  const healthy = patternUnitCriterion(visuallyCorrected) === true;
+  // 负例①：把 wall_brick 的 basis 抬回上游扫描覆盖 13.9 m ⇒ 砖长算成 139 cm ⇒ 必红
+  const tamperedBasis = visuallyCorrected.map((row) => (row.id === 'wall_brick'
+    ? { ...row, basis_m: SURFACES.wall_brick.scan_coverage_m } : row));
+  // 负例②：把 wood_plank 的计数改错（14 → 4）⇒ 板宽算成 42 cm ⇒ 必红
+  const tamperedCount = visuallyCorrected.map((row) => (row.id === 'wood_plank'
+    ? { ...row, basis_m: row.basis_m * 14 / 4 } : row));
+  // 负例③：一个 `visually_corrected` 表面缺图案单元表 ⇒ 必红
+  const missingUnit = [...visuallyCorrected, { id: 'glass', basis_m: 25 }];
+  return healthy && patternUnitCriterion(tamperedBasis) === false
+    && patternUnitCriterion(tamperedCount) === false && patternUnitCriterion(missingUnit) === false;
+})(), `${visuallyCorrected.length} 个 \`visually_corrected\` 表面逐条给出图案单元物理尺寸 `
+  + `\`basis×100/贴图内单元数\`：`
+  + JSON.stringify(visuallyCorrected.map((row) => {
+    const unit = PATTERN_UNITS[row.id];
+    return `${row.id}:${unit?.unit_name ?? '缺表'}=${round6(row.basis_m * 100 / (unit?.count_per_tile ?? 1))}cm`
+      + `∈[${unit?.physical_reference_cm.join(',') ?? '?'}]`;
+  }))
+  + `；**该值与构件尺寸无关**，是 basis 声明正确性的证伪点；`
+  + `负对照（3 条，均非自指）：① wall_brick 的 basis 抬回上游 13.9 m（砖长 139 cm）；`
+  + `② wood_plank 计数 14→4（板宽 42 cm）；③ 给 glass 补一条无图案单元表的 \`visually_corrected\` ⇒ 全红；`
+  + `**[配置面判据，不构成画面证据；画面面见近景裁切图 + 读图结论]**`);
+
+// --- 3c) 非 npc/room 实体的盒体底面必须站到世界地面上（N4-r3 / R3-5 修正 N-12 的**假关闭**） ---
+// r2 声称给 zone/prop/portal 补了石砌台基，但 `addGroundDecor` 的守卫 `if (height <= 0.05) continue;`
+// 只补**悬空**实体；对**埋进地面**的实体（`gate-north`：portal、盒体高 3 m、锚点 y=0 ⇒ 底面 −1.5，
+// 比世界地面 −1.22 低 0.28 m）直接跳过 ⇒ 它既没台基、又埋在地里。这里改判**实际建出的几何**：
+// 逐实体读 `buildEntityBoxes()` 的 `geometry.boundingBox`，要求「锚点 + 几何底面」≥ 世界地面。
+const groundBoxRows = buildEntityBoxes(worldSeed, 'surface')
+  .filter((box) => box.kind !== 'npc' && box.kind !== 'room')
+  .map((box) => {
+    box.geometry.computeBoundingBox();
+    const bb = box.geometry.boundingBox;
+    const height = bb.max.y - bb.min.y;
+    const anchorY = box.position[1];
+    return {
+      id: box.id,
+      kind: box.kind,
+      built_bottom_y: round6(anchorY + bb.min.y),
+      unlifted_bottom_y: round6(anchorY - height / 2),
+      ground_lift_m: box.ground_lift_m,
+    };
+  });
+const standsOnWorldFloor = (rows) => rows.every((row) => row.built_bottom_y >= WORLD_FLOOR_Y - 1e-6);
+check('entity_boxes_stand_on_world_floor', (() => {
+  const healthy = standsOnWorldFloor(groundBoxRows) === true;
+  // 负例：把读数换回「未上移」的底面（= r2 的实况：portal 底面 −1.5 埋在地里）⇒ 必红
+  const unlifted = groundBoxRows.map((row) => ({ ...row, built_bottom_y: row.unlifted_bottom_y }));
+  return healthy && standsOnWorldFloor(unlifted) === false;
+})(), `${groundBoxRows.length} 个非 npc/room 实体逐条读**实际几何** \`锚点 + geometry.boundingBox.min.y\`，`
+  + `要求 ≥ 世界地面 ${WORLD_FLOOR_Y}：`
+  + JSON.stringify(groundBoxRows.map((row) => `${row.id}(${row.kind})=${row.built_bottom_y}`
+    + `${row.ground_lift_m > 0 ? `←上移${row.ground_lift_m}` : ''}`))
+  + `；负对照（**非自指 + 零写盘**：把读数换回未上移的底面 = r2 实况）⇒ 判据红；`
+  + `**[配置面判据，不构成画面证据；画面面见全身截图]**`);
+
+// --- 3d) N4 特征部件必须**贴住**主体盒（N4-r3 / R3-6：修正「耳悬浮离头」这类新缺陷） ---
+// 判据口径（architect R3-6 的字面：「与头的间距 ≤ 阈值」）：逐特征取它与**最近的** N2 主体盒之间的
+// **AABB 间隙**（三轴分离量取最大、下夹 0），要求 ≤ `ATTACH_GAP_TOLERANCE_M`（2 mm）。
+// 用「间隙」而不是「正体积相交」的原因：有些部件是**恰好相接**的（`hand_*` 顶面 = `arm_*` 底面，
+// 间隙 0）—— 那是正确接法，不是悬浮。r2 的耳间隙 7.5 mm、鼻间隙 15 mm 则都超阈值。
+const ATTACH_GAP_TOLERANCE_M = 0.002;
+const aabbOf = (part) => ({
+  min: [part.local_offset[0] - part.size[0] / 2, part.local_offset[1] - part.size[1] / 2,
+    part.local_offset[2] - part.size[2] / 2],
+  max: [part.local_offset[0] + part.size[0] / 2, part.local_offset[1] + part.size[1] / 2,
+    part.local_offset[2] + part.size[2] / 2],
+});
+/** 两盒之间的 AABB 间隙（米）：0 = 相交或恰好相接。 */
+const boxGap = (a, b) => Math.max(0, ...[0, 1, 2].map((axis) => Math.max(
+  a.min[axis] - b.max[axis], b.min[axis] - a.max[axis],
+)));
+const attachmentOf = (features, body) => features.map((feature) => {
+  const featureBox = aabbOf(feature);
+  const nearest = body
+    .map((part) => ({ part: part.part, gap: boxGap(featureBox, aabbOf(part)) }))
+    .sort((left, right) => left.gap - right.gap)[0] ?? { part: null, gap: Number.POSITIVE_INFINITY };
+  return {
+    part: feature.part,
+    nearest_part: nearest.part,
+    gap_mm: Math.round(nearest.gap * 1000 * 100) / 100,
+    attached: nearest.gap <= ATTACH_GAP_TOLERANCE_M,
+  };
+});
+const characterContext = { entityId: 'npc-006', state: { id: 'npc-006', kind: 'npc' } };
+const defaultAppearance = defaultAppearanceFor('npc-006');
+const bodyParts = buildCharacterParts(defaultAppearance, characterContext);
+const featureParts = buildCharacterDetailParts(defaultAppearance, characterContext);
+const attachmentRows = attachmentOf(featureParts, bodyParts);
+// 负例用的「r2 实况」几何：耳 x=±0.145（间隙 7.5 mm）、眉 z=0.168（间隙 13 mm）
+// 注：r2 的鼻（z=0.185）虽在头盒之外 15 mm，但它与 `eyes` 盒恰好面接触（y=0.505 处）⇒ 间隙为 0，
+// 按本判据**不算悬浮**；因此负例②改用 r2 的眉（z=0.168，与头盒间隙 13 mm、与 eyes 间隙 19 mm）。
+const r2Ear = featureParts.map((part) => (part.part === 'ear_l'
+  ? { ...part, local_offset: [-0.145, part.local_offset[1], part.local_offset[2]] } : part));
+const r2Brow = featureParts.map((part) => (part.part === 'brow_l'
+  ? { ...part, local_offset: [part.local_offset[0], part.local_offset[1], 0.168] } : part));
+const allFeaturesAttached = (rows) => rows.every((row) => row.attached === true);
+check('n4_features_attach_to_body_boxes', (() => {
+  const healthy = allFeaturesAttached(attachmentRows) === true;
+  // 负例①：耳 x 换回 r2 的 ±0.145（内侧面落在头盒之外 7.5 mm）⇒ 必红
+  const floatedEar = attachmentOf(r2Ear, bodyParts);
+  // 负例②：眉 z 换回 r2 的 0.168（与头盒间隙 13 mm）⇒ 必红
+  const floatedBrow = attachmentOf(r2Brow, bodyParts);
+  return healthy && allFeaturesAttached(floatedEar) === false
+    && allFeaturesAttached(floatedBrow) === false
+    && floatedEar.some((row) => row.part === 'ear_l' && row.gap_mm > 2)
+    && floatedBrow.some((row) => row.part === 'brow_l' && row.gap_mm > 2);
+})(), `${attachmentRows.length} 个 N4 特征逐条与 ${bodyParts.length} 个 N2 主体盒取**最近间隙**`
+  + `（阈值 ≤ ${ATTACH_GAP_TOLERANCE_M * 1000} mm；0 = 相交或恰好相接）：`
+  + JSON.stringify(attachmentRows.map((row) => `${row.part}→${row.nearest_part}@${row.gap_mm}mm`))
+  + `；负对照（**非自指 + 零写盘**，用 r2 的真实坐标）：① 耳 x=±0.145 ⇒ 间隙 7.5 mm；`
+  + `② 眉 z=0.168 ⇒ 间隙 13 mm ⇒ 两条都红；**[配置面判据，不构成画面证据；画面面见头肩特写]**`);
+
+// --- 4) 材质区间服从 art-bible（以更紧的一处为准） ---
+const specsWithinArtBible = (specs) => specs.every((spec) => {
+  const wetZero = !WET_SURFACES.includes(SURFACE_IDS.find((id) => SURFACES[id] === spec) ?? 'ground_wet')
+    || spec.metalness === 0;
+  const resolution = imageSizeOf(assetPathOf(spec.maps.diffuse));
+  const resolutionOk = Boolean(resolution) && resolution.width <= 2048 && resolution.height <= 2048;
+  return spec.metalness >= 0 && spec.metalness <= 0.15
+    && spec.roughness >= 0.6 && spec.roughness <= 0.95
+    && wetZero && spec.normal_scale <= 0.4 && resolutionOk
+    && spec.envMapIntensity >= 1.15 && spec.license === 'cc0-1.0';
+});
+check('material_specs_within_art_bible', (() => {
+  const healthy = specsWithinArtBible(allSpecs) === true;
+  const tampered = allSpecs.map((spec, index) => (index === 0
+    ? { ...spec, metalness: 0.5, roughness: 0.2 } : spec));
+  const wetTampered = allSpecs.map((spec) => (spec === SURFACES.ground_wet ? { ...spec, metalness: 0.05 } : spec));
+  return healthy && specsWithinArtBible(tampered) === false && specsWithinArtBible(wetTampered) === false;
+})(), `逐表面 metalness∈[0,0.15] / roughness∈[0.6,0.95] / 湿地面 metalness===0 / 法线强度≤0.4 / 贴图≤2048²：`
+  + JSON.stringify(SURFACE_IDS.map((id) => `${id}(m=${SURFACES[id].metalness},r=${SURFACES[id].roughness})`))
+  + `；负对照（注入 metalness 0.5 + roughness 0.2；湿地面 metalness 0.05）⇒ 判据红；[配置面判据，不构成画面证据]`);
+
+// --- 5) 贴图来源全部 CC0 且登记在册 ---
+const assetsRegistered = (specs) => specs.every((spec) => {
+  const registered = registeredAssets.get(spec.asset_id);
+  return Boolean(registered) && registered.cc0 === true && spec.license === 'cc0-1.0';
+});
+check('texture_assets_are_cc0_and_registered', (() => {
+  const healthy = assetsRegistered(allSpecs) === true;
+  const tampered = allSpecs.map((spec, index) => (index === 0 ? { ...spec, asset_id: 'not_registered_asset' } : spec));
+  return healthy && assetsRegistered(tampered) === false;
+})(), `SURFACES 的 asset_id 全部命中 web/assets/manifest.txt 且许可为 CC0 1.0：`
+  + JSON.stringify([...new Set(allSpecs.map((spec) => spec.asset_id))])
+  + `；负对照（注入未登记 asset_id）⇒ 判据红；[配置面判据，不构成画面证据]`);
+
+// --- 5b) 交付树引用的**每一张**贴图都在盘上（N4-r2 / M-6 关闭 Raven N-7） ---
+// 覆盖上一轮的缺陷类：`material_files_exist_on_disk` 只遍历 `SURFACES`，**看不见**注册表之外的贴图常量
+// ⇒ `SKIN_TEXTURE_URL` 指向已被删掉的文件时判据全绿、画面静默回落纯色。
+// 这里改为遍历**唯一的贴图 URL 登记面** `referencedTextureUrls()`（含皮肤细节层）。
+const referencedUrls = referencedTextureUrls();
+const referencedAllOnDisk = (urls) => urls.every((url) => onDisk(url) === true);
+check('referenced_texture_urls_exist_on_disk', (() => {
+  const healthy = referencedAllOnDisk(referencedUrls) === true;
+  // 负例：**非自指 + 零写盘** —— 往登记面里追加一条盘上不存在的 URL ⇒ 必红
+  const degraded = referencedAllOnDisk([...referencedUrls, ABSENT_MAP_URL]) === false;
+  return healthy && degraded;
+})(), `交付树引用贴图 ${referencedUrls.length} 条逐条在盘（含 SURFACES **之外**的皮肤细节层 `
+  + `SKIN_TEXTURE_URL=${SKIN_TEXTURE_URL.split('/').slice(-2).join('/')} ⇒ onDisk=${onDisk(SKIN_TEXTURE_URL)}）；`
+  + `负对照（**非自指 + 零写盘**：登记面追加一条盘上不存在的 URL）⇒ 判据红；**[配置面判据，不构成画面证据]**`);
+
+// --- 5b2) 机械派生的登记面必须**覆盖**逐表面的 map URL（N4-r3 / R3-7） ---
+// `referencedTextureUrls()` 已改为从 `URLS` 机械派生（不再手抄并集）。这条判据把「派生集合 ⊇ 逐表面
+// map URL 集合」钉住：若有人把某个 surface 的 map 指向未登记进 `URLS` 的 URL，或把派生改回手抄，
+// 覆盖关系就会破。
+const surfaceMapUrls = SURFACE_IDS.flatMap((id) => [
+  SURFACES[id].maps.diffuse, SURFACES[id].maps.normal, SURFACES[id].maps.roughness,
+  SURFACES[id].maps.metalness, SURFACES[id].maps.ao,
+]).filter((value) => typeof value === 'string');
+const coversSurfaceMaps = (derived, required) => required.every((url) => derived.includes(url));
+check('referenced_texture_urls_cover_surface_maps', (() => {
+  const healthy = coversSurfaceMaps(referencedUrls, surfaceMapUrls) === true;
+  // 负例：从派生集合里挖掉一条表面 map URL ⇒ 覆盖关系破 ⇒ 必红
+  const degraded = coversSurfaceMaps(referencedUrls.filter((url) => url !== surfaceMapUrls[0]),
+    surfaceMapUrls) === false;
+  return healthy && degraded;
+})(), `机械派生的登记面（${referencedUrls.length} 条，来自 \`Object.values(URLS)\`）覆盖逐表面 map URL `
+  + `（${new Set(surfaceMapUrls).size} 条去重）；负对照（**非自指 + 零写盘**：挖掉一条表面 map URL）`
+  + `⇒ 判据红；**[配置面判据，不构成画面证据]**`);
+
+// --- 5c) 类别字段（N4-r3 / R3-1 关闭 Raven N2-10） ---
+// 登记表必须**逐件**给出机器可核的类别字段，且 `skin-pale-01` 的类别必须是 `ai_generated`
+// （生成器 Seedream，模型 id `doubao-seedream-5-0-260128`），**绝不**写成 `cc0-1.0` / `Poly Haven`
+// —— 该素材在资产包两份 manifest 里都没有条目，许可**未证实**，不得伪造。
+const manifestDataLines = assetsManifestText.split('\n')
+  .filter((line) => line.trim().length > 0 && !line.trim().startsWith('#'));
+const categoryFieldOk = (lines) => lines.every((line) => /类别 `[a-z0-9_]+`/.test(line));
+const skinLine = manifestDataLines.find((line) => line.startsWith('character/skin-pale-01')) ?? null;
+const skinCategoryOk = (line, expected) => {
+  if (typeof line !== 'string') return false;
+  if (!line.includes(`类别 \`${expected}\``)) return false;
+  if (expected !== 'ai_generated') return true;
+  // 不得出现 CC0 / Poly Haven 字样，且必须带生成记录（模型 id）
+  // 注意两种写法都要拦：`cc0-1.0`（SPDX）与 `CC0 1.0`（人话）
+  if (/cc0[- ]?1\.0/i.test(line) || line.includes('Poly Haven')) return false;
+  return line.includes('doubao-seedream-5-0-260128');
+};
+check('manifest_category_field_is_machine_checkable', (() => {
+  const healthy = categoryFieldOk(manifestDataLines) === true;
+  // 负例：抹掉某一行的类别字段 ⇒ 必红
+  const degraded = categoryFieldOk(manifestDataLines.map((line, index) => (index === 3
+    ? line.replace(/类别 `[a-z0-9_]+` · /, '') : line))) === false;
+  return healthy && degraded;
+})(), `登记表 ${manifestDataLines.length} 条数据行**逐行**带机器可核的类别字段（\`cc0_photo\` / \`ai_generated\`）；`
+  + `负对照（**非自指 + 零写盘**：抹掉第 4 行的类别字段）⇒ 判据红；**[配置面判据，不构成画面证据]**`);
+
+check('skin_asset_is_ai_generated', (() => {
+  const healthy = skinCategoryOk(skinLine, 'ai_generated') === true;
+  const asCc0 = skinCategoryOk(skinLine === null ? null : skinLine.replace('类别 `ai_generated`', '类别 `cc0_photo`'), 'ai_generated') === false;
+  const withPolyHaven = skinCategoryOk(skinLine === null ? null : `${skinLine} · Poly Haven`, 'ai_generated') === false;
+  const withCc0Tag = skinCategoryOk(skinLine === null ? null : `${skinLine} · CC0 1.0`, 'ai_generated') === false;
+  const withoutModelId = skinCategoryOk(skinLine === null ? null : skinLine.replace('doubao-seedream-5-0-260128', 'REDACTED'), 'ai_generated') === false;
+  return healthy && asCc0 && withPolyHaven && withCc0Tag && withoutModelId;
+})(), `skin-pale-01 类别 == \`ai_generated\` ∧ 带生成记录（generator=Seedream / model id `
+  + `\`doubao-seedream-5-0-260128\`）∧ **不含** \`CC0 1.0\` / \`Poly Haven\` 字样`
+  + `（该素材在资产包两份 manifest 均无条目 ⇒ 许可未证实，**不伪造**许可与模型 id）；`
+  + `负对照（4 条，均非自指）：① 类别改 \`cc0_photo\`；② 追加 \`Poly Haven\`；③ 追加 \`CC0 1.0\`；`
+  + `④ 抹掉模型 id ⇒ 全红；**[配置面判据，不构成画面证据]**`);
+
+
+scene.setReading('surface');
+const buildingSurface = scene.buildingReport();
+const rootVisibilitySurface = scene.structureReport();
+characterScene.setReading('surface');
+const detailSurface = characterScene.characterDetailReport();
+const detailContractSurface = characterScene.characterReport();
+scene.setReading('underneath');
+const buildingUnderneath = scene.buildingReport();
+characterScene.setReading('underneath');
+const detailUnderneath = characterScene.characterDetailReport();
+scene.setReading('surface');
+characterScene.setReading('surface');
+const buildingRestored = scene.buildingReport();
+
+const BUILDING_ENTITY = buildingSurface[0]?.entity_id ?? null;
+const partsOf = (report, entityId) => (report.find((entry) => entry.entity_id === entityId)?.parts ?? []);
+const partReportOf = (parts, name) => parts.find((entry) => entry.part === name) ?? null;
+const partKeyOf = (part) => JSON.stringify({
+  part: part.part, size: part.size, local_offset: part.local_offset, parameters: part.parameters,
+  vertex_count: part.vertex_count, position_attribute_digest: part.position_attribute_digest,
+});
+const sortedPartKeys = (parts) => parts.map(partKeyOf).sort();
+const sameBuildingParts = (left, right) => JSON.stringify(sortedPartKeys(left)) === JSON.stringify(sortedPartKeys(right));
+
+// --- 6) 写实人物部件数 ≥12（含手/脚/发/衣/面部） ---
+const realismPartsOf = (contract, detail, entityId) => [
+  ...contract.filter((part) => part.entity_id === entityId),
+  ...detail.filter((part) => part.entity_id === entityId),
+];
+const realismCriterion = (contract, detail, entityId) => {
+  const all = realismPartsOf(contract, detail, entityId);
+  const names = new Set(all.map((part) => part.part));
+  const required = ['hand_l', 'hand_r', 'foot_l', 'foot_r', 'hair', 'coat', 'eyes', 'lips', 'nose'];
+  return all.length >= 12 && required.every((name) => names.has(name));
+};
+check('character_realism_parts_at_least_twelve', (() => {
+  const healthy = realismCriterion(detailContractSurface, detailSurface, 'npc-006') === true;
+  const missingHand = detailSurface.filter((part) => !(part.entity_id === 'npc-006' && part.part === 'hand_l'));
+  return healthy && realismCriterion(detailContractSurface, missingHand, 'npc-006') === false;
+})(), `npc-006 契约部件 ${detailContractSurface.filter((part) => part.entity_id === 'npc-006').length} +`
+  + ` N4 解剖部件 ${detailSurface.filter((part) => part.entity_id === 'npc-006').length}`
+  + ` = ${realismPartsOf(detailContractSurface, detailSurface, 'npc-006').length}（阈值 ≥12，含手/脚/发/衣/面部）；`
+  + `负对照（删一只手）⇒ 判据红；[配置面判据，不构成画面证据]`);
+
+// --- 7) 写实人体几何约束（手在臂末端 / 脚在腿末端且低于下摆 / 颈在头与躯干之间） ---
+const HAND_ARM_TOL_M = 0.02;
+const centerY = (box) => round6((box.top_y + box.bottom_y) / 2);
+const handsAtArmEnds = (contract, detail) => [['arm_l', 'hand_l'], ['arm_r', 'hand_r']].every(([armName, handName]) => {
+  const arm = boxOf(contract, 'npc-006', armName);
+  const hand = boxOf(detail, 'npc-006', handName);
+  if (!arm || !hand) return false;
+  return Math.abs(round6(hand.top_y - arm.bottom_y)) <= HAND_ARM_TOL_M && centerY(hand) < centerY(arm);
+});
+const feetAtLegEndsBelowHem = (contract, detail) => {
+  const hem = boxOf(contract, 'npc-006', 'coat');
+  if (!hem) return false;
+  return [['leg_l', 'foot_l'], ['leg_r', 'foot_r']].every(([legName, footName]) => {
+    const leg = boxOf(contract, 'npc-006', legName);
+    const foot = boxOf(detail, 'npc-006', footName);
+    if (!leg || !foot) return false;
+    return Math.abs(round6(foot.top_y - leg.bottom_y)) <= HAND_ARM_TOL_M
+      && foot.bottom_y < hem.bottom_y && foot.bottom_y < leg.bottom_y;
+  });
+};
+const neckBetweenHeadAndTorso = (contract, detail) => {
+  const head = boxOf(contract, 'npc-006', 'head');
+  const torso = boxOf(contract, 'npc-006', 'torso');
+  const neck = boxOf(detail, 'npc-006', 'neck');
+  if (!head || !torso || !neck) return false;
+  return neck.bottom_y <= round6(torso.top_y + HAND_ARM_TOL_M)
+    && neck.top_y >= round6(head.bottom_y - HAND_ARM_TOL_M)
+    && centerY(neck) > centerY(torso) && centerY(neck) < centerY(head);
+};
+const geometryConstraintsOk = (contract, detail) =>
+  handsAtArmEnds(contract, detail) && feetAtLegEndsBelowHem(contract, detail) && neckBetweenHeadAndTorso(contract, detail);
+const tamperDetail = (parts, edits) => parts.map((part) => (edits[part.part]
+  ? { ...part, local_offset: edits[part.part].local_offset ?? part.local_offset,
+      size: edits[part.part].size ?? part.size }
+  : part));
+const handOnTorso = tamperDetail(detailSurface, { hand_l: { local_offset: [0, 0, 0] } });
+const feetAboveHem = tamperDetail(detailSurface, {
+  foot_l: { local_offset: [-0.11, -0.6, 0.03] }, foot_r: { local_offset: [0.11, -0.6, 0.03] } });
+const noNeck = detailSurface.filter((part) => !(part.entity_id === 'npc-006' && part.part === 'neck'));
+check('character_realism_geometry_constraints', (() => {
+  const healthy = geometryConstraintsOk(detailContractSurface, detailSurface) === true;
+  const badHand = geometryConstraintsOk(detailContractSurface, handOnTorso) === false;
+  const badFoot = geometryConstraintsOk(detailContractSurface, feetAboveHem) === false;
+  const badNeck = geometryConstraintsOk(detailContractSurface, noNeck) === false;
+  return healthy && badHand && badFoot && badNeck;
+})(), `手贴臂末端（容差 ${HAND_ARM_TOL_M * 1000} mm 且在臂中心之下）`
+  + ` / 脚贴腿末端且低于外衣下摆 y=${boxOf(detailContractSurface, 'npc-006', 'coat').bottom_y}`
+  + ` / 颈跨在躯干上缘 y=${boxOf(detailContractSurface, 'npc-006', 'torso').top_y}`
+  + ` 与头下缘 y=${boxOf(detailContractSurface, 'npc-006', 'head').bottom_y} 之间；`
+  + `负对照：① 手移到躯干 ⇒ 红；② 脚抬到外衣下摆之上 ⇒ 红；③ 删掉颈 ⇒ 红；[配置面判据，不构成画面证据]`);
+
+// --- 7b) **真实头身比**（N4-r2 / M-4 关闭 Raven N-13 / 预审 R-3）：实测读数 + 可行域内达成 ---
+// 设计 §D-5 的目标：头高 ≈ 身高 1/7.5。上一轮**没有执行**这项优化（`head` 仍是 0.30 ⇒ ≈1/6.2），
+// 且 `03` 的 GAP 清单里**没有这一条**。本轮在 11 条比例判据的可行域内真的调了一轮并给出实测读数。
+const HEAD_BODY_TARGET = 1 / 7.5;
+/** 判定带宽：目标 ±0.006（≈ 1/7.85 ~ 1/7.18）。这是**本轮新增**判据的容差，不是既有阈值。 */
+const HEAD_BODY_TOL = 0.006;
+const headToBodyRatio = (contract, detail) => {
+  const head = boxOf(contract, 'npc-006', 'head');
+  const foot = boxOf(detail, 'npc-006', 'foot_l');
+  if (!head || !foot) return null;
+  const total = round6(head.top_y - foot.bottom_y);
+  return { head_m: head.height, total_m: total, ratio: round6(head.height / total) };
+};
+const headBodyOk = (contract, detail) => {
+  const measured = headToBodyRatio(contract, detail);
+  return measured !== null && Math.abs(measured.ratio - HEAD_BODY_TARGET) <= HEAD_BODY_TOL;
+};
+const headBody = headToBodyRatio(detailContractSurface, detailSurface);
+check('character_head_to_body_ratio_measured', (() => {
+  const healthy = headBodyOk(detailContractSurface, detailSurface) === true;
+  // 负对照：把 head 抬回 r1 的 0.30（≈1/6.2 = Raven 实测的「未达成」形态）⇒ 必红
+  const tallHead = detailContractSurface.map((part) => (part.part === 'head'
+    ? { ...part, size: [0.26, 0.30, 0.26] } : part));
+  return healthy && headBodyOk(tallHead, detailSurface) === false;
+})(), `**实测头身比** = 头高 ${headBody.head_m} m / 全高 ${headBody.total_m} m = **1/${round6(1 / headBody.ratio)}**`
+  + `（设计 §D-5 目标 ≈ 1/7.5，判定带宽 ±${HEAD_BODY_TOL} ⇒ [1/${round6(1 / (HEAD_BODY_TARGET + HEAD_BODY_TOL))}, 1/${round6(1 / (HEAD_BODY_TARGET - HEAD_BODY_TOL))}]）；`
+  + `负对照（head 抬回 0.30 ⇒ ≈1/6.2，即上一轮未达成的形态）⇒ 判据红；`
+  + `**[配置面判据，不构成画面证据；画面面见人物特写截图]**`);
+
+// --- 7c) N4 面部/足部部件**不被遮挡且互不相交**（N4-r2 / M-8 关闭 Sentinel B-1 / B-2 / B-10） ---
+// 三条都是上一轮**部件存在但画面零贡献**的形态：耳被发盒完全包住、鼻把嘴切出缺口、脚与腿同色读不出。
+const boxInside = (outer, inner) => inner.left_x >= outer.left_x && inner.right_x <= outer.right_x
+  && inner.bottom_y >= outer.bottom_y && inner.top_y <= outer.top_y
+  && inner.back_z >= outer.back_z && inner.front_z <= outer.front_z;
+const boxesOverlap = (a, b) => a.left_x < b.right_x && b.left_x < a.right_x
+  && a.bottom_y < b.top_y && b.bottom_y < a.top_y
+  && a.back_z < b.front_z && b.back_z < a.front_z;
+const faceFootVisibilityOk = (contract, detail) => {
+  const hair = boxOf(contract, 'npc-006', 'hair');
+  const nose = boxOf(detail, 'npc-006', 'nose');
+  const lips = boxOf(contract, 'npc-006', 'lips');
+  const ears = ['ear_l', 'ear_r'].map((name) => boxOf(detail, 'npc-006', name));
+  const feet = ['foot_l', 'foot_r'].map((name) => boxOf(detail, 'npc-006', name));
+  const legs = ['leg_l', 'leg_r'].map((name) => boxOf(contract, 'npc-006', name));
+  if (!hair || !nose || !lips || [...ears, ...feet, ...legs].some((box) => !box)) return false;
+  const earsEscapeHair = ears.every((ear) => boxInside(hair, ear) === false);
+  const noseClearOfLips = boxesOverlap(nose, lips) === false;
+  const feetDistinctFromLegs = ['foot_l', 'foot_r'].every((name, index) => {
+    const foot = partOf(detail, 'npc-006', name);
+    const leg = partOf(contract, 'npc-006', legs[index].part);
+    return Boolean(foot) && Boolean(leg) && foot.source_hex !== leg.source_hex;
+  });
+  return earsEscapeHair && noseClearOfLips && feetDistinctFromLegs;
+};
+const withPartEdit = (parts, partName, edit) => parts.map((part) => (part.part === partName
+  ? { ...part, size: edit.size ?? part.size, local_offset: edit.local_offset ?? part.local_offset } : part));
+check('character_face_and_feet_are_unoccluded', (() => {
+  const healthy = faceFootVisibilityOk(detailContractSurface, detailSurface) === true;
+  // 负对照①（B-1 原形态）：耳移回发盒内部 ⇒ 必红
+  const earsInsideHair = withPartEdit(detailSurface, 'ear_l', { local_offset: [-0.14, 0.49, 0] });
+  const earsInsideHair2 = withPartEdit(earsInsideHair, 'ear_r', { local_offset: [0.14, 0.49, 0] });
+  // 负对照②（B-2 原形态）：鼻盒抬回与唇相交的 y∈[0.43,0.52] ⇒ 必红
+  const noseOverLips = withPartEdit(detailSurface, 'nose', { size: [0.05, 0.09, 0.05], local_offset: [0, 0.475, 0.185] });
+  // 负对照③（B-10 原形态）：脚改用与腿相同的 `garment` 色 ⇒ 必红
+  const feetSameColour = detailSurface.map((part) => (part.part === 'foot_l' || part.part === 'foot_r'
+    ? { ...part, source_hex: partOf(detailContractSurface, 'npc-006', 'leg_l').source_hex } : part));
+  return healthy && faceFootVisibilityOk(detailContractSurface, earsInsideHair2) === false
+    && faceFootVisibilityOk(detailContractSurface, noseOverLips) === false
+    && faceFootVisibilityOk(detailContractSurface, feetSameColour) === false;
+})(), `耳不被发盒 AABB 完全包含（耳 z∈[${boxOf(detailSurface, 'npc-006', 'ear_l').back_z},${boxOf(detailSurface, 'npc-006', 'ear_l').front_z}]`
+  + ` > 发前表面 ${boxOf(detailContractSurface, 'npc-006', 'hair').front_z}）；`
+  + `鼻盒 y∈[${boxOf(detailSurface, 'npc-006', 'nose').bottom_y},${boxOf(detailSurface, 'npc-006', 'nose').top_y}]`
+  + ` 与唇盒 y∈[${boxOf(detailContractSurface, 'npc-006', 'lips').bottom_y},${boxOf(detailContractSurface, 'npc-006', 'lips').top_y}] **不相交**；`
+  + `脚色 ≠ 腿色（${partOf(detailSurface, 'npc-006', 'foot_l').source_hex} ≠ ${partOf(detailContractSurface, 'npc-006', 'leg_l').source_hex}）；`
+  + `负对照：① 耳移回发盒内（B-1 原形态）⇒ 红；② 鼻抬回与唇相交（B-2 原形态）⇒ 红；③ 脚改回腿色（B-10 原形态）⇒ 红；`
+  + `**[配置面判据，不构成画面证据]**`);
+
+// --- 8) 两读法共享 N4 解剖部件（逐项相同） ---
+check('two_reads_share_character_detail_parts', (() => {
+  const healthy = sameBuildingParts(detailSurface, detailUnderneath) === true;
+  const tampered = detailUnderneath.map((part, index) => (index === 0
+    ? { ...part, local_offset: [part.local_offset[0] + 0.1, part.local_offset[1], part.local_offset[2]] } : part));
+  return healthy && sameBuildingParts(detailSurface, tampered) === false;
+})(), `N4 解剖部件两读法逐项比较（size / local_offset / parameters / vertex_count / position 摘要）：`
+  + `${detailSurface.length}/${detailUnderneath.length}；负对照（只改 underneath 一个部件的偏移）⇒ 判据红；[配置面判据，不构成画面证据]`);
+
+// --- 9) N4 部件材质色可复算（**动态遍历**，不写硬编码名单） ---
+const detailHexProblems = (parts, tone) => {
+  const problems = [];
+  for (const part of parts.filter((entry) => entry.entity_id === 'npc-006')) {
+    const expected = recomputeMaterialHex(part.source_hex, tone);
+    if (part.material_hex !== expected) problems.push(`${part.part} expected=${expected} actual=${part.material_hex}`);
+  }
+  return problems;
+};
+check('character_detail_material_hex_recomputable', (() => {
+  const surfaceProblems = detailHexProblems(detailSurface, xuqinWorldview.tone.surface);
+  const underneathProblems = detailHexProblems(detailUnderneath, xuqinWorldview.tone.underneath);
+  const traversed = detailSurface.filter((entry) => entry.entity_id === 'npc-006').length;
+  const tampered = detailSurface.map((part) => (part.part === 'hand_r' ? { ...part, material_hex: '#000000' } : part));
+  return surfaceProblems.length === 0 && underneathProblems.length === 0 && traversed >= 8
+    && detailHexProblems(tampered, xuqinWorldview.tone.surface).length === 1;
+})(), `动态遍历 npc-006 的 ${detailSurface.filter((entry) => entry.entity_id === 'npc-006').length} 个 N4 部件：`
+  + `material_hex == source_hex × luminanceScale(reading)（两读法各跑一遍）；`
+  + `负对照（注入 hand_r 材质色偏差）⇒ 判据红；[配置面判据，不构成画面证据]`);
+
+// --- 10) 建筑部件类型 ≥8 ---
+const partTypesCriterion = (report) => report.length > 0
+  && report.every((entry) => entry.part_types.length >= 8
+    && ['wall', 'window_opening', 'door', 'eave', 'balcony', 'railing', 'pipe', 'roof_tile', 'floor_slab']
+      .every((name) => entry.part_types.includes(name)));
+check('building_part_types_at_least_eight', (() => {
+  const healthy = partTypesCriterion(buildingSurface) === true;
+  const tampered = buildingSurface.map((entry) => ({
+    ...entry,
+    parts: entry.parts.filter((part) => part.part !== 'railing'),
+    part_types: entry.part_types.filter((name) => name !== 'railing'),
+  }));
+  return healthy && partTypesCriterion(tampered) === false;
+})(), `逐建筑实体部件类型数=${JSON.stringify(buildingSurface.map((entry) => `${entry.entity_id}:${entry.part_types.length}`))}`
+  + `（阈值 ≥8；固定表 ${BUILDING_PART_NAMES.length} 项，装配器产出`
+  + ` ${buildBuildingParts({ id: 'probe', kind: 'room' }).length} 个部件）；`
+  + `负对照（删掉 railing 类型）⇒ 判据红；[配置面判据，不构成画面证据]`);
+
+// --- 10b) 声明表 == 装配器实际产出（N4-r2 / M-6 关闭 Sentinel B-8） ---
+// 缺陷：`BUILDING_PART_NAMES` 只出现在**判据文案**里，没有任何判据把「声明表」与「装配器产出」绑定
+// ⇒ 把声明表从 11 项改成 3 项，`scene_assert` 仍 `exit=0 / PASS=83 FAIL=0`（文案里的「固定表 N 项」会静默失真）。
+const producedBuildingPartNames = new Set(buildBuildingParts({ id: 'probe', kind: 'room' }).map((part) => part.part));
+const declaredMatchesProduced = (declared) => declared.size === producedBuildingPartNames.size
+  && [...declared].every((name) => producedBuildingPartNames.has(name));
+check('building_part_names_match_assembly', (() => {
+  const healthy = declaredMatchesProduced(new Set(BUILDING_PART_NAMES)) === true;
+  // 负对照：声明表删掉 `railing` ⇒ 与产出不一致 ⇒ 必红
+  const tampered = new Set([...BUILDING_PART_NAMES].filter((name) => name !== 'railing'));
+  return healthy && declaredMatchesProduced(tampered) === false;
+})(), `声明表 BUILDING_PART_NAMES（${BUILDING_PART_NAMES.length} 项）== 装配器对 room 实体的产出类型集`
+  + `（${producedBuildingPartNames.size} 项）：${JSON.stringify([...producedBuildingPartNames].sort())}；`
+  + `负对照（声明表删掉 railing）⇒ 判据红；[配置面判据，不构成画面证据]`);
+
+// --- 11) 两读法共享建筑部件（`objects_digest` **不含尺寸** ⇒ 这是建筑面唯一有牙的判据，Raven R-8） ---
+check('two_reads_share_building_parts', (() => {
+  const healthy = sameBuildingParts(partsOf(buildingSurface, BUILDING_ENTITY), partsOf(buildingUnderneath, BUILDING_ENTITY))
+    && sameBuildingParts(partsOf(buildingSurface, BUILDING_ENTITY), partsOf(buildingRestored, BUILDING_ENTITY));
+  const tampered = buildingUnderneath.map((entry) => (entry.entity_id === BUILDING_ENTITY
+    ? { ...entry, parts: entry.parts.map((part, index) => (index === 0 ? { ...part, size: [9, 9, 9] } : part)) }
+    : entry));
+  return healthy && sameBuildingParts(partsOf(buildingSurface, BUILDING_ENTITY), partsOf(tampered, BUILDING_ENTITY)) === false;
+})(), `建筑部件两读法逐项比较（size / local_offset / parameters / vertex_count / position 摘要），`
+  + `实体 ${BUILDING_ENTITY} 共 ${partsOf(buildingSurface, BUILDING_ENTITY).length} 个部件；`
+  + `负对照（只改 underneath 一个部件的 size ⇒ ` + `objects_digest 看不见，本条必须红）⇒ 判据红；[配置面判据，不构成画面证据]`);
+
+// --- 12) 建筑有门窗洞口 + 室内可见（娃娃屋剖切） ---
+const spansAlong = (outer, inner, axis, tol = 0.005) => inner.aabb_min[axis] <= outer.aabb_min[axis] + tol
+  && inner.aabb_max[axis] >= outer.aabb_max[axis] - tol;
+const insideInPlane = (outer, inner, axes, tol = 0) => axes.every((axis) => inner.aabb_min[axis] >= outer.aabb_min[axis] - tol
+  && inner.aabb_max[axis] <= outer.aabb_max[axis] + tol);
+const openingsOk = (parts) => {
+  const wall = partReportOf(parts, 'wall');
+  const win = partReportOf(parts, 'window_opening');
+  const glass = partReportOf(parts, 'window_glass');
+  const side = partReportOf(parts, 'wall_side');
+  const door = partReportOf(parts, 'door');
+  if (!wall || !win || !glass || !side || !door) return false;
+  const wallNotSolid = wall.shape === 'merged_boxes' && wall.vertex_count > 24 && wall.triangle_count > 12;
+  const winThrough = spansAlong(wall, win, 0) && insideInPlane(wall, win, [1, 2]);
+  const glassRecessed = glass.aabb_min[0] > round6(wall.aabb_min[0] + 0.01)
+    && glass.aabb_max[0] < round6(wall.aabb_max[0] - 0.005) && insideInPlane(wall, glass, [1, 2]);
+  const doorThrough = spansAlong(side, door, 2) && insideInPlane(side, door, [0, 1]);
+  const walls = parts.filter((part) => part.part === 'wall' || part.part === 'wall_side');
+  const cutOpen = walls.length === 2
+    && walls.every((part) => part.aabb_max[0] <= 0.001 || part.aabb_max[2] <= 0.001);
+  const sample = [0, 1.2, 0];
+  const enclosed = parts
+    .filter((part) => part.part !== 'floor_slab' && part.part !== 'roof_tile')
+    .some((part) => [0, 1, 2].every((axis) => sample[axis] > part.aabb_min[axis] && sample[axis] < part.aabb_max[axis]));
+  return wallNotSolid && winThrough && glassRecessed && doorThrough && cutOpen && !enclosed;
+};
+const buildingPartsSurface = partsOf(buildingSurface, BUILDING_ENTITY);
+const buildingPartsForFlush = buildingPartsSurface.map((part) => (part.part === 'window_glass'
+  ? { ...part, aabb_min: [buildingPartsSurface.find((p) => p.part === 'wall').aabb_min[0], part.aabb_min[1], part.aabb_min[2]] }
+  : part));
+const buildingPartsWithFrontWall = buildingPartsSurface.concat([{
+  ...buildingPartsSurface.find((part) => part.part === 'wall'),
+  part: 'wall', name: `${BUILDING_ENTITY}/wall@front`, aabb_min: [2.3, 0, -2.5], aabb_max: [2.5, 3, 2.5],
+}]);
+check('building_has_openings_and_visible_interior', (() => {
+  const healthy = openingsOk(buildingPartsSurface) === true;
+  const flush = openingsOk(buildingPartsForFlush) === false;
+  const frontWall = openingsOk(buildingPartsWithFrontWall) === false;
+  return healthy && flush && frontWall;
+})(), `后墙 ${partReportOf(buildingPartsSurface, 'wall').shape}/${partReportOf(buildingPartsSurface, 'wall').triangle_count} 三角面（非实心盒）`
+  + ` ⇒ 窗洞沿 x 贯穿墙体厚度（${partReportOf(buildingPartsSurface, 'window_opening').size[0]} m == 墙厚）`
+  + ` 且玻璃内凹（x∈[${partReportOf(buildingPartsSurface, 'window_glass').aabb_min[0]},`
+  + `${partReportOf(buildingPartsSurface, 'window_glass').aabb_max[0]}] 退在墙外面 ${partReportOf(buildingPartsSurface, 'wall').aabb_min[0]} 之后）；`
+  + `门洞沿 z 贯穿侧墙；墙体只落在 -x/-z 两面（娃娃屋剖切）；室内采样点 (0,1.2,0) 不被任何部件包住；`
+  + `负对照：① 玻璃贴到墙外面（贴面形态）⇒ 红；② 注入 +x 正面墙 ⇒ 红；[配置面判据，不构成画面证据]`);
+
+// --- 13) 每个实体根 mesh 的 `visible === true`（Raven R-2 的 Node 侧拦截） ---
+const rootsVisible = (structure, ids) => ids.every((id) => {
+  const object = structure.objects.find((entry) => entry.id === id);
+  return Boolean(object) && object.visible === true;
+});
+check('entity_root_meshes_are_visible', (() => {
+  const entityIds = scene.entityIds();
+  const healthy = rootsVisible(rootVisibilitySurface, entityIds) === true;
+  // 负对照：把**某个实体根 mesh**（不是 `world-root` 组）置 `visible = false` ⇒ 必红
+  const firstRootId = entityIds.find((id) => rootVisibilitySurface.objects.some((entry) => entry.id === id));
+  const tampered = {
+    ...rootVisibilitySurface,
+    objects: rootVisibilitySurface.objects.map((entry) => (entry.id === firstRootId
+      ? { ...entry, visible: false } : entry)),
+  };
+  return healthy && firstRootId !== undefined && rootsVisible(tampered, entityIds) === false;
+})(), `${scene.entityIds().length} 个实体根 mesh 的 visible 全为 true（R-2：` + `visible=false 会让 three 跳过整棵子树）；`
+  + `负对照（注入某个实体根 mesh 的 visible=false）⇒ 判据红；[配置面判据，不构成画面证据]`);
+
+// --- 14) 环境照明主导（人工灯 ≤ 辅助阈值 + envMapIntensity + **真实读回**的非纯色背景） ---
+// N4-r2 / M-6（关闭 Raven N-1）：`background_is_texture` / `environment_is_texture` **不再是常量** ——
+// 由 `backgroundStateOf()` 从**真实场景对象**读回。负例是**非自指**的：它拿一个**真的把背景换成纯色**
+// 的 `THREE.Scene` 喂进**生产代码的同一个读取函数**，而不是手改一份读数的副本。
+const environmentCriterion = (state, envMapIntensityMin, sum, hdriOnDiskFlag) => sum <= 1.0
+  && Number(envMapIntensityMin) >= 1.15
+  && state.background_is_texture === true && state.background_path !== 'color'
+  && Number(state.background_blurriness) >= 0.01
+  && state.environment_is_texture === true
+  && hdriOnDiskFlag === true;
+scene.setReading('surface');
+const envReading = environmentReport();
+const envSum = artificialLightIntensitySum();
+const hdriOnDisk = onDisk(HDRI_URL);
+/** Raven 的注入形态（P-4）：背景退化为纯色。**唯一**变量就是背景 —— 其余字段取与现场同值。 */
+const colourBackgroundState = (() => {
+  const degradedScene = new THREE.Scene();
+  degradedScene.background = new THREE.Color('#ff0000');
+  degradedScene.backgroundBlurriness = Number(envReading.background_blurriness);
+  return backgroundStateOf(degradedScene);
+})();
+check('environment_lighting_dominant', (() => {
+  const healthy = environmentCriterion(envReading, envReading.env_map_intensity_min, envSum, hdriOnDisk) === true;
+  const tooBright = environmentCriterion(envReading, envReading.env_map_intensity_min, 1.6273, hdriOnDisk) === false;
+  const colourBackground = environmentCriterion(colourBackgroundState,
+    envReading.env_map_intensity_min, envSum, hdriOnDisk) === false;
+  const missingHdri = environmentCriterion(envReading, envReading.env_map_intensity_min, envSum, false) === false;
+  return healthy && tooBright && colourBackground && missingHdri;
+})(), `surface 读法：人工灯强度总和 ${envSum.toFixed(4)} ≤ 1.0（现状基线 1.6273 / D-1 目标 0.5276）；`
+  + `envMapIntensity 最小 ${envReading.env_map_intensity_min} ≥ 1.15；background=${envReading.background_path}`
+  + `（is_texture=${envReading.background_is_texture}，由 backgroundStateOf() **从场景读回**；`
+  + `blurriness ${envReading.background_blurriness} ≥ 0.01）；environment_is_texture=${envReading.environment_is_texture}；`
+  + `HDRI 在盘 ${hdriOnDisk}；负对照：① 人工灯总和 1.6273（旧实现）⇒ 红；`
+  + `② **非自指**：真建一个 new THREE.Scene() 并把背景换成 THREE.Color('#ff0000')，用同一个 `
+  + `backgroundStateOf() 读它 ⇒ 判据红（N-1 关闭；旧实现该注入实测 PASS=83 FAIL=0）；③ HDRI 缺件 ⇒ 红；`
+  + `**[配置面判据，不构成画面证据；画面面见 spikes/n4-art 的实机截图 + __hdriReady 等待]**`);
+
+// --- 15) 场景渲染 pass 的相机 == 场景相机（Raven 预审 P-C 的机器判据） ---
+const sceneCameraMatches = (report, cameraIdentity) => typeof report.scene_camera === 'string'
+  && report.scene_camera === cameraIdentity && Number(report.scene_renders) >= 1;
+const renderReadingSurface = scene.renderOnce();
+const cameraIdentity = scene.cameraReport().identity;
+check('scene_render_camera_matches_scene_camera', (() => {
+  const healthy = sceneCameraMatches(renderReadingSurface, cameraIdentity) === true;
+  // 负对照 = **P-C 描述的旧语义**：把 scene_camera 换成链上最后一次调用（全屏 quad 的正交相机）。
+  const oldSemantics = { ...renderReadingSurface, scene_camera: 'OrthographicCamera#fullscreen-quad' };
+  return healthy && sceneCameraMatches(oldSemantics, cameraIdentity) === false;
+})(), `renderCameraReport().scene_camera=${renderReadingSurface.scene_camera} == cameraReport().identity=${cameraIdentity}`
+  + `（scene_renders=${renderReadingSurface.scene_renders}，total_renders=${renderReadingSurface.total_renders}）；`
+  + `负对照（换成全屏 quad 的正交相机 = P-C 旧语义）⇒ 判据红；[配置面判据，不构成画面证据]`);
+
+// --- 15b) `passCameras` 环形缓冲有界（N4-r2 / M-7 关闭 Raven N-4） ---
+// 缺陷：旧实现每帧 push 且**从不清空** ⇒ 真 WebGL 下 ~200–240 条/秒、内存无界增长。
+//
+// **N4-r3 / R3-7（修正 Raven N2-5 的「未声明副作用」）**：本条判据**有副作用** —— 它会对**共用的**
+// `scene` 句柄调用 `scene.renderOnce()` 40 次，因此 `scene` 的 `total_renders` 计数器被本条推高。
+// 之所以照实声明而不是偷偷修掉：`total_renders` 是**累计计数器**，后续判据只断言「有增长 / 是累计值」，
+// 不断言绝对值 ⇒ 副作用不影响任何判据结论；而换独立实例会掩盖「共用句柄被前序判据改写」这一事实。
+// 若要彻底无副作用，应把 `renderOnce` 次数与断言拆到独立 `createScene()` 实例上（记为改进项，非本轮范围）。
+const PASS_CAMERA_LOG_LIMIT = 16;
+check('pass_camera_log_is_bounded', (() => {
+  const before = scene.renderCameraReport();
+  for (let i = 0; i < 40; i += 1) scene.renderOnce();
+  const after = scene.renderCameraReport();
+  const bounded = after.pass_cameras.length <= PASS_CAMERA_LOG_LIMIT;
+  const counterStillCumulative = Number(after.total_renders) > Number(after.pass_cameras.length);
+  const grew = Number(after.total_renders) > Number(before.total_renders);
+  return bounded && counterStillCumulative && grew;
+})(), `连渲染 40 次后 pass_cameras 长度 ≤ ${PASS_CAMERA_LOG_LIMIT}（环形缓冲），`
+  + `而 total_renders 仍为**累计值**（${scene.renderCameraReport().total_renders} > ${scene.renderCameraReport().pass_cameras.length}）`
+  + ` ⇒ 可观测性不被截断；**[配置面判据，不构成画面证据]**；`
+  + `**[副作用已声明]** 本条对共用 \`scene\` 句柄调用 \`renderOnce()\` 40 次 ⇒ 会推高其 \`total_renders\`；`
+  + `后续判据只断言「有增长 / 是累计值」、不断言绝对值，故不影响结论（彻底无副作用的改法记为改进项）`);
+
+// --- 16) 后处理链配置面：AO 在链上，且**显式声明**为配置读数（Raven R-6） ---
+const postfxReading = postfxReport();
+const postfxChainOk = (reading) => reading.chain.join('>') === 'RenderPass>GTAOPass>OutputPass'
+  && reading.evidence_class === 'config_plane (not pixel evidence)'
+  && reading.gtao.blend_intensity >= 0.8 && reading.gtao.blend_intensity <= 1.0
+  && reading.gtao.output === 0
+  // N4-r3 / R3-4：`scale` 是 AO 的 gamma（ao = pow(ao, scale)）⇒ **不得**用它放大 AO 刷读数。
+  // architect 裁决上限 1.5（物理可辩护区间）；r2 曾取 3.0，已被打回。
+  && Number(reading.gtao.parameters.scale) <= 1.5
+  && reading.gtao.parameters.samples >= 8 && reading.bloom_connected === false
+  && reading.cinematic_connected === false
+  && (reading.available === false ? reading.reason === 'no_webgl' : Number(reading.pass_count) === 3);
+check('postfx_ao_chain_is_config_plane_only', (() => {
+  const healthy = postfxChainOk(postfxReading) === true;
+  const weakBlend = { ...postfxReading, gtao: { ...postfxReading.gtao, blend_intensity: 0.2 } };
+  const withBloom = { ...postfxReading, bloom_connected: true };
+  // 负例（R3-4）：把 gamma 取回 r2 的 3.0（用幂曲线放大 AO 刷 win96）⇒ 必红
+  const gammaInflated = {
+    ...postfxReading,
+    gtao: { ...postfxReading.gtao, parameters: { ...postfxReading.gtao.parameters, scale: 3.0 } },
+  };
+  return healthy && postfxChainOk(weakBlend) === false && postfxChainOk(withBloom) === false
+    && postfxChainOk(gammaInflated) === false;
+})(), `链 ${postfxReading.chain.join(' → ')}（Node 下 available=${postfxReading.available}，reason=${postfxReading.reason ?? 'n/a'}）；`
+  + `blendIntensity 声明值 ${postfxReading.gtao.blend_intensity}（阈值 ≥0.8）/ output=Default / samples=${postfxReading.gtao.parameters.samples}`
+  + ` / 不接 bloom、不接 cinematic；**本条是配置面判据，不构成画面证据**`
+  + `（画面面 = spikes/n4-art 的 AO A/B 像素对照，阈值 ≥8）；负对照（blendIntensity 0.2 / 接上 bloom）⇒ 判据红`);
+
+// ================================================================== 8) 汇总
 
 process.stdout.write(`\nscene_assert: PASS=${passed} FAIL=${failures.length}\n`);
 if (failures.length > 0) {
