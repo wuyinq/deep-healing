@@ -18,6 +18,7 @@ import { ObservePanel } from './ui/observe/panel.js';
 import { CausalTrace, type CausalChain } from './ui/observe/trace.js';
 import { InterventionPanel } from './ui/participate/intervention.js';
 import { createPlayerUi, uiSetIntersection } from './ui/player/player_ui.ts';
+import { mountCredits, creditsReport } from './ui/player/credits';
 import type { Reading, Tone } from './scene/lighting.js';
 
 export interface WorldviewDocument {
@@ -103,6 +104,9 @@ export async function bootstrap(options: { worldviewUrl?: string; autoConnect?: 
   // 回退会把「分离」重新变成「绿而未分离」，正是 PM C6 / Sentinel R-3 要堵的口子。
   const playerUi = createPlayerUi(document);
   const intervene = new InterventionPanel(playerUi.interventionHost, client);
+  // **N5-C / AC-G G-1**：把 CC BY 4.0 署名挂进**玩家界面根**（`#player-ui`）⇒ 随页可见 + 随构建产物携带。
+  // 只**新增**一个节点；不改 `#hud` / `#intervention-host` 的任何既有结构。
+  const credits = mountCredits(document);
   // **M4 / W12**：观察窗接**实时通道**（只读 SSE）——页面显示的是**当前**时刻，不是回放。
   const live = new LiveChannel(options.liveUrl ?? '/live/stream');
   const npcNames = new Map<string, string>();
@@ -189,6 +193,9 @@ export async function bootstrap(options: { worldviewUrl?: string; autoConnect?: 
     // **N5 / AC-H-2**：玩家界面集合 / 开发观察面板集合 / 交集（playwright 断言的取数面）
     uiSets: () => uiSetIntersection(document),
     playerUiRoot: () => playerUi.root.id,
+    // **N5-C / AC-G G-1**：署名面的页内读数（真浏览器断言用；Node 侧不参与）
+    creditsReport: () => creditsReport(document),
+    creditsEntries: () => credits.entries.length,
     acSnapshot: () => {
       const projection = (live.stateProjection() ?? {}) as Record<string, unknown>;
       const entities = Array.isArray(projection.entities)

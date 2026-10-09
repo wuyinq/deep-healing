@@ -6,7 +6,7 @@
   "description": "DeepHealing L1 渲染层（three.js，只消费快照，零业务逻辑）。M3 实现。",
   "scripts": {
     "dev": "vite",
-    "build": "node ../../../node_modules/vite/bin/vite.js build",
+    "build": "vite build",
     "preview": "vite preview",
     "test": "node --test test/render-client.test.ts",
     "scene:assert": "node scripts/scene_assert.mjs"

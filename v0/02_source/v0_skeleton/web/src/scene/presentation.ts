@@ -326,6 +326,7 @@ export function createPresentation(options: PresentationOptions = {}): Presentat
         recordAuthorityStep(entityId, before, auth.pos_m, auth.tick);
         prevAuthPos.set(entityId, [...auth.pos_m] as [number, number, number]);
         const steps = authoritySteps.filter((s) => s.entityId === entityId);
+        const lastStep = steps.length > 0 ? steps[steps.length - 1] : null;
         const lastDir = [...steps].reverse().find((s) => s.direction_rad !== null);
         if (lastDir && lastDir.direction_rad !== null) {
           const target = lastDir.direction_rad;
@@ -347,7 +348,27 @@ export function createPresentation(options: PresentationOptions = {}): Presentat
             }
           }
           lastDirection.set(entityId, target);
-          entry.facing_yaw_rad = wrapToPi(entry.facing_yaw_rad + wrapToPi(target - entry.facing_yaw_rad) * alpha);
+          // ---------------------------------------------------------------- N5-C r2 / FIX-3
+          // **方向死区 + 朝向限速**（只改呈现代码；权威位置/朝向的派生口径不变）。
+          //
+          // 实测根因（r2，`run-b-analysis.mjs` 的红读数）：内核单 tick 位置带 `JITTER_MM = 100` 抖动
+          // 与偶发 ~0.5 m 单 tick 跳变 ⇒ **权威位移方向**在静止点附近逐 tick 反 180°；而本层
+          // `smoothingMs = TICK_MS` ⇒ `alpha = 1` ⇒ 朝向**逐 tick 直接快照**目标 ⇒ 单帧 180° 反向跳变。
+          // 实测：阈值取 5 mm 时 692 对仍反 180°、取 200 mm 时仍剩 148 对 ⇒ **纯幅度死区不足以封堵**
+          // （噪声幅度与真位移同量级），必须在**朝向变化率**上封堵。
+          //
+          // ① 死区：本 tick 权威位移 ≤ `EPS_FLOOR_M`（近静止）⇒ 保留上一朝向，不跟随方向噪声；
+          // ② 限速：一次 ≥90° 的方向变化按 `AC-B-3` **自己的**转向保持窗 `TURN_HOLD_TICKS` 表达
+          //    （0.3 s / 3 tick）⇒ 单帧朝向变化 ≤ `TURN_DIRECTION_DELTA_RAD / TURN_HOLD_TICKS` = 30°。
+          //    ⇒ 「不得逐 tick 翻转」在**表现状态**层面成立；**不**掩盖权威位移（`B-1a`/`B-6a` 的
+          //    位置口径一字未动），槽位与命中率（`B-3`）仍取**原始** `authority_steps`。
+          const nearStatic = lastStep === null || lastStep.dpos_norm_m <= EPS_FLOOR_M;
+          if (!nearStatic) {
+            const maxTurnPerTick = TURN_DIRECTION_DELTA_RAD / TURN_HOLD_TICKS;
+            const yawDelta = wrapToPi(target - entry.facing_yaw_rad);
+            const limited = Math.max(-maxTurnPerTick, Math.min(maxTurnPerTick, yawDelta));
+            entry.facing_yaw_rad = wrapToPi(entry.facing_yaw_rad + limited * alpha);
+          }
         }
         // 运行期槽位权重（**表现状态**；`state_clip_map` 是身份/行为态映射，二者互不替代）
         const turning = (turnUntil.get(entityId) ?? -1) >= auth.tick;

@@ -2,7 +2,7 @@
   "schema_version": "n5-assert-inputs/1",
   "frozen_ref": "376a9fc4cbac",
   "generated_by": "artisan",
-  "generated_at_epoch": 1791430769,
+  "generated_at_epoch": 1791447844,
   "checks": {
     "f5a_frozen_check_names": [
       "anomaly_has_two_reads",
@@ -151,14 +151,16 @@
       "listen"
     ],
     "b0_granularity": {
-      "declared": "NOT_IMPLEMENTED_ESCALATED",
-      "snapshot_every_ticks_today": 50,
+      "declared": "IMPLEMENTED_RUNTIME_OVERRIDE",
+      "method": "取证运行时显式传 `--snapshot-every 1`（**同时**作用于桥与 SessionServer），产物落**独立 out 目录**；不改 `kernel/**`、不改 pack、不重签 `pack.sig`",
+      "pack_default_snapshot_every_ticks": 50,
+      "effective_snapshot_every_ticks": 1,
       "tick_ms": 100,
-      "options": [
-        "① snapshot_every_ticks = 1（改 pack ⇒ 重签 pack.sig）",
-        "② 新增 kernel 侧 per-tick 位置序列产物（需写 kernel/，明确不可写）"
-      ],
-      "reason": "两个选项都会越出本轮「只加资产 + 表现层」的最小改动面（① 改世界快照节奏；② 触碰 kernel）⇒ **显式上抛 PM 裁决**，不得由 artisan 单方面选取（B-G3）。"
+      "same_tick_space": "权威序列与显示序列同一 tick 空间（起点 = 桥的 tick 0；无 warmup 快进；cap = `--ticks`）；本轮 C 类证据只走 (A) 链（D5）",
+      "proof_command": "mkdir -p /tmp/n5c-granularity && cd <ws>/v0/02_source/v0_skeleton/kernel && PYTHONDONTWRITEBYTECODE=1 python3 -m deephealing_kernel run --pack districts/xingfu-xiaoqu-xuqin --events /tmp/n5c-granularity/events.jsonl --snapshot-every 1 --ticks 20 && ls /tmp/n5c-granularity/checkpoints | wc -l",
+      "proof_expectation": "checkpoints 目录逐 tick 一条（= 20 条，tick 序列连续、步长 1）；`world.init.snapshot_every == 1` 为生效值",
+      "reproduce_command": "python3 v0/spikes/n5-asset/freeze_inputs.py --write",
+      "reason": "（原 B-G3「NOT_IMPLEMENTED_ESCALATED」的理由已不成立——它假设只有「改 pack」与「改 kernel」两条路；实测第三条路：**运行期参数覆盖**，交付面零改动。）"
     },
     "building_report_producer": "assert_inputs.json（冻结的 buildingReport/structureReport AABB 读数）—— 不由被测方运行期自报（PM C8-④）",
     "ac_b_4a_tool": "v0/spikes/n5-asset/nav_probe.py",
@@ -174,8 +176,8 @@
     "materials_inputs_block_sha256": "3f1972ca7a23208b880a7772d627066df74eff6098d3ebc7356a9f8fcacdfca6",
     "materials_inputs_constants_sha256": "ce97b0cbb197ccd195df1ea3d9cd4b35644710dd11ba288a3b82415ae40a95d6",
     "materials_inputs_constants_count": 158,
-    "materials_surfaces_block_sha256": "ed09727b50ca4540e47f4a55b92fd799c53c1908d4b9ff80123669bc007c047d",
-    "materials_surfaces_ext_block_sha256": "c95097ccbf3086e6f0e15b17647476686b3f9734b2cfd13043d4d95dbc13410b",
+    "materials_surfaces_block_sha256": "bac0951995eceae12f3fe2e31219481554e61bb3b4d6065831db60ce0d357564",
+    "materials_surfaces_ext_block_sha256": "217b7f40cb4b815a34c54c26a3e42fe59a1528c8acee5755125cc9e3600dbe4f",
     "material_class_block_sha256": "744333ce52fede8d5d1e0cb4e5da7492c55bfa49cd6523a8ba4482ea46bab0d3",
     "verify_asset_provenance_manifest_segment_sha256": "66b6e822b0f323a6f82342ccb2b19d4d436de1ba7c8e771c0b50754495f4fff1"
   },
