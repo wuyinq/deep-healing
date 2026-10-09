@@ -15,6 +15,8 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import * as THREE from 'three';
+
 import {
   materialReport, SURFACES_EXT, SURFACE_IDS, SURFACE_IDS_EXT, SURFACES, surfaceIntersection,
 } from '../../02_source/v0_skeleton/web/src/scene/materials.ts';
@@ -53,6 +55,90 @@ const usage = usageScene.surfaceUsageReport();
 // `mountExtSurfaceProps()` 在**装配时**填充 ⇒ 必须在 `createScene()` + `apply()` **之后**求值，
 // 否则 `surfaces_ext[].bound` 恒 `null`（r2 的缺陷：看起来有读数、实际恒空）。
 const report = materialReport();
+
+// ------------------------------------------------------------------ N5-C / D7（C-2 判据口径修正）
+// 冲突本体：新 I-3g 渲染面判据要求「场景使用面全部可见」，而 A5 在 **GLB 已加载**后隐藏
+// 「角色侧 ext 载体」（`skin_face` / `skin_hand` / `fabric_cotton_jacket`）⇒ 两者字面互斥。
+// 处置（architect §12-D7，**改判据口径**而不是断言前提）：
+//   `hidden_surfaces ⊆ {角色侧 ext 载体}`  ∧  `glb_loaded === false ⇒ hidden_surfaces == ∅`
+// 两个世界**各自**给读数、各自带负对照（N5-C §5 要求「每条新判据带负对照」）。
+const CHARACTER_EXT_CARRIERS = ['fabric_cotton_jacket', 'skin_face', 'skin_hand'];
+
+/** D7 谓词（纯函数；同输入同输出）—— 与 `problems` 判定共用同一定义。 */
+function hiddenSurfacesWithinCharacterCarriers(reading) {
+  const hidden = [...reading.hidden_surfaces].sort();
+  const carriers = new Set(CHARACTER_EXT_CARRIERS);
+  const subsetOfCarriers = hidden.every((id) => carriers.has(id));
+  const emptyWhenNoLoader = reading.glb_loaded !== false || hidden.length === 0;
+  return subsetOfCarriers && emptyWhenNoLoader;
+}
+
+// 世界 ②（`glb_loaded === true`）：注入**假 loader**（同一注入法由 `scene_assert.mjs` 的
+// A2 判据使用）⇒ 真装配、真 A5 隐藏路径，**不**自造读数。
+const loadedScene = createScene(
+  { clientWidth: 1440, clientHeight: 900, width: 0, height: 0, style: {},
+    getContext: () => null, addEventListener() {}, removeEventListener() {} },
+  { worldview: worldview.tone },
+);
+loadedScene.apply({
+  t: 'snapshot', tick: 0,
+  state: { entities: [{ id: 'npc-006', kind: 'npc', transform: { pos_mm: { x: 0, y: 0, z: 0 } } }] },
+});
+loadedScene.setCharacterLoader({
+  load(_url, onLoad) { const group = new THREE.Group(); group.name = 'probe-fake-glb'; onLoad({ scene: group }); },
+});
+loadedScene.renderOnce();
+const loadedUsage = loadedScene.surfaceUsageReport();
+const loadedRows = loadedScene.characterBoxVisibilityReport();
+
+const probeWorlds = {
+  no_loader: {
+    glb_loaded: false,
+    hidden_surfaces: usage.hidden_surfaces,
+    // 载体面（角色侧）必须**都**被世界实例化，否则「⊆」是空集假绿
+    character_carriers_in_scene: usage.visible_ext_used.concat(usage.hidden_surfaces)
+      .filter((id) => CHARACTER_EXT_CARRIERS.includes(id)).sort(),
+  },
+  with_loader: {
+    glb_loaded: Boolean(loadedRows.length > 0 && loadedRows.every((row) => row.glb_loaded === true)),
+    hidden_surfaces: loadedUsage.hidden_surfaces,
+    glb_rows: loadedRows.map((row) => ({
+      entity_id: row.entity_id, glb_loaded: row.glb_loaded,
+      character_ext_props_visible: row.character_ext_props_visible,
+    })),
+  },
+};
+probeWorlds.character_ext_carriers = CHARACTER_EXT_CARRIERS;
+
+// ------------------------------------------------------------------ D7 谓词的读数与负对照
+// C-2 盘上冲突（`REQ-006` R3-M1）：新 I-3g 渲染面判据要求「场景使用面全部可见」，而 A5 在
+// `glb_loaded=true` 后**故意**隐藏「角色侧 ext 载体」（`skin_face` / `skin_hand` /
+// `fabric_cotton_jacket`）⇒ 两条字面互斥。architect §12-D7 取**改判据口径**（比「断言前提」结实）：
+//   `hidden_surfaces ⊆ {角色侧 ext 载体}`  ∧  `glb_loaded === false ⇒ hidden_surfaces == ∅`
+// 两个世界**各自**读数、各自判、各自带负对照（`AC-F-5e` 要求逐条前后双读数）。
+const d7NoLoaderReading = { glb_loaded: false, hidden_surfaces: usage.hidden_surfaces };
+const d7WithLoaderReading = {
+  glb_loaded: probeWorlds.with_loader.glb_loaded,
+  hidden_surfaces: probeWorlds.with_loader.hidden_surfaces,
+};
+const d7Negatives = {
+  /** 无 loader 却藏了角色侧载体 ⇒ 谓词必须判**假**。 */
+  no_loader_with_hidden_carrier:
+    hiddenSurfacesWithinCharacterCarriers({ glb_loaded: false, hidden_surfaces: ['skin_face'] }),
+  /** 有 loader 却藏了**世界侧**表面 ⇒ 谓词必须判**假**（防「藏世界面也放过」）。 */
+  with_loader_hidden_world_surface:
+    hiddenSurfacesWithinCharacterCarriers({ glb_loaded: true, hidden_surfaces: ['window-glass'] }),
+  /** 有 loader 藏角色侧载体 ⇒ 谓词必须判**真**（证明谓词**不恒假**）。 */
+  with_loader_hidden_carrier:
+    hiddenSurfacesWithinCharacterCarriers({ glb_loaded: true, hidden_surfaces: ['skin_face'] }),
+};
+const d7 = {
+  criterion: 'hidden_surfaces ⊆ {角色侧 ext 载体} ∧ (glb_loaded === false ⇒ hidden_surfaces == ∅)',
+  character_ext_carriers: CHARACTER_EXT_CARRIERS,
+  no_loader: { ...d7NoLoaderReading, holds: hiddenSurfacesWithinCharacterCarriers(d7NoLoaderReading) },
+  with_loader: { ...d7WithLoaderReading, holds: hiddenSurfacesWithinCharacterCarriers(d7WithLoaderReading) },
+  negative_controls: d7Negatives,
+};
 
 const payload = {
   schema_version: 'n5-material-probe/3',
@@ -99,6 +185,9 @@ const payload = {
     roughness: c.roughness, metalness: c.metalness,
     containment: c.containment, within_legacy: c.within_legacy, not_catch_all: c.not_catch_all,
   })),
+  /** **N5-C / D7（C-2 口径修正）**：两个世界各自的 `hidden_surfaces` 读数 + 谓词负对照。 */
+  probe_worlds: probeWorlds,
+  d7_criterion: d7,
 };
 
 mkdirSync(OUT, { recursive: true });
@@ -143,7 +232,30 @@ if (JSON.stringify(usage.visible_ext_used) !== JSON.stringify(usage.ext_expected
   const missing = usage.ext_expected.filter((id) => !usage.visible_ext_used.includes(id));
   problems.push(`I-3g: 未**可见**实例化的 ext 表面：${JSON.stringify(missing)}`);
 }
-if (usage.hidden_surfaces.length > 0) problems.push(`I-3g: 场景里有表面被藏（不可见）：${JSON.stringify(usage.hidden_surfaces)}`);
+// **N5-C / D7（C-2 口径修正）**：无 loader 世界 `hidden_surfaces` 必须为空（旧的「一律必须为空」
+// 口径与 A5 在 glb_loaded=true 时的有意隐藏互斥 ⇒ 已改为两世界各自判）。
+if (!d7.no_loader.holds) {
+  problems.push(`I-3g(D7): 无 loader 世界 hidden_surfaces 非空：${JSON.stringify(d7NoLoaderReading.hidden_surfaces)}`);
+}
+if (!d7.with_loader.holds) {
+  problems.push(`D7: 有 loader 世界 hidden_surfaces 越出角色侧载体：${JSON.stringify(d7WithLoaderReading.hidden_surfaces)}`);
+}
+// **载体在场前置**：角色侧 3 条载体必须真的被世界实例化（否则「⊆」可能是空集假绿）。
+const carriersSeen = probeWorlds.no_loader.character_carriers_in_scene;
+if (JSON.stringify(carriersSeen) !== JSON.stringify([...CHARACTER_EXT_CARRIERS].sort())) {
+  problems.push(`D7: 角色侧 ext 载体未全部实例化：${JSON.stringify(carriersSeen)}`);
+}
+// **有牙前置**：`glb_loaded=true` 时 3 条载体必须真的**被藏**（否则判据对该改动无鉴别力）。
+const missingHidden = CHARACTER_EXT_CARRIERS.filter((id) => !d7WithLoaderReading.hidden_surfaces.includes(id));
+if (d7WithLoaderReading.glb_loaded && missingHidden.length > 0) {
+  problems.push(`D7: glb_loaded=true 但角色侧载体未全部被藏：${JSON.stringify(missingHidden)}`);
+}
+// **谓词负对照**（三条各自必须取到预期值；不满足即判红）。
+if (d7Negatives.no_loader_with_hidden_carrier !== false
+    || d7Negatives.with_loader_hidden_world_surface !== false
+    || d7Negatives.with_loader_hidden_carrier !== true) {
+  problems.push(`D7: 谓词负对照未按预期取值：${JSON.stringify(d7Negatives)}`);
+}
 // I-3g legacy 侧**下界**（N5-r3 / A6）：r2 的 legacy 侧是单向 ⊆ ⇒ 4/12 也全绿。本探针世界是
 // 合成 snapshot（1 npc、无 zone/prop）⇒ 只有地面族 4 条会被实例化，它们**必须都在**。
 const LEGACY_FLOOR = ['ground_grass', 'ground_wet', 'pavement_brick', 'road_asphalt'];

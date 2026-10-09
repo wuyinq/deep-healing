@@ -75,6 +75,10 @@ def git_show(ref: str, path: str) -> str | None:
 def build() -> dict:
     mtext = MATERIALS.read_text(encoding="utf-8")
     ctext = CLASSES.read_text(encoding="utf-8")
+    # pack 的**默认**快照节奏（仅作对照；生效值由取证运行期的 `--snapshot-every` 决定，见 `b0_granularity`）
+    pack_default_snapshot_every_ticks = json.loads(
+        (WEB / "../districts/xingfu-xiaoqu-xuqin/world.seed.json").read_text(encoding="utf-8")
+    )["constants"]["snapshot_every_ticks"]
 
     inputs_block = block(mtext, "const INPUTS: Record<SurfaceId, SurfaceInput> = {")
     surf_block = block(mtext, "export const SURFACES: Record<SurfaceId, SurfaceSpec> = Object.fromEntries(")
@@ -140,15 +144,27 @@ def build() -> dict:
             "state_clip_map_readout": "web/src/scene/character_instance.ts :: state_clip_map",
             "slots": ["idle", "walk", "turn", "speak", "listen"],
             "b0_granularity": {
-                "declared": "NOT_IMPLEMENTED_ESCALATED",
-                "snapshot_every_ticks_today": 50,
+                # **N5-C 落点（D6）**：阶段 B 的 `declared = NOT_IMPLEMENTED_ESCALATED` 由本轮**实证**替代。
+                # 盘上事实：`cli.py` 的 `run` / `live` 与取证桥都接受 `--snapshot-every <int>`，运行期参数
+                # **覆盖** pack 的默认值（`world.seed.json.constants.snapshot_every_ticks`）；`tick.py` 的
+                # `snapshot_every if snapshot_every is not None else constants.get(...)` 是覆盖点。
+                "declared": "IMPLEMENTED_RUNTIME_OVERRIDE",
+                "method": "取证运行时显式传 `--snapshot-every 1`（**同时**作用于桥与 SessionServer），"
+                          "产物落**独立 out 目录**；不改 `kernel/**`、不改 pack、不重签 `pack.sig`",
+                "pack_default_snapshot_every_ticks": pack_default_snapshot_every_ticks,
+                "effective_snapshot_every_ticks": 1,
                 "tick_ms": 100,
-                "options": [
-                    "① snapshot_every_ticks = 1（改 pack ⇒ 重签 pack.sig）",
-                    "② 新增 kernel 侧 per-tick 位置序列产物（需写 kernel/，明确不可写）",
-                ],
-                "reason": "两个选项都会越出本轮「只加资产 + 表现层」的最小改动面（① 改世界快照节奏；"
-                          "② 触碰 kernel）⇒ **显式上抛 PM 裁决**，不得由 artisan 单方面选取（B-G3）。",
+                "same_tick_space": "权威序列与显示序列同一 tick 空间（起点 = 桥的 tick 0；无 warmup 快进；"
+                                   "cap = `--ticks`）；本轮 C 类证据只走 (A) 链（D5）",
+                "proof_command": "mkdir -p /tmp/n5c-granularity && cd <ws>/v0/02_source/v0_skeleton/kernel && "
+                                 "PYTHONDONTWRITEBYTECODE=1 python3 -m deephealing_kernel run "
+                                 "--pack districts/xingfu-xiaoqu-xuqin --events /tmp/n5c-granularity/events.jsonl "
+                                 "--snapshot-every 1 --ticks 20 && ls /tmp/n5c-granularity/checkpoints | wc -l",
+                "proof_expectation": "checkpoints 目录逐 tick 一条（= 20 条，tick 序列连续、步长 1）；"
+                                     "`world.init.snapshot_every == 1` 为生效值",
+                "reproduce_command": "python3 v0/spikes/n5-asset/freeze_inputs.py --write",
+                "reason": "（原 B-G3「NOT_IMPLEMENTED_ESCALATED」的理由已不成立——它假设只有「改 pack」"
+                          "与「改 kernel」两条路；实测第三条路：**运行期参数覆盖**，交付面零改动。）",
             },
             "building_report_producer": "assert_inputs.json（冻结的 buildingReport/structureReport AABB 读数）"
                                         "—— 不由被测方运行期自报（PM C8-④）",

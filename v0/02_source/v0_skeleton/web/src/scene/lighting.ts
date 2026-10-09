@@ -147,6 +147,17 @@ interface EnvironmentState {
   environment_intensity: number;
   artificial_lights: Array<{ name: string; type: string; intensity: number }>;
   artificial_light_intensity_sum: number;
+  /**
+   * N5-C r2 / FIX-1⑤：**主光源的阴影参数读数**（`AC-A-3⑥` 点名要求 `mapSize` / `radius`）。
+   * 从**真 `THREE.DirectionalLight` 实例**读回（非字面量）；`null` = 该路径未挂主光。
+   */
+  sun_shadow: {
+    cast_shadow: boolean;
+    map_size: [number, number];
+    radius: number;
+    bias: number;
+    camera: { left: number; right: number; top: number; bottom: number; near: number; far: number };
+  } | null;
   luminance_scale: number;
   env_map_intensity_min: number | null;
   hdri_ready: boolean;
@@ -164,6 +175,7 @@ const environmentState: EnvironmentState = {
   environment_intensity: 0,
   artificial_lights: [],
   artificial_light_intensity_sum: 0,
+  sun_shadow: null,
   luminance_scale: 1,
   env_map_intensity_min: null,
   hdri_ready: false,
@@ -366,6 +378,18 @@ export function applyEnvironmentLighting(
     { name: 'key', type: 'DirectionalLight', intensity: sun.intensity },
   ];
   environmentState.artificial_light_intensity_sum = ambient.intensity + sun.intensity;
+  // N5-C r2 / FIX-1⑤：`AC-A-3⑥` 点名的阴影参数 —— 从**实例**读回（含阴影相机视锥）。
+  environmentState.sun_shadow = {
+    cast_shadow: sun.castShadow === true,
+    map_size: [Number(sun.shadow.mapSize.x), Number(sun.shadow.mapSize.y)],
+    radius: Number(sun.shadow.radius),
+    bias: Number(sun.shadow.bias),
+    camera: {
+      left: Number(sun.shadow.camera.left), right: Number(sun.shadow.camera.right),
+      top: Number(sun.shadow.camera.top), bottom: Number(sun.shadow.camera.bottom),
+      near: Number(sun.shadow.camera.near), far: Number(sun.shadow.camera.far),
+    },
+  };
   if (typeof options.envMapIntensityMin === 'number') {
     environmentState.env_map_intensity_min = options.envMapIntensityMin;
   }
@@ -395,6 +419,11 @@ export function environmentReport(): Record<string, unknown> {
     luminance_scale: environmentState.luminance_scale,
     artificial_lights: environmentState.artificial_lights.map((light) => ({ ...light })),
     artificial_light_intensity_sum: artificialLightIntensitySum(),
+    sun_shadow: environmentState.sun_shadow === null
+      ? null
+      : { ...environmentState.sun_shadow,
+          map_size: [...environmentState.sun_shadow.map_size] as [number, number],
+          camera: { ...environmentState.sun_shadow.camera } },
     env_map_intensity_min: environmentState.env_map_intensity_min,
     hdri_url: HDRI_URL,
     hdri_ready: environmentState.hdri_ready,

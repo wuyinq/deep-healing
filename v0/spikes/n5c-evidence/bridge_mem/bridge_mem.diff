@@ -1,0 +1,207 @@
+# N5-C r2 · bridge_mem.diff — 由 tools/make-bridge-mem-diff.sh 生成
+# generated_at_epoch: 1791456746
+# left  (frozen)  : /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/_worktrees/n5c-evidence-20260924/v0/02_source/v0_skeleton/session/bridge/kernel_bridge.py
+# right (evidence): /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/_worktrees/n5c-evidence-20260924/v0/spikes/n5c-evidence/bridge_mem/kernel_bridge_mem.py
+# left_sha256 : 48339fe873564029b46da5129ce31911753b9e0d6dc98660a4801e4cac008689
+# right_sha256: e0a6cadc260bbc000362af5be79cc5952ec66b39b2164a0a3e9d140039fff107
+# 生成命令: diff -u "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/_worktrees/n5c-evidence-20260924/v0/02_source/v0_skeleton/session/bridge/kernel_bridge.py" "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/_worktrees/n5c-evidence-20260924/v0/spikes/n5c-evidence/bridge_mem/kernel_bridge_mem.py"
+--- /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/_worktrees/n5c-evidence-20260924/v0/02_source/v0_skeleton/session/bridge/kernel_bridge.py	2026-10-08 16:00:56
++++ /Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/_worktrees/n5c-evidence-20260924/v0/spikes/n5c-evidence/bridge_mem/kernel_bridge_mem.py	2026-10-08 16:42:06
+@@ -1,6 +1,18 @@
+ #!/usr/bin/env python3
+ """会话层 ↔ 内核的**驱动桥**（M3 新增；D-2 / D-8）。
+ 
++⚠️ **N5 阶段 C 的取证脚手架副本**（`v0/spikes/n5c-evidence/bridge_mem/kernel_bridge_mem.py`，
++**不进交付面**）。相对冻结桥 `session/bridge/kernel_bridge.py` 的差别**只有加法**（见同目录
++`bridge_mem.diff`，由 `diff -u` 生成，证明语义只增不改）：
++  - 新增 `--out` / `--events` / `--checkpoint-dir`：run 产物（记忆库 / 事件日志 / 检查点）落
++    **独立输出目录**，不写交付树；
++  - 新增 `--memory-chain`：构造 `MemoryStore(<out>/kernel_memory.sqlite, write_enabled=True)` 并
++    传入 `WorldKernel`（**交付面缺口上抛**：冻结桥零记忆接线 ⇒ C-2/C-3/C-4 在真链路上没有通路）；
++  - 新增 `--capability-chain` / `--cassette-dir` / `--replay` / `--emotion-pressure-threshold`：
++    经内核既有 capability 通道接情绪评估（**C-6 的注入点**：`--replay` 强制 cassette_replay +
++    缺省 cassette ⇒ 必然失败）；
++  - 新增只读命令 `{"cmd":"tasks"}`：回读**内核持有的任务状态机状态**（C-1 的「读 state，不读日志」）。
++
+ 形态（冻结）：
+   - 启动时把交付树的内核与 pack **复制**到运行目录（`--runtime-dir`），
+     `sys.path.insert(0, <kernel-copy>)` 导入**副本** ⇒ 交付面（`02_source/**`）零残渣（P-8）；
+@@ -34,6 +46,69 @@
+ GENERATED_NAMES = ("__pycache__", ".pytest_cache", ".DS_Store", "node_modules", ".venv", "dist", ".build")
+ 
+ 
++def _build_chain_extras(args, *, out_dir: Path, pack) -> tuple[dict, dict]:
++    """**[N5-C 加法]** 内核链的接线（与 `cli.py::_build_kernel_chain` 同口径，但走**脚手架**）：
++
++    交付面唯一入口是 `cli.py` 的 `--memory-chain` / `--capability-chain`；桥不经过它 ⇒
++    C-2/C-3/C-4 在「真会话链」上没有通路（D1 的 CRITICAL 处置）。本函数在**脚手架**里补上该接线：
++    两个开关**全 off ⇒ `extra == {}`**（与冻结桥的 `WorldKernel(...)` 实参集合完全相同）。
++    """
++    extra: dict = {}
++    state: dict = {"memory_chain": False, "capability_chain": False}
++    if bool(getattr(args, "memory_chain", False)):
++        from deephealing_kernel.memory.store import MemoryStore
++        store_path = out_dir / "kernel_memory.sqlite"
++        store = MemoryStore(store_path, write_enabled=True)
++        store.init_schema()
++        extra["memory_store"] = store
++        state["memory_chain"] = True
++        state["memory_store_path"] = str(store_path)
++    if bool(getattr(args, "capability_chain", False)):
++        from deephealing_kernel.budget import BudgetLedger
++        from deephealing_kernel.cli import _build_cognition_registry, _capability_caps
++        cassette_root = Path(args.cassette_dir) if getattr(args, "cassette_dir", None) \
++            else out_dir / "kernel_capability" / "cassettes"
++        registry, _store = _build_cognition_registry(
++            out_dir, cassette_root=cassette_root, replay_mode=bool(getattr(args, "replay", False)))
++        registry.discover()
++        # **[N5-C 脚手架加法 / D3 的「桩 provider」注入面]**：把 `remote_api` 类的适配器换成**桩**
++        # （`--stub-remote-api <importance>`）。为什么需要：交付面 emotion.appraise 的 provider 链
++        # 按优先级路由到 `remote_api`（缺凭据 ⇒ 立即失败）⇒ 契约声明的 `on_error` 回退到
++        # `deterministic_rule`，其 `importance` **上限实测 0.418**，而 `memory/decision.py` 的
++        # `MEMORY_SIGNAL_MIN_IMPORTANCE = 0.5` ⇒ **经历对决策的影响在真链路上结构性失效**。
++        # 桩 provider 只改「情绪输出」这一个输入，两臂同源 ⇒ 差异仍只来自经历（详见 03 日志）。
++        if getattr(args, "stub_remote_api", None) is not None:
++            from deephealing_kernel.registry import CapabilityError
++
++            importance = float(args.stub_remote_api)
++
++            class _StubRemoteApi:
++                provider_class = "remote_api"
++
++                def invoke(self, capability: dict, payload: dict, *, timeout_ms: int) -> dict:
++                    if str(capability.get("id")) != "emotion.appraise":
++                        raise CapabilityError("E_PROVIDER_UNRESOLVED", "stub only implements emotion.appraise")
++                    return {"valence": 0.0, "arousal": 0.5, "mood_label": "calm", "importance": importance}
++
++            registry.register_adapter("remote_api", _StubRemoteApi())
++            state["stub_remote_api_importance"] = importance
++        state["registry_validation_errors"] = registry.validate()
++        per_tick_calls, daily_tokens = _capability_caps(
++            [registry.capability(slot) for slot in registry.slots()])
++        ledger = BudgetLedger(day_ticks=int(pack.world_seed["constants"].get("day_ticks", 1440)),
++                              per_tick_calls=per_tick_calls, per_npc_daily_tokens=daily_tokens)
++        extra["capability_registry"] = registry
++        extra["budget_ledger"] = ledger
++        state["capability_chain"] = True
++        state["cassette_dir"] = str(cassette_root)
++        state["replay_mode"] = bool(getattr(args, "replay", False))
++        state["registry"] = registry
++    if getattr(args, "emotion_pressure_threshold", None) is not None:
++        extra["emotion_pressure_threshold"] = float(args.emotion_pressure_threshold)
++        state["emotion_pressure_threshold"] = float(args.emotion_pressure_threshold)
++    return extra, state
++
++
+ def _copy_tree(source: Path, destination: Path) -> int:
+     """复制目录树（忽略生成残渣），返回复制文件数。"""
+     if destination.exists():
+@@ -70,6 +145,22 @@
+     parser.add_argument("--seed", type=int, default=20260921)
+     parser.add_argument("--snapshot-every", type=int, default=50)
+     parser.add_argument("--ticks", type=int, default=300)
++    # ---- N5-C 取证脚手架加法（默认值 = 与冻结桥逐字节等价的语义：全部 off）----
++    parser.add_argument("--out", default=None,
++                        help="[N5-C] run 产物目录（kernel_memory.sqlite / kernel-events.jsonl / checkpoints）；"
++                             "缺省 = <runtime-dir>/logs（与冻结桥同语义）")
++    parser.add_argument("--events", default=None, help="[N5-C] 事件日志文件名/路径；缺省 = <out>/kernel-events.jsonl")
++    parser.add_argument("--checkpoint-dir", default=None, help="[N5-C] 检查点目录；缺省 = <out>/checkpoints")
++    parser.add_argument("--memory-chain", action="store_true",
++                        help="[N5-C/D1] 打开内核记忆链（MemoryStore(<out>/kernel_memory.sqlite)）")
++    parser.add_argument("--capability-chain", action="store_true", help="[N5-C/D1] 打开能力链（capability_registry + budget_ledger）")
++    parser.add_argument("--cassette-dir", default=None, help="[N5-C/D1] cassette 根（缺省 = <out>/kernel_capability/cassettes）")
++    parser.add_argument("--replay", action="store_true", help="[N5-C/D3] 强制 cassette_replay + fail-closed（C-6 注入）")
++    parser.add_argument("--emotion-pressure-threshold", type=float, default=None,
++                        help="[N5-C/D3] 情绪评估的调用条件（数据参数；缺省 = WorldKernel 默认）")
++    parser.add_argument("--stub-remote-api", type=float, default=None,
++                        help="[N5-C/D3] 桩 provider：把 `remote_api` 类适配器换成返回固定 importance 的桩"
++                             "（脚手架注入面；两臂同源 ⇒ 差异仍只来自经历）")
+     parser.add_argument("--ws-port", type=int, default=0,
+                         help="0（默认）= 桥不提供服务；内核实时只读通道由 `cli live` / `run --ws-port` 提供")
+     args = parser.parse_args(argv)
+@@ -87,6 +178,13 @@
+     pack_copy = source_copy / "v0_skeleton" / "districts" / pack_src.name
+     logs = runtime / "logs"
+     logs.mkdir(parents=True, exist_ok=True)
++    # ---- N5-C 加法：run 产物目录（缺省 = logs ⇒ 与冻结桥**同语义**）----
++    out_dir = Path(args.out).resolve() if args.out else logs
++    out_dir.mkdir(parents=True, exist_ok=True)
++    events_path = Path(args.events) if args.events else out_dir / "kernel-events.jsonl"
++    if not events_path.is_absolute():
++        events_path = out_dir / events_path
++    checkpoint_dir = Path(args.checkpoint_dir) if args.checkpoint_dir else out_dir / "checkpoints"
+ 
+     source_files = _copy_tree(source_root, source_copy)
+     kernel_files = sum(1 for path in kernel_copy.rglob("*") if path.is_file())
+@@ -103,12 +201,14 @@
+     inside_copy = str(module_file).startswith(str(kernel_copy.resolve()))
+ 
+     pack = load_pack(pack_copy)
+-    log = EventLog(logs / "kernel-events.jsonl")
++    log = EventLog(events_path)
++    chain_extra, chain_state = _build_chain_extras(args, out_dir=out_dir, pack=pack)
+     kernel = WorldKernel(
+         pack=pack, seed=args.seed, log=log,
+         snapshot_every=args.snapshot_every,
+-        checkpoint_dir=logs / "checkpoints",
++        checkpoint_dir=checkpoint_dir,
+         plan_ticks=args.ticks,
++        **chain_extra,
+     )
+ 
+     seq = 0
+@@ -125,6 +225,19 @@
+         "live_channel_provided_by": "cli live (default --port 8899) / run --ws-port <n>",
+         "plan_ticks": args.ticks,
+         "snapshot_every": args.snapshot_every,
++        # ---- N5-C 加法（读数用；不改既有键的语义）----
++        "out_dir": str(out_dir),
++        "events_path": str(events_path),
++        "checkpoint_dir": str(checkpoint_dir),
++        "memory_chain": bool(chain_state.get("memory_chain")),
++        "memory_store_path": chain_state.get("memory_store_path"),
++        "capability_chain": bool(chain_state.get("capability_chain")),
++        "cassette_dir": chain_state.get("cassette_dir"),
++        "replay_mode": chain_state.get("replay_mode"),
++        "emotion_pressure_threshold": chain_state.get("emotion_pressure_threshold"),
++        "registry_validation_errors": chain_state.get("registry_validation_errors"),
++        "stub_remote_api_importance": chain_state.get("stub_remote_api_importance"),
++        "bridge_variant": "n5c-evidence-scaffold",
+     })
+     seq += 1
+ 
+@@ -210,6 +323,34 @@
+                   "state": current["state"], "state_hash": current["state_hash"]})
+             seq += 1
+             continue
++        if name == "tasks":
++            # **[N5-C 加法] 只读**：回读**内核持有的**任务状态机状态 + 审计流水（C-1 的「读 state，
++            # 不读日志」；`adaptation.py` 明文：任务状态由内核持有、刻意不进 `world.schema.json`）。
++            # 不写世界、不推进 tick、不发事件。
++            emit({"kind": "tasks_ack", "tick": kernel.world.tick, "seq": seq,
++                  "task_states": kernel.adaptation.states_snapshot(),
++                  "audit_log": kernel.adaptation.audit_log(),
++                  "shift_counts": {task_id: kernel.adaptation.shift_counts(task_id)
++                                   for task_id in kernel.adaptation.task_ids()}})
++            seq += 1
++            continue
++        if name == "degradations":
++            # **[N5-C 加法] 只读**：内核对**能力降级**的结构化读数（C-6 的「条目来自该失败」）。
++            registry = getattr(kernel, "capability_registry", None)
++            calls = [{"slot": c.get("slot"), "provider_class": c.get("provider_class"),
++                      "ok": c.get("ok"), "fallback_reason": c.get("fallback_reason")}
++                     for c in (registry.calls if registry is not None else [])]
++            emit({"kind": "degradations_ack", "tick": kernel.world.tick, "seq": seq,
++                  "emotion_fallbacks_log": list(kernel.emotion_fallbacks_log),
++                  "emotion_fallbacks_total": len(kernel.emotion_fallbacks_log),
++                  "emotion_appraise_calls": sum(1 for c in calls if c.get("slot") == "emotion.appraise"),
++                  "emotion_appraise_ok": sum(1 for c in calls
++                                             if c.get("slot") == "emotion.appraise" and c.get("ok")),
++                  "calls_with_fallback_reason": [c for c in calls if c.get("fallback_reason")],
++                  "journal_kinds": sorted({str(item.get("event")) for item in
++                                           (registry.journal if registry is not None else [])})})
++            seq += 1
++            continue
+         if name == "stop":
+             emit({"kind": "bridge_stop", "tick": kernel.world.tick, "seq": seq,
+                   "state_hash": state_hash_after, "chain_tail": log.last_hash})

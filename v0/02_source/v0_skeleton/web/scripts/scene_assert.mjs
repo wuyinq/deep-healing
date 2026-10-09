@@ -2344,6 +2344,105 @@ check('n5_glb_loaded_character_effectively_visible', (() => {
 })())}；`
   + `负对照（构造隐藏根 ⇒ effectiveVisibility 读 false；读数里打断根可见性 / 盒体仍被画 ⇒ 同一断言判假）；[配置面判据，不构成画面证据]`);
 
+// ================================================================== 7b) N5-C 阶段 C · 纯加法判据
+// 任务书 §2：`scene_assert.mjs` 只**纯加法** —— 既有 103 条 `check()` 的判据体与期望值**逐字节未改**
+// （`AC-F-5a/b/c` 由 F-5 系列另行承担；`assert_inputs.json` 的 `f5a_frozen_check_names` 是锚）。
+// 本节新增两条，**各自带负对照**；`check(` 一律**列 0**（与既有 103 条同形，`^check\('` 才数得到）：
+//   ① `credits_attribution_matches_provenance` —— `AC-G` G-1 的**源码面**前置。
+//      ⚠️ 它**不是** C-1 的通过态：CC BY 4.0 的署名义务随**分发**发生，C-1 的判据面 =
+//      「构建产物字节锚（`v0/.build/web/**`）+ 真浏览器可见性（playwright，1440×900）」，
+//      读数在 `v0/spikes/n5c-evidence/**` 与 `readback/**`（D2：只做源码面 ⇒ 记 FAIL/GAP）。
+//   ② `ext_carrier_hidden_only_when_glb_loaded` —— `REQ-006` R3-M1 的 **C-2 判据口径**（architect §12-D7）：
+//      `hidden_surfaces ⊆ {角色侧 ext 载体}` ∧ `glb_loaded === false ⇒ hidden_surfaces == ∅`。
+
+// --- ① 署名（CC BY 4.0）与来源登记面（`web/assets/provenance.json`）**逐字**一致 ---
+const n5cCreditsReading = (() => {
+  const provenance = readJson(`${WEB_DIR}assets/provenance.json`);
+  const ccByAssets = (provenance.assets ?? []).filter((asset) => asset.license === 'cc-by-4.0');
+  const attributions = ccByAssets.map((asset) => String(asset.attribution ?? ''));
+  const creditsText = readFileSync(`${WEB_DIR}src/ui/player/credits.ts`, 'utf8');
+  const html = readFileSync(`${WEB_DIR}index.html`, 'utf8');
+  const main = readFileSync(`${WEB_DIR}src/main.ts`, 'utf8');
+  const consistent = (texts) => (
+    texts.length >= 1
+    && texts.every((text) => text.length > 0 && creditsText.includes(text))
+    // 挂载点在**玩家界面根**内、且**不在**开发观察面板内（与 `AC-H-2` 同向）
+    && html.includes('id="credits"')
+    && html.indexOf('id="credits"') > html.indexOf('id="player-ui"')
+    && !html.slice(html.indexOf('<div id="hud">'), html.indexOf('id="player-ui"')).includes('id="credits"')
+    && main.includes('mountCredits')
+  );
+  return {
+    asset_ids: ccByAssets.map((asset) => asset.asset_id),
+    positive: consistent(attributions),
+    // 负对照：篡改 attribution ⇒ **同一个判据体**必须判假（证明它不恒真）
+    negative_judged_false: consistent(attributions.map((text) => `${text}（tampered）`)) === false,
+  };
+})();
+check('credits_attribution_matches_provenance',
+  n5cCreditsReading.positive && n5cCreditsReading.negative_judged_false,
+  `CC BY 4.0 条目 ${n5cCreditsReading.asset_ids.length} 条（${n5cCreditsReading.asset_ids.join(', ')}）；`
+  + `credits.ts 逐字含其 attribution=${n5cCreditsReading.positive}；#credits 在 #player-ui 内且不在 #hud 内；`
+  + `main.ts 调 mountCredits；负对照（篡改 attribution ⇒ 同判据体判假）=${n5cCreditsReading.negative_judged_false}；`
+  + `[**源码面**判据 —— 不构成 C-1 通过；分发可见面由构建产物字节锚 + 真浏览器读数承担]`);
+
+// --- ② C-2 判据口径（R3-M1）：角色侧 ext 载体**只在 GLB 加载后**被隐藏 ---
+// 载体集合 = `world.ts` 的 `EXT_SURFACE_PROPS[].parent === 'character'` 的 3 条（盘上字面：`skin-face`
+// / `skin-hand` / `jacket-cloth`）。**刻意为常量**：若上游新增一条角色侧载体，带 loader 世界的
+// `hidden_surfaces` 会冒出集合外的 id ⇒ 本判据**必红**（fail-closed，迫使清单同步）。
+const N5C_CHARACTER_EXT_CARRIERS = ['fabric_cotton_jacket', 'skin_face', 'skin_hand'];
+const n5cHiddenWithinCarriers = (reading) => (
+  reading.hidden_surfaces.every((id) => N5C_CHARACTER_EXT_CARRIERS.includes(id))
+  && (reading.glb_loaded !== false || reading.hidden_surfaces.length === 0)
+);
+const n5cD7Reading = (() => {
+  const npcOnlySnapshot = {
+    t: 'snapshot', tick: 0,
+    state: { entities: [{ id: 'npc-006', kind: 'npc', transform: { pos_mm: { x: 0, y: 0, z: 0 } } }] },
+  };
+  const noLoaderScene = createScene(canvasStub, { worldview: worldview.tone });
+  noLoaderScene.apply(npcOnlySnapshot);
+  const noLoaderUsage = noLoaderScene.surfaceUsageReport();
+  const loadedScene = createScene(canvasStub, { worldview: worldview.tone });
+  loadedScene.apply(npcOnlySnapshot);
+  loadedScene.setCharacterLoader({
+    load(_url, onLoad) { const group = new THREE.Group(); group.name = 'scene_assert-fake-glb'; onLoad({ scene: group }); },
+  });
+  loadedScene.renderOnce();
+  const loadedUsage = loadedScene.surfaceUsageReport();
+  const rows = loadedScene.characterBoxVisibilityReport();
+  const negatives = {
+    no_loader_with_hidden_carrier: n5cHiddenWithinCarriers({ glb_loaded: false, hidden_surfaces: ['skin_face'] }),
+    with_loader_hidden_world_surface: n5cHiddenWithinCarriers({ glb_loaded: true, hidden_surfaces: ['window-glass'] }),
+    with_loader_hidden_carrier: n5cHiddenWithinCarriers({ glb_loaded: true, hidden_surfaces: ['skin_face'] }),
+  };
+  return {
+    no_loader_hidden: noLoaderUsage.hidden_surfaces,
+    no_loader_holds: n5cHiddenWithinCarriers({ glb_loaded: false, hidden_surfaces: noLoaderUsage.hidden_surfaces }),
+    glb_loaded: rows.length > 0 && rows.every((row) => row.glb_loaded === true),
+    with_loader_hidden: loadedUsage.hidden_surfaces,
+    with_loader_holds: n5cHiddenWithinCarriers({ glb_loaded: true, hidden_surfaces: loadedUsage.hidden_surfaces }),
+    // 载体**在场**前置（防「⊆ 空集」假绿）+ 有牙前置（加载后载体必须真的被藏）
+    carriers_seen: [...noLoaderUsage.visible_ext_used, ...noLoaderUsage.hidden_surfaces]
+      .filter((id) => N5C_CHARACTER_EXT_CARRIERS.includes(id)).sort(),
+    carriers_not_hidden: N5C_CHARACTER_EXT_CARRIERS.filter((id) => !loadedUsage.hidden_surfaces.includes(id)),
+    negatives,
+  };
+})();
+check('ext_carrier_hidden_only_when_glb_loaded',
+  n5cD7Reading.no_loader_holds
+  && n5cD7Reading.glb_loaded
+  && n5cD7Reading.with_loader_holds
+  && JSON.stringify(n5cD7Reading.carriers_seen) === JSON.stringify([...N5C_CHARACTER_EXT_CARRIERS].sort())
+  && n5cD7Reading.carriers_not_hidden.length === 0
+  && n5cD7Reading.negatives.no_loader_with_hidden_carrier === false
+  && n5cD7Reading.negatives.with_loader_hidden_world_surface === false
+  && n5cD7Reading.negatives.with_loader_hidden_carrier === true,
+  `无 loader 世界 hidden_surfaces=${JSON.stringify(n5cD7Reading.no_loader_hidden)}（须为空）；`
+  + `假 loader 世界 glb_loaded=${n5cD7Reading.glb_loaded} hidden_surfaces=${JSON.stringify(n5cD7Reading.with_loader_hidden)}`
+  + ` ⊆ 角色侧载体 ${JSON.stringify(N5C_CHARACTER_EXT_CARRIERS)}（已实例化 ${JSON.stringify(n5cD7Reading.carriers_seen)}）；`
+  + `负对照 ${JSON.stringify(n5cD7Reading.negatives)}（须依次 false/false/true）`);
+
 // ================================================================== 8) 汇总
 
 process.stdout.write(`\nscene_assert: PASS=${passed} FAIL=${failures.length}\n`);
