@@ -36,6 +36,7 @@ from .rng import WorldRng
 from .rules.adaptation import TaskAdaptationEngine
 from .rules.decision import URGENCY_THRESHOLD
 from .rules.decision import decide as autonomous_decide   # 决策阶段唯一入口（模块级别名，测试注入点）
+from .rules.utility import NEEDS as NEED_UNIVERSE        # 需求词表**单一权威**（效用层；只读）
 from . import snapshot as snapshot_mod
 
 #: 决策来源（`npc.action.decision_source` 与 `npc.decision.decision_source` 的取值）。
@@ -123,6 +124,99 @@ def build_pack_profiles(pack: DistrictPack | None) -> dict[str, dict]:
             "home_entity": document.get("home_entity"),
         }
     return profiles
+
+
+# ---------------------------------------------------------------------- W2（N3）关键经历压力
+#: **数据载体（W2/W3）**：内容包 `npcs/*.json` 的**既有** `key_events[]` 条目上的**纯加法**声明。
+#: 为什么挂这里：`npcs_glob` 已被 `pack.py` 的 `entrypoints` **真实加载**（不是新数据层）⇒
+#: 声明**有消费者**（本模块 `_apply_experience_pressures` + `_experience_tokens`），
+#: 且不触碰 `district.pack.schema.json` 的 `entrypoints`（7 个 `const` 键，加不进第 8 个）。
+#: 语义：窗口 `[start_tick, end_tick]`（**世界 tick，闭区间，绝对值**）内，把该 NPC 的
+#: `needs[need]` **抬到不低于** `pressure_floor`（clamp 到 [0,1]；施加时机在**决策之前**）。
+#: 缺失该键 ⇒ 该条目 **no-op**（默认关，零 needs 改动）；存在但非法 ⇒ **构造期 fail-closed**。
+EXPERIENCE_PRESSURE_KEY = "pressure_window"
+EXPERIENCE_PRESSURE_FIELDS = ("need", "start_tick", "end_tick", "floor")
+
+
+def collect_experience_pressures(pack: DistrictPack | None) -> list[dict]:
+    """收集**已被加载**的关键经历压力窗口声明（`npcs/*.json` 既有 `key_events[]`）。
+
+    fail-closed（**存在但非法 ⇒ 抛 `ValueError`**，构造期即失败，不静默忽略）：
+      - 载体文档缺非空字符串 `id`；`key_events` 不是数组 / 条目不是对象；
+      - 声明不是对象 / 有**未知键** / 缺**必填键**；
+      - `need ∉ NEEDS`（需求词表与效用/决策层**同源**）；
+      - `start_tick` / `end_tick` 非整数（`bool` 不算整数）、`start_tick < 0` 或 `end_tick < start_tick`；
+      - `floor` 非 [0,1] 内的数（`bool` 不算数）。
+    缺失声明 ⇒ **直接跳过**（默认关）。
+
+    返回按 `(npc_id, start_tick, event_id)` **升序**排序的列表（顺序确定，不依赖容器迭代序）。
+    """
+    if pack is None:
+        return []
+    collected: list[dict] = []
+    for document in sorted(pack.npcs, key=lambda item: str(item.get("id", ""))):
+        npc_id = document.get("id")
+        if not isinstance(npc_id, str) or not npc_id:
+            raise ValueError("key_events carrier document must declare a non-empty string `id`")
+        events = document.get("key_events")
+        if events is None:
+            continue
+        if not isinstance(events, list):
+            raise ValueError(f"{npc_id}.key_events must be a JSON array")
+        for index, entry in enumerate(events):
+            where = f"{npc_id}.key_events[{index}]"
+            if not isinstance(entry, dict):
+                raise ValueError(f"{where} must be a JSON object")
+            if EXPERIENCE_PRESSURE_KEY not in entry:
+                continue
+            collected.append(_validate_pressure_declaration(where, npc_id, entry))
+    collected.sort(key=lambda item: (item["npc_id"], int(item["start_tick"]), item["event_id"]))
+    return collected
+
+
+def _validate_pressure_declaration(where: str, npc_id: str, entry: dict) -> dict:
+    """逐字段校验一条压力窗口声明（非法即抛 `ValueError`；错误信息带位置，便于定位）。"""
+    event_id = entry.get("id")
+    if not isinstance(event_id, str) or not event_id:
+        raise ValueError(f"{where}.id must be a non-empty string "
+                         "(it is the deterministic ordering key of the declaration)")
+    declaration = entry[EXPERIENCE_PRESSURE_KEY]
+    if not isinstance(declaration, dict):
+        raise ValueError(f"{where}.{EXPERIENCE_PRESSURE_KEY} must be a JSON object")
+    unknown = sorted(set(declaration) - set(EXPERIENCE_PRESSURE_FIELDS))
+    if unknown:
+        raise ValueError(f"{where}.{EXPERIENCE_PRESSURE_KEY}: unknown key(s) {unknown}")
+    missing = sorted(set(EXPERIENCE_PRESSURE_FIELDS) - set(declaration))
+    if missing:
+        raise ValueError(f"{where}.{EXPERIENCE_PRESSURE_KEY}: missing key(s) {missing}")
+    need = declaration["need"]
+    if not isinstance(need, str) or need not in NEED_UNIVERSE:
+        raise ValueError(f"{where}.{EXPERIENCE_PRESSURE_KEY}.need must be one of "
+                         f"{list(NEED_UNIVERSE)}, got {need!r}")
+    for label in ("start_tick", "end_tick"):
+        value = declaration[label]
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise ValueError(f"{where}.{EXPERIENCE_PRESSURE_KEY}.{label} must be an integer, "
+                             f"got {value!r}")
+    start = int(declaration["start_tick"])
+    end = int(declaration["end_tick"])
+    if start < 0 or end < start:
+        raise ValueError(f"{where}.{EXPERIENCE_PRESSURE_KEY}: window must satisfy "
+                         f"0 <= start_tick <= end_tick, got [{start}, {end}]")
+    floor = declaration["floor"]
+    if isinstance(floor, bool) or not isinstance(floor, (int, float)) or not (0.0 <= float(floor) <= 1.0):
+        raise ValueError(f"{where}.{EXPERIENCE_PRESSURE_KEY}.floor must be a number in [0,1], "
+                         f"got {floor!r}")
+    observable = entry.get("observable")
+    return {
+        "npc_id": npc_id,
+        "event_id": event_id,
+        "need": need,
+        "start_tick": start,
+        "end_tick": end,
+        "floor": _q(float(floor)),
+        "observable": observable if isinstance(observable, str) else "",
+    }
 
 
 def _safe_session_id(value: object) -> str:
@@ -278,6 +372,10 @@ class WorldKernel:
         # 任务演进引擎（AC-M3-5 / D-14）：规则**全部**来自内容包 `tasks/*.json` 的
         # `adaptation_rules`（数据驱动）。无 intent 时**零副作用** ⇒ F-4 基线逐位不变（R-1 红线）。
         self.adaptation = TaskAdaptationEngine(pack.tasks if pack is not None else [])
+        # **W2（N3）**：关键经历压力窗口（来自**已被加载**的 `npcs/*.json` 既有 `key_events[]`）。
+        # 构造期解析 + **fail-closed 校验**（声明非法 ⇒ 这里就抛 ValueError，不留到运行期静默失效）；
+        # 无声明 ⇒ `[]` ⇒ `_apply_experience_pressures` 零写入（默认关，既有路径逐字节一致）。
+        self.experience_pressures = collect_experience_pressures(pack)
         # 玩家意图队列：**只在 tick 边界出队应用**（D-1 / AC-M3-2②）。队列为空 ⇒ step() 行为不变。
         self._intent_queue: list[dict] = []
         if pack is not None:
@@ -449,6 +547,11 @@ class WorldKernel:
         perception = {"tick": ctx.tick, "entity_count": len(self.world.query())}
         self.bus.publish("metrics", {"perception": perception, "inbound": len(inbound)})
 
+        # [2b] **W2（N3）关键经历压力**：声明式世界动力学在**决策之前**施加到本 tick 的 needs
+        #      （使 [3] 的 `dominant_deficit`、[5] 的 `_appraise_emotions` / `_write_memory`
+        #      看到**同一个**压力值）。无声明 ⇒ 零写入（默认关 ⇒ 既有路径逐字节一致）。
+        self._apply_experience_pressures(ctx.tick)
+
         # [3] 决策（需求 → 效用 → 行为树；`decision_source="deterministic_stub"` 时退回 M1 班表桩，
         #     该路径**仅供负例**，默认路径不经过它）
         if self.decision_source == DECISION_SOURCE_STUB:
@@ -529,6 +632,79 @@ class WorldKernel:
             }
         return view
 
+    # ------------------------------------------------------------------ W2（N3）关键经历压力
+    def _apply_experience_pressures(self, tick: int) -> None:
+        """把声明式关键经历压力施加到**本 tick 的 needs**（**决策之前**；W2（N3））。
+
+        语义（**与数据声明的契约逐字对应**）：窗口 `[start_tick, end_tick]` 闭区间内，把该 NPC 的
+        `needs[need]` 抬到 `max(当前值, pressure_floor)`，clamp 到 [0,1]；值未变化 ⇒ **不写组件**
+        （避免无意义的 `state_hash` 扰动）。遍历顺序 = `experience_pressures` 的排序
+        `(npc_id, start_tick, event_id)` 升序 ⇒ **确定性**，不依赖容器迭代序。
+
+        `experience_pressures` 为空 ⇒ **零读写、零副作用**（默认关）。
+
+        **位置说明**：施加发生在 tick 阶段 [2b]（决策之前、执行之前）。这是本机制的**唯一**新增
+        世界写点；它不改 [4] 执行阶段的写语义，也不改任何系统（`SYSTEMS` 元组逐字不动）。
+        """
+        if not self.experience_pressures:
+            return
+        tick = int(tick)
+        for item in self.experience_pressures:
+            if not (item["start_tick"] <= tick <= item["end_tick"]):
+                continue
+            entity = self.world.get(item["npc_id"])
+            if entity is None:
+                continue
+            needs = copy.deepcopy(entity.components.get("needs") or {})
+            if not needs:
+                continue
+            raw = needs.get(item["need"])
+            current = float(raw) if isinstance(raw, (int, float)) and not isinstance(raw, bool) else 0.0
+            target = _q(min(1.0, max(0.0, max(current, float(item["floor"])))))
+            if target == current:
+                continue
+            needs[item["need"]] = target
+            self.world.set_component(item["npc_id"], "needs", needs)
+
+    def _experience_tokens(self, npc_id: str, tick: int, target_entity: object) -> str:
+        """本 tick **生效**的关键经历要素 → 规范模板 token 串（无生效条目 ⇒ 空串）。
+
+        模板（**规范、逐字**；快照测试钉在 `kernel/tests/test_n3_key_experience.py`）::
+
+            experience=<event_id> target_home=<0|1> trauma=<max_severity> relation=<peer|-> observable=<原文>
+
+        - `target_home=1` ⟺ 本 tick 的 `target_entity` == 该 NPC 的 `home_entity`（目标相关性）；
+        - `trauma=` 该 NPC `trauma_flags[].severity` 的最大值（无 ⇒ 0）；
+        - `relation=` 目标是 **NPC** 时记 `<peer_id>:<关系值>`，否则 `-`（关系代价）；
+        - `observable=` 取**数据里既有**的 `key_events[].observable`（原创措辞，**不新增文本**）；
+        - **不含 `tick` 派生项、不含 `dominant_deficit`** ⇒ `e` 与时间/缺口**无关**（AC-5③ 的可核验面）。
+        """
+        for item in self.experience_pressures:
+            if item["npc_id"] != npc_id or not (item["start_tick"] <= tick <= item["end_tick"]):
+                continue
+            profile = self.pack_profiles.get(npc_id) or {}
+            target = target_entity if isinstance(target_entity, str) else ""
+            target_home = 1 if target and target == profile.get("home_entity") else 0
+            entity = self.world.get(npc_id)
+            severity = 0
+            relations: dict = {}
+            if entity is not None:
+                relations = entity.components.get("relations") or {}
+                for flag in entity.components.get("trauma_flags") or []:
+                    value = flag.get("severity") if isinstance(flag, dict) else None
+                    if isinstance(value, (int, float)) and not isinstance(value, bool):
+                        severity = max(severity, int(value))
+            peer_token = "-"
+            if target:
+                peer = self.world.get(target)
+                if peer is not None and peer.kind == "npc":
+                    value = relations.get(target)
+                    peer_token = (f"{target}:{_q(float(value))}" if isinstance(value, (int, float))
+                                  and not isinstance(value, bool) else f"{target}:-")
+            return (f"experience={item['event_id']} target_home={target_home} trauma={severity} "
+                    f"relation={peer_token} observable={item['observable']}")
+        return ""
+
     def _appraise_emotions(self, intents: list[dict], tick: int) -> None:
         """**断链④**：情绪评估走**既有 capability 通道**（`emotion.appraise` 槽位）。
 
@@ -557,12 +733,18 @@ class WorldKernel:
             emotion = dict(entity.components.get("emotion") or {}) if entity is not None else {}
             valence = emotion.get("valence")
             arousal = emotion.get("arousal")
+            # **W2（N3）经历要素拼装**：基底模板**逐字不变**（既有三段），仅当本 tick 有**生效**的
+            # 关键经历声明时才**追加**规范 token 串 ⇒ 无声明/窗口外的 `event_summary` 与改前**逐字节一致**。
+            summary = (f"tick={tick} action={decision.get('chosen_action')} "
+                       f"need={decision.get('dominant_need')} "
+                       f"branch={decision.get('bt_branch')}")
+            experience = self._experience_tokens(npc_id, int(tick), intent.get("target_entity"))
+            if experience:
+                summary = f"{summary} {experience}"
             payload = {
                 "npc_id": npc_id,
                 "tick": int(tick),
-                "event_summary": (f"tick={tick} action={decision.get('chosen_action')} "
-                                  f"need={decision.get('dominant_need')} "
-                                  f"branch={decision.get('bt_branch')}"),
+                "event_summary": summary,
                 "current_emotion": {
                     "valence": float(valence) if isinstance(valence, (int, float)) else 0.0,
                     "arousal": float(arousal) if isinstance(arousal, (int, float)) else 0.0,

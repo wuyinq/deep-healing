@@ -118,6 +118,96 @@ def emotion_appraise_rule(payload: dict) -> dict:
     }
 
 
+#: **W1（N3）关键经历评价规则**的显式权重（全部是**数据常量**，与阈值常量解耦）。
+#: 语义：重要度 = 基线 + 事件显著性 + 目标相关性 + 创伤相关性 + 关系代价（逐项见函数 docstring）。
+EXPERIENCE_IMPORTANCE_BASE = 0.20
+EXPERIENCE_SIGNIFICANCE_WEIGHT = 0.30
+EXPERIENCE_TARGET_WEIGHT = 0.15
+EXPERIENCE_TRAUMA_WEIGHT = 0.15
+EXPERIENCE_RELATION_WEIGHT = 0.10
+#: 创伤相关性门槛（`trauma_flags[].severity` 达到该值才计入）。
+EXPERIENCE_TRAUMA_SEVERITY_FLOOR = 3
+#: `observable=` 之后的自由文本**不参与**结构化解析（它只是可读描述）。
+_EXPERIENCE_FREE_TEXT_MARKER = " observable="
+
+
+def _experience_token_value(structured: str, name: str) -> str | None:
+    """取规范模板里的 `<name>=<value>` token 的 value（到下一个空格为止；无该 token ⇒ `None`）。
+
+    只读**规范模板**（`tick._experience_tokens`）产出的 token；`observable=` 之后的自由文本先被截掉。
+    """
+    marker = f"{name}="
+    position = structured.find(marker)
+    if position < 0:
+        return None
+    rest = structured[position + len(marker):]
+    return rest.split(" ", 1)[0]
+
+
+def _experience_token_int(structured: str, name: str) -> int:
+    """取整数 token（缺失 / 非整数 ⇒ 0；**不抛异常** —— 探针会给合成输入）。"""
+    raw = _experience_token_value(structured, name)
+    if raw is None or not raw.isdigit():
+        return 0
+    return int(raw)
+
+
+def experience_appraise_rule(payload: dict) -> dict:
+    """**关键经历评价规则（W1 / N3）**：世界事实 → `(valence, arousal, mood_label, importance)`。
+
+    **纯函数**：零网络、零墙钟、零未播种随机、零 `hash()`/`id()`；同输入 ⇒ 同输出（逐位）。
+    **不读 `tick` 派生项、不读需求缺口 `dominant_deficit`、不读调用次数/预算余量** ⇒ 重要度
+    只由**本 tick 生效的经历要素**（规范模板 token）决定：
+
+        importance = 0.20                      # 基线（与既有确定性规则同量级）
+                   + 0.30 * 事件显著性          # 命中 `<key_event>.pressure_window`（`experience=` token）
+                   + 0.15 * 目标相关性          # `target_home=1`（目标 = 该 NPC 的归属实体）
+                   + 0.15 * 创伤相关性          # `trauma >= 3`（`trauma_flags[].severity` 最大值）
+                   + 0.10 * 关系代价            # `relation=<peer>:<v>`（事件涉及对端 NPC）
+
+    即：**无经历要素的日常 tick ⇒ 0.20**（远低于 0.5 阈值，不稀释）；**四项齐全 ⇒ 0.80**。
+    `valence` / `arousal` / `mood_label` 沿用既有情感词典口径（同一套词典，不另立一份）。
+    `output_schema` 的取值域（`mood_label` 取枚举内值）由既有 `_mood_label` 保证。
+    """
+    summary = payload.get("event_summary") if isinstance(payload, dict) else None
+    summary = summary if isinstance(summary, str) else ""
+    current = payload.get("current_emotion") if isinstance(payload, dict) else None
+    current = current if isinstance(current, dict) else {}
+
+    positive = _count_words(summary, _POSITIVE_WORDS)
+    negative = _count_words(summary, _NEGATIVE_WORDS)
+    total = positive + negative
+    delta = 0.0 if total == 0 else (positive - negative) / float(total)
+
+    previous_valence = current.get("valence")
+    previous_valence = float(previous_valence) if isinstance(previous_valence, (int, float)) else 0.0
+    valence = _clamp(_q(0.6 * previous_valence + 0.4 * delta), -1.0, 1.0)
+
+    exclamations = min(summary.count("!") + summary.count("！"), 3)
+    arousal = _clamp(_q(0.2 + 0.15 * total + 0.1 * exclamations), 0.0, 1.0)
+
+    # 结构化段 = `observable=` 之前的部分（自由文本不参与判定）
+    structured = summary.split(_EXPERIENCE_FREE_TEXT_MARKER, 1)[0]
+    significance = 1.0 if _experience_token_value(structured, "experience") else 0.0
+    target_relevance = 1.0 if _experience_token_value(structured, "target_home") == "1" else 0.0
+    trauma_relevance = 1.0 if _experience_token_int(
+        structured, "trauma") >= EXPERIENCE_TRAUMA_SEVERITY_FLOOR else 0.0
+    relation_cost = 1.0 if _experience_token_value(structured, "relation") not in (None, "-") else 0.0
+
+    importance = _clamp(_q(EXPERIENCE_IMPORTANCE_BASE
+                           + EXPERIENCE_SIGNIFICANCE_WEIGHT * significance
+                           + EXPERIENCE_TARGET_WEIGHT * target_relevance
+                           + EXPERIENCE_TRAUMA_WEIGHT * trauma_relevance
+                           + EXPERIENCE_RELATION_WEIGHT * relation_cost), 0.0, 1.0)
+
+    return {
+        "valence": valence,
+        "arousal": arousal,
+        "mood_label": _mood_label(valence, arousal),
+        "importance": importance,
+    }
+
+
 _DEFAULT_NEED_WEIGHTS = {
     "physiology": 1.0,
     "safety": 1.0,
@@ -246,6 +336,7 @@ def memory_reflect_rule(payload: dict) -> dict:
 RULE_IMPLS: dict[str, Callable[[dict], dict]] = {
     "intent_plan_rule": intent_plan_rule,
     "emotion_appraise_rule": emotion_appraise_rule,
+    "experience_appraise_rule": experience_appraise_rule,   # W1（N3）纯加法：既有规则一字未动
     "memory_reflect_rule": memory_reflect_rule,
     "embed_text_rule": embed_text_rule,
 }

@@ -70,8 +70,8 @@
       "source_model": null, "world_model_backend": false, "determinism": "deterministic", "allowed_in_rule_layer": true,
       "source_model": null, "world_model_backend": false, "determinism": "deterministic", "allowed_in_rule_layer": true,
       "source_model": null, "world_model_backend": false, "determinism": "deterministic", "allowed_in_rule_layer": true,
-      "impl": "module:deephealing_kernel.providers.deterministic_rule:emotion_appraise_rule",
-      "priority": 40,
+      "impl": "module:deephealing_kernel.providers.deterministic_rule:experience_appraise_rule",
+      "priority": 5,
       "determinism_note": "pure：情感词典 + 阈值映射，同输入同输出。"
     }
   ],
@@ -157,10 +157,10 @@
     "consistency_check": { "required": true, "runs": 3 }
   },
   "fallback": {
-    "on_timeout": { "provider": "deterministic_rule", "impl": "module:deephealing_kernel.providers.deterministic_rule:emotion_appraise_rule" },
-    "on_error": { "provider": "deterministic_rule", "impl": "module:deephealing_kernel.providers.deterministic_rule:emotion_appraise_rule" },
-    "on_invalid_schema": { "provider": "deterministic_rule", "impl": "module:deephealing_kernel.providers.deterministic_rule:emotion_appraise_rule" },
-    "on_budget_exhausted": { "provider": "deterministic_rule", "impl": "module:deephealing_kernel.providers.deterministic_rule:emotion_appraise_rule" },
+    "on_timeout": { "provider": "deterministic_rule", "impl": "module:deephealing_kernel.providers.deterministic_rule:experience_appraise_rule" },
+    "on_error": { "provider": "deterministic_rule", "impl": "module:deephealing_kernel.providers.deterministic_rule:experience_appraise_rule" },
+    "on_invalid_schema": { "provider": "deterministic_rule", "impl": "module:deephealing_kernel.providers.deterministic_rule:experience_appraise_rule" },
+    "on_budget_exhausted": { "provider": "deterministic_rule", "impl": "module:deephealing_kernel.providers.deterministic_rule:experience_appraise_rule" },
     "on_cassette_miss": "deterministic_stub"
   },
   "determinism": {
