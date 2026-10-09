@@ -41,8 +41,8 @@
     },
     {
       "path": "npcs/npc-006.json",
-      "sha256": "168ee262f2c55132388db1ac2be5b0d77911f320a97337a2e60d2bbf522fa24f",
-      "bytes": 6151
+      "sha256": "8f684d8cd151f335793336cf08387f50aa5d23a3c09f6353130f16322186dab3",
+      "bytes": 6286
     },
     {
       "path": "pack.json",

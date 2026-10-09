@@ -93,7 +93,7 @@
           "source_model": null, "world_model_backend": false, "determinism": "deterministic", "allowed_in_rule_layer": true,
           "source_model": null, "world_model_backend": false, "determinism": "deterministic", "allowed_in_rule_layer": true,
           "source_model": null, "world_model_backend": false, "determinism": "deterministic", "allowed_in_rule_layer": true,
-          "impl": "module:deephealing_capabilities.rules:intent_plan_rule",
+          "impl": "module:deephealing_kernel.providers.deterministic_rule:intent_plan_rule",
           "priority": 40,
           "determinism_note": "pure：加权效用取 argmax，同输入同输出，无随机。"
         }
@@ -180,10 +180,10 @@
         "consistency_check": { "required": true, "runs": 3 }
       },
       "fallback": {
-        "on_timeout": { "provider": "deterministic_rule", "impl": "module:deephealing_capabilities.rules:intent_plan_rule" },
-        "on_error": { "provider": "deterministic_rule", "impl": "module:deephealing_capabilities.rules:intent_plan_rule" },
-        "on_invalid_schema": { "provider": "deterministic_rule", "impl": "module:deephealing_capabilities.rules:intent_plan_rule" },
-        "on_budget_exhausted": { "provider": "deterministic_rule", "impl": "module:deephealing_capabilities.rules:intent_plan_rule" },
+        "on_timeout": { "provider": "deterministic_rule", "impl": "module:deephealing_kernel.providers.deterministic_rule:intent_plan_rule" },
+        "on_error": { "provider": "deterministic_rule", "impl": "module:deephealing_kernel.providers.deterministic_rule:intent_plan_rule" },
+        "on_invalid_schema": { "provider": "deterministic_rule", "impl": "module:deephealing_kernel.providers.deterministic_rule:intent_plan_rule" },
+        "on_budget_exhausted": { "provider": "deterministic_rule", "impl": "module:deephealing_kernel.providers.deterministic_rule:intent_plan_rule" },
         "on_cassette_miss": "deterministic_stub"
       },
       "determinism": {
@@ -273,7 +273,7 @@
           "source_model": null, "world_model_backend": false, "determinism": "deterministic", "allowed_in_rule_layer": true,
           "source_model": null, "world_model_backend": false, "determinism": "deterministic", "allowed_in_rule_layer": true,
           "source_model": null, "world_model_backend": false, "determinism": "deterministic", "allowed_in_rule_layer": true,
-          "impl": "module:deephealing_capabilities.rules:emotion_appraise_rule",
+          "impl": "module:deephealing_kernel.providers.deterministic_rule:experience_appraise_rule",
           "priority": 40,
           "determinism_note": "pure：关键词情感词典 + 阈值映射，同输入同输出。"
         }
@@ -360,10 +360,10 @@
         "consistency_check": { "required": true, "runs": 3 }
       },
       "fallback": {
-        "on_timeout": { "provider": "deterministic_rule", "impl": "module:deephealing_capabilities.rules:emotion_appraise_rule" },
-        "on_error": { "provider": "deterministic_rule", "impl": "module:deephealing_capabilities.rules:emotion_appraise_rule" },
-        "on_invalid_schema": { "provider": "deterministic_rule", "impl": "module:deephealing_capabilities.rules:emotion_appraise_rule" },
-        "on_budget_exhausted": { "provider": "deterministic_rule", "impl": "module:deephealing_capabilities.rules:emotion_appraise_rule" },
+        "on_timeout": { "provider": "deterministic_rule", "impl": "module:deephealing_kernel.providers.deterministic_rule:experience_appraise_rule" },
+        "on_error": { "provider": "deterministic_rule", "impl": "module:deephealing_kernel.providers.deterministic_rule:experience_appraise_rule" },
+        "on_invalid_schema": { "provider": "deterministic_rule", "impl": "module:deephealing_kernel.providers.deterministic_rule:experience_appraise_rule" },
+        "on_budget_exhausted": { "provider": "deterministic_rule", "impl": "module:deephealing_kernel.providers.deterministic_rule:experience_appraise_rule" },
         "on_cassette_miss": "deterministic_stub"
       },
       "determinism": {
@@ -466,7 +466,7 @@
           "source_model": null, "world_model_backend": false, "determinism": "deterministic", "allowed_in_rule_layer": true,
           "source_model": null, "world_model_backend": false, "determinism": "deterministic", "allowed_in_rule_layer": true,
           "source_model": null, "world_model_backend": false, "determinism": "deterministic", "allowed_in_rule_layer": true,
-          "impl": "module:deephealing_capabilities.rules:memory_reflect_rule",
+          "impl": "module:deephealing_kernel.providers.deterministic_rule:memory_reflect_rule",
           "priority": 40,
           "determinism_note": "pure：按 importance 阈值抽取事实模板，同输入同输出。"
         }
@@ -553,10 +553,10 @@
         "consistency_check": { "required": true, "runs": 3 }
       },
       "fallback": {
-        "on_timeout": { "provider": "deterministic_rule", "impl": "module:deephealing_capabilities.rules:memory_reflect_rule" },
-        "on_error": { "provider": "deterministic_rule", "impl": "module:deephealing_capabilities.rules:memory_reflect_rule" },
-        "on_invalid_schema": { "provider": "deterministic_rule", "impl": "module:deephealing_capabilities.rules:memory_reflect_rule" },
-        "on_budget_exhausted": { "provider": "deterministic_rule", "impl": "module:deephealing_capabilities.rules:memory_reflect_rule" },
+        "on_timeout": { "provider": "deterministic_rule", "impl": "module:deephealing_kernel.providers.deterministic_rule:memory_reflect_rule" },
+        "on_error": { "provider": "deterministic_rule", "impl": "module:deephealing_kernel.providers.deterministic_rule:memory_reflect_rule" },
+        "on_invalid_schema": { "provider": "deterministic_rule", "impl": "module:deephealing_kernel.providers.deterministic_rule:memory_reflect_rule" },
+        "on_budget_exhausted": { "provider": "deterministic_rule", "impl": "module:deephealing_kernel.providers.deterministic_rule:memory_reflect_rule" },
         "on_cassette_miss": "deterministic_stub"
       },
       "determinism": {

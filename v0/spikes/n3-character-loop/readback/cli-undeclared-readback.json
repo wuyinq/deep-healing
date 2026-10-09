@@ -1,0 +1,81 @@
+{
+  "definitions": {
+    "decisions_total": "事件流里 `npc.decision` 且 `actor == npc-006` 的条数",
+    "decisions_with_signals": "上者中 `payload.memory_influence.signals` 非空的条数",
+    "ratio": "decisions_with_signals / decisions_total",
+    "crossing": "`memory.written` 且 `payload.layer == episodic` 且 `payload.importance >= 0.5` 的写入",
+    "importance": "上述事件的 `payload.importance`（写入时刻值）"
+  },
+  "npc": "npc-006",
+  "run_ticks": 2880,
+  "event_total": 9923,
+  "event_types": {
+    "memory.written": 5760,
+    "npc.action": 1282,
+    "npc.decision": 2880,
+    "world.init": 1
+  },
+  "decisions_total": 2880,
+  "decisions_with_signals": 0,
+  "ratio": 0.0,
+  "chain": {
+    "npc_id": "npc-006",
+    "decision_count": 2880,
+    "decisions_with_signals": 0,
+    "event": null,
+    "memory": null,
+    "decision": {
+      "seq": 9919,
+      "tick": 2880,
+      "chosen_action": "talk",
+      "dominant_need": "belonging",
+      "dominant_deficit": 0.03694,
+      "signals": [],
+      "utility_delta": 0.0,
+      "by_action": {}
+    },
+    "action": {
+      "seq": 9920,
+      "tick": 2880,
+      "action": "hold",
+      "target_entity": "room-1052"
+    },
+    "signal_refs": [],
+    "unlinked_signal_refs": []
+  },
+  "crossing_count": 0,
+  "crossing_ticks": [],
+  "crossing_importance_min": null,
+  "crossing_importance_max": null,
+  "noncrossing_importance_max": 0.386333,
+  "noncrossing_importance_p90": 0.04199,
+  "episodic_writes": 2880,
+  "importance_max": 0.386333,
+  "window": [
+    [
+      895,
+      905
+    ]
+  ],
+  "crossing_outside_window": [],
+  "ratio_first_half": 0.0,
+  "ratio_second_half": 0.0,
+  "decisions_first_half": 1440,
+  "decisions_second_half": 1440,
+  "tick_span": [
+    0,
+    2880
+  ],
+  "world_clock_start_utc8": "07:00",
+  "world_clock_end_utc8": "07:00",
+  "world_day_start": 0,
+  "world_day_end": 2,
+  "clock_semantics": {
+    "tick0_minutes": 420,
+    "minutes_per_tick": 1,
+    "day_ticks": 1440
+  },
+  "emotion_outputs_recorded": 0,
+  "emotion_importance_values": [],
+  "emotion_importance_min": null
+}

@@ -1,0 +1,122 @@
+{
+  "arms": {
+    "demo-1": {
+      "arm_dir": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/_worktrees/n3-character-loop-20260924/v0/spikes/n3-character-loop/runs/demo-1",
+      "events": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/_worktrees/n3-character-loop-20260924/v0/spikes/n3-character-loop/runs/demo-1/events.jsonl",
+      "ticks": 2880,
+      "seed": 20260921,
+      "wall_clock_s": 10.75,
+      "declarations": [
+        {
+          "npc_id": "npc-006",
+          "event_id": "xuqin-pushes-hanfei-away",
+          "need": "safety",
+          "start_tick": 895,
+          "end_tick": 905,
+          "floor": 0.9,
+          "observable": "先推开对端并让其下楼，随后改口一起走"
+        }
+      ],
+      "registry_validation_errors": [],
+      "emotion_appraise_calls": 11,
+      "emotion_appraise_fallback_calls": 0,
+      "emotion_fallbacks_total": 0,
+      "state_hash": "989e8370cb74026ac7156124bdfae82350c6cd719f2c59c63e762363fc0c2078",
+      "ticks_done": 2880
+    },
+    "demo-2": {
+      "arm_dir": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/_worktrees/n3-character-loop-20260924/v0/spikes/n3-character-loop/runs/demo-2",
+      "events": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/_worktrees/n3-character-loop-20260924/v0/spikes/n3-character-loop/runs/demo-2/events.jsonl",
+      "ticks": 2880,
+      "seed": 20260921,
+      "wall_clock_s": 10.461,
+      "declarations": [
+        {
+          "npc_id": "npc-006",
+          "event_id": "xuqin-pushes-hanfei-away",
+          "need": "safety",
+          "start_tick": 895,
+          "end_tick": 905,
+          "floor": 0.9,
+          "observable": "先推开对端并让其下楼，随后改口一起走"
+        }
+      ],
+      "registry_validation_errors": [],
+      "emotion_appraise_calls": 11,
+      "emotion_appraise_fallback_calls": 0,
+      "emotion_fallbacks_total": 0,
+      "state_hash": "989e8370cb74026ac7156124bdfae82350c6cd719f2c59c63e762363fc0c2078",
+      "ticks_done": 2880
+    },
+    "contrast-on": {
+      "arm_dir": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/_worktrees/n3-character-loop-20260924/v0/spikes/n3-character-loop/runs/contrast-on",
+      "events": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/_worktrees/n3-character-loop-20260924/v0/spikes/n3-character-loop/runs/contrast-on/events.jsonl",
+      "ticks": 2880,
+      "seed": 20260921,
+      "wall_clock_s": 10.199,
+      "declarations": [
+        {
+          "npc_id": "npc-006",
+          "event_id": "xuqin-pushes-hanfei-away",
+          "need": "safety",
+          "start_tick": 895,
+          "end_tick": 905,
+          "floor": 0.9,
+          "observable": "先推开对端并让其下楼，随后改口一起走"
+        }
+      ],
+      "registry_validation_errors": [],
+      "emotion_appraise_calls": 11,
+      "emotion_appraise_fallback_calls": 0,
+      "emotion_fallbacks_total": 0,
+      "state_hash": "989e8370cb74026ac7156124bdfae82350c6cd719f2c59c63e762363fc0c2078",
+      "ticks_done": 2880
+    },
+    "contrast-off": {
+      "arm_dir": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/_worktrees/n3-character-loop-20260924/v0/spikes/n3-character-loop/runs/contrast-off",
+      "events": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/_worktrees/n3-character-loop-20260924/v0/spikes/n3-character-loop/runs/contrast-off/events.jsonl",
+      "ticks": 2880,
+      "seed": 20260921,
+      "wall_clock_s": 10.221,
+      "declarations": [],
+      "registry_validation_errors": [],
+      "emotion_appraise_calls": 0,
+      "emotion_appraise_fallback_calls": 0,
+      "emotion_fallbacks_total": 0,
+      "state_hash": "4101edae1b551329cf94fd5b79e3a82f72c05b30f6464b8e1a5f487adb01ec24",
+      "ticks_done": 2880
+    },
+    "short-off": {
+      "arm_dir": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/_worktrees/n3-character-loop-20260924/v0/spikes/n3-character-loop/runs/short-off",
+      "events": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/_worktrees/n3-character-loop-20260924/v0/spikes/n3-character-loop/runs/short-off/events.jsonl",
+      "ticks": 120,
+      "seed": 20260921,
+      "wall_clock_s": 0.147,
+      "declarations": [],
+      "registry_validation_errors": [],
+      "emotion_appraise_calls": 0,
+      "emotion_appraise_fallback_calls": 0,
+      "emotion_fallbacks_total": 0,
+      "state_hash": "0cef5646514ac2078723b6c3e77b60aabed07af718a5f79ad11843d518a55202",
+      "ticks_done": 120
+    }
+  },
+  "first_divergence": {
+    "index": 3577,
+    "tick": 895,
+    "type": "npc.decision",
+    "on": "{\"bt_branch\": \"flee\", \"chosen_action\": \"flee\", \"decision_source\": \"behaviour_tree\", \"dominant_deficit\": 0.6, \"dominant_need\": \"safety\", \"memory_influence\": {\"by_action\": {}, \"read\": true, \"signals\": [], \"utility_delta\": 0.0}, \"npc_id\": \"npc-006\", \"schedule_is_driver\": false, \"schedule_state\": \"working\", \"target_entity\": \"room-1052\", \"utility_ranking\": [{\"action\": \"flee\", \"need\": \"safety\", \"score\": 0.95}, {\"action\": \"work\", \"need\": \"esteem\", \"score\": 0.099221}, {\"action\": \"rest\", \"need\": \"physiology\", \"score\": 0.091295}], \"utility_score\": 0.95}",
+    "off": "{\"bt_branch\": \"explore\", \"chosen_action\": \"walk\", \"decision_source\": \"behaviour_tree\", \"dominant_deficit\": 0.036085, \"dominant_need\": \"self_actualization\", \"memory_influence\": {\"by_action\": {}, \"read\": true, \"signals\": [], \"utility_delta\": 0.0}, \"npc_id\": \"npc-006\", \"schedule_is_driver\": false, \"schedule_state\": \"working\", \"target_entity\": \"kitchen-01\", \"utility_ranking\": [{\"action\": \"walk\", \"need\": \"self_actualization\", \"score\": 0.104128}, {\"action\": \"work\", \"need\": \"esteem\", \"score\": 0.099221}, {\"action\": \"rest\", \"need\": \"physiology\", \"score\": 0.091295}], \"utility_score\": 0.104128}",
+    "prefix_identical": true
+  },
+  "tick_number_is_not_the_cause": {
+    "prefix_identical": true,
+    "short_rows": 481
+  },
+  "determinism": {
+    "events_byte_identical": true,
+    "state_hash_equal": true,
+    "calls_equal": true
+  },
+  "undeclared_pack_dir": "/Users/wooyinq/.hermes/profiles/lanova/dev_team_workspace/_worktrees/n3-character-loop-20260924/v0/spikes/n3-character-loop/runs/pack-undeclared/xingfu-xiaoqu-xuqin"
+}

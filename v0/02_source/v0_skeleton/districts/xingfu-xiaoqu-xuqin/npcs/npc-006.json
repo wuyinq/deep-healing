@@ -59,7 +59,13 @@
       "target_entity": "courtyard-01",
       "description_key": "boundary_guard_before_loss_of_control",
       "source_facts": ["CHR-04"],
-      "observable": "先推开对端并让其下楼，随后改口一起走"
+      "observable": "先推开对端并让其下楼，随后改口一起走",
+      "pressure_window": {
+        "need": "safety",
+        "start_tick": 895,
+        "end_tick": 905,
+        "floor": 0.9
+      }
     }
   ],
   "source_facts": [

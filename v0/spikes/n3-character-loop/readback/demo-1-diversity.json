@@ -1,0 +1,42 @@
+{
+  "decisions": 2880,
+  "actions": 1282,
+  "branch_share_max": 0.50625,
+  "branch_top": "restore",
+  "branch_counts": {
+    "explore": 701,
+    "flee": 11,
+    "restore": 1458,
+    "socialize": 370,
+    "work": 340
+  },
+  "need_share_max": 0.510069,
+  "need_counts": {
+    "belonging": 370,
+    "esteem": 340,
+    "safety": 1469,
+    "self_actualization": 701
+  },
+  "distinct_actions": 5,
+  "action_counts": {
+    "flee": 11,
+    "rest": 626,
+    "talk": 698,
+    "walk": 1043,
+    "work": 502
+  },
+  "first_half_branch_counts": {
+    "explore": 418,
+    "flee": 11,
+    "restore": 724,
+    "socialize": 186,
+    "work": 101
+  },
+  "second_half_branch_counts": {
+    "explore": 283,
+    "restore": 734,
+    "socialize": 184,
+    "work": 239
+  },
+  "courtyard_target_actions": 44
+}

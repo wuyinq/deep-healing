@@ -1,0 +1,118 @@
+{
+  "definitions": {
+    "decisions_total": "事件流里 `npc.decision` 且 `actor == npc-006` 的条数",
+    "decisions_with_signals": "上者中 `payload.memory_influence.signals` 非空的条数",
+    "ratio": "decisions_with_signals / decisions_total",
+    "crossing": "`memory.written` 且 `payload.layer == episodic` 且 `payload.importance >= 0.5` 的写入",
+    "importance": "上述事件的 `payload.importance`（写入时刻值）"
+  },
+  "npc": "npc-006",
+  "run_ticks": 2880,
+  "event_total": 9923,
+  "event_types": {
+    "memory.written": 5760,
+    "npc.action": 1282,
+    "npc.decision": 2880,
+    "world.init": 1
+  },
+  "decisions_total": 2880,
+  "decisions_with_signals": 1985,
+  "ratio": 0.6892361111111112,
+  "chain": {
+    "npc_id": "npc-006",
+    "decision_count": 2880,
+    "decisions_with_signals": 1985,
+    "event": {
+      "seq": 3618,
+      "tick": 905,
+      "type": "npc.action",
+      "action": "flee",
+      "target_entity": "room-1052"
+    },
+    "memory": {
+      "seq": 3619,
+      "tick": 905,
+      "ref": "905",
+      "kind": "flee",
+      "layer": "episodic",
+      "importance_at_write": 0.7
+    },
+    "decision": {
+      "seq": 9919,
+      "tick": 2880,
+      "chosen_action": "rest",
+      "dominant_need": "safety",
+      "dominant_deficit": 0.041997,
+      "signals": [
+        "episode:flee@ref=905",
+        "episode:flee@ref=904",
+        "episode:flee@ref=903"
+      ],
+      "utility_delta": 0.0,
+      "by_action": {
+        "flee": 0.2
+      }
+    },
+    "action": {
+      "seq": 9920,
+      "tick": 2880,
+      "action": "hold",
+      "target_entity": "room-1052"
+    },
+    "signal_refs": [
+      "episode:flee@ref=905",
+      "episode:flee@ref=904",
+      "episode:flee@ref=903"
+    ],
+    "unlinked_signal_refs": []
+  },
+  "crossing_count": 11,
+  "crossing_ticks": [
+    895,
+    896,
+    897,
+    898,
+    899,
+    900,
+    901,
+    902,
+    903,
+    904,
+    905
+  ],
+  "crossing_importance_min": 0.7,
+  "crossing_importance_max": 0.7,
+  "noncrossing_importance_max": 0.428,
+  "noncrossing_importance_p90": 0.042143,
+  "episodic_writes": 2880,
+  "importance_max": 0.7,
+  "window": [
+    [
+      895,
+      905
+    ]
+  ],
+  "crossing_outside_window": [],
+  "ratio_first_half": 0.3784722222222222,
+  "ratio_second_half": 1.0,
+  "decisions_first_half": 1440,
+  "decisions_second_half": 1440,
+  "tick_span": [
+    0,
+    2880
+  ],
+  "world_clock_start_utc8": "07:00",
+  "world_clock_end_utc8": "07:00",
+  "world_day_start": 0,
+  "world_day_end": 2,
+  "clock_semantics": {
+    "tick0_minutes": 420,
+    "minutes_per_tick": 1,
+    "day_ticks": 1440
+  },
+  "emotion_outputs_recorded": 11,
+  "emotion_importance_values": [
+    0.8
+  ],
+  "emotion_importance_min": 0.8
+}
