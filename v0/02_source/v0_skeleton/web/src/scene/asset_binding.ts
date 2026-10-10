@@ -41,8 +41,10 @@ export const BINDINGS: readonly AssetBinding[] = [
     asset_version: '1.0.0',
     entity_ids: ['npc-006'],
     ext_surfaces: ['skin_face', 'skin_hand', 'fabric_cotton_jacket'],
-    skeleton_note: 'Khronos glTF-Sample-Assets / CesiumMan（CC BY 4.0）：1 skin / 19 joints / '
-      + '1 animation（57 channels）。**骨架与动画均为真实 GLB 数据**，不是程序化盒体。',
+    skeleton_note: '本项目建设期接入的角色资产：AI 图生3D（影眸 Hyper3D Gen-2，经火山方舟 Ark）'
+      + '→ 本地绑定 26 骨（含 4 向 × 2 级裙摆骨链）→ 减面 + 2×2K 贴图；1 skin / 26 joints / '
+      + '2 animations（Idle / Walk）。**骨架与动画均为真实 GLB 数据**，不是程序化盒体。'
+      + '**许可状态未证实**（见 web/assets/provenance.json）。',
   },
   {
     binding_id: 'npc_generic',
