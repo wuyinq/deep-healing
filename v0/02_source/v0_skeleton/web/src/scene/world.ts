@@ -92,6 +92,52 @@ import {
   type SurfaceId, type ExtSurfaceId,
 } from './materials.ts';
 import { createPostFX, postfxReport as postfxChainReport, type PostFX } from './postfx.ts';
+// L-3：**交付资产登记面**（冻结件 `web/assets/provenance.json`）—— `focusCandidates()` 判据的输入。
+// 冻结件由 `verify_asset_provenance.py`（`verify_specs.sh §19c`）逐件校验（`assets[].path` 在盘上存在
+// 且 sha256 与 `converted_sha256` 一致 + 覆盖率双向核对）⇒ 「登记在册」蕴含「该资产已交付且字节锚一致」。
+//
+// 为什么是**动态 import + 顶层 await（TLA）+ `catch` 兜底**，而不是静态 import（设计 §13.2 / 裁决 v3）：
+// `src/` 之外的数据文件在**冻结脚手架的 src-only 沙箱**里不存在（`v0/spikes/n5-asset/r2_negative_controls.mjs`
+// 的 `stage()` 只把 `web/src` 复制进 /tmp 再 import 本模块 —— `verify_specs.sh §19e`）。静态 import 会让
+// 模块链接期 `ERR_MODULE_NOT_FOUND` ⇒ 脚手架崩、该门禁判 FAIL（r1 实测 `170/1/1`）。动态 import + `catch`
+// ⇒ 沙箱里 import **不抛**、派生集为空（fail-closed，沙箱不校验对焦行为）；真实运行面
+// （浏览器产物 / `node --test` / `scene_assert.mjs`）文件均在 ⇒ 照常读到 41 条。
+const assetRegistryModule = await import('../../assets/provenance.json', { with: { type: 'json' } })
+  .catch(() => null);
+
+/**
+ * L-3：**交付资产登记面**（`web/assets/provenance.json`，冻结件）的**防御性**派生子集。
+ *
+ * 为什么必须防御：`focusCandidates()` 在**每帧 / 每次 `apply` 的同步路径**上被调用
+ * （`applyAutoObservationFocus()`）⇒ 读取登记面**不得抛**。
+ * `assets` 缺失 / 非数组 / 模块不可得（沙箱）⇒ **fail-closed（空集）**；元素非对象 ⇒ 跳过；
+ * 字段非字符串 ⇒ 该条不参与判据。
+ *
+ * 判据（v2 · 设计 §3.1）：候选 ⇔ `npc` ∧ `bindingForEntity(id)` 非空 ∧ `glb_url.endsWith('.glb')`
+ * ∧ ∃ 登记条目：`binding_ref === 'binding:' + binding_id` ∧ `'assets/' + e.path === glb_url`
+ * ∧ `!e.runtime_excluded`。`assets[].path` 相对 `web/assets/` 命名（规范化口径 = `'assets/' + path`）。
+ */
+export const ASSET_ENTRIES: readonly Record<string, unknown>[] = (() => {
+  const raw = (assetRegistryModule as { default?: { assets?: unknown } } | null)?.default?.assets;
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((e): e is Record<string, unknown> => Boolean(e) && typeof e === 'object');
+})();
+
+/**
+ * L-3：登记面的**索引形态**（键 = `'binding:' + binding_ref` + `\u0000` + `'assets/' + path`）——
+ * `focusCandidates()` 每帧在此查表（O(1)），判据与 `ASSET_ENTRIES` 同源（同一次读取、同一套过滤）。
+ * 真值即剔除（`runtime_excluded` ⇒ fail-closed 方向）；缺字段 / 非字符串 ⇒ 该条不产生键。
+ */
+const REGISTERED_BINDING_ASSETS: ReadonlySet<string> = (() => {
+  const keys = new Set<string>();
+  for (const entry of ASSET_ENTRIES) {
+    const e = entry as { binding_ref?: unknown; path?: unknown; runtime_excluded?: unknown };
+    if (typeof e.binding_ref !== 'string' || typeof e.path !== 'string') continue;
+    if (e.runtime_excluded) continue;
+    keys.add(`${e.binding_ref}\u0000assets/${e.path}`);
+  }
+  return keys;
+})();
 
 export interface EntityBox {
   id: string;
@@ -1458,13 +1504,22 @@ export function createScene(
   }
 
   /**
-   * 对焦候选 = 场景图里满足 `bindingForEntity(id)?.glb_url` 为真的 npc 实体（**不硬编码 id**；
-   * 今日 = 唯一真 GLB 绑定 `npc-006`）。
+   * 对焦候选 = 场景图里的 npc 实体 ∧ 其绑定**是交付登记面在册的真 GLB**
+   * （L-3 · 设计 §3.1 v2）：`bindingForEntity(id)` 非空 ∧ `glb_url` 以 `.glb` 结尾 ∧
+   * ∃ 登记条目 `binding_ref === 'binding:' + binding_id` ∧ `'assets/' + path === glb_url` ∧
+   * 未被 `runtime_excluded` 剔除。**不硬编码 id**；今日 = 唯一真 GLB 绑定 `npc-006`（`xuqin_default`）。
+   * 判据只认**登记面 + path 双侧一致**，与 `entity_ids` 无关 ⇒ 未来把 npc 挂到**占位/回落绑定**
+   * （`npc_generic`，盘上无该文件）**不会**让它成为对焦目标（fail-closed；登记面读取不抛）。
    */
   function focusCandidates(): string[] {
     return [...meshes.keys()]
       .filter((id) => (meshes.get(id) as THREE.Mesh).userData.kind === 'npc')
-      .filter((id) => Boolean(bindingForEntity(id)?.glb_url))
+      .filter((id) => {
+        const binding = bindingForEntity(id);
+        if (!binding || !binding.glb_url.endsWith('.glb')) return false;
+        // 登记面索引查表：键 = `binding:<binding_id>` + `\u0000` + `assets/<path>`（双侧一致）。
+        return REGISTERED_BINDING_ASSETS.has(`binding:${binding.binding_id}\u0000${binding.glb_url}`);
+      })
       .sort();
   }
 
