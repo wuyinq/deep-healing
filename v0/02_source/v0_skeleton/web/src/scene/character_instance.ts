@@ -112,6 +112,12 @@ export function createCharacterInstance(options: CharacterInstanceOptions): Char
   let glbLoaded = false;
   let gltfScene: THREE.Object3D | null = null;
   let tickAcc = 0;
+  /**
+   * r2 / MUST-2（侦察官 MEDIUM-1）：`dispose()` 之后**在飞的 `load` 回调**仍会 `group.add(scene0)`
+   * 并置 `glbLoaded=true` ⇒ 脱链 group 持 GPU 资源（死实例）。此标志让晚到回调**首行短路**，
+   * 既不 `group.add` 也不 `recordBindingDegradation`。`report()` 字段与 `dispose()` 其余语义一字不改。
+   */
+  let disposed = false;
 
   const extSurfaces = (options.extSurfaces ?? (binding?.ext_surfaces ?? [])) as readonly ExtSurfaceId[];
 
@@ -126,6 +132,8 @@ export function createCharacterInstance(options: CharacterInstanceOptions): Char
       options.gltfLoader.load(
         binding.glb_url,
         (gltf: unknown) => {
+          // r2 / MUST-2：晚到的在飞回调在 `dispose()` 之后必须**首行短路**（不挂 GLB、不记降级）。
+          if (disposed) return;
           const scene0 = (gltf as { scene?: THREE.Object3D })?.scene;
           if (!scene0 || !(scene0 as THREE.Object3D).isObject3D) {
             degradations.push({ code: 'E_GLB_EMPTY', detail: 'GLB 无 scene' });
@@ -213,6 +221,8 @@ export function createCharacterInstance(options: CharacterInstanceOptions): Char
       };
     },
     dispose() {
+      // r2 / MUST-2：先置标志（阻断此后到达的 `onLoad`），既有三行语义**一字不改**。
+      disposed = true;
       group.clear();
       gltfScene = null;
       glbLoaded = false;

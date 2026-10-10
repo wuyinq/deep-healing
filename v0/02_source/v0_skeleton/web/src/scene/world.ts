@@ -1073,6 +1073,32 @@ export interface SceneHandle {
   /** N5-r3 / A1+A2：**人物可见性读数**（`glb_loaded=true` ⇒ 盒体不渲染 ∧ 实体根可见 ∧ GLB 有效可见）。 */
   characterBoxVisibilityReport(): Array<Record<string, unknown>>;
   /**
+   * AC-1：**实例 churn 读数**（跨 snapshot 复用的证据）。`created`/`reused`/`disposed` 为**累计**；
+   * `reused_keys` = 最近一次 `rebuild()` 复用的实例身份键。**辅助面** —— 不得替代
+   * `characterInstanceReport()`（`glb_loaded`）与 `characterBoxVisibilityReport()`（`box_parts_visible`）。
+   */
+  characterInstanceChurnReport(): {
+    created: number; reused: number; disposed: number;
+    reused_keys: string[]; glb_load_calls: number; last_rebuild_tick: number | null;
+  };
+  /**
+   * AC-2：**opt-in 自动对焦**（默认 false）。开启后每次 `apply(snapshot)` 按对焦实体 GLB 的
+   * 世界 AABB 重算并施加观测机位；`camera_mode !== 'inspection'` 时不施加。
+   */
+  setAutoObservationFocus(enabled: boolean): { enabled: boolean; applied: number };
+  /** AC-2：对焦状况读数（`source:'aabb'` = 真的按 AABB 派生了机位；`'none'` + `reason` 反之）。 */
+  focusViewReport(): Array<{
+    entity_id: string; applied: boolean; source: 'aabb' | 'none';
+    camera_position: [number, number, number]; camera_look_at: [number, number, number]; reason?: string;
+  }>;
+  /** AC-2：人形取景读数（`Box3` 8 角投影 + 与视口求交；空盒 ⇒ `has_geometry:false` 且无 NaN）。 */
+  characterFramingReport(): Array<Record<string, unknown>>;
+  /**
+   * AC-2 / 设计 §12.5：进入**交互相机**（此后自动对焦不再施加 ⇒ 不覆盖用户手动取景）。
+   * 委托 `presentation.enterInteractiveCamera()`；不改任何相机常量与默认机位定义。
+   */
+  enterInteractiveCamera(): void;
+  /**
    * N5 / B-2：宿主**注入** `GLTFLoader`（`null` ⇒ 回落盒体并记 `degradations`）。
    * 由 `main.ts` 动态 import 后注入 —— `world.ts` 静态 import 它会让 Node 门禁路径踩到 DOM。
    */
@@ -1158,7 +1184,8 @@ export function createScene(
     // N5 / B-3：表现层推进（**只读**权威容器）；把显示的插值误差落到角色实例的**局部**变换上，
     // 绝不回写权威、绝不改实体根 mesh 的 `position`（避免「表现层变第二权威」）。
     presentation.step(TICK_MS);
-    for (const [entityId, inst] of characterInstances) {
+    for (const [entityId, entry] of characterInstances) {
+      const inst = entry.instance;
       const shown = presentation.displayed().find((d) => d.entityId === entityId);
       const parent = meshes.get(entityId);
       if (shown && parent) {
@@ -1173,6 +1200,11 @@ export function createScene(
     }
     // N5-r2 / A5：GLB 已加载 ⇒ 盒体部件隐藏（回落路径 glb_loaded=false 时保持可见）
     syncCharacterVisibility();
+    // AC-2：**逐帧**跟随对焦（设计 §7 R-3 的前提就是「跟随式对焦把相机每帧移动」）。
+    // 只在显式开启时施加 ⇒ 关闭路径零成本；`camera_mode !== 'inspection'` 时 `applyAutoObservationFocus()`
+    // 自身会短路成 `source:'none'`。为什么必须逐帧：实测 snapshot 间隔内角色位移可达 ~0.5 m，
+    // 只在 snapshot 上重算会让窄屏（水平半宽 ~0.71 m）在间隔内被走出画（见 evidence 的 drift 记录）。
+    if (autoObservationFocusEnabled) applyAutoObservationFocus();
     if (postfx) {
       postfx.render();
       return;
@@ -1322,8 +1354,252 @@ export function createScene(
    * `GLTFLoader`，理由：`three/examples/jsm/loaders/GLTFLoader.js` 在 Node 下会触碰 DOM，
    * 而 `scene_assert.mjs` 直接 import 本文件 ⇒ 静态 import 会污染既有 Node 门禁路径。
    */
-  const characterInstances = new Map<string, CharacterInstance>();
-  let characterLoader: { load: (url: string, onLoad: (gltf: unknown) => void, onProgress?: unknown, onError?: (e: unknown) => void) => void } | null = null;
+  type CharacterLoader = { load: (url: string, onLoad: (gltf: unknown) => void, onProgress?: unknown, onError?: (e: unknown) => void) => void };
+  /**
+   * AC-1 · **角色实例注册表**（key = `entity_id`，值 = `{ instance, key }`）。
+   *
+   * 值类型由裸 `CharacterInstance` 改为 `{ instance, key }`（**内部类型**，不改任何公开读数结构）。
+   * `key` = 实例身份键（见 `instanceKeyFor()`）：键相同 ⇒ `rebuild()` **复用**同一实例
+   * （不 dispose、不重载 GLB）；键不同 ⇒ dispose 旧 + 新建。这是「消翻转」的根因修法：
+   * 翻转来自「每次 snapshot 无条件 dispose + 重建 + GLB 异步重载窗口内盒体回显」。
+   */
+  const characterInstances = new Map<string, { instance: CharacterInstance; key: string }>();
+  let characterLoader: CharacterLoader | null = null;
+
+  // ───────────────────────────────────────── AC-1：实例身份键 / loader 身份 / churn 计数
+  /** `loaderSeq` 的来源：loader **对象身份**（`WeakMap<object, number>`；同一对象 ⇒ 同一序号；`null` ⇒ 0）。 */
+  const loaderSeqByObject = new WeakMap<object, number>();
+  let loaderSeqCounter = 0;
+  const loaderSeqOf = (loader: CharacterLoader | null): number => {
+    if (!loader) return 0;
+    const key = loader as unknown as object;
+    const known = loaderSeqByObject.get(key);
+    if (known !== undefined) return known;
+    loaderSeqCounter += 1;
+    loaderSeqByObject.set(key, loaderSeqCounter);
+    return loaderSeqCounter;
+  };
+
+  /**
+   * `glb_load_calls` 的**真计数**：按原始 loader 对象缓存一层 wrapper，数真正的 `load()` 调用
+   * （不是「创建了几个实例」的换算）。wrapper 不改语义，只加计数。
+   */
+  let glbLoadCalls = 0;
+  const loaderWrappers = new WeakMap<object, CharacterLoader>();
+  function loaderForUse(): CharacterLoader | null {
+    const raw = characterLoader;
+    if (!raw) return null;
+    const key = raw as unknown as object;
+    let wrapper = loaderWrappers.get(key);
+    if (!wrapper) {
+      wrapper = {
+        load: (url, onLoad, onProgress, onError) => {
+          glbLoadCalls += 1;
+          return raw.load(url, onLoad, onProgress, onError);
+        },
+      };
+      loaderWrappers.set(key, wrapper);
+    }
+    return wrapper;
+  }
+
+  /**
+   * AC-1 · **实例身份键**（设计 §4.1.2）。键**不含** appearance / reading / tick / 位置
+   * ⇒ 这三类 rebuild 不重建实例（只更新变换）。键与构造参数**同源**取值（都走 `bindingForEntity`）。
+   */
+  function instanceKeyFor(entityId: string): string {
+    const binding = bindingForEntity(entityId);
+    return [
+      entityId,
+      binding?.binding_id ?? '-',
+      binding?.glb_url ?? '-',
+      binding?.asset_version ?? '-',
+      String(loaderSeqOf(characterLoader)),
+      (binding?.ext_surfaces ?? []).join(','),
+    ].join('|');
+  }
+
+  /** AC-1 · churn 计数（**辅助**证据；**不得**替代 `characterInstanceReport()` / `characterBoxVisibilityReport()`）。 */
+  let churnCreated = 0;
+  let churnReused = 0;
+  let churnDisposed = 0;
+  let churnReusedKeys: string[] = [];
+  let lastRebuildTick: number | null = null;
+
+  // ═══════════════════════════ AC-2：可加自动对焦（opt-in，默认关；只改相机 position/quaternion）
+  /** 对焦安全余量（设计 §12.1）：机位距离 = 让 AABB 整体入画所需距离 × 该系数。 */
+  const FOCUS_FIT_MARGIN = 1.25;
+  /** 自动对焦开关（**默认 false** ⇒ 不调用 `setAutoObservationFocus` 时相机逐项不变）。 */
+  let autoObservationFocusEnabled = false;
+
+  interface FocusRecord {
+    entity_id: string;
+    applied: boolean;
+    source: 'aabb' | 'none';
+    camera_position: [number, number, number];
+    camera_look_at: [number, number, number];
+    reason?: string;
+  }
+  let focusRecords: FocusRecord[] = [];
+
+  /** 施加观测机位（**唯一**写相机 `position`/`quaternion` 的原语；`setObservationCamera` 与自动对焦共用）。 */
+  function applyObservationView(position: [number, number, number], lookAt: [number, number, number]): CameraReport {
+    camera.position.set(position[0], position[1], position[2]);
+    camera.lookAt(lookAt[0], lookAt[1], lookAt[2]);
+    camera.updateMatrixWorld(true);
+    return cameraReport();
+  }
+
+  /** 当前相机沿视线方向 1 m 处的点（`'none'` 记录的 `camera_look_at` 读数；不硬编码坐标）。 */
+  function currentAimPoint(): [number, number, number] {
+    camera.updateMatrixWorld(true);
+    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
+    return [camera.position.x + forward.x, camera.position.y + forward.y, camera.position.z + forward.z];
+  }
+
+  /**
+   * 对焦候选 = 场景图里满足 `bindingForEntity(id)?.glb_url` 为真的 npc 实体（**不硬编码 id**；
+   * 今日 = 唯一真 GLB 绑定 `npc-006`）。
+   */
+  function focusCandidates(): string[] {
+    return [...meshes.keys()]
+      .filter((id) => (meshes.get(id) as THREE.Mesh).userData.kind === 'npc')
+      .filter((id) => Boolean(bindingForEntity(id)?.glb_url))
+      .sort();
+  }
+
+  /**
+   * AC-2 · 自动对焦施加（设计 §12.1 / §12.5）。施加条件 = `enabled` **且**
+   * `presentation.cameraMode() === 'inspection'`（Raven C-6：进交互相机后不再覆盖用户取景）**且**
+   * 对焦实体已在场景图且 AABB 非空；不满足 ⇒ `source:'none'` + `reason`，**不改相机**。
+   */
+  function applyAutoObservationFocus(): void {
+    const candidates = focusCandidates();
+    const none = (entityId: string, reason: string): FocusRecord => ({
+      entity_id: entityId, applied: false, source: 'none',
+      camera_position: [camera.position.x, camera.position.y, camera.position.z],
+      camera_look_at: currentAimPoint(), reason,
+    });
+    if (!autoObservationFocusEnabled) { focusRecords = candidates.map((id) => none(id, 'disabled')); return; }
+    if (candidates.length === 0) { focusRecords = []; return; }
+    // r2 / MUST-4（侦察官 MEDIUM-3）：多候选 ⇒ **不猜**、**整体不施加**，并给出**机器可读**的
+    // `source:'none'` + `reason:'ambiguous_target'`（每个候选各一条记录）——不得静默回落。
+    // 行为边界（已登记进 03 日志 r2 节）：绑定表一旦出现第二个真 GLB 实体，AC-2 对焦**不启用**，
+    // 画面回到「看不到人形」的默认取景；这是**有意**的保守选择（宁可显式失效，不猜目标）。
+    // 今日绑定表（冻结件 `asset_binding.ts`）只有 `npc-006` 一个真 GLB 实体 ⇒ 该分支不触发。
+    if (candidates.length > 1) { focusRecords = candidates.map((id) => none(id, 'ambiguous_target')); return; }
+    const targetId = candidates[0] as string;
+    if (presentation.cameraMode() !== 'inspection') { focusRecords = [none(targetId, 'camera_mode:interactive')]; return; }
+    const entry = characterInstances.get(targetId);
+    if (!entry) { focusRecords = [none(targetId, 'not_in_scene')]; return; }
+    scene.updateMatrixWorld(true);
+    const bbox = new THREE.Box3().setFromObject(entry.instance.group);
+    if (bbox.isEmpty()) { focusRecords = [none(targetId, 'empty_bbox')]; return; }
+    const center = bbox.getCenter(new THREE.Vector3());
+    const h = bbox.max.y - bbox.min.y;
+    const w = bbox.max.x - bbox.min.x;
+    const dp = bbox.max.z - bbox.min.z;
+    const perspective = camera as THREE.PerspectiveCamera;
+    const vfov = THREE.MathUtils.degToRad(Number(perspective.fov));
+    const aspect = Number.isFinite(perspective.aspect) && perspective.aspect > 0 ? Number(perspective.aspect) : 1;
+    const halfHfov = Math.atan(Math.tan(vfov / 2) * aspect);
+    // r2 / MUST-1（哨兵 MED-1，门禁 FAIL）：入画距离**必须计入 AABB 的深度 `dp`**。
+    // r1 的 `dV=(h/2)/tan(vfov/2)` 以 AABB **中心平面**为基准，而机位在 `center + [0, h·0.15, d]`
+    // ⇒ AABB **近面**距相机只有 `d − dp/2`。当 `dp` 成为主导边长时（角色转身后 z 向跨度由
+    // ~0.31 m 涨到 ~1.18 m），近底部角出框（哨兵实测 1440×900 下 19/40 采样 `fully_in_viewport=false`，
+    // 最坏越界 0.1008 NDC ≈ 45 px）。修法 = 把基准从「中心平面」换成「**近面**」：
+    // 近面比中心平面近 `dp/2` ⇒ 所需距离各加 `dp/2`（`h`/水平项同理，竖直项即哨兵建议的
+    // `(h/2)/tan(vfov/2) + dp/2`）。
+    // ⚠️ 红线：`FOCUS_FIT_MARGIN`(1.25) 与设计 §12.3 阈值**一字未改**；`fully_in_viewport` 的
+    // 8 角口径**未放宽**（本轮仍按 8 角判）。
+    const dV = (h / 2) / Math.tan(vfov / 2) + dp / 2;
+    const dH = (Math.max(w, dp) / 2) / Math.tan(halfHfov) + dp / 2;
+    const d = Math.max(dV, dH) * FOCUS_FIT_MARGIN;
+    if (h <= 0 || !(d > 0) || ![center.x, center.y, center.z, h, d].every(Number.isFinite)) {
+      focusRecords = [none(targetId, 'non_finite_distance')]; return;
+    }
+    const lookAt: [number, number, number] = [center.x, center.y, center.z];
+    const position: [number, number, number] = [center.x, center.y + h * 0.15, center.z + d];
+    applyObservationView(position, lookAt);
+    focusRecords = [{ entity_id: targetId, applied: true, source: 'aabb', camera_position: position, camera_look_at: lookAt }];
+  }
+
+  /**
+   * AC-2 牙齿：`characterFramingReport()`（设计 §12.4 硬要求）。
+   * 顺序固定：`scene.updateMatrixWorld(true)` → `Box3.setFromObject` → `isEmpty()` 短路 → 8 角投影。
+   * **无 NaN / ±Infinity**：任何非有限数一律 `null` 且 `has_geometry:false`。
+   * `screen_rect` / `height_fraction` / `area_fraction` 由**与视口求交后**的像素矩形派生（出画 ⇒ 0×0）。
+   * `aabb_min` / `aabb_max` 为**附加**读数（关闭预审 GAP-1：GLB 世界 AABB 的真实读数）。
+   */
+  function characterFramingReport(): Array<Record<string, unknown>> {
+    scene.updateMatrixWorld(true);
+    const view = viewport();
+    const viewportW = Math.max(1, view.client_width);
+    const viewportH = Math.max(1, view.client_height);
+    camera.updateMatrixWorld(true);
+    const perspective = camera as THREE.PerspectiveCamera;
+    const mvp = new THREE.Matrix4().multiplyMatrices(perspective.projectionMatrix, perspective.matrixWorldInverse);
+    const camPosition: [number, number, number] = [camera.position.x, camera.position.y, camera.position.z];
+    const emptyRecord = (entityId: string) => ({
+      entity_id: entityId, has_geometry: false, in_viewport: false, fully_in_viewport: false,
+      screen_rect: null as { x: number; y: number; w: number; h: number } | null,
+      height_fraction: null as number | null, area_fraction: null as number | null,
+      viewport_w: viewportW, viewport_h: viewportH, camera_position: camPosition,
+      aabb_min: null as [number, number, number] | null, aabb_max: null as [number, number, number] | null,
+    });
+    return [...characterInstances.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([entityId, entry]) => {
+      const empty = emptyRecord(entityId);
+      const bbox = new THREE.Box3().setFromObject(entry.instance.group);
+      if (bbox.isEmpty()) return empty;
+      const min: THREE.Vector3 = bbox.min; const max: THREE.Vector3 = bbox.max;
+      if (![min.x, min.y, min.z, max.x, max.y, max.z].every(Number.isFinite)) return empty;
+      const corners: Array<[number, number, number]> = [];
+      for (const x of [min.x, max.x]) for (const y of [min.y, max.y]) for (const z of [min.z, max.z]) corners.push([x, y, z]);
+      const e = mvp.elements;
+      const projected = corners.map(([x, y, z]) => {
+        const w = e[3] * x + e[7] * y + e[11] * z + e[15];
+        const px = e[0] * x + e[4] * y + e[8] * z + e[12];
+        const py = e[1] * x + e[5] * y + e[9] * z + e[13];
+        const pz = e[2] * x + e[6] * y + e[10] * z + e[14];
+        return { w, x: px / w, y: py / w, z: pz / w };
+      });
+      if (!projected.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y)
+        && Number.isFinite(p.z) && Number.isFinite(p.w))) return empty;
+      const inFront = projected.every((p) => p.w > 0);
+      // r2 / MUST-3（侦察官 LOW-1）：`fully_in_viewport` 必须把**深度**纳入判定 —— 8 角不仅要
+      // 在 x/y 的 `[-1,1]` 内，还要落在相机 `near..far` 之内（`|z_ndc| <= 1`）。r1 只查 x/y
+      // ⇒ 超大模型 / 相机推到超远会拿到「入画假绿」（`w>0` 也拦不住：远超 far 时 `w` 仍为正）。
+      // 既有 x/y 检查与 `w>0` 条件**一字未削弱**，此处只**增**一条深度条件。
+      const insideCount = projected.filter((p) => p.w > 0
+        && Math.abs(p.x) <= 1 && Math.abs(p.y) <= 1 && Math.abs(p.z) <= 1).length;
+      const xs = projected.map((p) => p.x); const ys = projected.map((p) => p.y);
+      const left = ((Math.min(...xs) + 1) / 2) * viewportW;
+      const right = ((Math.max(...xs) + 1) / 2) * viewportW;
+      const top = ((1 - Math.max(...ys)) / 2) * viewportH;
+      const bottom = ((1 - Math.min(...ys)) / 2) * viewportH;
+      const clipLeft = Math.max(0, Math.min(viewportW, left));
+      const clipRight = Math.max(0, Math.min(viewportW, right));
+      const clipTop = Math.max(0, Math.min(viewportH, top));
+      const clipBottom = Math.max(0, Math.min(viewportH, bottom));
+      const rectW = Math.max(0, clipRight - clipLeft);
+      const rectH = Math.max(0, clipBottom - clipTop);
+      const heightFraction = rectH / viewportH;
+      const areaFraction = (rectW * rectH) / (viewportW * viewportH);
+      if (![clipLeft, clipTop, rectW, rectH, heightFraction, areaFraction].every(Number.isFinite)) return empty;
+      return {
+        ...empty,
+        has_geometry: true,
+        in_viewport: rectW > 0 && rectH > 0,
+        fully_in_viewport: inFront && insideCount === 8,
+        screen_rect: { x: round6(clipLeft), y: round6(clipTop), w: round6(rectW), h: round6(rectH) },
+        height_fraction: round6(heightFraction),
+        area_fraction: round6(areaFraction),
+        aabb_min: [round6(min.x), round6(min.y), round6(min.z)] as [number, number, number],
+        aabb_max: [round6(max.x), round6(max.y), round6(max.z)] as [number, number, number],
+      };
+    });
+  }
+
   /** 表现层（S-2）：权威容器**只**由 `applyAuthorityStep()` 写；`step()` 只读。 */
   const presentation: Presentation = createPresentation({
     smoothingMs: TICK_MS,
@@ -1410,7 +1686,8 @@ export function createScene(
    * `entity_root_meshes_are_visible` 的取数面逐字段不变（Node 下 `glb_loaded` 恒 false ⇒ 全部可见）。
    */
   function syncCharacterVisibility(): void {
-    for (const [entityId, inst] of characterInstances) {
+    for (const [entityId, entry] of characterInstances) {
+      const inst = entry.instance;
       const loaded = inst.glbLoaded();
       const rootMesh = meshes.get(entityId);
       if (rootMesh) {
@@ -1454,7 +1731,8 @@ export function createScene(
    *   - `character_effective_visible` = 该实体**最终会不会产生像素**（加载后看 GLB，未加载看盒体）。
    */
   function characterBoxVisibilityReport(): Array<Record<string, unknown>> {
-    return [...characterInstances.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([entityId, inst]) => {
+    return [...characterInstances.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([entityId, entry]) => {
+      const inst = entry.instance;
       const rootMesh = meshes.get(entityId);
       const names = [...partMeshes.keys(), ...detailPartMeshes.keys()];
       const owned = names.filter((name) => {
@@ -1630,8 +1908,9 @@ export function createScene(
     }
   }
 
-  function rebuild(state: SceneState | undefined): void {
+  function rebuild(state: SceneState | undefined, tick?: number): void {
     latestState = state;
+    if (typeof tick === 'number') lastRebuildTick = tick;
     for (const mesh of decorMeshes) root.remove(mesh);
     decorMeshes.length = 0;
     for (const mesh of meshes.values()) root.remove(mesh);
@@ -1639,9 +1918,11 @@ export function createScene(
     partMeshes.clear();
     buildingPartMeshes.clear();
     detailPartMeshes.clear();
-    // N5 / B-2：角色实例随实体集重建（旧实例显式 dispose，避免指针残留）
-    for (const inst of characterInstances.values()) inst.dispose();
-    characterInstances.clear();
+    // ── AC-1：角色实例**不再随 snapshot 无条件重建**（旧写法 = 全量 `dispose()` + `clear()`，
+    // 这是「GLB 异步重载窗口内盒体回显」的根因）。reconcile 在下方 npc 分支按
+    // `instanceKeyFor(entityId)` 逐实体判定「复用 / 重建」；本轮未出现的 entityId 在循环后统一剪枝。
+    const instanceSeen = new Set<string>();
+    const reusedKeysThisRebuild = new Set<string>();
     addGroundDecor(state);
     const boxes = buildEntityBoxes(state, currentReading, { appearance: appearanceTable });
     boxes.forEach((box, index) => {
@@ -1748,15 +2029,42 @@ export function createScene(
       // `entity_id` 绑**角色实例**，不再绑死到躯干盒体（REQ §三 S-1）。
       // **纯加法**：既有的部件 mesh 一行未动；本节点是新增的 `Group` 子节点，
       // 由 `asset_binding.ts` 的绑定项决定下面挂什么（有 loader ⇒ 真 GLB；无 ⇒ 空 Group + degradations）。
-      const instance = createCharacterInstance({
-        entityId: box.id,
-        gltfLoader: characterLoader,
-        extSurfaces: bindingForEntity(box.id)?.ext_surfaces as readonly never[] | undefined,
-      });
-      instance.group.position.set(0, 0, 0);
-      mesh.add(instance.group);
-      characterInstances.set(box.id, instance);
+      // ── AC-1 · reconcile：键相同 ⇒ **复用**（不 dispose、不重载 GLB，只重挂到新根 mesh）；
+      // 键不同 ⇒ dispose 旧 + 新建。键与构造参数**同源**（都走 `bindingForEntity`）。
+      const binding = bindingForEntity(box.id);
+      const desiredKey = instanceKeyFor(box.id);
+      let entry = characterInstances.get(box.id);
+      if (entry && entry.key === desiredKey) {
+        churnReused += 1;
+        reusedKeysThisRebuild.add(desiredKey);
+      } else {
+        if (entry) { entry.instance.dispose(); churnDisposed += 1; }
+        const instance = createCharacterInstance({
+          entityId: box.id,
+          gltfLoader: loaderForUse(),
+          extSurfaces: binding?.ext_surfaces as readonly never[] | undefined,
+        });
+        churnCreated += 1;
+        entry = { instance, key: desiredKey };
+        characterInstances.set(box.id, entry);
+      }
+      instanceSeen.add(box.id);
+      // HARD（设计 §12.2 / Raven C-5）：复用后把该实例 group 的变换**归一化回基线新建态**
+      // （`position=[0,0,0]`、`rotation=(0,0,0)`），再由 `renderFrame()` 施加 displayed 变换；
+      // 不复位会让两次 `structureReport()` 读数分叉 ⇒ `two_reads_share_scene_structure` 转红。
+      entry.instance.group.position.set(0, 0, 0);
+      entry.instance.group.rotation.set(0, 0, 0);
+      mesh.add(entry.instance.group);
     });
+    // ── AC-1 · 剪枝（R-1 / R-14）：本轮未出现的实体 ⇒ **真 `dispose()`** + 从注册表删除
+    // （只从 Map 删会让 in-flight 的 `load` 回调继续 `group.add()` 到脱链 group，留一个死实例）。
+    for (const [entityId, entry] of [...characterInstances.entries()]) {
+      if (instanceSeen.has(entityId)) continue;
+      entry.instance.dispose();
+      characterInstances.delete(entityId);
+      churnDisposed += 1;
+    }
+    churnReusedKeys = [...reusedKeysThisRebuild].sort();
     // N5-r2 / A3 + A5：ext 表面载体挂载 + 盒体可见性同步（rebuild 之后立即对齐）
     mountExtSurfaceProps();
     syncCharacterVisibility();
@@ -2081,9 +2389,11 @@ export function createScene(
   return {
     apply(message) {
       if (message.t === 'snapshot') {
-        rebuild(message.state);
+        rebuild(message.state, message.tick);
         maybeAutoLoadAppearance();
         feedAuthority(message.state, message.tick);
+        // AC-2：每次 snapshot 之后按实体 AABB **重算并施加**观测机位（跟随式；默认关 ⇒ 零副作用）。
+        applyAutoObservationFocus();
         return;
       }
       if (message.t === 'delta') {
@@ -2096,6 +2406,17 @@ export function createScene(
           mesh.position.set(pos.x / MM, pos.y / MM, pos.z / MM);
         }
         feedAuthority(latestState, message.tick);
+        // AC-2 / r2 稳定性（哨兵 MED-1 关闭项的必要补足）：**delta 分支此前没有**重算对焦机位
+        // （只有 snapshot 分支有，见上面）。delta 直接把**根 mesh 的位置**改掉，而实例 group 的
+        // `position = displayed − parent` 要到下一帧 `renderFrame` 才写回 ⇒ 到下一帧为止，
+        // 实例**世界位置**已经随 mesh 跳变、相机却仍按旧 AABB 派生 ⇒ 该子帧窗口内
+        // `characterFramingReport()` 的 AABB 与相机**不同源**，窄屏（横向余量最小）读到**瞬态**
+        // `fully_in_viewport=false`（实测 250 ms 扫描 1/40：同一采样点前后相机与 AABB-z 逐字相同，
+        // 仅实例世界位置跳变；诊断见 `evidence/r2/artisan-snap-*`、`artisan-race-*`）。
+        // 这里让「任何改变世界位置的入站消息」都同步再派生一次（与 snapshot 分支对称）。
+        // **不改阈值、不改判据、不放宽 `fully_in_viewport`**；`applyAutoObservationFocus()` 内部
+        // 在开关关闭时只写 `focusRecords`、**不碰相机** ⇒ 默认路径零副作用。
+        applyAutoObservationFocus();
       }
     },
     setReading(reading) {
@@ -2129,13 +2450,41 @@ export function createScene(
      * `DEFAULT_CAMERA_LOOK_AT`（起点冻结值）⇒ 「不调用它」与「调用后再置 null」读数相同。
      */
     setObservationCamera(view) {
-      const position = view === null ? DEFAULT_CAMERA_POSITION : view.position_m;
-      const target = view === null ? DEFAULT_CAMERA_LOOK_AT : view.look_at_m;
-      camera.position.set(position[0], position[1], position[2]);
-      camera.lookAt(target[0], target[1], target[2]);
-      camera.updateMatrixWorld(true);
-      return cameraReport();
+      // 语义**逐字不变**：`null` ⇒ 恢复 `DEFAULT_CAMERA_POSITION` / `DEFAULT_CAMERA_LOOK_AT`；
+      // 非 null ⇒ 用 `view` 的两个点。只改相机 `position`/`quaternion`（与自动对焦共用同一原语）。
+      return view === null
+        ? applyObservationView(DEFAULT_CAMERA_POSITION, DEFAULT_CAMERA_LOOK_AT)
+        : applyObservationView(view.position_m, view.look_at_m);
     },
+    /**
+     * AC-1：**实例 churn 读数**（`created`/`reused`/`disposed` 为**累计**；`reused_keys` =
+     * **最近一次 rebuild** 复用的键集合）。这是**辅助证据**，**不得**替代
+     * `characterInstanceReport()`（`glb_loaded`）与 `characterBoxVisibilityReport()`（`box_parts_visible`）。
+     */
+    characterInstanceChurnReport: () => ({
+      created: churnCreated,
+      reused: churnReused,
+      disposed: churnDisposed,
+      reused_keys: [...churnReusedKeys],
+      glb_load_calls: glbLoadCalls,
+      last_rebuild_tick: lastRebuildTick,
+    }),
+    /** AC-2：开关自动对焦（**默认 false**）并立即重算一次；返回 `{ enabled, applied }`（applied = 施加数）。 */
+    setAutoObservationFocus: (enabled: boolean) => {
+      autoObservationFocusEnabled = Boolean(enabled);
+      applyAutoObservationFocus();
+      return { enabled: autoObservationFocusEnabled, applied: focusRecords.filter((record) => record.applied).length };
+    },
+    /** AC-2：对焦状况读数（`source:'aabb'` ⇒ 真的按 AABB 派生了机位；否则 `'none'` + `reason`）。 */
+    focusViewReport: () => focusRecords.map((record) => ({ ...record })),
+    /** AC-2：人形取景读数（`Box3` 8 角投影；空盒 ⇒ `has_geometry:false` 且无 NaN/±Infinity）。 */
+    characterFramingReport,
+    /**
+     * AC-2 / §12.5 的 Node 单测入口：进入**交互相机**之后自动对焦**不再施加**
+     * （`focusViewReport()` 给 `source:'none'` + `reason:'camera_mode:interactive'`）。
+     * 委托 `presentation.enterInteractiveCamera()`，不改任何相机常量与默认机位定义。
+     */
+    enterInteractiveCamera: () => { presentation.enterInteractiveCamera(); applyAutoObservationFocus(); },
     structureReport,
     renderCameraReport: () => ({
       identity: sceneRenderCameraIdentity,
@@ -2169,7 +2518,7 @@ export function createScene(
     bindingReport: () => bindingReportOf(),
     characterInstanceReport: () => [...characterInstances.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([entityId, inst]) => ({ ...inst.report(), entity_id: entityId })),
+      .map(([entityId, entry]) => ({ ...entry.instance.report(), entity_id: entityId })),
     presentationReport: () => presentation.report(),
     // N5-r2 / A3 + A5：场景使用面（真实遍历）与盒体可见性读数
     surfaceUsageReport,
