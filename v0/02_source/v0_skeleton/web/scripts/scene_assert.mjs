@@ -2355,36 +2355,419 @@ check('n5_glb_loaded_character_effectively_visible', (() => {
 //   ② `ext_carrier_hidden_only_when_glb_loaded` —— `REQ-006` R3-M1 的 **C-2 判据口径**（architect §12-D7）：
 //      `hidden_surfaces ⊆ {角色侧 ext 载体}` ∧ `glb_loaded === false ⇒ hidden_surfaces == ∅`。
 
-// --- ① 署名（CC BY 4.0）与来源登记面（`web/assets/provenance.json`）**逐字**一致 ---
-const n5cCreditsReading = (() => {
+// --- ① 署名义务与来源登记面（`web/assets/provenance.json` + 许可表）**逐字**一致 ---
+// 根因（为什么旧形态在目标态下必红）：旧形态以「`license === 'cc-by-4.0'` 的条目」作**分母**，
+// 要求 `texts.length >= 1` —— 角色资产换成 AI 图生3D（`hyper3d-gen2-260112`）后该分母**消失** ⇒ 恒假。
+// 新形态按「**是否承担署名 / 标注义务**」取义务集合（许可值 ∈ OBLIGATION_LICENSES，或按
+// (generator, generator_version) 在许可表命中该义务集合的行）⇒ 分母随义务来源，不绑具体资产。
+// fail-closed：① 表路径缺失 / JSON 解析失败 ⇒ **抛**（不得回落成「无义务」）；
+//            ② `generator` 非空且表**未命中**且该条**未处置** ⇒ 记 `unresolved_generators`（判红）；
+//            ③ 挂载点三项保留，但加**非退化前置** `hud_before_player_ui`（否则 slice 落成空串后恒真）。
+// ★ r3 收口（PM `RULING-20261011-ORDERING §4.3(1)` **第二案 = 结构化判定**；任务书 `.task-artisan-r3.md`
+//   §4.1-(A)）：判定面**不再**做「去注释后的块内**文本** `includes`」这类纯文本比对 —— r2 的两条**合法 TS**
+//   假绿正是从这里长出来的：`n2`（顶层常量名出现在**字符串**里也会触发展开）、`n4b`（一行含奇数引号的
+//   **正则字面量**翻转全文引号 parity ⇒ 去注释整体失效，r1 的「块内注释」假绿复活）。改为**扫描源码**：
+//   正确识别注释 / 字符串 / 模板串 / **正则字面量** ⇒ 结构化解析 `CREDITS_ENTRIES` **数组字面量**里的
+//   **条目对象**。判定 = 「存在**未被注释**的条目，其 `attribution`（或 `notice`）**属性位置**的值
+//   （字面量，或被引用的**顶层字符串常量**）逐字命中义务串」⇒
+//     · 字符串 / 注释里的「提及」不再可能满足判定（它们**不是属性位置的取值**）；
+//     · 正则字面量不再影响判定面（不再依赖引号 parity；块锚也不再靠 `]);` 文本切分）。
+//   ⚠️ 仍未覆盖（如实登记，不写强于能力的话）：模板串 / 拼接 / `import` 形式的署名**读不到** ⇒ 判红
+//   （fail-closed，方向为安全侧；PM §4.4(c) 已把该形态的代价写明）；`commercial_use === false` 仍钉在 ⑤
+//   （许可升级须**同改三处**：枚举值 + 表行 + 该谓词）。
+const OBLIGATION_LICENSES = ['cc-by-4.0', 'ark-hyper3d-gen2-commercial-requires-written-permission'];
+// 商用限制说明 = **本判据内复写的字面量**（**不得**从 `credits.ts` 读回；由负对照 ④ 证明它不是读回）
+const RESTRICTION_NOTICE = '商用分发前须取得供应商（影眸科技 / 火山引擎方舟）书面许可';
+const LICENSE_TABLE_FILE = `${SOURCE_DIR}asset.license.table.data.json`;
+
+/** C2 词法扫描器：把 `credits.ts` 切成记号流，**正确识别**注释 / 字符串 / 模板串 / **正则字面量**
+ *  （`/…/flags`，按上下文区分除号与正则起止）。注释**不进**记号流；每枚记号带 `start`/`end`（原文下标），
+ *  供负对照的**源级注入**（把条目区间原样注释掉 / 删除）复用，注入点一定落在代码位、不在字符串里。
+ *  识别正则字面量是 r3 的关键：不识别 ⇒ `/['\"]/g` 里的引号会把状态机带进字符串态并**翻转全文 parity**
+ *  ⇒「去注释」整体失效（r2 的 `n4b`）。 */
+const c2ScanCredits = (text) => {
+  const tokens = [];
+  const ID_START = /[A-Za-z_$]/;
+  const ID_PART = /[A-Za-z0-9_$]/;
+  const REGEX_OK_AFTER_ID = new Set(['return', 'typeof', 'instanceof', 'in', 'of', 'new', 'delete', 'void',
+    'case', 'do', 'else', 'yield', 'await', 'throw']);
+  const canStartRegex = (prev) => {
+    if (!prev) return true;
+    if (prev.type === 'punct') return ![')', ']', '}'].includes(prev.value);
+    if (prev.type === 'id') return REGEX_OK_AFTER_ID.has(prev.value);
+    return false;
+  };
+  const unescape = (raw) => raw.replace(/\\(?:u([0-9a-fA-F]{4})|x([0-9a-fA-F]{2})|([\s\S]))/g, (_m, u, x, c) => (
+    u ? String.fromCharCode(parseInt(u, 16))
+      : x ? String.fromCharCode(parseInt(x, 16))
+        : c === 'n' ? '\n' : c === 't' ? '\t' : c === 'r' ? '\r' : c));
+  let i = 0;
+  while (i < text.length) {
+    const ch = text[i];
+    const next = text[i + 1];
+    if (ch === ' ' || ch === '\t' || ch === '\r' || ch === '\n') { i += 1; continue; }
+    if (ch === '/' && next === '/') { const j = text.indexOf('\n', i); i = j < 0 ? text.length : j; continue; }
+    if (ch === '/' && next === '*') {
+      const j = text.indexOf('*/', i + 2);
+      if (j < 0) throw new Error('E_C2_CREDITS_COMMENT_UNTERMINATED: 块注释未闭合');
+      i = j + 2; continue;
+    }
+    if (ch === '/' && canStartRegex(tokens[tokens.length - 1])) {
+      let j = i + 1; let inClass = false; let closed = false;
+      while (j < text.length) {
+        const c = text[j];
+        if (c === '\\') { j += 2; continue; }
+        if (c === '\n') break;                        // 正则字面量不跨行
+        if (c === '[') inClass = true;
+        else if (c === ']') inClass = false;
+        else if (c === '/' && !inClass) { closed = true; break; }
+        j += 1;
+      }
+      if (closed) {
+        let k = j + 1;
+        while (k < text.length && /[a-z]/i.test(text[k])) k += 1;
+        tokens.push({ type: 'regex', value: text.slice(i, k), start: i, end: k });
+        i = k; continue;
+      }
+      // 未闭合 ⇒ 按除号处理（落到下面的 punct 分支）
+    }
+    if (ch === "'" || ch === '"') {
+      const start = i; let j = i + 1; let raw = '';
+      while (j < text.length) {
+        const c = text[j];
+        if (c === '\\') { raw += text.slice(j, j + 2); j += 2; continue; }
+        if (c === ch) { j += 1; break; }
+        if (c === '\n') break;                        // 未闭合 ⇒ 止于行尾（伤害有界，不吞全文）
+        raw += c; j += 1;
+      }
+      tokens.push({ type: 'str', value: unescape(raw), start, end: j });
+      i = j; continue;
+    }
+    if (ch === '`') {
+      const start = i; let j = i + 1; let raw = '';
+      while (j < text.length) {
+        const c = text[j];
+        if (c === '\\') { raw += text.slice(j, j + 2); j += 2; continue; }
+        if (c === '`') { j += 1; break; }
+        raw += c; j += 1;
+      }
+      tokens.push({ type: 'tpl', value: unescape(raw), start, end: j });
+      i = j; continue;
+    }
+    if (ID_START.test(ch)) {
+      let j = i + 1;
+      while (j < text.length && ID_PART.test(text[j])) j += 1;
+      tokens.push({ type: 'id', value: text.slice(i, j), start: i, end: j });
+      i = j; continue;
+    }
+    if (/[0-9]/.test(ch)) {
+      let j = i + 1;
+      while (j < text.length && /[0-9a-fA-FxX._eE+-]/.test(text[j])) j += 1;
+      tokens.push({ type: 'num', value: text.slice(i, j), start: i, end: j });
+      i = j; continue;
+    }
+    tokens.push({ type: 'punct', value: ch, start: i, end: i + 1 });
+    i += 1;
+  }
+  return tokens;
+};
+
+/** 结构化解析 `credits.ts`：定位 `const CREDITS_ENTRIES` 的**数组字面量**（**括号配对**，不再靠 `]);` 文本
+ *  切分 ⇒ 块内字符串里出现 `]);` 不再截断）、逐条解析**条目对象**的**属性位置**取值；并收集顶层
+ *  `const NAME = '字符串字面量'` 供「属性值是被引用的常量」这一形态解析。歧义 / 非数组 / 未闭合 ⇒ 命名报错。 */
+const c2ParseCredits = (text) => {
+  const tokens = c2ScanCredits(text);
+  const constStrings = new Map();
+  const findInit = (k) => {
+    let d = 0;
+    for (let p = k + 2; p < tokens.length; p += 1) {
+      const t = tokens[p];
+      if (t.type !== 'punct') continue;
+      if (t.value === '(' || t.value === '[' || t.value === '{') { d += 1; continue; }
+      if (t.value === ')' || t.value === ']' || t.value === '}') { if (d === 0) return -1; d -= 1; continue; }
+      if (d === 0 && t.value === '=') return p;
+      if (d === 0 && (t.value === ';' || t.value === ',')) return -1;
+    }
+    return -1;
+  };
+  let depth = 0;
+  let declCount = 0;
+  let initIdx = -1;
+  for (let k = 0; k < tokens.length; k += 1) {
+    const t = tokens[k];
+    const nameTok = tokens[k + 1];
+    if (depth === 0 && t.type === 'id' && t.value === 'const' && nameTok && nameTok.type === 'id') {
+      const eq = findInit(k);
+      const init = eq >= 0 ? tokens[eq + 1] : null;
+      if (init && init.type === 'str') constStrings.set(nameTok.value, init.value);
+      if (nameTok.value === 'CREDITS_ENTRIES') { declCount += 1; initIdx = eq; }
+    }
+    if (t.type === 'punct') {
+      if (t.value === '(' || t.value === '[' || t.value === '{') depth += 1;
+      else if (t.value === ')' || t.value === ']' || t.value === '}') depth -= 1;
+    }
+  }
+  if (declCount !== 1 || initIdx < 0) {
+    throw new Error(`E_C2_CREDITS_BLOCK_AMBIGUOUS: const CREDITS_ENTRIES 声明数=${declCount}（须恰为 1 且有初始化式）`);
+  }
+  let openIdx = initIdx + 1;
+  while (openIdx < tokens.length && !(tokens[openIdx].type === 'punct' && tokens[openIdx].value === '[')) openIdx += 1;
+  if (openIdx >= tokens.length) throw new Error('E_C2_CREDITS_BLOCK_UNTERMINATED: `CREDITS_ENTRIES` 的初始化式不是数组字面量');
+  let level = 0;
+  let closeIdx = -1;
+  for (let k = openIdx; k < tokens.length; k += 1) {
+    const t = tokens[k];
+    if (t.type !== 'punct') continue;
+    if (t.value === '[') level += 1;
+    else if (t.value === ']') { level -= 1; if (level === 0) { closeIdx = k; break; } }
+  }
+  if (closeIdx < 0) throw new Error('E_C2_CREDITS_BLOCK_UNTERMINATED: 未找到 `CREDITS_ENTRIES` 数组的闭合 `]`');
+  const propsOf = (from, to) => {
+    const props = new Map();
+    let k = from + 1;
+    let d = 0;
+    while (k < to - 1) {
+      const t = tokens[k];
+      if (t.type === 'punct') {
+        if (t.value === '{' || t.value === '(' || t.value === '[') { d += 1; k += 1; continue; }
+        if (t.value === '}' || t.value === ')' || t.value === ']') { d -= 1; k += 1; continue; }
+        if (d !== 0 || t.value === ',') { k += 1; continue; }
+      }
+      if (d !== 0) { k += 1; continue; }
+      const key = t;
+      const colon = tokens[k + 1];
+      const val = tokens[k + 2];
+      if ((key.type === 'id' || key.type === 'str') && colon && colon.type === 'punct'
+          && colon.value === ':' && val) {
+        let value = null;
+        let kind = val.type;
+        if (val.type === 'str' || val.type === 'tpl') value = val.value;
+        else if (val.type === 'id') {
+          const ref = constStrings.get(val.value);
+          if (ref === undefined) kind = 'ident-unresolved';
+          else { value = ref; kind = 'const-ref'; }
+        }
+        props.set(key.value, { value, kind });
+        k += 3;
+        let dd = 0;
+        while (k < to - 1) {                       // 跳到本属性的结束（块内 depth 0 的 `,`）
+          const u = tokens[k];
+          if (u.type === 'punct') {
+            if (u.value === '{' || u.value === '(' || u.value === '[') dd += 1;
+            else if (u.value === '}' || u.value === ')' || u.value === ']') dd -= 1;
+            else if (u.value === ',' && dd === 0) break;
+          }
+          k += 1;
+        }
+        continue;
+      }
+      k += 1;
+    }
+    return props;
+  };
+  const entries = [];
+  const pushElement = (from, to) => {
+    if (from >= to) return;
+    if (!(tokens[from].type === 'punct' && tokens[from].value === '{')) return;   // 非对象字面量 ⇒ 不是条目
+    let lv = 0;
+    let end = -1;
+    for (let k = from; k < to; k += 1) {
+      const t = tokens[k];
+      if (t.type !== 'punct') continue;
+      if (t.value === '{') lv += 1;
+      else if (t.value === '}') { lv -= 1; if (lv === 0) { end = k; break; } }
+    }
+    if (end < 0) return;
+    entries.push({ start: tokens[from].start, end: tokens[end].end, props: propsOf(from, end + 1) });
+  };
+  let segStart = openIdx + 1;
+  let d = 0;
+  for (let k = openIdx + 1; k < closeIdx; k += 1) {
+    const t = tokens[k];
+    if (t.type !== 'punct') continue;
+    if (t.value === '{' || t.value === '(' || t.value === '[') d += 1;
+    else if (t.value === '}' || t.value === ')' || t.value === ']') d -= 1;
+    else if (t.value === ',' && d === 0) { pushElement(segStart, k); segStart = k + 1; }
+  }
+  pushElement(segStart, closeIdx);
+  return { entries, constStrings, arrayInsertAt: tokens[openIdx].end };
+};
+const n5cCreditsRead = (() => {
+  try {
+  if (!existsSync(LICENSE_TABLE_FILE)) throw new Error(`E_C2_LICENSE_TABLE_MISSING: ${LICENSE_TABLE_FILE}`);
+  const licenseTable = readJson(LICENSE_TABLE_FILE); // 解析失败 ⇒ 抛（fail-closed，不回落成「无义务」）
+  const tableRows = Array.isArray(licenseTable.models) ? licenseTable.models : [];
+  // 查表口径与 `tools/verify_asset_provenance.py` 一致：非 `reject` 行进 lookup；精确 → `*` → 无版本。
+  const tableLookup = new Map();
+  const NONE_VERSION = '\u0001none';
+  for (const row of tableRows) {
+    if (!row || row.adjudication === 'reject') continue;
+    tableLookup.set(`${row.source_model}\u0000${String(row.model_version)}`, row);
+    if (String(row.model_version) === '*') tableLookup.set(`${row.source_model}\u0000${NONE_VERSION}`, row);
+  }
+  const lookupRow = (generator, version) => {
+    for (const key of [String(version), '*', NONE_VERSION]) {
+      const hit = tableLookup.get(`${generator}\u0000${key}`);
+      if (hit) return hit;
+    }
+    return null;
+  };
   const provenance = readJson(`${WEB_DIR}assets/provenance.json`);
-  const ccByAssets = (provenance.assets ?? []).filter((asset) => asset.license === 'cc-by-4.0');
-  const attributions = ccByAssets.map((asset) => String(asset.attribution ?? ''));
+  const obligations = [];
+  const unresolved = [];
+  for (const entry of provenance.assets ?? []) {
+    const assetId = String(entry.asset_id ?? '');
+    const attribution = String(entry.attribution ?? '');
+    const generator = typeof entry.generator === 'string' ? entry.generator : '';
+    const row = generator ? lookupRow(generator, entry.generator_version) : null;
+    // (a) 许可值本身即义务来源
+    if (OBLIGATION_LICENSES.includes(entry.license)) {
+      obligations.push({ asset_id: assetId, kind: 'license', attribution, commercial_use: null });
+    // (b) 按生成器查表命中，且该行许可属义务集合（命中即「已 adopt」，不看 commercial_use）
+    } else if (row && OBLIGATION_LICENSES.includes(row.license)) {
+      obligations.push({ asset_id: assetId, kind: 'provider-terms', attribution, commercial_use: row.commercial_use });
+    }
+    // (c) fail-closed：有生成器但表未命中且未处置（`runtime_excluded !== true` 且无 `license_disposition`）
+    if (generator && !row) {
+      const disposed = entry.runtime_excluded === true
+        || (typeof entry.license_disposition === 'string' && entry.license_disposition.length > 0);
+      if (!disposed) unresolved.push(assetId);
+    }
+  }
   const creditsText = readFileSync(`${WEB_DIR}src/ui/player/credits.ts`, 'utf8');
   const html = readFileSync(`${WEB_DIR}index.html`, 'utf8');
   const main = readFileSync(`${WEB_DIR}src/main.ts`, 'utf8');
-  const consistent = (texts) => (
-    texts.length >= 1
-    && texts.every((text) => text.length > 0 && creditsText.includes(text))
-    // 挂载点在**玩家界面根**内、且**不在**开发观察面板内（与 `AC-H-2` 同向）
-    && html.includes('id="credits"')
-    && html.indexOf('id="credits"') > html.indexOf('id="player-ui"')
-    && !html.slice(html.indexOf('<div id="hud">'), html.indexOf('id="player-ui"')).includes('id="credits"')
-    && main.includes('mountCredits')
-  );
-  return {
-    asset_ids: ccByAssets.map((asset) => asset.asset_id),
-    positive: consistent(attributions),
-    // 负对照：篡改 attribution ⇒ **同一个判据体**必须判假（证明它不恒真）
-    negative_judged_false: consistent(attributions.map((text) => `${text}（tampered）`)) === false,
+  // 判定面 = **结构化解析后的 `CREDITS_ENTRIES` 条目对象**（见 c2ParseCredits 的注释：r3 收口）
+  const parsed = c2ParseCredits(creditsText);
+  // 挂载点三项（语义不变）+ **非退化前置**（读数行进读数行）
+  const hudIdx = html.indexOf('<div id="hud">');
+  const playerIdx = html.indexOf('id="player-ui"');
+  const creditsIdx = html.indexOf('id="credits"');
+  const hud_before_player_ui = hudIdx >= 0 && playerIdx >= 0 && hudIdx < playerIdx;
+  // D-2（Raven）：把 10 个合取项拆成**具名布尔值**，既用于判定也进读数行 ——
+  // 态 β 的「唯一预期红」与「义务串取错 / 切片取错」类真缺陷**逐字同形**的问题由此可辨。
+  // `in_block` 在 r3 的语义 = 「**条目属性位置**取值命中」（不再是块内文本包含）。
+  const creditsConjuncts = ({ required, entries, has_provider, provider_row_ok }) => ({
+    nonempty: required.length >= 1,
+    nonblank: required.every((text) => text && text.length > 0),
+    in_block: required.every((text) => entries.some((entry) => ['attribution', 'notice']
+      .some((key) => { const prop = entry.props.get(key); return Boolean(prop) && prop.value === text; }))),
+    mount_html: html.includes('id="credits"'),
+    order: creditsIdx > playerIdx,
+    hud_guard: hud_before_player_ui === true,
+    not_in_hud: !html.slice(hudIdx, playerIdx).includes('id="credits"'),
+    main_mount: main.includes('mountCredits'),
+    notice: !has_provider || entries.some((entry) => [...entry.props.values()]
+      .some((prop) => prop.value === RESTRICTION_NOTICE)),
+    row_ok: !has_provider || provider_row_ok === true,
+  });
+  // `entries` 参数约定为**结构化解析出的条目对象数组**（见上：`parsed.entries`）。
+  const judgeCredits = (input) => Object.values(creditsConjuncts(input)).every(Boolean);
+  const required = obligations.map((obligation) => obligation.attribution);
+  const providerObligations = obligations.filter((obligation) => obligation.kind === 'provider-terms');
+  const has_provider = providerObligations.length > 0;
+  const provider_row_ok = providerObligations.every((obligation) => obligation.commercial_use === false);
+  const judgeInput = { required, entries: parsed.entries, has_provider, provider_row_ok };
+  const positive = unresolved.length === 0 && judgeCredits(judgeInput);
+  const conj = creditsConjuncts(judgeInput); // 读数行加印（D-2）
+  // 负对照 **5 条**（**同一判据体**，布尔值进读数行）。基底 = 真实源 + 一个**合成探针条目**（插在数组开头，
+  // 不来自任何交付数据）⇒ 使 5 条在态 α/β 都**非退化**（r2 的 neg2/neg5 在 β 恒定假、neg5 还会误红合法形态：
+  // r2 把 `/* */` 插到**字符串内部**，而判据自己的规则是「字符串里的 `/*` 不算注释」⇒ 合法形态被判成红）。
+  // r3 的 neg2/neg5 改为**源级注入**：按解析出的**条目源区间**（起点/终点都在代码位）删掉 / 注释掉承载义务的条目。
+  const NC_PROBE_ATTRIBUTION = '负对照合成探针署名（不来自交付数据）';
+  const ncEntrySrc = `{ asset_id: 'nc_probe', license: 'nc-probe', attribution: '${NC_PROBE_ATTRIBUTION}', notice: '${RESTRICTION_NOTICE}' },`;
+  const ncSource = creditsText.slice(0, parsed.arrayInsertAt) + ncEntrySrc + creditsText.slice(parsed.arrayInsertAt);
+  const ncEntries = c2ParseCredits(ncSource).entries;
+  // 真实 required 若**未被**当前源承载（态 β：条目还没落地），基底**只用探针义务** ——
+  // 否则基底自身就是假，neg2/neg5 退化成「恒假」（r2 在态 β 正是如此）。读数行用
+  // `negative_base_real_required` / `negative_base_positive` 自曝基底构成与非退化性。
+  const atAttrPos = (text, entries) => entries.some((entry) => ['attribution', 'notice']
+    .some((key) => { const prop = entry.props.get(key); return Boolean(prop) && prop.value === text; }));
+  const ncRealCarried = required.every((text) => atAttrPos(text, ncEntries));
+  const ncRequired = ncRealCarried ? [...required, NC_PROBE_ATTRIBUTION] : [NC_PROBE_ATTRIBUTION];
+  const ncCarries = (entry) => ncRequired.some((text) => ['attribution', 'notice']
+    .some((key) => { const prop = entry.props.get(key); return Boolean(prop) && prop.value === text; }));
+  const ncSpans = ncEntries.filter(ncCarries).map((entry) => [entry.start, entry.end]);
+  const spliceDesc = (sourceText, spans, wrap) => spans.slice().sort((a, b) => b[0] - a[0])
+    .reduce((acc, [start, end]) => `${acc.slice(0, start)}${wrap(acc.slice(start, end))}${acc.slice(end)}`, sourceText);
+  const entriesNoticeSwapped = (entries) => entries.map((entry) => {
+    const props = new Map();
+    for (const [key, prop] of entry.props) {
+      props.set(key, prop.value === RESTRICTION_NOTICE ? { value: '（负对照）限制说明已替换', kind: prop.kind } : prop);
+    }
+    return { props };
+  });
+  const negatives = {
+    'neg1_要求侧_篡改署名': judgeCredits({
+      required: ncRequired.map((text) => `${text}（tampered）`), entries: ncEntries,
+      has_provider: true, provider_row_ok,
+    }),
+    'neg2_credits侧_删provider署名条目': judgeCredits({
+      required: ncRequired, entries: c2ParseCredits(spliceDesc(ncSource, ncSpans, () => '')).entries,
+      has_provider: true, provider_row_ok,
+    }),
+    'neg3_要求侧_义务集合为空': judgeCredits({
+      required: [], entries: ncEntries, has_provider: true, provider_row_ok,
+    }),
+    'neg4_credits侧_替换限制说明文案': judgeCredits({
+      required: ncRequired, entries: entriesNoticeSwapped(ncEntries), has_provider: true, provider_row_ok,
+    }),
+    'neg5_credits侧_块内条目被注释掉': judgeCredits({
+      required: ncRequired, entries: c2ParseCredits(spliceDesc(ncSource, ncSpans, (seg) => `/*${seg}*/`)).entries,
+      has_provider: true, provider_row_ok,
+    }),
   };
+  const negatives_all_false = Object.values(negatives).every((value) => value === false);
+  // 负对照的**非退化**自证：同一 judge 在**未被注入**的合成基底上必须为 true
+  // （否则「neg 全 false」可能只是因为它恒假 —— r2 的 neg2/neg5 在态 β 就退化成这样）。
+  const negatives_base_positive = judgeCredits({
+    required: ncRequired, entries: ncEntries, has_provider: true, provider_row_ok,
+  });
+  return {
+    value: {
+      obligation_sources: obligations.map((obligation) => [obligation.asset_id, obligation.kind]),
+      license_table_entries: tableRows.length,
+      unresolved_generators: unresolved,
+      hud_before_player_ui,
+      required_n: required.length,
+      required,
+      conj,
+      entries_n: parsed.entries.length,
+      negative_base: ncRealCarried ? 'real-required+synthetic-probe' : 'synthetic-probe',
+      negative_base_real_required: ncRealCarried,
+      positive,
+      negatives,
+      negatives_all_false,
+      negatives_base_positive,
+    },
+  };
+  } catch (err) {
+    // fail-closed 的**形态**（Raven L-1 / 设计 §13.5-3）：表缺失 / JSON 解析失败 / 登记面读取失败 /
+    // 判据体自身的命名错误（E_C2_CREDITS_*）一律**捕获**后回到 `check(..., false, 'E_C2…')`
+    // （输出里有 FAIL 行 + 汇总行），再以非 0 退出；**不得**以未捕获异常收场
+    // （自动判读只看 `^FAIL` / 汇总行 ⇒ 无汇总行等同「没有红」）。
+    return { error: String((err && err.message) || err) };
+  }
 })();
+const n5cCreditsReading = n5cCreditsRead.error ? null : n5cCreditsRead.value;
 check('credits_attribution_matches_provenance',
-  n5cCreditsReading.positive && n5cCreditsReading.negative_judged_false,
-  `CC BY 4.0 条目 ${n5cCreditsReading.asset_ids.length} 条（${n5cCreditsReading.asset_ids.join(', ')}）；`
-  + `credits.ts 逐字含其 attribution=${n5cCreditsReading.positive}；#credits 在 #player-ui 内且不在 #hud 内；`
-  + `main.ts 调 mountCredits；负对照（篡改 attribution ⇒ 同判据体判假）=${n5cCreditsReading.negative_judged_false}；`
-  + `[**源码面**判据 —— 不构成 C-1 通过；分发可见面由构建产物字节锚 + 真浏览器读数承担]`);
+  Boolean(n5cCreditsReading) && n5cCreditsReading.positive && n5cCreditsReading.negatives_all_false,
+  n5cCreditsReading
+    ? `obligation_sources=${JSON.stringify(n5cCreditsReading.obligation_sources)}；`
+      + `license_table_entries=${n5cCreditsReading.license_table_entries}；`
+      + `unresolved_generators=${JSON.stringify(n5cCreditsReading.unresolved_generators)}；`
+      + `hud_before_player_ui=${n5cCreditsReading.hud_before_player_ui}；`
+      + `required_n=${n5cCreditsReading.required_n}；positive=${n5cCreditsReading.positive}；`
+      + `required=${JSON.stringify(n5cCreditsReading.required)}；`
+      + `conj=${JSON.stringify(n5cCreditsReading.conj)}；`
+      + `entries_n=${n5cCreditsReading.entries_n}；`
+      + `负对照（须全 false）=${JSON.stringify(n5cCreditsReading.negatives)}（基础实例=${n5cCreditsReading.negative_base}）；`
+      + `负对照基底_positive=${n5cCreditsReading.negatives_base_positive}；`
+      + `负对照基底_含真实required=${n5cCreditsReading.negative_base_real_required}；`
+      + `[**源码面**判据（r3 结构化判定：条目对象属性位置取值）—— 不构成 C-1 通过；`
+      + `分发可见面由构建产物字节锚 + 真浏览器读数承担]`
+    : `E_C2_FAIL_CLOSED：许可表 / 登记面 / 分发面读取或解析失败 ⇒ 本判据判假（**不回落成「无义务」**）；`
+      + `原始错误=${n5cCreditsRead.error}；[fail-closed 形态：FAIL 行 + 汇总行后非 0 退出]`);
 
 // --- ② C-2 判据口径（R3-M1）：角色侧 ext 载体**只在 GLB 加载后**被隐藏 ---
 // 载体集合 = `world.ts` 的 `EXT_SURFACE_PROPS[].parent === 'character'` 的 3 条（盘上字面：`skin-face`

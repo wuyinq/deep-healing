@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "table_version": "2026-09-21.r3",
-  "collected_at": "2026-09-21T19:5x+08:00",
+  "table_version": "2026-10-11.r1",
+  "collected_at": "2026-10-11T00:52:00+08:00",
   "default_policy": "deny",
-  "license_enum": ["apache-2.0", "mit", "cc0-1.0", "cc-by-4.0", "flux-1-dev-non-commercial", "cc-by-nc-4.0", "tencent-hunyuan-3d", "unknown"],
+  "license_enum": ["apache-2.0", "mit", "cc0-1.0", "cc-by-4.0", "flux-1-dev-non-commercial", "cc-by-nc-4.0", "tencent-hunyuan-3d", "unknown", "ark-hyper3d-gen2-commercial-requires-written-permission"],
   "commercial_license_whitelist": ["apache-2.0", "mit", "cc0-1.0", "cc-by-4.0"],
   "models": [
     {
@@ -110,6 +110,16 @@
       "url": "https://github.com/comfyanonymous/ComfyUI",
       "adjudication": "tool_only",
       "deny_reason": "GPL-3.0：只允许独立进程调用 + 产物文件；不得链接进产品。作为**资产来源**不可商用"
+    },
+    {
+      "source_model": "hyper3d-gen2-260112",
+      "model_version": "gen2-260112",
+      "license": "ark-hyper3d-gen2-commercial-requires-written-permission",
+      "commercial_use": false,
+      "kind": "3d",
+      "url": "https://www.volcengine.com/docs/ark/volcengine-ark-platform-terms",
+      "adjudication": "adopt",
+      "deny_reason": "本轮入链裁决=adopt：依据 PD-20261010-007 resolution=A（用户 2026-10-10 原话「选项A」）与火山方舟专用条款 §3.7.10（产品侧直调 API 生成内容在协议与合规范围内可用）；对外商业使用须先取得火山引擎书面许可（§3.1）⇒ commercial_use=false，本行不得读作许可已证实。`url` 为平台层条款；模型层（影眸模型服务协议 = G-1）本轮未取得。证据：dev_team_workspace/xuqin-avatar-license-20261010/license_evidence/{ark-platform-terms.md,evidence.json}（含 sha256）。"
     }
   ]
 }
