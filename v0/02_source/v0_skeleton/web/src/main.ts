@@ -235,6 +235,11 @@ export async function bootstrap(options: { worldviewUrl?: string; autoConnect?: 
   // **N5 / B-1 + B-2**：真 WebGL 下**动态** import `GLTFLoader` 并注入场景
   // （动态 import 使 Node / 无 WebGL 路径完全不碰该模块；失败**不抛**，记 degradations，回落盒体）。
   if (typeof window !== 'undefined') {
+    // **AC-2（FU-013）**：装载时开启**自动对焦**（opt-in 加法件，默认关）。
+    // 它只按对焦实体 GLB 的世界 AABB 派生观测机位（只改相机 position/quaternion），
+    // **不改** `DEFAULT_CAMERA_POSITION` / `DEFAULT_CAMERA_LOOK_AT`，也不改任何 `presentation.ts` 常量；
+    // 实体出现后每次 snapshot 自动生效，进入交互相机后自动停止施加。
+    scene.setAutoObservationFocus(true);
     void import('three/examples/jsm/loaders/GLTFLoader.js')
       .then(({ GLTFLoader }) => { scene.setCharacterLoader(new GLTFLoader()); })
       .catch(() => { scene.setCharacterLoader(null); });

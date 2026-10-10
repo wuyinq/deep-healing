@@ -20,7 +20,11 @@ import { dirname, join, resolve as resolvePath } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
+import * as THREE from 'three';
+
 import { RenderClient } from '../src/net/client.ts';
+import { createScene } from '../src/scene/world.ts';
+import { createCharacterInstance } from '../src/scene/character_instance.ts';
 
 function delta(tick: number, seq: number) {
   return { t: 'delta' as const, tick, seq, ops: [{ op: 'set', entity: 'npc-001', component: 'transform', value: {} }] };
@@ -189,4 +193,354 @@ test('build_emits_runtime_assets', () => {
   assert.equal(negInspect.exists_count, 0,
     `负对照（修复前形态）不得产出 assets/character/**：实测 exists=${negInspect.exists_count}；`
     + `这条断言保证正例不是恒真（配置退回修复前形态 ⇒ 正例必红）`);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// fu010-013 · AC-1（消翻转 / 跨 snapshot 复用）与 AC-2（默认取景可见人物）守卫
+//
+// 为什么必须在这里而不是只靠 `scene_assert.mjs`：后者的取数路径是**静态**快照（tick 0），
+// 跑不出「第二条强制重建」（`setReading()` / 位置变化）。本节的用例**真驱动**多轮 `apply(snapshot)`
+// 与 `setReading()`，并对复用键 / 剪枝 / 对焦默认关 / framing 读数各配一条**可判假**的断言与负对照。
+
+const WEB_DIR_FU010 = resolvePath(dirname(fileURLToPath(import.meta.url)), '..');
+const TONE_FU010 = (JSON.parse(readFileSync(
+  join(WEB_DIR_FU010, '..', 'districts', 'xingfu-xiaoqu', 'worldview.json'), 'utf8')) as { tone: unknown }).tone;
+
+const CANVAS_STUB_FU010 = {
+  clientWidth: 1440, clientHeight: 900, width: 0, height: 0, style: {},
+  getContext: () => null, addEventListener() {}, removeEventListener() {},
+};
+
+const npcEntity = (id: string, xMm: number) => ({ id, kind: 'npc', transform: { pos_mm: { x: xMm, y: 0, z: 0 } } });
+
+/** 假 GLB：一个**已知尺寸**的小盒（0.6 × 1.8 × 0.4，脚底在 y=0）—— 供 AABB 派生与投影读数对表。 */
+function knownBodyScene() {
+  const root = new THREE.Group();
+  root.name = 'fake-glb-known-body';
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.8, 0.4), new THREE.MeshBasicMaterial());
+  body.position.set(0, 0.9, 0);
+  body.name = 'fake-body';
+  root.add(body);
+  return root;
+}
+
+const syncLoader = (scene3: THREE.Object3D) => ({
+  load(_url: string, onLoad: (gltf: unknown) => void) { onLoad({ scene: scene3 }); },
+});
+
+/** 递归断言：读数里所有 `number` 必须有限（NaN / ±Infinity 一律不许出现）。 */
+function assertNoNonFinite(value: unknown, path = '$'): void {
+  if (typeof value === 'number') {
+    assert.ok(Number.isFinite(value), `${path} 必须是有限数，实测 ${String(value)}`);
+    return;
+  }
+  if (Array.isArray(value)) { value.forEach((item, index) => assertNoNonFinite(item, `${path}[${index}]`)); return; }
+  if (value && typeof value === 'object') {
+    for (const [key, inner] of Object.entries(value)) assertNoNonFinite(inner, `${path}.${key}`);
+  }
+}
+
+const newProbe = () => createScene(CANVAS_STUB_FU010 as never, { worldview: TONE_FU010 as never });
+const snap = (probe: ReturnType<typeof newProbe>, entities: unknown[], tick: number) =>
+  probe.apply({ t: 'snapshot', tick, state: { entities } as never });
+
+const passesAc2 = (row: Record<string, unknown>): boolean => row.fully_in_viewport === true
+  && Number(row.height_fraction) >= 0.30 && Number(row.area_fraction) >= 0.05;
+
+test('fu010_ac1_reuse_key_keeps_instance_across_snapshots_and_readings', () => {
+  const probe = newProbe();
+  snap(probe, [npcEntity('npc-006', 0)], 0);
+  const c0 = probe.characterInstanceChurnReport();
+  assert.equal(c0.created, 1, '首个 snapshot 必须新建 1 个实例');
+  assert.equal(c0.reused, 0);
+  assert.equal(c0.disposed, 0);
+  assert.equal(c0.glb_load_calls, 0, 'Node 无 loader ⇒ 零 GLB 装载调用');
+  assert.equal(c0.last_rebuild_tick, 0);
+
+  // ① 实体集不变 ⇒ 复用（不 dispose、不重载）
+  snap(probe, [npcEntity('npc-006', 0)], 1);
+  const c1 = probe.characterInstanceChurnReport();
+  assert.equal(c1.created, c0.created, '实体集不变 ⇒ created 不得增长');
+  assert.equal(c1.disposed, c0.disposed, '实体集不变 ⇒ 不得 dispose');
+  assert.equal(c1.reused, c0.reused + 1, '实体集不变 ⇒ reused +1');
+  assert.equal(c1.reused_keys.length, 1, '最近一次 rebuild 复用键恰好 1 个');
+  const key = c1.reused_keys[0] as string;
+  assert.ok(key.startsWith('npc-006|xuqin_default|assets/character/xuqin-body.glb|1.0.0|'),
+    `复用键必须由 bindingForEntity 同源派生，实测 ${key}`);
+  assert.ok(!key.includes('underneath') && !key.includes('surface'), '复用键**不得**含 reading');
+
+  // ② 读法翻转（第二类强制 rebuild）⇒ 键不含 reading ⇒ 仍复用
+  probe.setReading('underneath');
+  const c2 = probe.characterInstanceChurnReport();
+  assert.equal(c2.created, c0.created, 'setReading 触发的 rebuild 必须复用（键不含 reading）');
+  assert.ok(c2.reused > c1.reused, 'setReading 触发的 rebuild 必须计入 reused');
+
+  // ③ 位置变化 ⇒ 只更新变换，不重建
+  snap(probe, [npcEntity('npc-006', 1500)], 2);
+  const c3 = probe.characterInstanceChurnReport();
+  assert.equal(c3.created, c0.created, '位置变化不得重建实例（键不含位置）');
+  assert.equal(probe.characterInstanceReport().length, 1);
+  assert.equal(c3.last_rebuild_tick, 2);
+});
+
+test('fu010_ac1_prune_disposes_removed_entity', () => {
+  const probe = newProbe();
+  snap(probe, [npcEntity('npc-006', 0)], 0);
+  const before = probe.characterInstanceChurnReport();
+  snap(probe, [], 1);
+  const after = probe.characterInstanceChurnReport();
+  assert.equal(after.disposed, before.disposed + 1, '实体消失 ⇒ 必须真 dispose（disposed +1）');
+  assert.equal(after.created, before.created, '剪枝不得产生新实例');
+  assert.equal(probe.characterInstanceReport().length, 0, '剪枝后角色实例注册表为空');
+  const ids = probe.structureReport().objects.map((object) => String((object as { id: unknown }).id));
+  assert.ok(!ids.includes('character-instance:npc-006'), '场景图不得残留被剪枝的角色实例节点（幽灵渲染）');
+  assert.equal(probe.characterFramingReport().length, 0, 'framing 读数不得残留被剪枝的实例');
+});
+
+test('fu010_ac1_rebuild_normalizes_reused_instance_transform', () => {
+  const probe = newProbe();
+  snap(probe, [npcEntity('npc-006', 0)], 0);
+  probe.setReading('surface');
+  const first = probe.structureReport();
+  probe.renderOnce();                 // 由 renderFrame 施加 displayed 变换
+  probe.setReading('underneath');     // 复用实例 + **归一化回基线新建态**（Raven C-5 / 设计 §12.2）
+  const second = probe.structureReport();
+  assert.equal(second.objects_digest, first.objects_digest,
+    '复用后必须把实例 group 变换归一化回基线新建态 ⇒ 两次 structureReport 逐项相同（C-5）');
+});
+
+test('fu010_ac2_framing_empty_group_has_no_geometry_and_no_nan', () => {
+  const probe = newProbe();
+  snap(probe, [npcEntity('npc-006', 0)], 0);
+  const rows = probe.characterFramingReport();
+  assert.equal(rows.length, 1);
+  const row = rows[0] as Record<string, unknown>;
+  assert.equal(row.has_geometry, false, 'GLB 未加载（空组）⇒ has_geometry=false');
+  assert.equal(row.in_viewport, false);
+  assert.equal(row.fully_in_viewport, false);
+  assert.equal(row.screen_rect, null);
+  assert.equal(row.height_fraction, null);
+  assert.equal(row.area_fraction, null);
+  assert.equal(row.aabb_min, null);
+  assert.equal(row.aabb_max, null);
+  assertNoNonFinite(rows, 'framing');
+  assert.ok(!JSON.stringify(rows).includes('NaN'), 'JSON 序列化后不得出现 NaN');
+  // 负对照（非自指）：把同一条读数篡改成「有几何」⇒ 同一条断言必须判假
+  const tampered = rows.map((item) => ({ ...item, has_geometry: true }));
+  assert.ok(!tampered.every((item) => item.has_geometry === false), '负对照：篡改 has_geometry ⇒ 原断言判假');
+});
+
+test('fu010_ac2_auto_focus_frames_known_body_and_negative_controls', () => {
+  const probe = newProbe();
+  snap(probe, [npcEntity('npc-006', 0)], 0);
+  assert.deepEqual(probe.cameraReport().position, [18, 14, 24], '默认（未开启对焦）⇒ 默认取景常量原样');
+
+  probe.setCharacterLoader(syncLoader(knownBodyScene()));
+  assert.equal((probe.characterInstanceReport()[0] as Record<string, unknown>).glb_loaded, true,
+    '假 loader 同步回填 ⇒ glb_loaded=true');
+  snap(probe, [npcEntity('npc-006', 0)], 1);
+  assert.deepEqual(probe.cameraReport().position, [18, 14, 24], '对焦默认关 ⇒ 连续 apply 不改相机');
+
+  const result = probe.setAutoObservationFocus(true);
+  assert.equal(result.enabled, true);
+  assert.equal(result.applied, 1, '唯一真 GLB 实体 ⇒ 恰好一个对焦机会被施加');
+  const focusRows = probe.focusViewReport();
+  assert.equal(focusRows.length, 1);
+  assert.equal(focusRows[0]?.source, 'aabb');
+  assert.equal(focusRows[0]?.entity_id, 'npc-006');
+
+  const row = probe.characterFramingReport()[0] as Record<string, unknown>;
+  assert.equal(row.has_geometry, true);
+  assert.equal(row.fully_in_viewport, true, `AABB 必须整体入画：${JSON.stringify(row)}`);
+  assert.ok(Number(row.height_fraction) >= 0.30, `height_fraction=${String(row.height_fraction)} 必须 ≥ 0.30`);
+  assert.ok(Number(row.area_fraction) >= 0.05, `area_fraction=${String(row.area_fraction)} 必须 ≥ 0.05`);
+  assertNoNonFinite(row, 'framing');
+  const min = row.aabb_min as number[]; const max = row.aabb_max as number[];
+  assert.ok(Math.abs((max[1] as number) - (min[1] as number) - 1.8) < 1e-3,
+    `GLB 世界 AABB 高应为 1.8 m，实测 ${(max[1] as number) - (min[1] as number)}`);
+
+  // 负对照 ①：对焦关闭 + setObservationCamera(null) ⇒ AC-2 复合判据必须为假
+  probe.setAutoObservationFocus(false);
+  probe.setObservationCamera(null);
+  const def = probe.characterFramingReport()[0] as Record<string, unknown>;
+  assert.equal(passesAc2(def), false, `默认取景必须判负：${JSON.stringify(def)}`);
+
+  // 负对照 ②：相机整体移远 10 m ⇒ AC-2 复合判据必须为假，且占高必须真的下降
+  const position = row.camera_position as number[];
+  const center = [(min[0] as number + (max[0] as number)) / 2,
+    (min[1] as number + (max[1] as number)) / 2, (min[2] as number + (max[2] as number)) / 2];
+  probe.setObservationCamera({ position_m: [position[0] as number, position[1] as number, (position[2] as number) + 10],
+    look_at_m: [center[0] as number, center[1] as number, center[2] as number] });
+  const far = probe.characterFramingReport()[0] as Record<string, unknown>;
+  assert.equal(passesAc2(far), false, `移远 10 m 后仍达标 ⇒ 读数无牙：${JSON.stringify(far)}`);
+  assert.ok(Number(far.height_fraction) < Number(row.height_fraction), '移远后占高必须下降（读数真的受相机影响）');
+});
+
+test('fu010_ac2_auto_focus_stops_applying_in_interactive_camera', () => {
+  const probe = newProbe();
+  snap(probe, [npcEntity('npc-006', 0)], 0);
+  probe.setCharacterLoader(syncLoader(knownBodyScene()));
+  probe.setAutoObservationFocus(true);
+  assert.notDeepEqual(probe.cameraReport().position, [18, 14, 24],
+    '开启对焦后相机必须真的移动（否则「保持不变」那条断言没有牙）');
+  probe.renderOnce();   // 逐帧跟随路径
+  assert.equal((probe.characterFramingReport()[0] as Record<string, unknown>).fully_in_viewport, true,
+    '逐帧跟随（renderOnce）之后仍必须整体入画');
+
+  probe.enterInteractiveCamera();
+  const before = probe.cameraReport().position;
+  for (let tick = 1; tick <= 5; tick += 1) { snap(probe, [npcEntity('npc-006', tick * 100)], tick); probe.renderOnce(); }
+  assert.deepEqual(probe.cameraReport().position, before,
+    '进入交互相机后连续 apply + renderOnce ⇒ 相机位置不得被对焦改动');
+  const rows = probe.focusViewReport();
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0]?.source, 'none');
+  assert.equal(rows[0]?.reason, 'camera_mode:interactive');
+  const report = probe.presentationReport() as { camera?: { camera_mode?: string } };
+  assert.equal(report.camera?.camera_mode, 'interactive');
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// r2 修复迭代（MUST-1 / MUST-2 / MUST-3）—— 对应哨兵 MED-1 与侦察官 MEDIUM-1 / LOW-1
+//
+// MUST-1：AC-2 机位派生式改为**深度感知**（近面基准）。本节的转身姿态用例是它的**确定性 RED**：
+//   在 r1 的派生式下（`dV=(h/2)/tan(vfov/2)`，不含 dp）该姿态 `fully_in_viewport=false`
+//   （在树副本上实测，见 evidence/r2），本用例即断言之。
+// MUST-3：`fully_in_viewport` 增**深度**条件（`|z_ndc|<=1`）——把相机推到 `far` 之外必须判假。
+// MUST-2：`dispose()` 之后的**在飞** `onLoad` 必须短路（脱链实例不得持 GLB 资源）。
+
+/** 可指定视口的探针（AC-2 两档：桌面 1440×900、窄屏 390×844）。 */
+const newProbeSized = (w: number, h: number) =>
+  createScene({ ...CANVAS_STUB_FU010, clientWidth: w, clientHeight: h } as never, { worldview: TONE_FU010 as never });
+
+/**
+ * 转身姿态的已知体：x 向 1.141 m / z 向 0.839 m 的盒绕 Y 转 90°
+ * ⇒ 世界 AABB 变成 `w=0.839 / dp=1.141`（≥1.04，命中哨兵记录的失败族 dp∈[1.04,1.18]）；
+ * 身高 1.5066 m = 真 GLB 实测世界 AABB 高（sentinel/Artisan 证据同源）。
+ */
+function turnedBodyScene() {
+  const root = new THREE.Group();
+  root.name = 'fake-glb-turned-body';
+  const body = new THREE.Mesh(new THREE.BoxGeometry(1.141, 1.5066, 0.839), new THREE.MeshBasicMaterial());
+  body.position.set(0, 0.7533, 0); // 脚底落 y=0
+  root.add(body);
+  root.rotation.y = Math.PI / 2;
+  return root;
+}
+
+test('fu010_r2_ac2_deep_aabb_turned_pose_is_fully_in_viewport_both_viewports', () => {
+  for (const [w, h] of [[1440, 900], [390, 844]] as const) {
+    const probe = newProbeSized(w, h);
+    snap(probe, [npcEntity('npc-006', 0)], 0);
+    probe.setCharacterLoader(syncLoader(turnedBodyScene()));
+    const applied = probe.setAutoObservationFocus(true);
+    assert.equal(applied.applied, 1, `${w}×${h}：唯一真 GLB 实体 ⇒ 对焦必须被施加`);
+    const row = probe.characterFramingReport()[0] as Record<string, unknown>;
+    const min = row.aabb_min as number[];
+    const max = row.aabb_max as number[];
+    const dp = (max[2] as number) - (min[2] as number);
+    assert.ok(dp >= 1.04, `${w}×${h}：转身姿态 AABB 深度必须 ≥ 1.04 m（覆盖 r1 失败族），实测 ${dp}`);
+    assert.equal(row.fully_in_viewport, true,
+      `${w}×${h}：转身姿态（dp=${dp}）必须整体入画（MUST-1）：${JSON.stringify(row)}`);
+    assert.ok(Number(row.height_fraction) >= 0.30,
+      `${w}×${h}：height_fraction=${String(row.height_fraction)} 必须 ≥ 0.30`);
+    assert.ok(Number(row.area_fraction) >= 0.05,
+      `${w}×${h}：area_fraction=${String(row.area_fraction)} 必须 ≥ 0.05`);
+    assertNoNonFinite(row, `framing-turned@${w}x${h}`);
+  }
+});
+
+test('fu010_r2_fully_in_viewport_checks_depth_not_only_xy', () => {
+  const probe = newProbe();
+  snap(probe, [npcEntity('npc-006', 0)], 0);
+  probe.setCharacterLoader(syncLoader(knownBodyScene()));
+  probe.setAutoObservationFocus(true);
+  const near = probe.characterFramingReport()[0] as Record<string, unknown>;
+  assert.equal(near.fully_in_viewport, true, '正常对焦姿态仍必须整体入画（深度检查不得误伤正例）');
+
+  const min = near.aabb_min as number[];
+  const max = near.aabb_max as number[];
+  const cx = ((min[0] as number) + (max[0] as number)) / 2;
+  const cy = ((min[1] as number) + (max[1] as number)) / 2;
+  const cz = ((min[2] as number) + (max[2] as number)) / 2;
+  const far = Number(probe.cameraReport().far);
+  assert.ok(Number.isFinite(far) && far > 0, `相机 far 必须可读，实测 ${far}`);
+
+  // ① 深度：相机沿 +z 推到 `far` 之外 ⇒ x/y 仍在视口内，**只有**深度条件能判假（r1 会「入画假绿」）
+  probe.setObservationCamera({ position_m: [cx, cy, cz + far * 1.5], look_at_m: [cx, cy, cz] });
+  const beyond = probe.characterFramingReport()[0] as Record<string, unknown>;
+  assert.equal(beyond.in_viewport, true, '相机推到 far 之外时横向仍在视口内（否则本负对照不专测深度）');
+  assert.equal(beyond.fully_in_viewport, false,
+    `超出 far ⇒ 必须判「未整体入画」（MUST-3）：${JSON.stringify(beyond)}`);
+  assertNoNonFinite(beyond, 'framing-beyond-far');
+
+  // ② 横向：相机移偏，物体落到水平视锥之外 ⇒ 仍判假（既有 x/y 条件不得被削弱）
+  probe.setObservationCamera({ position_m: [cx, cy, cz + 3], look_at_m: [cx + 3, cy, cz] });
+  const offAxis = probe.characterFramingReport()[0] as Record<string, unknown>;
+  assert.equal(offAxis.fully_in_viewport, false, '物体落到水平视锥外必须判假（x/y 条件未被削弱）');
+});
+
+test('fu010_r2_dispose_blocks_inflight_glb_load_callback', () => {
+  let pending: ((gltf: unknown) => void) | null = null;
+  const deferredLoader = {
+    load(_url: string, onLoad: (gltf: unknown) => void) { pending = onLoad; },
+  };
+  const instance = createCharacterInstance({ entityId: 'npc-006', gltfLoader: deferredLoader as never });
+  assert.equal(instance.glbLoaded(), false, '回调未触发前 glb_loaded 必须为 false');
+  assert.equal(instance.group.children.length, 0);
+  const fire = pending as ((gltf: unknown) => void) | null;
+  assert.ok(fire, '可延迟假 loader 必须真的被调用（否则本用例无牙）');
+
+  instance.dispose();                    // 剪枝路径调用的就是这一个方法
+  fire({ scene: knownBodyScene() });     // **在飞**回调晚到
+  assert.equal(instance.group.children.length, 0,
+    'dispose 后晚到的 onLoad 不得把 GLB 挂回已脱链 group（MUST-2）');
+  assert.equal(instance.glbLoaded(), false, 'dispose 后晚到的 onLoad 不得把 glb_loaded 置 true');
+  const report = instance.report();
+  assert.equal(report.glb_loaded, false, 'report() 的 glb_loaded 仍为 false');
+  assertNoNonFinite(report, 'character-instance-after-dispose');
+});
+
+test('fu010_r2_delta_move_reapplies_focus_so_framing_stays_consistent', () => {
+  const probe = newProbe();
+  snap(probe, [npcEntity('npc-006', 0)], 0);
+  probe.setCharacterLoader(syncLoader(knownBodyScene()));
+  probe.setAutoObservationFocus(true);
+  const before = probe.characterFramingReport()[0] as Record<string, unknown>;
+  assert.equal(before.fully_in_viewport, true, 'snapshot 后必须整体入画');
+
+  // 纯 **delta** 位移（不触发 rebuild/snapshot）：根 mesh 被直接改位置，而实例 group 要到
+  // 下一帧 renderFrame 才写回 `displayed − parent` ⇒ 若 delta 分支不重算对焦，此读数的
+  // AABB 与相机就**不同源**（窄屏即出现瞬态 `fully_in_viewport=false`）。
+  probe.apply({
+    t: 'delta', tick: 1,
+    ops: [{ op: 'set', entity: 'npc-006', component: 'transform', value: { pos_mm: { x: 5000, y: 0, z: 0 } } }],
+  } as never);
+  const after = probe.characterFramingReport()[0] as Record<string, unknown>;
+  const min = after.aabb_min as number[];
+  assert.ok(Number(min[0]) > 4, `delta 后实例世界位置必须真的移动，实测 aabb_min.x=${String(min[0])}`);
+  assert.equal(after.fully_in_viewport, true,
+    `delta 后相机必须与 AABB 同源（否则窄屏会读到瞬态未入画）：${JSON.stringify(after)}`);
+  assertNoNonFinite(after, 'framing-after-delta');
+});
+
+test('fu010_r2_prune_path_disposes_and_late_load_does_not_revive_instance', () => {
+  const probe = newProbe();
+  let pending: ((gltf: unknown) => void) | null = null;
+  probe.setCharacterLoader({ load(_url: string, onLoad: (gltf: unknown) => void) { pending = onLoad; } } as never);
+  snap(probe, [npcEntity('npc-006', 0)], 0);
+  const fire = pending as ((gltf: unknown) => void) | null;
+  assert.ok(fire, '剪枝前必须已启动 GLB 加载（在飞窗口）');
+
+  const before = probe.characterInstanceChurnReport();
+  snap(probe, [], 1);                    // 剪枝 ⇒ 世界层真 dispose()
+  const after = probe.characterInstanceChurnReport();
+  assert.equal(after.disposed, before.disposed + 1, '剪枝必须真 dispose（disposed +1）');
+  assert.equal(probe.characterInstanceReport().length, 0);
+
+  fire({ scene: knownBodyScene() });     // 晚到回调：不得复活已剪枝实例
+  assert.equal(probe.characterInstanceReport().length, 0, '晚到回调不得复活已剪枝实例');
+  assert.equal(probe.characterFramingReport().length, 0, '晚到回调不得让 framing 面出现幽灵行');
+  const ids = probe.structureReport().objects.map((object) => String((object as { id: unknown }).id));
+  assert.ok(!ids.includes('character-instance:npc-006'), '场景图不得残留被剪枝的角色实例节点');
 });
