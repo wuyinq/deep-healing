@@ -49,8 +49,8 @@
         "type": { "type": "string", "enum": ["image", "audio", "video", "3d", "text", "procedural"] },
         "license": {
           "type": "string",
-          "enum": ["apache-2.0", "mit", "cc0-1.0", "cc-by-4.0", "flux-1-dev-non-commercial", "cc-by-nc-4.0", "tencent-hunyuan-3d", "unknown"],
-          "description": "**白名单枚举**（与 asset.license.table.data.json 的 license_enum 逐字一致）。枚举合法**不等于**可用：必须与 (source_model, model_version) 查表一致，且该行 commercial_use=true；不一致或查不到 ⇒ 拒收（default-deny）。"
+          "enum": ["apache-2.0", "mit", "cc0-1.0", "cc-by-4.0", "flux-1-dev-non-commercial", "cc-by-nc-4.0", "tencent-hunyuan-3d", "unknown", "ark-hyper3d-gen2-commercial-requires-written-permission"],
+          "description": "**白名单枚举**（与 asset.license.table.data.json 的 license_enum 逐字一致）。枚举合法**不等于**可用：必须与 (source_model, model_version) 查表一致、且命中行的 `adjudication` 允许入链；不一致或查不到 ⇒ 拒收（default-deny）。命中行 `commercial_use=false` ⇒ 该资产**不得对外商用 / 分发**，且该限制**必须在分发表（credits）披露**；district pack 路径（`verify_asset_pack.py` 的 A3）另要求命中行 `commercial_use=true`。"
         },
         "source_model": { "type": "string", "description": "产出该资产的模型 id（查表 key 之一）。" },
         "model_version": { "type": "string", "description": "模型版本（查表 key 之二）。" },

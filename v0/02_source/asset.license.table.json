@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://deephealing.local/schemas/asset.license.table.json",
   "title": "DeepHealing 许可白名单数据表（default-deny）",
-  "description": "D-0.8 / AC-15 的**许可白名单数据表**。`license` 不是自声明字段：校验器必须用 (source_model, model_version) 在本表**查表**判定；查不到 = **拒收**（default_policy=deny）。表里 commercial_use=false 的模型**禁止**进入交付链。本文件是数据，不是散文：`asset.manifest.schema.json` 的 license 枚举与本表的 license 取值集合必须一致（verify_specs.sh 会断言）。",
+  "description": "D-0.8 / AC-15 的**许可白名单数据表**。`license` 不是自声明字段：校验器必须用 (source_model, model_version) 在本表**查表**判定；查不到 = **拒收**（default_policy=deny）。表里 `commercial_use=false` 的模型**不得对外商用 / 分发**，且该限制**必须在分发表（credits）披露**；能否进入交付链以 `adjudication` 为准（`adopt` = 可入链且须披露该商用限制，`reject` = 禁入交付链）。**注意**：district pack 路径（`verify_asset_pack.py` 的 A3）另要求命中行 `commercial_use=true` —— 走 district pack 的资产**不得**取 `commercial_use=false` 的行。本文件是数据，不是散文：`asset.manifest.schema.json` 的 license 枚举与本表的 license 取值集合必须一致（verify_specs.sh 会断言）。",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "table_version", "default_policy", "license_enum", "models", "comfyui_workflow_policy"],
@@ -18,7 +18,7 @@
     "license_enum": {
       "type": "array",
       "description": "许可白名单枚举（与 asset.manifest.schema.json 的 license.enum 逐字一致）。",
-      "items": { "type": "string", "enum": ["apache-2.0", "mit", "cc0-1.0", "cc-by-4.0", "flux-1-dev-non-commercial", "cc-by-nc-4.0", "tencent-hunyuan-3d", "unknown"] },
+      "items": { "type": "string", "enum": ["apache-2.0", "mit", "cc0-1.0", "cc-by-4.0", "flux-1-dev-non-commercial", "cc-by-nc-4.0", "tencent-hunyuan-3d", "unknown", "ark-hyper3d-gen2-commercial-requires-written-permission"] },
       "minItems": 1
     },
     "commercial_license_whitelist": {
