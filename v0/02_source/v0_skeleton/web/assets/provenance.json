@@ -1390,42 +1390,45 @@
     },
     {
       "path": "character/xuqin-body.glb",
-      "asset_id": "xuqin_body_cesiumman",
+      "asset_id": "xuqin_body_3dgen_24k",
       "role": "character",
-      "source_type": "cc_by_library",
-      "license": "cc-by-4.0",
+      "source_type": "ai_generated",
+      "license": "unknown",
       "license_evidence": {
-        "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/CesiumMan/README.md",
-        "fetched": true,
-        "fetched_at": "2026-10-08T03:23:00Z",
-        "snapshot_path": "v0/spikes/n5-asset/frozen/license_evidence/cesiumman-README.md",
-        "snapshot_sha256": "1bf7fa794013d2e0de8c244518936b04d95cba780f4510c8cceee4c23dbc04a8"
+        "url": null,
+        "fetched": false,
+        "fetched_at": null,
+        "snapshot_path": null,
+        "snapshot_sha256": null,
+        "note": "AI 图生3D 产物（火山方舟 Ark 上的影眸 Hyper3D Gen-2）⇒ 无第三方许可页可抓；不引用被替换资产的许可快照。许可状态 = 未证实（服务条款 / 输出权属未取证，处置待 PM 裁决）"
       },
-      "author": "Cesium",
-      "attribution": "© 2017 Cesium — CC BY 4.0 International（经 Khronos glTF-Sample-Assets 分发：Models/CesiumMan/glTF-Binary/CesiumMan.glb）",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "ai_generated": false,
-      "generator": null,
-      "generator_version": null,
+      "author": "AI 生成（影眸 Hyper3D Gen-2，经火山方舟 Ark，model hyper3d-gen2-260112）+ 本项目本地绑定 / 减面 / 贴图",
+      "attribution": "徐琴角色 GLB：AI 图生3D（火山方舟 Ark / 影眸 Hyper3D Gen-2，model hyper3d-gen2-260112）→ 本地 Blender 26 骨绑定 + 24k 减面 + 2K 贴图。许可状态：未证实",
+      "license_url": null,
+      "ai_generated": true,
+      "generator": "hyper3d-gen2-260112",
+      "generator_version": "gen2-260112",
       "prompt_digest": null,
+      "prompt_digest_unavailable_reason": "图像→3D 生成，无文本提示词可摘要；输入锚 = 输入参考图 xuqin-fullbody-01.jpg（sha256 68fa7f4c699b9dad221b4d18f000dc23fa97a67b592eeafe14740ef6e4d57a7d）",
       "original": {
-        "path_or_url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/CesiumMan/glTF-Binary/CesiumMan.glb",
-        "sha256": null,
-        "sha256_unavailable_reason": "下载件即交付件，字节与上游一致（curl 未重编码）；可核锚 = converted_sha256"
+        "path_or_url": "ai-assets/ark3d/hyper_best.glb",
+        "sha256": "83324bc3194a3e002124e8a1f23a57d25e3e2c1c6a73643b6b31aef0dd82f011",
+        "bytes": 20246316,
+        "note": "路径相对 dev_team_workspace/2-5d-proto/；sha256 / bytes 在盘上复算（取证依据 = 同目录 ai-assets/ark3d/PROVENANCE.json 的 outputs.hyper3d_best_material）"
       },
       "conversion": {
-        "tool": "curl -L（byte-exact download，无重编码、无格式转换）",
-        "version": "curl (macOS 内置)",
-        "params": "直接落盘为 web/assets/character/xuqin-body.glb；容器 glTF binary v2，22 nodes / 1 mesh / 1 skin(19 joints) / 1 image / 1 animation(57 channels)，自包含无外部 uri"
+        "tool": "本地 Blender（蒙皮绑定 + 减面 + 贴图降采样）；上游为 Ark 图生3D 产出，非本仓重导出",
+        "version": "未记录（盘上 PROVENANCE.json 无 Blender 版本字段，不臆造）",
+        "params": "26 骨绑定（18 人形 + 4 向 × 2 级裙摆骨链）、角度平滑权重 + 高度渐变、Idle / Walk 两条动画（各 78 channels）；Decimate 至 23 999 tris；贴图 4K→2048²（3 张 PNG，均 2048×2048）"
       },
-      "converted_sha256": "b7001eaeea8254bd44773bcd247e78696d94169388fbb2a1800fc69434e777d9",
+      "converted_sha256": "fe9177f28cdc28ada7c3bfd53b109fb150d96db28fcd021daf18bc74fed96a22",
       "converted_pixel_hash": null,
-      "editable_source": "none（上游 GLB 为分发件，无 .blend 工程源）；导出流程 = 直接使用上游 GLB，本仓库不做二次导出",
+      "editable_source": "本仓无 .blend 工程源；可编辑中间件 = dev_team_workspace/2-5d-proto/assets/xuqin-ai-best-rigged.glb（v8 手部平滑档，sha256 be0b1c3f61822501c44f863e426629e3fd0cb76758eb9f69a92297b609234594）；交付件 = 该件减面 + 贴图降采样导出（未重绑定）",
       "binding_ref": "binding:xuqin_default",
-      "byte_size": 438044,
-      "registered_at": "2026-10-08T03:28:02Z",
+      "byte_size": 7542256,
+      "registered_at": "2026-10-10T16:15:30Z",
       "first_registered_at": "2026-09-24T13:37:28+08:00",
-      "note": "N5 / B-1 真实 rigged 人物资产（含骨骼 19 joints 与动画）。许可页 fetched=true，快照 sha256 为盘上真实抓取件；哈希口径 = 字节哈希（file_bytes），`shasum -a 256` 可复算（01 §7.2 v3 统一口径）"
+      "note": "徐琴角色运行时主角 GLB：AI 图生3D（火山方舟 Ark / 影眸 Hyper3D Gen-2，model hyper3d-gen2-260112）→ 本地 26 骨绑定 + 24k 减面 + 2×2K 贴图；读数由解析脚本实测（26 joints / Idle+Walk / 3×2048² / 7 542 256 B，见 evidence/artisan/ac2-new-asset.json）。**许可未证实**（license=unknown；无第三方许可页可抓）；G-5 生成器不在许可表 ⇒ 按 default-deny 口径拒收，处置待 PM 裁决（06_architect_verdict_*.md）；本条目**不设** runtime_excluded（运行时主角）。"
     },
     {
       "path": "character/skin-pale-01.jpg",

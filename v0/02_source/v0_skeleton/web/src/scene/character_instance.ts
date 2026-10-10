@@ -11,10 +11,23 @@
  *     本模块只**新增**节点，既有部件判据的取数路径一字不动。
  *
  * 五个表现槽（`AC-A-6a`：待机 / 行走 / 转身 / 说话 / 倾听）：
- *   本轮的 rigged GLB（Khronos CesiumMan，CC BY 4.0）只带 **1 条**动画（walk cycle）。
+ *   本轮 rigged GLB = `web/assets/character/xuqin-body.glb` —— **AI 图生3D**（火山方舟 Ark /
+ *   影眸 Hyper3D Gen-2，`model hyper3d-gen2-260112`）+ 本地 Blender 绑定。**许可状态 = 未证实**
+ *   （`license = "unknown"` ⇒ 商用分发前须取得供应商书面许可；署名与商用限制说明见
+ *   `web/src/ui/player/credits.ts`，来源登记面见 `web/assets/provenance.json`）。
+ *   实测骨架 / 动画（重测读数见 `evidence/artisan/ac2-new-asset.json`）：`26` 骨
+ *   （`skin = XuqinArmature`）、**2 条**动画 —— `Idle`（下标 0）、`Walk`（下标 1），各 `78` channels。
  *   ⇒ 槽位来源**逐槽显式标注**（`clip` = 真 GLB 动画；`procedural` = 由骨骼变换程序化驱动）。
- *   **不得**把程序化槽位说成「GLB 自带动画」（那会是自报冒充）。这 4 个程序化槽位记为
- *   **GAP（无合适许可的多动作 rigged GLB 资产）**并上抛 —— 见任务书 §6 与 03 日志。
+ *   **不得**把程序化槽位说成「GLB 自带动画」（那会是自报冒充）。
+ *   ⚠️ **动画未接线 + 骨骼驱动实际为零（GAP）**：全仓**无** `AnimationMixer` / `clipAction`（实测零命中）⇒
+ *   上述两条 clip **从未被播放**。全仓对**骨骼节点**的写入仅 `update()` 内一处，而它对 `node.name === 'Head'`
+ *   做**大小写敏感**的严格相等比较；本轮 GLB 的 26 个关节名**全是小写蛇形**、头部关节名叫 **`head`**
+ *   （**不存在**名为 `Head` 的节点；全仓也无任何把节点重命名为 `Head` 的赋值）⇒ 该判断**恒不命中**、
+ *   `Head.rotation.x` **从未被写过** ⇒ **五个槽位的骨骼驱动实际为零**（连「部分实现」都不存在）。
+ *   实测读数见 `evidence/artisan/r2/f1-joint-names.json`（关节名清单 + 比较式 + 重命名面）。
+ *   凡本表声称「已播放 / 已混合 / 正在驱动骨骼」即为失实。`speak` / `listen` 无对应 GLB clip；
+ *   `idle` / `turn` 的骨骼级驱动**未实现** —— 一并记为
+ *   **GAP（动画未接线 + 骨骼写入空转 + 部分槽位无 clip）**并上抛，见任务书 §6 与 03 日志。
  */
 
 import * as THREE from 'three';
@@ -34,11 +47,11 @@ export interface SlotSource {
 }
 
 export const SLOT_SOURCES: readonly SlotSource[] = [
-  { slot: 'idle', kind: 'procedural', detail: '脊柱/肩/头的低频呼吸摆（Bone: Spine, Shoulder_L/R, Head）' },
-  { slot: 'walk', kind: 'clip', detail: 'GLB animation[0]（walk cycle，57 channels）' },
-  { slot: 'turn', kind: 'procedural', detail: '根 yaw 由**权威位移方向**驱动 + animation[0] 的降速混合' },
-  { slot: 'speak', kind: 'procedural', detail: 'Head 点头 + 双臂小幅开合（无对应 GLB clip ⇒ 显式 GAP）' },
-  { slot: 'listen', kind: 'procedural', detail: 'Head 侧倾 + 躯干微前倾（无对应 GLB clip ⇒ 显式 GAP）' },
+  { slot: 'idle', kind: 'procedural', detail: '**未接线**：计划中的脊柱/肩/头低频呼吸摆尚未实现 —— 全仓唯一的骨骼写入在 `update()`，但它比的是字符串 `Head`（大写 H，比较为严格相等、大小写敏感）、本轮 GLB 头部关节名是小写 `head` ⇒ **该写入恒不命中、实际驱动为零**；无 Spine / Shoulder 驱动（全仓无 AnimationMixer）⇒ GAP' },
+  { slot: 'walk', kind: 'clip', detail: 'GLB animation[1]（Walk，78 channels；下标与通道数按重测 GLB，见 evidence/artisan/ac2-new-asset.json）—— **未接线**：全仓无 AnimationMixer ⇒ 从未播放 ⇒ GAP' },
+  { slot: 'turn', kind: 'procedural', detail: '根 yaw 由**权威位移方向**驱动（presentation.ts 死区 + 限速 ⇒ world.ts 写 group.rotation.y）；**未接线**：不存在任何 clip 的降速混合（全仓无 AnimationMixer）⇒ GAP' },
+  { slot: 'speak', kind: 'procedural', detail: '**未接线**：计划中的 Head 点头 + 双臂小幅开合尚未实现（无对应 GLB clip，且无 animation 播放路径）⇒ GAP' },
+  { slot: 'listen', kind: 'procedural', detail: '**未接线**：计划中的 Head 侧倾 + 躯干微前倾尚未实现（无对应 GLB clip，且无 animation 播放路径）⇒ GAP' },
 ];
 
 /**

@@ -194,11 +194,11 @@
     }
   },
   "non_asset_file_hashes": {
-    "v0/02_source/v0_skeleton/web/assets/manifest.txt": "43641475263faddf4ab1060baecb63b178f0eb6e1736c5f8ec91a6cdaf6c2e22",
-    "v0/02_source/v0_skeleton/web/assets/provenance.json": "59474a5c50cef1efbf24aff39e0e385b55a981da076fcd6e4342cbcdcd191984",
+    "v0/02_source/v0_skeleton/web/assets/manifest.txt": "5ad14c6d6de0bce5b9605928e48c2c0cac172e7fa7326ccc80fa9de321696df7",
+    "v0/02_source/v0_skeleton/web/assets/provenance.json": "4a21b5284bf8a1e6626d09d6109e4051a4d79a6ffab589b230fa075657565dc5",
     "v0/02_source/v0_skeleton/districts/xingfu-xiaoqu-xuqin/assets/manifest.json": "29db0bb8159151581c2d7aaf82fcddb9d4e5b58055d6479a4bde8dafa8b6fc5f",
     "v0/02_source/v0_skeleton/districts/xingfu-xiaoqu-xuqin/npcs/npc-006.json": "168ee262f2c55132388db1ac2be5b0d77911f320a97337a2e60d2bbf522fa24f",
-    "v0/02_source/v0_skeleton/web/src/scene/asset_binding.ts": "4d976d5f66ff14e715502e85a25346ae66cfb85beb7b036e2ab4954bb4c902b9"
+    "v0/02_source/v0_skeleton/web/src/scene/asset_binding.ts": "373421811140829465d4624cbf02e242de8f43a2d6b8d0ba3a8d957d6428dd47"
   },
   "i3a_negative_controls": [
     "/tmp 副本删一条表面（`wall_plaster`）⇒ `materials_inputs_constants_sha256` 必变（红）",
