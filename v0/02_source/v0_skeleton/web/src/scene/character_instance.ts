@@ -154,13 +154,25 @@ export function createCharacterInstance(options: CharacterInstanceOptions): Char
         },
         undefined,
         (error: unknown) => {
+          // L-2：失败路径与成功路径**同口径短路** —— `dispose()` 之后晚到的失败**不得**再写
+          // 局部 `degradations`，也不得写模块级降级表（`recordBindingDegradation`）。
+          // `dispose()` **之前**的失败照记（不变量）。
+          if (disposed) return;
           degradations.push({ code: 'E_GLB_LOAD_FAILED', detail: `${binding.glb_url}: ${String(error)}` });
           recordBindingDegradation('E_GLB_LOAD_FAILED', `${binding.glb_url}: ${String(error)}`);
         },
       );
     } catch (error) {
-      degradations.push({ code: 'E_GLB_LOAD_THREW', detail: String(error) });
-      recordBindingDegradation('E_GLB_LOAD_THREW', `${binding.glb_url}: ${String(error)}`);
+      // L-2：同款短路（防御性一致化；见设计 §2.3 的诚实边界 —— 该分支在 `dispose()` 之后
+      // 结构上不可达，因为 `gltfLoader.load(...)` 只在构造期调用一次、且在 `createCharacterInstance()`
+      // 返回前就已完成；该行只在调用形态改变（移入 `update()` / 加重试 / 二次调用）后才变活）。
+      // 语义与 `if (disposed) return;` **逐项相同**（`dispose()` 之后零写入）；此处用 `!disposed`
+      // 包裹而非裸 `return;`：本函数返回类型为 `CharacterInstance`，裸 `return;` 会引入
+      // **本轮新增**的 TS2322 诊断（设计 §8 R-4 要求改前/改后对照、不引入新诊断）。
+      if (!disposed) {
+        degradations.push({ code: 'E_GLB_LOAD_THREW', detail: String(error) });
+        recordBindingDegradation('E_GLB_LOAD_THREW', `${binding.glb_url}: ${String(error)}`);
+      }
     }
   }
 

@@ -25,6 +25,10 @@ import * as THREE from 'three';
 import { RenderClient } from '../src/net/client.ts';
 import { createScene } from '../src/scene/world.ts';
 import { createCharacterInstance } from '../src/scene/character_instance.ts';
+import {
+  BINDINGS, bindingForEntity, clearBindingDegradations, bindingDegradationsSnapshot,
+} from '../src/scene/asset_binding.ts';
+import { ASSET_ENTRIES } from '../src/scene/world.ts';
 
 function delta(tick: number, seq: number) {
   return { t: 'delta' as const, tick, seq, ops: [{ op: 'set', entity: 'npc-001', component: 'transform', value: {} }] };
@@ -543,4 +547,211 @@ test('fu010_r2_prune_path_disposes_and_late_load_does_not_revive_instance', () =
   assert.equal(probe.characterFramingReport().length, 0, '晚到回调不得让 framing 面出现幽灵行');
   const ids = probe.structureReport().objects.map((object) => String((object as { id: unknown }).id));
   assert.ok(!ids.includes('character-instance:npc-006'), '场景图不得残留被剪枝的角色实例节点');
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// lowfix 微修轮（L-2 / L-3）—— REQ-20260924-010 的 AC-1 / AC-2
+//
+// L-2：`dispose()` 之后**晚到的失败**（`onError`）必须与成功路径**同口径短路** ——
+//   既不写实例局部 `degradations`，也不写模块级降级表；`dispose()` **之前**的失败**照记**。
+// L-3：`focusCandidates()` 的「真 GLB」判据从「`glb_url` 非空」升级为
+//   「交付资产登记面在册 ∧ `'assets/' + path === glb_url` ∧ 未被 `runtime_excluded`」，
+//   并用负对照 A/B/C + GT-1（前向不变式）证明它**既不恒真也不恒假**。
+// 夹具一律在**进程内运行时**改写绑定表 + `try/finally` 还原（不改冻结件、不写交付树）。
+
+/** 运行时绑定表夹具：临时改写只读字段，`restore()` 逐字段还原。 */
+function bindingFixture() {
+  const saved = BINDINGS.map((binding) => ({ entity_ids: [...binding.entity_ids], glb_url: binding.glb_url }));
+  return {
+    set(index: number, patch: { entity_ids?: string[]; glb_url?: string }) {
+      const target = BINDINGS[index] as unknown as { entity_ids: string[]; glb_url: string };
+      if (patch.entity_ids !== undefined) target.entity_ids = patch.entity_ids;
+      if (patch.glb_url !== undefined) target.glb_url = patch.glb_url;
+    },
+    restore() {
+      BINDINGS.forEach((binding, index) => {
+        const target = binding as unknown as { entity_ids: string[]; glb_url: string };
+        target.entity_ids = [...(saved[index] as { entity_ids: string[] }).entity_ids];
+        target.glb_url = (saved[index] as { glb_url: string }).glb_url;
+      });
+    },
+  };
+}
+
+/** 对焦**关**模式读出候选集（`focusViewReport()` 按候选各一条 `reason:'disabled'`）。 */
+function focusCandidateIds(probe: ReturnType<typeof newProbe>): string[] {
+  probe.setAutoObservationFocus(false);
+  return probe.focusViewReport().map((row) => row.entity_id).sort();
+}
+
+const failedCodesOf = (report: Record<string, unknown>): string[] =>
+  (report.degradations as Array<{ code: string }>).map((row) => row.code);
+
+test('lowfix_ac1_dispose_short_circuits_late_failure_writes', () => {
+  // 可**延迟触发** `onError` 的假 loader（构造期只捕获回调，不回调）
+  let pendingError: ((error: unknown) => void) | null = null;
+  const deferredLoader = {
+    load(_url: string, _onLoad: (gltf: unknown) => void, _onProgress?: unknown, onError?: (e: unknown) => void) {
+      pendingError = onError ?? null;
+    },
+  };
+
+  // ① 正对照：未 `dispose()` 的失败**必须照记**（两张表各 +1）—— 防把判据改成恒真
+  clearBindingDegradations();
+  const live = createCharacterInstance({ entityId: 'npc-006', gltfLoader: deferredLoader as never });
+  const liveBefore = (live.report().degradations as unknown[]).length;
+  const fireLive = pendingError as ((error: unknown) => void) | null;
+  assert.ok(fireLive, '可延迟假 loader 必须真的被调用（否则本用例无牙）');
+  fireLive(new Error('pre-dispose'));
+  assert.equal((live.report().degradations as unknown[]).length, liveBefore + 1, 'dispose 之前的失败必须照记（实例局部）');
+  assert.equal(bindingDegradationsSnapshot().length, 1, 'dispose 之前的失败必须照记（模块级降级表）');
+  assert.ok(failedCodesOf(live.report()).includes('E_GLB_LOAD_FAILED'),
+    `失败码必须仍为 E_GLB_LOAD_FAILED：${JSON.stringify(failedCodesOf(live.report()))}`);
+
+  // ② 判据：`dispose()` 之后晚到的 `onError` ⇒ 两张表 **delta 0**
+  clearBindingDegradations();
+  pendingError = null;
+  const pruned = createCharacterInstance({ entityId: 'npc-006', gltfLoader: deferredLoader as never });
+  const firePruned = pendingError as ((error: unknown) => void) | null;
+  assert.ok(firePruned, '剪枝路径的 loader 同样必须被调用');
+  const localBefore = (pruned.report().degradations as unknown[]).length;
+  pruned.dispose();
+  clearBindingDegradations();
+  const moduleBefore = bindingDegradationsSnapshot().length;
+  firePruned(new Error('post-dispose-1'));
+  firePruned(new Error('post-dispose-2'));
+  assert.equal((pruned.report().degradations as unknown[]).length, localBefore, 'dispose 之后晚到的失败不得写实例局部 degradations');
+  assert.equal(bindingDegradationsSnapshot().length, moduleBefore,
+    'dispose 之后晚到的失败不得写模块级降级表（bindingDegradationsSnapshot 长度不变）');
+  assert.equal(moduleBefore, 0);
+  assert.equal(pruned.group.children.length, 0, '既有 r2 语义保持：脱链 group 不挂 GLB');
+  assert.equal(pruned.glbLoaded(), false);
+  assert.equal(pruned.report().glb_loaded, false);
+  assertNoNonFinite(pruned.report(), 'character-instance-after-dispose-failure');
+});
+
+test('lowfix_ac1_dispose_short_circuit_does_not_swallow_pre_dispose_failures', () => {
+  // 与上一条配对：短路**不得过宽** —— `dispose()` 之前的失败码必须真的在账
+  clearBindingDegradations();
+  let pendingError: ((error: unknown) => void) | null = null;
+  const deferredLoader = {
+    load(_url: string, _onLoad: (gltf: unknown) => void, _onProgress?: unknown, onError?: (e: unknown) => void) {
+      pendingError = onError ?? null;
+    },
+  };
+  const instance = createCharacterInstance({ entityId: 'npc-006', gltfLoader: deferredLoader as never });
+  (pendingError as ((error: unknown) => void) | null)?.(new Error('pre'));
+  instance.dispose();
+  (pendingError as ((error: unknown) => void) | null)?.(new Error('post'));
+
+  assert.deepEqual(failedCodesOf(instance.report()), ['E_GLB_LOAD_FAILED'],
+    'dispose 之前的失败必须留在实例账上，且晚到的那次不得追加');
+  assert.deepEqual(bindingDegradationsSnapshot().map((row) => row.code), ['E_GLB_LOAD_FAILED'],
+    '模块级降级表必须恰有一条（dispose 之前的那次）');
+  clearBindingDegradations();
+
+  // 外层 `catch` 分支：构造期同步抛错必须照记。
+  // ⚠️ 该分支在 `dispose()` 之后**结构上不可达**（`gltfLoader.load(...)` 只在构造期调用一次，
+  // 且在 `createCharacterInstance()` 返回前已完成 —— 见设计 §2.3）⇒ 此处只取它的**可执行形态**
+  // = 构造期读数，**不谎称**已构造「dispose 之后 catch 仍执行」的场景。
+  const throwing = createCharacterInstance({
+    entityId: 'npc-006', gltfLoader: { load() { throw new Error('sync'); } } as never,
+  });
+  assert.deepEqual(failedCodesOf(throwing.report()), ['E_GLB_LOAD_THREW']);
+  assert.deepEqual(bindingDegradationsSnapshot().map((row) => row.code), ['E_GLB_LOAD_THREW']);
+  clearBindingDegradations();
+});
+
+test('lowfix_ac2_placeholder_binding_is_not_a_focus_target_and_real_glb_is', () => {
+  const fixture = bindingFixture();
+  const probe = newProbe();
+  try {
+    // ── 夹具 A：把占位/回落绑定 `npc_generic`（盘上无 `generic-fallback.glb`）挂上 `npc-009`
+    fixture.set(1, { entity_ids: ['npc-009'] });
+    snap(probe, [npcEntity('npc-006', 0), npcEntity('npc-009', 100)], 0);
+    const instances = probe.characterInstanceReport().map((row) => String(row.entity_id)).sort();
+    assert.ok(instances.includes('npc-009'),
+      `夹具必须让 npc-009 真在 characterInstanceReport() 里（否则「不含」可能因无关原因恒真）：${JSON.stringify(instances)}`);
+    assert.equal(bindingForEntity('npc-009')?.binding_id, 'npc_generic');
+
+    // 旧判据读数（证明夹具生效 + 旧判据确有缺陷）：占位绑定的 `glb_url` 非空 ⇒ 旧判据含它
+    assert.equal(Boolean(bindingForEntity('npc-009')?.glb_url), true,
+      '旧判据 `Boolean(bindingForEntity(id)?.glb_url)` 必须为 true（占位绑定有非空 glb_url）');
+    const candidatesA = focusCandidateIds(probe);
+    assert.ok(!candidatesA.includes('npc-009'),
+      `占位/回落绑定不得成为对焦目标（负对照 A）：实测候选 ${JSON.stringify(candidatesA)}`);
+    assert.ok(candidatesA.includes('npc-006'), '同日真 GLB 实体 npc-006 必须仍在候选里');
+
+    // ── 夹具 B：真 GLB 绑定 `xuqin_default` 挂上 `npc-009` —— **同一份场景快照**，只换夹具
+    fixture.set(1, { entity_ids: [] });
+    fixture.set(0, { entity_ids: ['npc-006', 'npc-009'] });
+    assert.equal(Boolean(bindingForEntity('npc-009')?.glb_url), true);
+    assert.equal(bindingForEntity('npc-009')?.binding_id, 'xuqin_default');
+    const candidatesB = focusCandidateIds(probe);
+    assert.ok(candidatesB.includes('npc-009'),
+      `真 GLB 绑定必须进候选（证明新判据不恒假）：实测候选 ${JSON.stringify(candidatesB)}`);
+    assert.equal(probe.characterInstanceReport().length, instances.length, 'B 臂必须复用同一次场景快照（不重拍）');
+
+    // ── 夹具 C（v2）：`binding_ref` 在册但 `path` 与 `glb_url` **不一致** ⇒ 新判据判假
+    fixture.set(0, { entity_ids: ['npc-006'], glb_url: 'assets/character/xuqin-body-ALT.glb' });
+    assert.equal(Boolean(bindingForEntity('npc-006')?.glb_url), true,
+      '旧判据对 path 不一致的合成分回仍读 true（本臂专测新判据）');
+    const candidatesC = focusCandidateIds(probe);
+    assert.ok(!candidatesC.includes('npc-006'),
+      `binding_ref 在册但 path 不一致 ⇒ 必须判假（负对照 C）：实测候选 ${JSON.stringify(candidatesC)}`);
+  } finally {
+    fixture.restore();
+  }
+  assert.equal(bindingForEntity('npc-009'), null, '夹具必须完全还原（防泄漏到后续用例）');
+  assert.equal(BINDINGS[0].glb_url, 'assets/character/xuqin-body.glb', '夹具必须还原 glb_url');
+  assert.deepEqual([...BINDINGS[0].entity_ids], ['npc-006']);
+  assert.deepEqual([...BINDINGS[1].entity_ids], []);
+});
+
+test('lowfix_ac2_today_world_candidates_are_unchanged', () => {
+  const probe = newProbe();
+  snap(probe, [npcEntity('npc-006', 0)], 0);
+  assert.equal(Boolean(bindingForEntity('npc-006')?.glb_url), true, '今日世界旧判据读数（行为逐项不变的对照面）');
+  assert.deepEqual(focusCandidateIds(probe), ['npc-006'],
+    '今日世界候选集必须恰为 [npc-006]（升级判据不得改变既有行为）');
+
+  // 注入已知体位的假 loader ⇒ 唯一候选必须仍被**真的**施加对焦（既有 AC-2 行为逐项不变）
+  probe.setCharacterLoader(syncLoader(knownBodyScene()));
+  assert.equal(probe.characterInstanceReport()[0]?.glb_loaded, true, '假 loader 同步回填 ⇒ glb_loaded=true');
+  assert.equal(probe.setAutoObservationFocus(true).applied, 1, '真 GLB 实体在册 ⇒ 唯一候选仍会被施加对焦');
+  const rows = probe.focusViewReport();
+  assert.equal(rows.length, 1, '候选恰 1 个 ⇒ 恰 1 条对焦记录');
+  assert.equal(rows[0]?.entity_id, 'npc-006');
+  assert.equal(rows[0]?.source, 'aabb', '候选在册且几何非空 ⇒ 必须真的按 AABB 派生（不得退化为 source:none）');
+  assert.equal(probe.characterFramingReport()[0]?.fully_in_viewport, true, '既有取景结论不得被本轮改动影响');
+  probe.setAutoObservationFocus(false);
+});
+
+test('lowfix_ac2_forward_invariant_mounted_glb_bindings_are_registered', () => {
+  /** 与 `focusCandidates()` 同一条判据表达式（作用在**交付树导出的**登记面 `ASSET_ENTRIES` 上）。 */
+  const inRegistry = (
+    entries: readonly Record<string, unknown>[],
+    binding: { binding_id: string; glb_url: string },
+  ) => entries.some((entry) => entry.binding_ref === `binding:${binding.binding_id}`
+    && typeof entry.path === 'string'
+    && `assets/${entry.path}` === binding.glb_url
+    && !entry.runtime_excluded);
+
+  const mounted = BINDINGS.filter((binding) => binding.entity_ids.length > 0 && binding.glb_url.endsWith('.glb'));
+  assert.ok(mounted.length >= 1, '今日世界必须至少有一个「已挂载 ∧ 真 GLB」绑定（否则本不变式无牙）');
+  for (const binding of mounted) {
+    assert.ok(inRegistry(ASSET_ENTRIES, binding),
+      `已挂载的真 GLB 绑定必须在交付登记面在册且 path 双侧一致：${binding.binding_id} / ${binding.glb_url}`);
+  }
+
+  // 负对照 ①：合成「已挂载但未在册」的绑定 ⇒ 同一表达式必须判假
+  assert.equal(inRegistry(ASSET_ENTRIES, { binding_id: 'shadow_default', glb_url: 'assets/character/shadow.glb' }), false,
+    '未在册的合成绑定必须判假（本判据有牙）');
+  // 负对照 ②：在册但 `path` 不一致 ⇒ 判假（v2 的合取项真的参与）
+  assert.equal(inRegistry(ASSET_ENTRIES, { binding_id: 'xuqin_default', glb_url: 'assets/character/xuqin-body-ALT.glb' }), false,
+    'path 不一致的合成绑定必须判假');
+  // 正对照：今日真绑定 ⇒ 判真
+  assert.equal(inRegistry(ASSET_ENTRIES, { binding_id: 'xuqin_default', glb_url: 'assets/character/xuqin-body.glb' }), true);
+  // fail-closed：登记面为空（等价于 `assets` 缺失/非数组 ⇒ `ASSET_ENTRIES = []`）⇒ 判假且不抛
+  assert.equal(inRegistry([], { binding_id: 'xuqin_default', glb_url: 'assets/character/xuqin-body.glb' }), false);
 });
