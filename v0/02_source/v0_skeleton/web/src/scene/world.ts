@@ -77,7 +77,10 @@ import {
   type Reading, type Tone,
 } from './lighting.ts';
 import { bindingForEntity, bindingReport as bindingReportOf } from './asset_binding.ts';
-import { createCharacterInstance, type CharacterInstance } from './character_instance.ts';
+import {
+  createCharacterInstance, motionFromDisplacement, MOTION_EPS_M, MOTION_EXIT_M, MOTION_WINDOW_TICKS,
+  type CharacterInstance,
+} from './character_instance.ts';
 import {
   TICK_MS, apply as applyAuthorityStep, createPresentation, type Presentation,
 } from './presentation.ts';
@@ -1242,7 +1245,37 @@ export function createScene(
         );
         inst.group.rotation.y = shown.facing_yaw_rad;
       }
-      inst.update(TICK_MS);
+      // ── FU-003 / W2（本文件**唯一**新增语义）：从显示位置窗口推导运动状态，作为第 2 参传入。
+      // 阈值/窗口的标定依据见 `character_instance.ts` 的 `MOTION_*` 注释与 03 日志 §1。
+      let moving = false;
+      if (shown) {
+        const trail = displayedTrail.get(entityId) ?? [];
+        // **只在显示位置真的变化时取样**：渲染循环按 rAF 跑（~60 fps），而权威每 `TICK_MS` 才更新
+        // 一次 ⇒ 逐帧取样会把「同一次权威更新」重复计入，窗口实际只覆盖 ~1/6 的时间
+        // （实测按帧取样 ⇒ 窗口 ≈167 ms，阈值 0.7 m 几乎永不满足 ⇒ 角色恒 Idle）。
+        // 去重后窗口 = `MOTION_WINDOW_TICKS` 个**不同**的显示位置 = 标定时的口径（10 tick = 1.0 s）。
+        const last = trail.length > 0 ? trail[trail.length - 1] : undefined;
+        const here = shown.displayed_position_m;
+        const changed = last === undefined
+          || last[0] !== here[0]
+          || last[1] !== here[1]
+          || last[2] !== here[2];
+        if (changed) {
+          trail.push([...shown.displayed_position_m] as [number, number, number]);
+          while (trail.length > MOTION_WINDOW_TICKS + 1) trail.shift();
+          displayedTrail.set(entityId, trail);
+        }
+        const windowStart = trail.length > MOTION_WINDOW_TICKS ? trail[0] ?? null : null;
+        // 迟滞：已在运动态 ⇒ 用更低的退出阈值（状态不抖动）；未满窗口 ⇒ 静止（初始 Idle）。
+        moving = motionFromDisplacement(windowStart, shown.displayed_position_m,
+          motionMoving.get(entityId) === true ? MOTION_EXIT_M : MOTION_EPS_M);
+        motionMoving.set(entityId, moving);
+      }
+      inst.update(TICK_MS, shown ? { moving } : null);
+    }
+    // 剪枝后清理窗口（有界驻留，但不留无主键）。
+    for (const key of [...displayedTrail.keys()]) {
+      if (!characterInstances.has(key)) { displayedTrail.delete(key); motionMoving.delete(key); }
     }
     // N5-r2 / A5：GLB 已加载 ⇒ 盒体部件隐藏（回落路径 glb_loaded=false 时保持可见）
     syncCharacterVisibility();
@@ -1411,6 +1444,15 @@ export function createScene(
    */
   const characterInstances = new Map<string, { instance: CharacterInstance; key: string }>();
   let characterLoader: CharacterLoader | null = null;
+  /**
+   * FU-003 / W2 —— 每实例的**显示位移窗口**（最多 `MOTION_WINDOW_TICKS + 1` 个采样点）与当前运动态。
+   *
+   * 用途**只有一个**：把运动状态作为第 2 参传给 `inst.update(TICK_MS, motion)`；判据本体是
+   * `character_instance.ts` 的 `motionFromDisplacement()`（窗口两端净位移 > 阈值）。
+   * **不产生任何权威写**（`presentation.apply` 仍是唯一写点）、不改插值/死区/限速、不改写序。
+   */
+  const displayedTrail = new Map<string, Array<readonly [number, number, number]>>();
+  const motionMoving = new Map<string, boolean>();
 
   // ───────────────────────────────────────── AC-1：实例身份键 / loader 身份 / churn 计数
   /** `loaderSeq` 的来源：loader **对象身份**（`WeakMap<object, number>`；同一对象 ⇒ 同一序号；`null` ⇒ 0）。 */
