@@ -57,8 +57,41 @@ SEED = 20260921
 #   对照树(/tmp/m52-ref, 改前): state_hash=0d79e5f3… chain_tail=81669e96… ⇒ **与旧登记常量逐位相同**
 #     ⇒ 旧常量确实来自改前树，漂移可归因于本轮改动。
 # 变更时刻：epoch 1790180400 前后（2026-09-24 00:40 +08:00）
-M4_BASELINE_STATE_HASH_300 = "8603dedb8cdb4a1799c80c8061c2e056025164a0cf16272a39020a442774c15c"
-M4_BASELINE_CHAIN_TAIL = "c79003ce8ef38959ad09270ec20a1206d909cebb45c54d0b27c2b9b2070d8174"
+# ---- iter2 r2 **重登记**（RULING-20261011-016 §1b 显式授权；只允许改下面这两个常量）----------
+# 旧值（M5.2 r1 口径，**仅存档，不再作断言**）：
+#   M4_BASELINE_STATE_HASH_300 = "8603dedb8cdb4a1799c80c8061c2e056025164a0cf16272a39020a442774c15c"
+#   M4_BASELINE_CHAIN_TAIL     = "c79003ce8ef38959ad09270ec20a1206d909cebb45c54d0b27c2b9b2070d8174"
+# 沿革（三代）：0d79e5f3…（M5.2 前）→ 8603dedb… / c79003ce…（M5.2 r1）→ 本轮（iter2 r2）
+# 变更原因：前轮（REQ-20261011-015）**已授权**的行为变更（W1 目的地承诺层 / W2 到位驻留 / C1~C3）
+#   改变了决策路径上的「去哪 / 走不走」⇒ `state_hash` **与** `chain_tail` **两者都**漂移。
+#   （r1 的失败停在 `state_hash` 断言 ⇒ `chain_tail` 断言**从未被执行**；本轮**两项都实测**。）
+# 归因锚（**锚的是「归因」，不是「常量正确性」** —— iter2 r2.1 按 Raven L-1 更正措辞）：
+#   本轮 `rules/decision.py` / `tick.py` 与 architect 冻结的 round2 基线 **逐位相同**
+#   ⇒ 漂移**可归因于**（前轮）已授权变更，而非本轮引入的未授权行为改动：
+#     decision.py sha256[:16] = 552916951e358a2b      tick.py sha256[:16] = b500a1321988a1f5
+#   （同样两个 sha 也是 `evidence/architect/round2_baseline_tree.sha256` 里登记的起点值。）
+#   ⚠ **这两个 sha 不构成「下面两个常量取值正确」的证明** —— 它们只能钉住
+#   「行为面文件没被本轮动过」这一件事（⇒ 漂移的**来源**）；常量取值本身的正确性由**独立复算**承担
+#   （第三方按下面的命令复跑，应得到与本注释逐位相同的两个 hash）。
+# 实测命令与参数（seed=20260921 / ticks=300 / pack=districts/xingfu-xiaoqu）：
+#   cd <ws> && PYTHONDONTWRITEBYTECODE=1 python3 evidence/artisan/r2/measure_t2_t3_artisan.py
+#     ⇒ 同一 seed 连跑两棵独立运行树 + 换 seed 跑一棵；原始读数落
+#        `evidence/artisan/r2/measure_t2_t3_artisan.stdout.txt` / `t2_t3_artisan.json`
+#        （**r2.1 已按引用落盘**：该 JSON 原先只写 `/tmp` ⇒ 死引用；Raven L-2 / Sentinel L2）
+#   cd <ws>/v0/02_source/v0_skeleton/kernel && PYTHONDONTWRITEBYTECODE=1 \
+#     python3 -m pytest tests/test_task_adaptation.py -q -p no:cacheprovider      # 本文件用例
+# 本轮实测值（**两个新常量的完整值**）：
+#   state_hash = 609d2e9a1450feb344983ee844d49bef3f881f3780e3652d5097f18c32a657c7
+#   chain_tail = be459c2a45d5d6a07f08c0967e825e63531c41bcacad1ba53af049c3b4b2d577
+#   seed+1     ⇒ state_hash=b7dd10fa… chain_tail=031e4311…（两者都变 ⇒ 基线不是常量恒定）
+# **口径澄清（Raven M-3，不得过度声称）**：本测试自身的两条断言（`two_runs_bit_identical` /
+#   `seed_change_alters`）是**机制牙** —— 钉的是「确定性机制」（两次独立运行逐位一致；换 seed 必须
+#   改变基线）；它们**不是常量牙** —— 它们比的是**实测值 vs 实测值**，**不可能**因为下面两个常量
+#   写错而变红。下面两个常量的取值正确性由**独立复算**承担（按上面的命令复跑应得同一对 hash）；
+#   上面两个 sha16 只承担**归因**（漂移来源），**不**承担常量正确性（iter2 r2.1 / Raven L-1）。
+# 变更时刻：epoch 1791705282（2026-10-11 15:54:42 +08:00，读数值落盘时刻）
+M4_BASELINE_STATE_HASH_300 = "609d2e9a1450feb344983ee844d49bef3f881f3780e3652d5097f18c32a657c7"
+M4_BASELINE_CHAIN_TAIL = "be459c2a45d5d6a07f08c0967e825e63531c41bcacad1ba53af049c3b4b2d577"
 
 
 def _kernel(tmp_path: Path, *, snapshot_every: int = 0) -> tuple[object, WorldKernel, EventLog]:
