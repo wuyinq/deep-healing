@@ -89,6 +89,14 @@ RELIEF_RATIO = 0.30
 #: 安全紧急度阈值（行为树第一条 `sequence` 的判据值；数据规格的一部分）
 URGENCY_THRESHOLD = 0.6
 
+# ------------------------------------------------------- 目的地承诺层（REQ-20261011-015）
+#: 「到位」容差（整数毫米）= REQ AC-2 的 1.0 m；同时是**搬迁段 / 驻留段**的分界。
+#: **常量单一权威定义处就是本模块**（`tick.py` 只作为参数接收，不另立一份 ⇒ 不漂移）。
+ARRIVE_TOLERANCE_MM = 1000
+
+#: `npc.decision.target_source` 的取值面（**W5 观测纯加法**：`events.schema.json` 明示允许附加字段）
+TARGET_SOURCES = ("schedule_block", "peer", "home", "local", "none")
+
 # ---------------------------------------------------------------------- 行为树数据规格
 # 只允许 `selector` / `sequence` / `condition` / `branch` 四种节点。
 # **出现 capability 槽位节点（`action` / `slot`）在构造期即抛错**（fail-closed）。
@@ -252,6 +260,7 @@ class Decision:
     bt_branch: str
     schedule_state: str
     target_entity: str | None
+    target_source: str = "none"
     memory_influence: dict | None = None
 
     def to_payload(self) -> dict:
@@ -260,6 +269,11 @@ class Decision:
         **M5.2 r1 追加键**（**只加，且仅在记忆链已接线时加**）：`memory_influence` ——
         供 AC-3.4 的 `utility_ranking` **独立复算**（`by_action` 即复算所需的全部加成量）。
         `memory_view is None`（= 记忆链未接线）⇒ **不加该键**，payload 与改前**逐字节一致**。
+
+        **REQ-20261011-015 / W5**：追加 `target_source`（目的地归因；
+        `events.schema.json` 的 `$defs.payload`（行 58-61）与 `npc.decision` 的 `then` 子句
+        （行 289-314）**都没有** `additionalProperties:false` ⇒ 纯加法可过冻结 schema 用例。
+        既有键的语义与顺序**一字未动**（新键追加在 `decision_source` 之后）。
         """
         payload = {
             "npc_id": self.npc_id,
@@ -273,6 +287,7 @@ class Decision:
             "schedule_is_driver": False,
             "target_entity": self.target_entity,
             "decision_source": DECISION_SOURCE,
+            "target_source": self.target_source,
         }
         if self.memory_influence is not None:
             payload["memory_influence"] = copy.deepcopy(self.memory_influence)
@@ -449,6 +464,59 @@ def _resolve_target(action: str, branch: str, entity: Any, world: Any, profile: 
     return sorted(set(candidates), key=sort_key)[0]
 
 
+# --------------------------------------------------- W1 目的地承诺层（REQ-20261011-015）
+def block_target(schedule: dict, world: Any) -> str | None:
+    """当前日程块声明的**去处**（数据驱动）：非空 `str` **且**世界里确实存在该实体，否则 `None`。
+
+    与 `_resolve_target` 的 `work` 分支口径一致（同一「存在性」判据），但**不**替它做决定 ——
+    承诺层在 `_resolve_target` 的结果**之上**再判一次。
+    """
+    target = schedule.get("target_entity")
+    if isinstance(target, str) and target and world.get(target) is not None:
+        return target
+    return None
+
+
+def classify_dest(dest: Any, entity: Any, world: Any, profile: dict) -> str:
+    """`_resolve_target` 的结果 → `target_source` 归类（`home` / `peer` / `local` / `none`）。
+
+    **分类依据全部来自数据**（profile 的 `home_entity`、目标实体的 `kind`），零实体 id 特判。
+    """
+    if not isinstance(dest, str) or not dest:
+        return "none"
+    home = profile.get("home_entity")
+    if isinstance(home, str) and home and dest == home:
+        return "home"
+    target = world.get(dest)
+    if target is not None and str(target.kind) == "npc" and dest != entity.id:
+        return "peer"
+    return "local"
+
+
+def commit_destination(action: str, branch: str, entity: Any, world: Any, profile: dict,
+                       schedule: dict) -> tuple[str | None, str]:
+    """**W1 目的地承诺层**：本 tick 真正要去的实体 + 归因（`target_source`）。
+
+    规则（数据驱动，零实体 id 特判；`_resolve_target` 的签名与分支语义**一字未动**）：
+
+    1. `branch == "flee"` **或**该块没有声明去处 ⇒ 用 `_resolve_target` 的结果（原语义不变）；
+    2. `_resolve_target` 的结果是**对端 NPC**（有具体社交差事）⇒ 用对端（`peer`）；
+    3. 否则 ⇒ **该日程块声明的块目标**（`schedule_block`）。
+
+    语义边界：本函数**只**决定「去哪」；「做什么」仍由需求 → 效用 → 行为树决定
+    （`decision.chosen_action` 的取值完全不受本函数影响）。
+    """
+    resolved = _resolve_target(action, branch, entity, world, profile, schedule)
+    source = classify_dest(resolved, entity, world, profile)
+    block = block_target(schedule, world)
+    if branch == "flee" or block is None:
+        return resolved, source
+    peer = world.get(resolved) if isinstance(resolved, str) and resolved else None
+    if peer is not None and str(peer.kind) == "npc" and resolved != entity.id:
+        return resolved, "peer"
+    return block, "schedule_block"
+
+
 # ---------------------------------------------------------------------- 决策入口
 def decide(world: Any, rng: Any, tick: int, ctx: Any, *,
            pack_profiles: dict[str, dict], memory_view: dict | None = None) -> list[dict]:
@@ -465,9 +533,9 @@ def decide(world: Any, rng: Any, tick: int, ctx: Any, *,
     `ecs.system_relations` 落盘 —— 决策层**不写世界**（唯一写点仍是执行阶段）。
     """
     # 延迟导入：`tick.py` 在模块级导入本模块 ⇒ 这里若在模块级反向导入会成环。
-    # `_step_towards` 是 M1 冻结的整数毫米步进（含 `rng.stream("npc.<id>.move")` 抽取语义），
-    # 复用而非复制，避免两处漂移。
-    from ..tick import _step_towards
+    # `step_towards_destination`（W2）在 M1 冻结的 `_step_towards`（含 `rng.stream("npc.<id>.move")`
+    # 抽取语义与早退语义）**之上只加一层**「到位 ⇒ 抖动置零」，复用而非复制，避免两处漂移。
+    from ..tick import step_towards_destination
 
     intents: list[dict] = []
     day_ticks = int(world.constants.get("day_ticks") or (24 * 60))
@@ -526,16 +594,21 @@ def decide(world: Any, rng: Any, tick: int, ctx: Any, *,
         chosen_delta = _q(influence["by_action"].get(str(top["action"]), 0.0))
         influence["utility_delta"] = chosen_delta
 
-        # ④ 动作 × 分支 → 目标解析 → 整数毫米步进
+        # ④ 动作 × 分支 → **目的地承诺层（W1）** → 整数毫米步进 + **到位驻留（W2）**
         action = str(top["action"])
-        target_entity = _resolve_target(action, branch, entity, world, profile, schedule)
+        target_entity, target_source = commit_destination(action, branch, entity, world, profile, schedule)
         move_delta = {"x": 0, "y": 0, "z": 0}
         jitter = 0
+        distance: int | None = None
         if target_entity:
             target = world.get(target_entity)
             if target is not None:
-                move_delta, jitter = _step_towards(entity, target, rng)
+                # W2：曼哈顿距离 ≤ ARRIVE_TOLERANCE_MM ⇒ 抑制抖动（步进仍走原函数）⇒ 真的静止
+                move_delta, jitter, distance = step_towards_destination(
+                    entity, target, rng, arrive_tolerance_mm=ARRIVE_TOLERANCE_MM)
         moved = any(move_delta.values()) or jitter != 0
+        # W3：**搬迁段**（有去处 ∧ 未到位 ∧ 本 tick 真的迈了步）⇒ 意图标签 `action = "walk"`
+        walking = distance is not None and distance > ARRIVE_TOLERANCE_MM and any(move_delta.values())
 
         # ⑤ **W4（M5.2 r1）**：`talk` 且对端是 NPC ⇒ 关系（友善度）增量（决策层不写世界）
         relations_delta: dict[str, float] = {}
@@ -555,12 +628,18 @@ def decide(world: Any, rng: Any, tick: int, ctx: Any, *,
             bt_branch=branch,
             schedule_state=state,
             target_entity=target_entity,
+            target_source=target_source,
             memory_influence=influence if memory_view is not None else None,
         )
 
+        # **W3（REQ-20261011-015）**：意图标签 = 搬迁段 ⇒ `"walk"`；否则维持既有
+        # `action if moved else "hold"`。`decision.chosen_action` 的语义**不变**
+        # （它仍是「效用/行为树所选动作」，是 AC-M4-8② 的独立复算面）。
+        intent_action = "walk" if walking else (action if moved else "hold")
+
         intents.append({
             "npc_id": entity.id,
-            "action": action if moved else "hold",
+            "action": intent_action,
             "target_entity": target_entity,
             "move_delta_mm": move_delta,
             "jitter_mm": jitter,

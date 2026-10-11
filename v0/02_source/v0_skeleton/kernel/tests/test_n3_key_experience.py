@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 import shutil
 import sys
+from collections import Counter
 from pathlib import Path
 
 import jsonschema
@@ -247,12 +248,80 @@ def test_declaration_is_the_only_variable(tmp_path):
               for r in records(events_a)]
     rows_b = [(r["tick"], r["type"], r["actor"], json.dumps(r["payload"], sort_keys=True))
               for r in records(events_b)]
-    assert len(rows_a) == len(rows_b)
+    # **iter2 r2（RULING-20261011-016 §1c）**：此处**原为** `assert len(rows_a) == len(rows_b)`。
+    # 该前置隐含「每 tick 恰发一条 `npc.action`」；前轮（REQ-20261011-015）让 `npc.action`
+    # **按 `moved` 条件式发射**（到位即静止 ⇒ 不发）⇒ 辅助假设失效（实测 1087 vs 1065）。
+    # 它被下面的 ④ 取代：**等价或更强**的显式断言（差异只允许落在 `npc.action` + 有界 + 可判定位移解释）。
     first_diff = next(index for index, (x, y) in enumerate(zip(rows_a, rows_b)) if x != y)
     assert all(x == y for x, y in zip(rows_a[:first_diff], rows_b[:first_diff])), "窗口之前必须逐字节一致"
     # 首次分叉必须**恰好**落在窗口起点（tick 895 的 `npc.decision`）
     assert rows_a[first_diff][0] == WINDOW[0], f"首次分叉 tick={rows_a[first_diff][0]} != {WINDOW[0]}"
     assert rows_a[first_diff][1] == "npc.decision"
+
+    # ④ iter2 r2：差异**只允许**落在 `npc.action`，且由**分叉后**的搬迁行解释
+    #    （口径钉死见 helper docstring；齿检三条见文件尾 `test_only_action_rows_helper_has_teeth`）
+    _assert_only_action_rows_differ(rows_a, rows_b, window_start=WINDOW[0])
+
+
+def _assert_only_action_rows_differ(rows_a: list[tuple], rows_b: list[tuple], *, window_start: int) -> None:
+    """④ 差异只允许落在 `npc.action`，且由**分叉后**的搬迁行解释（显式断言，**非恒真**）。
+
+    口径（**钉死** —— RULING-20261011-016 §1c / 预审 C-2；`rows_*` 元素为
+    `(tick, type, actor, payload_json)`）：
+
+    - **(a)** 非 `npc.action` 的事件面按 **`(tick, type, actor)` 键多重集**比对，**必须相等**。
+      **禁止**行列表比对 —— 行列表读法在现树**即为 FALSE**（Raven 实测 `nonaction_rows_equal_ordered_list=false`）：
+      两侧非 action 行数相同（1001 / 1001 = `world.init` ×1 + `npc.decision` ×1000），但
+      `npc.decision` 的 payload 含 `target_entity` / `target_source`，**分叉后必然不同**。
+      ⇒ **显式写明：非 `npc.action` 面 payload 在分叉后允许不同**（本断言只看键，不看 payload）。
+      诚实登记：该读法下 (a) **近乎结构性恒真**（`npc.decision` 每 tick 必发）⇒ **牙不在 (a)**，
+      而在 (b)(c)(d) 与留存的 ①②③。
+    - **(b)** `npc.action` 的**键多重集**差异必须**非空**（否则该断言恒真），且方向正确：
+      `A\\B` 非空、`B\\A` **为空**（差异只允许出现在「带声明」一侧）。
+    - **有界（M-6）**：`|A| >= |B|` **且** `|A| - |B| <= 窗口后 tick 数`
+      （= `max(tick) - window_start + 1`，即分叉后每个 tick 至多补一行 `npc.action`）。
+    - **(c)** 差异**只允许**出现在 `tick >= window_start`（分叉前不得有任何 action 面差异）。
+    - **(d) 可判定形式（C-2(d)）**：对 `A\\B` 的每个键，**A 侧** `npc.action` payload 必须显示位移。
+      **字段面以实际事件 payload 为准（读码确认）**：`tick.py` emit 的是
+      `{npc_id, action, decision_source, target_entity, duration_ticks}` —— **没有** `moved` / `move_delta`。
+      ⇒ 位移证据取 payload 自己的标签：`action == "walk"`（W3 搬迁段标签 =「有去处 ∧ 未到位 ∧ 本 tick
+      真迈步」）**或**（`action != "hold"` **且** 有具体 `target_entity`）。**不得**要求「两臂 payload
+      必须不同」（`B` 侧在这些键上**没有**对应 payload）。
+    """
+    def keyed(rows: list[tuple]) -> list[tuple]:
+        return [(row[0], row[1], row[2]) for row in rows]
+
+    other_a = Counter(key for key in keyed(rows_a) if key[1] != "npc.action")
+    other_b = Counter(key for key in keyed(rows_b) if key[1] != "npc.action")
+    assert other_a == other_b, (
+        "非 npc.action 事件的 (tick,type,actor) 键多重集必须相等（其 payload 在分叉后允许不同）")
+
+    act_a = Counter(key for key in keyed(rows_a) if key[1] == "npc.action")
+    act_b = Counter(key for key in keyed(rows_b) if key[1] == "npc.action")
+    assert act_a != act_b, "npc.action 键多重集差异不得为空（否则本断言恒真）"
+    only_a, only_b = act_a - act_b, act_b - act_a
+    assert only_a, "A\\B 必须非空（差异必须落在带声明一侧）"
+    assert not only_b, f"B\\A 必须为空，实测 {sorted(str(key) for key in only_b)[:8]}"
+
+    last_tick = max(max(row[0] for row in rows_a), max(row[0] for row in rows_b))
+    post_window_ticks = last_tick - window_start + 1
+    total_a, total_b = sum(act_a.values()), sum(act_b.values())
+    assert total_a >= total_b, f"方向：|A|={total_a} 必须 >= |B|={total_b}"
+    assert total_a - total_b <= post_window_ticks, (
+        f"有界：|A|-|B|={total_a - total_b} 必须 <= 窗口后 tick 数 {post_window_ticks}")
+
+    assert all(key[0] >= window_start for key in only_a), (
+        "npc.action 面差异只允许出现在窗口起点之后")
+
+    payload_of = {(row[0], row[1], row[2]): json.loads(row[3])
+                  for row in rows_a if row[1] == "npc.action"}
+    for key in only_a:
+        payload = payload_of[key]
+        label = str(payload.get("action"))
+        target = payload.get("target_entity")
+        assert label == "walk" or (label != "hold" and bool(target)), (
+            f"A\\B 的 {key} 未显示位移：action={label!r} target_entity={target!r}")
+
 
 
 # ---------------------------------------------------------------------- ⑦ 负例：稀释
@@ -335,3 +404,57 @@ def test_declaration_absent_is_no_op_and_carrier_is_loaded(tmp_path):
     assert kernel_a.experience_pressures, "声明必须被读到（载体已加载）"
     assert kernel_b.experience_pressures == [], "未声明 ⇒ 空（默认关）"
     assert kernel_b.pack is not None and kernel_b.pack.npcs, "载体文档本身仍在 pack 内被加载"
+
+
+# ------------------------------------------- ⑥ helper 的齿检（iter2 r2 · 硬性三条合成自检）
+def _synth_rows(spec: list[tuple]) -> list[tuple]:
+    """合成事件行：`(tick, type, actor, payload_dict)` ⇒ helper 读的 `(tick, type, actor, payload_json)`。"""
+    return [(tick, kind, actor, json.dumps(payload, sort_keys=True))
+            for tick, kind, actor, payload in spec]
+
+
+def test_only_action_rows_helper_has_teeth():
+    """齿检三条（**只报「测试绿了」不算齿检**）：合成输入 ⇒ helper 必须按方向通过/抛错。
+
+    ① 仅 `npc.action` 面差异（**含 payload 差异**）**且**非 action 面**payload** 不同
+       ⇒ helper **必须通过**（这一条同时把 C-2 的口径钉住：非 action 面按**键多重集**读，
+       行列表读法在同样的输入上会红）；
+    ② 非 `npc.action` 面在**窗口后**出现**键**差异 ⇒ helper **必须抛错**；
+    ③ **窗口前**出现任何（`npc.action` 面）差异 ⇒ helper **必须抛错**。
+
+    **iter2 r2.1 / Raven L-5**：②③ 的 `pytest.raises` 带 `match=`（**消息子串**断言）——
+    只捕获「任意 AssertionError」理论上可被「因别的原因抛错」满足；加消息锚点后，
+    该用例同时钉住「抛错」与「抛的是**哪一条**断言」。三条**方向**未变。
+    """
+    window_start = 2
+    decisions_a = [(tick, "npc.decision", "npc-001",
+                    {"tick": tick, "target_source": "schedule_block"}) for tick in range(1, 11)]
+    # 非 action 面 **payload 不同**（键完全相同）——分叉后的真实形态（`target_source` 会变）
+    decisions_b = [entry if entry[0] != 5 else
+                   (5, "npc.decision", "npc-001", {"tick": 5, "target_source": "peer"})
+                   for entry in decisions_a]
+    actions_a = [(1, "npc.action", "npc-001", {"action": "walk", "target_entity": "kitchen-01"}),
+                 (2, "npc.action", "npc-001", {"action": "walk", "target_entity": "kitchen-01"}),
+                 (3, "npc.action", "npc-001", {"action": "walk", "target_entity": "courtyard-01"})]
+    # B 侧少一行 action，且第 1 行 **payload 不同**（仅 action 面差异，helper 不得因此抛错）
+    actions_b = [(1, "npc.action", "npc-001", {"action": "walk", "target_entity": "gate-north"}),
+                 (2, "npc.action", "npc-001", {"action": "walk", "target_entity": "kitchen-01"})]
+    rows_a = _synth_rows(sorted(decisions_a + actions_a))
+    rows_b = _synth_rows(sorted(decisions_b + actions_b))
+
+    # ① 仅 `npc.action` 面差异（含 payload）+ 非 action 面 payload 差异 ⇒ 必须通过
+    _assert_only_action_rows_differ(rows_a, rows_b, window_start=window_start)
+
+    # ② 非 `npc.action` 面在**窗口后**（tick 5）出现键差异 ⇒ 必须抛错
+    #    **iter2 r2.1 / Raven L-5**：`match=` 校验**消息子串** ⇒ 不能靠「因别的原因抛错」蒙过
+    rows_b_missing_decision = _synth_rows(sorted([e for e in decisions_b if e[0] != 5] + actions_b))
+    with pytest.raises(AssertionError, match="键多重集必须相等"):
+        _assert_only_action_rows_differ(rows_a, rows_b_missing_decision, window_start=window_start)
+
+    # ③ **窗口前**（tick 1 < window_start）出现 action 面差异 ⇒ 必须抛错（同样校验消息）
+    rows_a_early = _synth_rows(sorted(decisions_a + actions_a
+                                      + [(1, "npc.action", "npc-002",
+                                          {"action": "walk", "target_entity": "gate-north"})]))
+    with pytest.raises(AssertionError, match="只允许出现在窗口起点之后"):
+        _assert_only_action_rows_differ(rows_a_early, rows_b, window_start=window_start)
+

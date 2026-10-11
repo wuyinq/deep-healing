@@ -254,6 +254,34 @@ def _step_towards(entity: Entity, target: Entity, rng: WorldRng) -> tuple[dict, 
     return step, jitter
 
 
+def manhattan_distance_mm(entity: Entity, target: Entity) -> int:
+    """两点**曼哈顿**距离（整数毫米）—— 与 `rules.decision._resolve_target` 的排序口径同构。"""
+    source = (entity.components.get("transform") or {}).get("pos_mm") or {}
+    destination = (target.components.get("transform") or {}).get("pos_mm") or {}
+    return sum(abs(int(destination.get(axis, 0)) - int(source.get(axis, 0))) for axis in ("x", "y", "z"))
+
+
+def step_towards_destination(entity: Entity, target: Entity, rng: WorldRng, *,
+                             arrive_tolerance_mm: int) -> tuple[dict, int, int]:
+    """**W2 步进调用口径**（REQ-20261011-015）：朝 `target` 走一步 + **到位抑制抖动**。
+
+    - 步进本体**复用** `_step_towards`（`STEP_MM` / `JITTER_MM` / 「`delta` 全零 ⇒ 零步零抖动」
+      的早退语义**一字未改**）；
+    - 曼哈顿距离 ≤ `arrive_tolerance_mm` ⇒ 把 jitter 覆盖为 0。效果：**到位后完全静止**
+      （真站在目标点上时 `delta` 本就全零）；容差内仍继续步进 ⇒ 单调收敛、不在容差边缘抖振。
+    - 返回 `(move_delta, jitter, distance_mm)`：`distance_mm` 与判定共用同一口径，
+      调用方据此分「搬迁段 / 驻留段」，**不**再另算一份距离。
+
+    `arrive_tolerance_mm` 由调用方传入：该常量的**单一权威定义处是 `rules/decision.py`**
+    （`ARRIVE_TOLERANCE_MM`），本模块不另立一份，避免两处漂移。
+    """
+    distance = manhattan_distance_mm(entity, target)
+    move_delta, jitter = _step_towards(entity, target, rng)
+    if distance <= int(arrive_tolerance_mm):
+        jitter = 0
+    return move_delta, jitter, distance
+
+
 def stub_decide(world: World, rng: WorldRng, tick: int, ctx: TickContext) -> list[dict]:
     """确定性桩决策系统（M1）。遍历 `world.query(kind="npc")`（已按 id 升序）。"""
     intents: list[dict] = []
