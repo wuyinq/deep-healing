@@ -37,6 +37,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # F-5a/F-5b/F-5c 以 FROZEN_REF 提交为基线做 `git show` / `git diff`。
+          # 默认 fetch-depth=1 的**浅克隆**里基线提交不存在 ⇒ 守卫会 either 空转通过
+          # （`frozen=0 missing=0`，什么都没比）or 对已授权项误红。历史仅 ~65MB，
+          # 取全量让基线可解析，守卫才真正生效（f5_check 亦已 fail-closed）。
+          fetch-depth: 0
 
       - name: Setup Node 26.x
         uses: actions/setup-node@v4

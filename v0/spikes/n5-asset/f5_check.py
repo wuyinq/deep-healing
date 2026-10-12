@@ -134,6 +134,27 @@ def git_diff_u0(ref: str, paths: list[str]) -> str:
     return p.stdout
 
 
+def ref_resolvable(ref: str) -> bool:
+    """基线提交在**本地**历史里可解析吗（`git rev-parse --verify`）。"""
+    p = subprocess.run(["git", "-C", str(WS), "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}"],
+                       capture_output=True, text=True)
+    return p.returncode == 0
+
+
+def baseline_problem(ref: str, resolvable) -> str | None:
+    """F-5a/F-5b/F-5c 的**基线可读性**前置（fail-closed）。
+
+    为什么要有它：F-5a/F-5b/F-5c 全部以 `FROZEN_REF` 提交为基线（`git show` / `git diff`）。
+    浅克隆（CI 默认 `fetch-depth=1`）里该提交**不存在** ⇒ `git_show` 返回 `None` ⇒ 被判成空串 ⇒
+    `frozen=0 current=105 missing=0`：**什么都没比，却报 PASS**（空转通过）。这类「读不到」转绿
+    正是门禁最不该有的口子 —— 故在此显式 fail-closed：基线解析不了就记 problem、不许转绿。
+    """
+    if resolvable(ref):
+        return None
+    return (f"F-5a/F-5b/F-5c: 基线不可读（FROZEN_REF={ref} 在本仓库不可解析）⇒ fail-closed；"
+            f"不得因「没读到」转绿（浅克隆下需 fetch 全 history，见 .github/workflows/verify.yml）")
+
+
 def js_literals(text: str) -> list[str]:
     out = []
     for m in JS_LITERAL.finditer(text):
@@ -299,6 +320,13 @@ def main() -> int:
     # `TypeError`：崩在写报告**之前** ⇒ ① 未按设计 §4.3-6 记结构性 problem ② `--json-out` 审计件不产出
     # ③ `--selftest` 一条用例都不跑。该前置值本来就随后被 `c_audit["registry_total"]` 覆盖（下同），
     # 删掉它 ⇒ 该形态走 `f5c_evaluate()` 的 fail-closed 降级路径（记结构性 problem ⇒ exit 1 ⇒ 审计件仍产出）。
+
+    # --- 基线可读性（fail-closed）---
+    # 浅克隆里 FROZEN_REF 不可解析 ⇒ F-5a/F-5b 会拿空基线「空转通过」（frozen=0 missing=0）。
+    # 显式堵住这类「读不到就转绿」：基线解析不了 ⇒ 记 problem ⇒ exit 1。
+    _baseline = baseline_problem(FROZEN_REF, ref_resolvable)
+    if _baseline:
+        problems.append(_baseline)
 
     # --- F-5a ---
     frozen_sa = git_show(FROZEN_REF, FILES["scene_assert"]) or ""
@@ -552,6 +580,14 @@ def selftest(current_sa: str, current_vs: str, f5c_eval) -> int:
                           f"problems={n_problems} / 审计件={'产出且可解析' if parseable else '缺失或不可解析'}）"
                           f"⇒ exit 1 ∧ problems ≥ 1 ∧ 审计件产出（必红 = 满足）",
                           proc.returncode == 1 and parseable and bool(n_problems), True))
+
+        # ⑬ **基线可读性 fail-closed**（浅克隆事故的回归钉）：F-5a/F-5b/F-5c 都以 FROZEN_REF 为基线
+        #    （`git show` / `git diff`）。基线不可解析时旧实现拿空基线**空转通过**（`frozen=0 missing=0`）。
+        #    本组钉死：不可解析 ⇒ 必报 problem（不见红即失败）；可解析 ⇒ 必须不报（对照另一臂）。
+        cases.append(("⑬ 基线不可解析 ⇒ 必报 problem（fail-closed，堵『读不到就转绿』）",
+                      baseline_problem("0" * 40, lambda _ref: False) is not None, True))
+        cases.append(("⑬′ 基线可解析 ⇒ 必须不报（对照的另一臂）",
+                      baseline_problem(FROZEN_REF, lambda _ref: True) is not None, False))
 
     ok = True
     for case in cases:
