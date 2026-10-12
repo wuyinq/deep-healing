@@ -247,6 +247,7 @@ export class CausalTrace {
   render(npcId: string | null, label: string | null = null): CausalChain | null {
     if (npcId === null) {
       this.el.dataset.npcId = '';
+      this.el.dataset.scope = 'none';
       this.el.textContent = 'causal trace: no npc events yet';
       return null;
     }
@@ -270,10 +271,36 @@ export class CausalTrace {
       lines.push(`  注：signal ref(s) 无对应 memory.written 事件：${chain.unlinked_signal_refs.join(', ')}（不补造）`);
     }
     this.el.dataset.npcId = npcId;
+    this.el.dataset.scope = 'npc';
+    // 从「实体空态」切回人物链 ⇒ 清掉上一次的 `data-entity`（不留误导性残留）。
+    delete this.el.dataset.entity;
     this.el.dataset.complete = String(chain.complete);
     this.el.dataset.memoryRef = chain.memory?.ref ?? '';
     this.el.dataset.actionTarget = chain.action?.target_entity ?? '';
     this.el.textContent = lines.join('\n');
     return chain;
+  }
+
+  /**
+   * REQ-20261012-001 · T2：所选对象是**异常点实体**（房间 / 物件）时的显式空态。
+   *
+   * 因果追溯只对**人物作用域**的事件（`npc.action` / `npc.decision` / `memory.written` /
+   * `relation.changed`）建索引；房间 / 物件实体不在该索引里 ⇒ 这里如实给空态，**不伪造**链条
+   * （今天 `npcIds()` 为空时 `render(null)` 的文案是"还没有事件"，与本处的语义不同，故单列一条）。
+   *
+   * 只写文本节点与 `dataset`，**不新增任何控件**。
+   */
+  renderEntityScope(entityId: string): void {
+    this.el.dataset.scope = 'entity';
+    this.el.dataset.entity = entityId;
+    this.el.dataset.npcId = '';
+    this.el.dataset.complete = 'false';
+    this.el.dataset.memoryRef = '';
+    this.el.dataset.actionTarget = '';
+    this.el.textContent = [
+      `causal trace · 实体 ${entityId} · entity-scope`,
+      '  该实体无 NPC 链（房间 / 物件不是 NPC 作用域）。',
+      '  因果追溯按人物作用域建索引；此处如实给空态，不伪造链条。',
+    ].join('\n');
   }
 }

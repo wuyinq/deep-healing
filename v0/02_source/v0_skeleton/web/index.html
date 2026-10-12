@@ -35,8 +35,27 @@
          否则 `scrollWidth > clientWidth`（横向溢出）。 */
       #causal-trace { white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,.12); font-size: 12px; opacity: .95; }
       #hud { overflow-wrap: anywhere; }
+      /* ── REQ-20261012-001 · T1：`#hud` 可折叠 ─────────────────────────────────
+         顶行容器 `#hud-head`：原地保留 `#mode-badge` / `#reading-badge`（id 不变）+ 折叠按钮。
+         折叠态用 **display:none** 隐藏其余子树 —— 不得用 `visibility`/`opacity`/`height:0`：
+         那些写法元素**仍可点**（Raven R-8 / 预审 M-6 实证口径）。
+         「折叠态上下内边距 ≤ 8px」是**载荷条款**（实测 8px ⇒ 41px；12px ⇒ 49px 超 3rem=48px）。 */
+      #observe-collapse-toggle { font-size: 12px; line-height: 1; padding: 2px 6px; }
+      #hud.collapsed { padding: 8px 16px; }
+      #hud.collapsed > :not(#hud-head) { display: none; }
+      #hud.collapsed #hud-head { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; }
+      #hud.collapsed #hud-head > #mode-badge,
+      #hud.collapsed #hud-head > #reading-badge { display: inline; }
+      #hud.collapsed #observe-collapse-toggle { margin-left: auto; }
+      /* ── REQ-20261012-001 · T2：观察对象选择（只读视图控件；无写入口） ──────────
+         选项由 `panel.ts` **运行时派生**后用 `textContent` 渲染（禁硬编码 / 禁 innerHTML）。
+         `flex-wrap` + 12px 字号保证 390px 下不横向溢出（AC-9）。 */
+      #observe-targets { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+      #observe-targets button { font-size: 12px; line-height: 1.2; padding: 1px 6px; }
+      #observe-targets button[aria-pressed="true"] { outline: 2px solid rgba(59,54,48,.55); font-weight: 600; }
       @media (max-width: 430px) {
         #hud { left: 8px; right: 8px; top: 8px; max-width: none; font-size: 12px; }
+        #hud.collapsed { padding: 8px 8px; }
         #event-stream { max-height: 4rem; }
         #causal-trace { font-size: 11px; }
       }
@@ -45,8 +64,18 @@
   <body>
     <canvas id="scene"></canvas>
     <div id="hud">
-      <div id="mode-badge">observe</div>
-      <div id="reading-badge">surface</div>
+      <!-- REQ-20261012-001 · T1：折叠顶行。`#mode-badge` / `#reading-badge` **原地保留、id 不变**，
+           只是移入顶行容器（折叠态与展开按钮同排）。 -->
+      <div id="hud-head">
+        <div id="mode-badge">observe</div>
+        <div id="reading-badge">surface</div>
+        <!-- SHOULD-8（Raven R-8）：折叠范围 = `#hud-head` **之外的全部**子节点（含运行时才挂上的
+             `#event-stream` / `#anomaly-read` / `#npc-profile` / `#metrics` / `#live-readout` / `#timeline`），
+             静态 `aria-controls` **写不全**且会与真实范围不符 ⇒ **移除**该属性（而不是给一个错的）。 -->
+        <button id="observe-collapse-toggle" type="button" aria-expanded="true">折叠</button>
+      </div>
+      <!-- REQ-20261012-001 · T2：观察对象选择容器（空容器；选项由 panel.ts 运行时派生渲染）。 -->
+      <div id="observe-targets"></div>
       <div id="tick">tick 0</div>
       <!-- M5.2 r2 · 因果追溯（事件 → 记忆 → 决策 → 可观察行动）；只读文本，无控件 -->
       <div id="causal-trace">causal trace: waiting for events</div>

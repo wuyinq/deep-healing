@@ -29,6 +29,15 @@ import {
   BINDINGS, bindingForEntity, clearBindingDegradations, bindingDegradationsSnapshot,
 } from '../src/scene/asset_binding.ts';
 import { ASSET_ENTRIES } from '../src/scene/world.ts';
+import {
+  ObservePanel, eventMatchesEntity, observeOptionsFor, readPersistedView, restoreDecisionOf, writePersistedView,
+} from '../src/ui/observe/panel.ts';
+// r2 新增导出用**独立 import 语句**引入（追加式改动：不改写 r1 已落下的任何一行）。
+import {
+  cameraSourceOf, focusReasonOf, focusReasonsOf, focusSourcesOf, optionTargetCollisions,
+  readFocusRows, targetButtonId,
+} from '../src/ui/observe/panel.ts';
+import { CausalTrace } from '../src/ui/observe/trace.ts';
 
 function delta(tick: number, seq: number) {
   return { t: 'delta' as const, tick, seq, ops: [{ op: 'set', entity: 'npc-001', component: 'transform', value: {} }] };
@@ -754,4 +763,917 @@ test('lowfix_ac2_forward_invariant_mounted_glb_bindings_are_registered', () => {
   assert.equal(inRegistry(ASSET_ENTRIES, { binding_id: 'xuqin_default', glb_url: 'assets/character/xuqin-body.glb' }), true);
   // fail-closed：登记面为空（等价于 `assets` 缺失/非数组 ⇒ `ASSET_ENTRIES = []`）⇒ 判假且不抛
   assert.equal(inRegistry([], { binding_id: 'xuqin_default', glb_url: 'assets/character/xuqin-body.glb' }), false);
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// REQ-20261012-001 · 观察面板 v2：T1 折叠 / T2 观察对象可切换 / 写入口加严 / 回读面
+//
+// 本环境**没有** jsdom / happy-dom（`node_modules` 内无该类包）⇒ 自带最小 DOM stub。
+// stub 只实现被测代码真正用到的 API（`createElement` / `querySelector(All)` / `dataset` /
+// `classList` / `textContent` / `append` / `setAttribute` / `addEventListener`），
+// **不做**浏览器语义仿真：真实布局（高度 / 溢出）与 console 判据由**真浏览器面**负责
+// （`<ws>/evidence/artisan/browser/`），本文件只判"逻辑与登记面"。
+// ═════════════════════════════════════════════════════════════════════════════
+
+interface StubElement {
+  tagName: string; id: string; type: string; className: string; textContent: string;
+  dataset: Record<string, string>; attributes: Map<string, string>;
+  children: StubElement[]; parentNode: StubElement | null;
+  // r2（MUST-3）：shadow root / 子文档 的承载字段
+  shadowRoot: StubElement | null; contentDocument: StubElement | null;
+  attachShadow(init?: { mode?: string }): StubElement;
+  mode?: string; host?: StubElement | null;
+  classList: { add(...n: string[]): void; remove(...n: string[]): void; contains(n: string): boolean; toggle(n: string, force?: boolean): boolean };
+  append(...nodes: StubElement[]): void; remove(): void;
+  setAttribute(name: string, value: string): void; getAttribute(name: string): string | null;
+  addEventListener(type: string, handler: () => void): void; click(): void;
+  matches(selector: string): boolean; querySelector(selector: string): StubElement | null;
+  querySelectorAll(selector: string): StubElement[];
+  getBoundingClientRect(): { height: number; width: number };
+}
+
+function parseSimpleSelector(selector: string): {
+  tag: string | null; id: string | null; classes: string[]; attrs: Array<{ name: string; value: string | null }>;
+} {
+  const out: { tag: string | null; id: string | null; classes: string[]; attrs: Array<{ name: string; value: string | null }> }
+    = { tag: null, id: null, classes: [], attrs: [] };
+  let rest = selector.trim();
+  const attrRe = /\[([^\]]+)\]/g;
+  let match: RegExpExecArray | null;
+  while ((match = attrRe.exec(rest)) !== null) {
+    const raw = match[1] ?? '';
+    const eq = raw.indexOf('=');
+    out.attrs.push(eq === -1
+      ? { name: raw.trim(), value: null }
+      : { name: raw.slice(0, eq).trim(), value: raw.slice(eq + 1).trim().replace(/^["']|["']$/g, '') });
+  }
+  rest = rest.replace(attrRe, '');
+  const idMatch = /#([A-Za-z0-9_-]+)/.exec(rest);
+  if (idMatch) out.id = idMatch[1] ?? null;
+  rest = rest.replace(/#[A-Za-z0-9_-]+/g, '');
+  out.classes = (rest.match(/\.[A-Za-z0-9_-]+/g) ?? []).map((item) => item.slice(1));
+  rest = rest.replace(/\.[A-Za-z0-9_-]+/g, '');
+  if (rest.trim()) out.tag = rest.trim().toUpperCase();
+  return out;
+}
+
+function createStubElement(tagName: string): StubElement {
+  const node: StubElement = {
+    tagName: tagName.toUpperCase(), id: '', type: '', className: '', textContent: '',
+    dataset: {}, attributes: new Map(), children: [], parentNode: null,
+    // r2（MUST-3）：**刻意不进 `children`** —— 复现「宿主元素的 `querySelectorAll` 看不见 shadow/子文档内部」
+    shadowRoot: null, contentDocument: null,
+    attachShadow(init?: { mode?: string }) {
+      const root = stubElement('#shadow-root');
+      root.mode = init?.mode ?? 'open';
+      root.host = node;
+      node.shadowRoot = root;
+      return root;
+    },
+    classList: {
+      add(...names: string[]) {
+        const set = new Set(node.className.split(/\s+/).filter(Boolean));
+        for (const name of names) set.add(name);
+        node.className = [...set].join(' ');
+      },
+      remove(...names: string[]) {
+        const set = new Set(node.className.split(/\s+/).filter(Boolean));
+        for (const name of names) set.delete(name);
+        node.className = [...set].join(' ');
+      },
+      contains(name: string) { return node.className.split(/\s+/).filter(Boolean).includes(name); },
+      toggle(name: string, force?: boolean) {
+        const want = force === undefined ? !this.contains(name) : Boolean(force);
+        if (want) this.add(name); else this.remove(name);
+        return want;
+      },
+    },
+    append(...nodes: StubElement[]) {
+      for (const child of nodes) {
+        if (child.parentNode) child.remove();
+        child.parentNode = node;
+        node.children.push(child);
+      }
+    },
+    remove() {
+      const parent = node.parentNode;
+      if (!parent) return;
+      const index = parent.children.indexOf(node);
+      if (index >= 0) parent.children.splice(index, 1);
+      node.parentNode = null;
+    },
+    setAttribute(name: string, value: string) {
+      const text = String(value);
+      node.attributes.set(name, text);
+      if (name === 'id') node.id = text;
+      else if (name === 'class') node.className = text;
+      else if (name === 'type') node.type = text;
+    },
+    getAttribute(name: string) {
+      if (node.attributes.has(name)) return node.attributes.get(name) ?? null;
+      if (name === 'type') return node.type === '' ? null : node.type;
+      if (name === 'id') return node.id === '' ? null : node.id;
+      if (name === 'class') return node.className === '' ? null : node.className;
+      return null;
+    },
+    addEventListener(type: string, handler: () => void) {
+      void type;
+      handlers.get(node)!.push(handler);
+    },
+    click() { for (const handler of [...(handlers.get(node) ?? [])]) handler(); },
+    matches(selector: string) {
+      const simple = parseSimpleSelector(selector);
+      if (simple.tag && node.tagName !== simple.tag) return false;
+      if (simple.id && node.id !== simple.id) return false;
+      for (const cls of simple.classes) if (!node.className.split(/\s+/).includes(cls)) return false;
+      for (const attr of simple.attrs) {
+        const value = node.getAttribute(attr.name);
+        if (value === null) return false;
+        if (attr.value !== null && value !== attr.value) return false;
+      }
+      return true;
+    },
+    querySelectorAll(selector: string) {
+      const parts = selector.split(',').map((item) => item.trim()).filter(Boolean);
+      const out: StubElement[] = [];
+      const walk = (current: StubElement) => {
+        for (const child of current.children) {
+          if (parts.some((part) => child.matches(part))) out.push(child);
+          walk(child);
+        }
+      };
+      walk(node);
+      return out;
+    },
+    querySelector(selector: string) { return node.querySelectorAll(selector)[0] ?? null; },
+    getBoundingClientRect() { return { height: 0, width: 0 }; },
+  };
+  return node;
+}
+
+/** stub 的 click 处理器表（按元素对象存；不进 `dataset`，避免污染读数）。 */
+const handlers = new WeakMap<StubElement, Array<() => void>>();
+
+function stubElement(tagName: string): StubElement {
+  const node = createStubElement(tagName);
+  handlers.set(node, []);
+  // r2：`createStubElement` 的选择器解析把 `*` 当标签名 ⇒ 这里**追加**（不改写 r1 已落下的行）
+  // 一个只影响本 stub 的通用选择器通道，使 `querySelectorAll('*')` 可用于 MUST-3 的下钻断言。
+  const rawQuerySelectorAll = node.querySelectorAll.bind(node);
+  node.querySelectorAll = (selector: string) => {
+    const parts = selector.split(',').map((item) => item.trim()).filter(Boolean);
+    if (parts.length > 0 && parts.every((part) => part === '*')) {
+      const out: StubElement[] = [];
+      const walk = (current: StubElement) => {
+        for (const child of current.children) { out.push(child); walk(child); }
+      };
+      walk(node);
+      return out;
+    }
+    return rawQuerySelectorAll(selector);
+  };
+  node.querySelector = (selector: string) => node.querySelectorAll(selector)[0] ?? null;
+  return node;
+}
+
+/** 剥掉注释（源码级静态判据必须先剥注释，否则注释里的示例串会被误判）。 */
+function stripSourceComments(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+}
+
+/** 子树节点数（含自身）；不依赖选择器语义 ⇒ 判「不增删节点」时不受 stub 的 selector 能力限制。 */
+function descendantCount(node: StubElement): number {
+  return 1 + node.children.reduce((sum, child) => sum + descendantCount(child), 0);
+}
+
+function createStubHud(): StubElement {
+  const body = stubElement('body');
+  const hud = stubElement('div');
+  hud.id = 'hud';
+  const appendTo = (parent: StubElement, tag: string, id: string, text?: string) => {
+    const el = stubElement(tag);
+    el.id = id;
+    if (text !== undefined) el.textContent = text;
+    parent.append(el);
+    return el;
+  };
+  const head = stubElement('div');
+  head.id = 'hud-head';
+  hud.append(head);
+  appendTo(head, 'div', 'mode-badge', 'observe');
+  appendTo(head, 'div', 'reading-badge', 'surface');
+  const collapse = appendTo(head, 'button', 'observe-collapse-toggle', '折叠');
+  collapse.type = 'button';
+  appendTo(hud, 'div', 'observe-targets');
+  appendTo(hud, 'div', 'tick', 'tick 0');
+  appendTo(hud, 'div', 'causal-trace', 'causal trace: waiting for events');
+  const controls = stubElement('div');
+  controls.id = 'controls';
+  for (const [id, text] of [['toggle-reading', '切换读法'], ['toggle-mode', '切换模式']] as const) {
+    const button = stubElement('button');
+    button.id = id;
+    button.type = 'button';
+    button.textContent = text;
+    controls.append(button);
+  }
+  hud.append(controls);
+  body.append(hud);
+  (globalThis as { __stubBody?: StubElement }).__stubBody = body;
+  return hud;
+}
+
+/** 在受控的 `globalThis.document` 下跑一段（结束后还原，避免泄漏到其它用例）。 */
+function withStubDom<T>(run: (hud: StubElement) => T): T {
+  const globals = globalThis as { document?: unknown };
+  const previous = globals.document;
+  const body = stubElement('body');
+  const documentStub = {
+    createElement: (tag: string) => stubElement(tag),
+    getElementById: (id: string) => body.querySelector(`#${id}`),
+    querySelector: (selector: string) => body.querySelector(selector),
+    querySelectorAll: (selector: string) => body.querySelectorAll(selector),
+    documentElement: stubElement('html'),
+    body,
+    // r2（MUST-3）：`document.designMode`（默认 `'off'`；用例显式置 `'on'`）
+    designMode: 'off',
+  };
+  globals.document = documentStub;
+  (documentStub.documentElement as StubElement).append(body);
+  try {
+    return run(createStubHud());
+  } finally {
+    if (previous === undefined) delete globals.document; else globals.document = previous;
+  }
+}
+
+test('req20261012_t1_collapse_switches_class_and_dataset_without_touching_nodes', () => {
+  withStubDom((hud) => {
+    const panel = new ObservePanel(hud as never);
+    const before = descendantCount(hud);
+    assert.equal(panel.isCollapsed(), false, '默认必须是**展开**（与现状一致）');
+    assert.equal(hud.dataset.collapsed, 'false');
+    assert.equal(hud.querySelector('#observe-collapse-toggle')?.textContent, '折叠');
+
+    panel.setCollapsed(true);
+    assert.equal(panel.isCollapsed(), true);
+    assert.equal(hud.classList.contains('collapsed'), true, '折叠态必须落 `#hud.collapsed`（CSS 钩子）');
+    assert.equal(hud.dataset.collapsed, 'true');
+    assert.equal(hud.querySelector('#observe-collapse-toggle')?.textContent, '展开');
+
+    // 可反复：再展开一次必须逐项复原
+    panel.setCollapsed(false);
+    assert.equal(hud.classList.contains('collapsed'), false);
+    assert.equal(hud.dataset.collapsed, 'false');
+    assert.equal(panel.isCollapsed(), false);
+
+    // **不增删节点**（`#tick` / `#causal-trace` 等被 `adopt()` 按 id 复用，移除会打断取数路径）
+    assert.equal(descendantCount(hud), before, '折叠/展开不得增删任何节点');
+    assert.ok(hud.querySelector('#tick') !== null && hud.querySelector('#causal-trace') !== null);
+    assert.ok(hud.querySelector('#observe-targets') !== null && hud.querySelector('#hud-head') !== null);
+  });
+});
+
+test('req20261012_t2_object_list_is_derived_deduped_and_registered_by_reference', () => {
+  // 派生规则：overview 恒在首位 → npcIds() 升序 → anomalies[].at_entity 按 worldview 顺序，保序去重。
+  const options = observeOptionsFor(
+    { anomalies: [{ at_entity: 'entity-beta' }, { at_entity: 'entity-alpha' }, { at_entity: 'entity-beta' }] },
+    ['npc-zulu', 'npc-alpha', 'npc-alpha'],
+  );
+  assert.deepEqual(options, [
+    { kind: 'overview', target: 'overview', label: '总览' },
+    { kind: 'npc', target: 'npc-alpha', label: 'npc-alpha' },
+    { kind: 'npc', target: 'npc-zulu', label: 'npc-zulu' },
+    { kind: 'entity', target: 'entity-beta', label: 'entity-beta' },
+    { kind: 'entity', target: 'entity-alpha', label: 'entity-alpha' },
+  ], '清单必须运行时派生 + 保序去重');
+
+  // **非硬编码**的牙齿：换一组完全不同的输入 ⇒ 必须给出完全不同的清单
+  const other = observeOptionsFor({ anomalies: [{ at_entity: 'room-x' }] }, ['npc-b', 'npc-a']);
+  assert.deepEqual(other.map((option) => option.target), ['overview', 'npc-a', 'npc-b', 'room-x']);
+  assert.deepEqual(observeOptionsFor({}, []).map((option) => option.target), ['overview'],
+    '无 NPC / 无异常时只剩总览（不得补造）');
+  assert.deepEqual(observeOptionsFor({ anomalies: [{ at_entity: '' }, {}] }, []).map((option) => option.target),
+    ['overview'], '空 / 缺失 at_entity 必须跳过');
+
+  withStubDom((hud) => {
+    const picked: Array<{ kind: string; target: string }> = [];
+    const panel = new ObservePanel(hud as never, { onSelect: (next) => picked.push({ kind: next.kind, target: next.target }) });
+    panel.renderTargets(options, { kind: 'overview', target: 'overview' });
+
+    const buttons = hud.querySelector('#observe-targets')!.querySelectorAll('button');
+    assert.equal(buttons.length, options.length, '每个对象一个只读视图控件');
+    assert.deepEqual(buttons.map((button) => button.id),
+      ['observe-target-overview', 'observe-target-npc-alpha', 'observe-target-npc-zulu',
+        'observe-target-entity-beta', 'observe-target-entity-alpha']);
+    for (const button of buttons) {
+      assert.equal(button.type, 'button');
+      assert.equal(button.dataset.viewControl, 'read-only');
+      assert.equal(button.getAttribute('aria-pressed'), String(button.dataset.target === 'overview'));
+    }
+    assert.equal(buttons[1]?.textContent, 'npc-alpha', '渲染必须走 textContent');
+
+    // M-10：签名不变 ⇒ **不重建**（节点对象同一性可判）
+    panel.renderTargets(options, { kind: 'overview', target: 'overview' });
+    assert.equal(hud.querySelector('#observe-targets')!.querySelectorAll('button')[1], buttons[1],
+      '派生清单签名未变时不得重建（重建会丢焦点）');
+
+    // 点击 ⇒ 回调带出所选对象
+    buttons[3]?.click();
+    assert.deepEqual(picked, [{ kind: 'entity', target: 'entity-beta' }]);
+
+    // 清单变化 ⇒ 重建，且只清理**上一次由本 panel 创建**的引用
+    panel.renderTargets([{ kind: 'overview', target: 'overview', label: '总览' }], { kind: 'overview', target: 'overview' });
+    assert.equal(hud.querySelector('#observe-targets')!.querySelectorAll('button').length, 1);
+
+    // 静态口径：渲染不得用 innerHTML（**先剥注释**，否则注释里提到 innerHTML 会误判）
+    const stripComments = (source: string) => source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+    const panelSource = stripComments(readFileSync(join(WEB, 'src/ui/observe/panel.ts'), 'utf8'));
+    assert.equal(/\.innerHTML|innerHTML\s*=/.test(panelSource), false, 'panel.ts 不得用 innerHTML 渲染');
+    assert.equal(panel.listWriteControls().length, 0, '面板自己渲染的控件必须登记为只读视图控件');
+  });
+});
+
+test('req20261012_write_control_registry_rejects_duplicated_ids_and_contenteditable_variants', () => {
+  withStubDom((hud) => {
+    const panel = new ObservePanel(hud as never);
+    panel.renderTargets(observeOptionsFor({ anomalies: [{ at_entity: 'room-probe-01' }] }, []),
+      { kind: 'overview', target: 'overview' });
+    assert.deepEqual(panel.listWriteControls(), [], '基线：面板自身（含折叠按钮与对象按钮）零写控件');
+
+    const probe = (tag: string, id: string | null, attrs: Record<string, string> = {}) => {
+      const el = stubElement(tag);
+      if (id !== null) el.id = id;
+      for (const [name, value] of Object.entries(attrs)) el.setAttribute(name, value);
+      hud.append(el);
+      return el;
+    };
+    const check = (label: string, el: StubElement, expected: string) => {
+      const hits = panel.listWriteControls();
+      assert.ok(hits.includes(expected), `${label}：必须命中（实测 ${JSON.stringify(hits)}）`);
+      el.remove();
+      assert.deepEqual(panel.listWriteControls(), [], `${label}：移除后必须复原为空`);
+    };
+
+    // T1：全新 id 的 button（证明判据**有牙**，不是恒空）
+    check('T1 全新 id button', probe('button', 'brand-new-write-control'), 'button#brand-new-write-control');
+    // T3（预审 M-3 实证逃逸）：复制一个**白名单 id** 的第二个 button —— 按 id 字符串放行会逃逸
+    check('T3 复制白名单 id', probe('button', 'toggle-mode'), 'button#toggle-mode');
+    // T3b：复制**面板自己创建**的对象按钮 id
+    check('T3b 复制对象按钮 id', probe('button', 'observe-target-room-probe-01'), 'button#observe-target-room-probe-01');
+    // T4 / T5（预审 M-11 实证逃逸）：`[contenteditable=true]` 会漏判这两个值
+    check('T4 contenteditable=""', probe('div', null, { contenteditable: '' }), '[contenteditable]');
+    check('T5 contenteditable="plaintext-only"', probe('div', null, { contenteditable: 'plaintext-only' }), '[contenteditable]');
+    // T7：既有形态
+    check('T7 input[type=text]', probe('input', null, { type: 'text' }), 'input');
+
+    // T6：作用域 —— `#hud` **之外**的控件不在本判据作用域内（L-5 边界声明，不是"通过"）
+    const outside = stubElement('input');
+    outside.setAttribute('type', 'text');
+    (globalThis as { __stubBody?: StubElement }).__stubBody?.append(outside);
+    assert.deepEqual(panel.listWriteControls(), [], '作用域 = #hud：面板子树的声明面不得因树外控件而变');
+    outside.remove();
+
+    // 加严后的放行判据必须是**元素引用**，不是 id 字符串（源码级读出）
+    const panelSource = stripSourceComments(readFileSync(join(WEB, 'src/ui/observe/panel.ts'), 'utf8')).replace(/\s+/g, ' ');
+    assert.ok(/viewControlRefs = new Set<Element>\(\)/.test(panelSource),
+      '允许集合必须是 Set<Element>（按元素引用，不按 id 字符串）');
+    assert.ok(panelSource.includes('[contenteditable]'), 'WRITE_CONTROL_SELECTORS 必须含 [contenteditable]');
+    assert.equal(panelSource.includes('[contenteditable=true]'), false,
+      '不得回退成 [contenteditable=true]（会漏判 contenteditable=""）');
+  });
+});
+
+test('req20261012_anomaly_reads_filter_only_when_a_filter_is_passed', () => {
+  withStubDom((hud) => {
+    const panel = new ObservePanel(hud as never);
+    const el = hud.querySelector('#anomaly-read')!;
+    const worldview = {
+      anomalies: [
+        { id: 'anom-a', at_entity: 'entity-alpha', surface_read: 's-a', underneath_read: 'u-a', reveal_at_tick: 5 },
+        { id: 'anom-b', at_entity: 'entity-beta', surface_read: 's-b', underneath_read: 'u-b', reveal_at_tick: 5 },
+      ],
+    };
+    // 不传 filter ⇒ 与今天**逐字相同**（两行、同一格式；既有调用点零改动）
+    panel.renderAnomalyReads(worldview, 10, 'surface');
+    assert.equal(String(el.textContent),
+      'anom-a@entity-alpha surface t=10 revealed=true: s-a\nanom-b@entity-beta surface t=10 revealed=true: s-b');
+    assert.equal(el.dataset.reading, 'surface');
+    assert.equal(el.dataset.tick, '10');
+    assert.equal(el.dataset.entityFilter, '', '不过滤是**显式读数**（空串），不是被省略');
+
+    // 传 filter ⇒ 只渲该实体那一条
+    panel.renderAnomalyReads(worldview, 10, 'underneath', { entity: 'entity-beta' });
+    assert.equal(String(el.textContent), 'anom-b@entity-beta underneath t=10 revealed=true: u-b');
+    assert.equal(el.dataset.entityFilter, 'entity-beta');
+
+    // 未 reveal 的实体照样只给 surface（既有两态语义不受过滤影响）
+    panel.renderAnomalyReads(worldview, 4, 'underneath', { entity: 'entity-alpha' });
+    assert.equal(String(el.textContent), 'anom-a@entity-alpha surface t=4 revealed=false: s-a');
+
+    // 切回不过滤 ⇒ 复原两行
+    panel.renderAnomalyReads(worldview, 10, 'surface');
+    assert.equal(String(el.textContent).split('\n').length, 2);
+  });
+});
+
+test('req20261012_event_stream_entity_filter_has_explicit_empty_states', () => {
+  withStubDom((hud) => {
+    const panel = new ObservePanel(hud as never);
+    const stream = hud.querySelector('#event-stream')!;
+    const events = [
+      { seq: 1, tick: 10, type: 'npc.action', actor: 'npc-probe-1', payload: { action: 'move', target_entity: 'room-probe-01' } },
+      { seq: 2, tick: 11, type: 'npc.action', actor: 'npc-probe-1', payload: { action: 'rest', target_entity: null } },
+      { seq: 3, tick: 12, type: 'world.init', actor: 'world', payload: { pack_id: 'probe-pack' } },
+    ];
+    // 字段依据（events.schema.json）：顶层 actor + payload.target_entity（房间/物件只可能出现在后者）
+    assert.equal(eventMatchesEntity(events[0] as never, 'room-probe-01'), true);
+    assert.equal(eventMatchesEntity(events[1] as never, 'npc-probe-1'), true);
+    assert.equal(eventMatchesEntity(events[2] as never, 'room-probe-01'), false);
+
+    // 空缓冲 + 实体过滤 ⇒ **显式**空态（不得让"没有事件"与"没有匹配"混为一谈）
+    panel.setEventFilter({ entity: 'room-probe-01' });
+    const empty = stream.querySelectorAll('li');
+    assert.equal(empty.length, 1);
+    assert.equal(empty[0]?.dataset.emptyState, 'empty');
+    // r3 / SHOULD-7：可见文本**中性**（不得对用户断言因果）+ 原因改由机器可读字段承载
+    assert.equal(empty[0]?.textContent, '暂无事件');
+    assert.equal(stream.dataset.emptyReason, 'no-event-records-received');
+
+    panel.renderEventStream(events as never);
+    const matched = stream.querySelectorAll('li');
+    assert.equal(matched.length, 1, '只保留匹配该实体的事件（不伪造、不补造）');
+    assert.equal(matched[0]?.textContent, 't10 npc.action');
+    assert.equal(stream.dataset.filterEntity, 'room-probe-01');
+
+    // 目标实体已消失 ⇒ 语义不同的**另一个**空态
+    panel.setEventFilter({ entity: 'room-probe-99' });
+    const noMatch = stream.querySelectorAll('li');
+    assert.equal(noMatch.length, 1);
+    assert.equal(noMatch[0]?.dataset.emptyState, 'no-match-for-entity');
+    assert.ok(noMatch[0]?.textContent?.includes('room-probe-99'));
+    assert.equal(stream.dataset.emptyReason, 'no-event-matches-entity-filter');
+
+    // 清掉过滤 ⇒ 三条全回来（append 路径与重建路径必须同结果）
+    panel.setEventFilter(null);
+    assert.equal(stream.querySelectorAll('li').length, 3);
+    assert.equal(panel.eventStreamFilter().entity, null);
+    assert.equal(panel.eventsSeen, 3);
+  });
+});
+
+test('req20261012_trace_entity_scope_is_an_explicit_empty_state', () => {
+  withStubDom((hud) => {
+    const trace = new CausalTrace(hud as never);
+    const el = hud.querySelector('#causal-trace')!;
+    trace.renderEntityScope('room-probe-01');
+    assert.equal(el.dataset.scope, 'entity');
+    assert.equal(el.dataset.entity, 'room-probe-01');
+    assert.equal(el.dataset.npcId, '', '实体态不得残留 npcId');
+    assert.ok(el.textContent?.includes('无 NPC 链'), '必须如实标注"该实体无 NPC 链"');
+
+    // 切回人物链 ⇒ scope 与 entity 必须同步（不留误导性残留）
+    trace.render('npc-probe-1');
+    assert.equal(el.dataset.scope, 'npc');
+    assert.equal(el.dataset.npcId, 'npc-probe-1');
+    assert.equal(el.dataset.entity, undefined);
+
+    trace.render(null);
+    assert.equal(el.dataset.scope, 'none');
+  });
+});
+
+test('req20261012_restore_decisions_are_distinguishable', () => {
+  const options = observeOptionsFor({ anomalies: [{ at_entity: 'room-probe-01' }] }, ['npc-probe-alpha']);
+  // 命中
+  assert.deepEqual(restoreDecisionOf({ collapsed: true, kind: 'entity', target: 'room-probe-01' }, options, true),
+    { reason: 'ok', selection: { kind: 'entity', target: 'room-probe-01' } });
+  // 目标已消失（该 kind 的候选面**非空**）
+  assert.deepEqual(restoreDecisionOf({ collapsed: true, kind: 'entity', target: 'room-probe-99' }, options, true),
+    { reason: 'fallback:target-not-in-options', selection: { kind: 'overview', target: 'overview' } });
+  // 抢跑：启动那一刻该 kind 的候选面**为空**（NPC 事件还没到）
+  assert.deepEqual(restoreDecisionOf({ collapsed: false, kind: 'npc', target: 'npc-probe-alpha' },
+    observeOptionsFor({ anomalies: [] }, []), true),
+  { reason: 'fallback:empty-options-at-boot', selection: { kind: 'overview', target: 'overview' } });
+  // 没有记录 / 存储不可用
+  assert.equal(restoreDecisionOf(null, options, true).reason, 'none');
+  assert.equal(restoreDecisionOf(null, options, false).reason, 'unavailable');
+  assert.equal(restoreDecisionOf(null, options, false).selection.target, 'overview');
+});
+
+test('req20261012_persisted_view_roundtrip_and_damaged_storage_never_throws', () => {
+  const globals = globalThis as { sessionStorage?: unknown };
+  const previous = globals.sessionStorage;
+  const store = new Map<string, string>();
+  try {
+    globals.sessionStorage = {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => { store.set(key, value); },
+    };
+    assert.equal(readPersistedView().view, null, '空存储 ⇒ 没有可恢复的视图');
+    assert.equal(readPersistedView().persisted, true);
+    assert.equal(writePersistedView({ collapsed: true, kind: 'entity', target: 'room-probe-01' }), true);
+    assert.deepEqual(readPersistedView(), {
+      view: { collapsed: true, kind: 'entity', target: 'room-probe-01' }, persisted: true,
+    });
+
+    // 损坏 / 非 JSON / 字段类型不符 ⇒ 「无视图」且**不抛**
+    const key = [...store.keys()][0] as string;
+    store.set(key, '{not json');
+    assert.deepEqual(readPersistedView(), { view: null, persisted: true });
+    store.set(key, JSON.stringify({ collapsed: 'yes', kind: 'entity', target: 'room-probe-01' }));
+    assert.deepEqual(readPersistedView(), { view: null, persisted: true });
+    store.set(key, JSON.stringify({ collapsed: true, kind: 'bogus-kind', target: 'room-probe-01' }));
+    assert.deepEqual(readPersistedView(), { view: null, persisted: true });
+    store.set(key, 'x'.repeat(200000));
+    assert.deepEqual(readPersistedView(), { view: null, persisted: true });
+
+    // 存储抛错 ⇒ persisted:false（**不得抛**）
+    globals.sessionStorage = {
+      getItem() { throw new Error('blocked'); },
+      setItem() { throw new Error('blocked'); },
+    };
+    assert.deepEqual(readPersistedView(), { view: null, persisted: false });
+    assert.equal(writePersistedView({ collapsed: false, kind: 'overview', target: 'overview' }), false);
+
+    // 完全没有 sessionStorage（Node / 隐私模式）⇒ persisted:false
+    delete globals.sessionStorage;
+    assert.deepEqual(readPersistedView(), { view: null, persisted: false });
+    assert.equal(writePersistedView({ collapsed: false, kind: 'overview', target: 'overview' }), false);
+  } finally {
+    if (previous === undefined) delete globals.sessionStorage; else globals.sessionStorage = previous;
+  }
+});
+
+test('req20261012_ac4_positive_control_registered_glb_still_yields_aabb_source', () => {
+  // 设计 §9.2 的**正对照**：证明「全为 source:'none'」不是**结构恒真**——
+  // 构造合成 npc-006 + 在册真 GLB 绑定 ⇒ `setAutoObservationFocus(true)` 后必须出现 `source:'aabb'`。
+  const fixture = bindingFixture();
+  const probe = newProbe();
+  try {
+    fixture.set(0, { entity_ids: ['npc-006'], glb_url: 'assets/character/xuqin-body.glb' });
+    const binding = BINDINGS[0];
+    assert.ok(binding && binding.glb_url.endsWith('.glb'), '夹具必须落在真 GLB 绑定上');
+    assert.ok(ASSET_ENTRIES.some((entry) => entry.binding_ref === `binding:${binding.binding_id}`),
+      '该绑定必须在交付登记面在册');
+
+    snap(probe, [npcEntity('npc-006', 0)], 0);
+    probe.setCharacterLoader(syncLoader(knownBodyScene()));
+    assert.equal(probe.characterInstanceReport()[0]?.glb_loaded, true, '假 loader 必须同步回填 GLB');
+
+    assert.equal(probe.setAutoObservationFocus(true).enabled, true);
+    const on = probe.focusViewReport();
+    assert.ok(on.length > 0, `正对照：在册真 GLB 候选 ⇒ 读数必须非空，实测 ${JSON.stringify(on)}`);
+    assert.ok(on.some((row) => row.source === 'aabb'),
+      `正对照：必须出现 source:'aabb'（不得结构性恒 none），实测 ${JSON.stringify(on)}`);
+
+    // AC-4③ 的「非空真」依据：**关闭态**下每个候选仍各有一条记录（reason:'disabled'）
+    // ⇒ `focus_report_length === 0` 真的推出「无在册真 GLB 候选」，与"按选择不施加"可区分。
+    probe.setAutoObservationFocus(false);
+    const off = probe.focusViewReport();
+    assert.ok(off.length > 0, '关闭态下候选仍逐条记录 ⇒ length 是候选数的忠实读数');
+    assert.ok(off.every((row) => row.source === 'none' && row.reason === 'disabled'),
+      '关闭态必须全 source:none + reason:disabled');
+  } finally {
+    fixture.restore();
+  }
+  assert.equal(bindingForEntity('npc-006')?.glb_url, 'assets/character/xuqin-body.glb', '夹具必须完全还原');
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// r2 修复轮新增判据（MUST-1 / MUST-2 / MUST-3 / MUST-4）
+//
+// 追加式：本段只**新增**用例与 helper，不改写 r1 已落下的任何一行（`git diff --unified=0`
+// 的 `^-` 行数必须为 0）。三条 MUST 的关闭判据都要求 RED（改前）与 GREEN（改后）两份真跑读数；
+// 本文件里的断言对应 GREEN，RED 读数在 `<ws>/evidence/artisan/r2/`。
+// ═════════════════════════════════════════════════════════════════════════════
+
+test('req20261012_r2_camera_source_keeps_three_states_and_never_masks_unreadable', () => {
+  // ── MUST-4 ①：有候选 + autofocus 关 ⇒ reason='selection-suppressed-autofocus' 且 camera_source='none'
+  const fixture = bindingFixture();
+  const probe = newProbe();
+  let offTriple;
+  try {
+    fixture.set(0, { entity_ids: ['npc-006'], glb_url: 'assets/character/xuqin-body.glb' });
+    snap(probe, [npcEntity('npc-006', 0)], 0);
+    probe.setCharacterLoader(syncLoader(knownBodyScene()));
+    const off = { autofocus: probe.setAutoObservationFocus(false).enabled, rows: readFocusRows(probe) };
+    assert.ok((off.rows?.length ?? 0) > 0,
+      `有候选 ⇒ 读数必须非空（否则本用例退化成空真），实测 ${JSON.stringify(off.rows)}`);
+    offTriple = {
+      autofocus_enabled: off.autofocus,
+      camera_source: cameraSourceOf(off.rows),
+      focus_reason: focusReasonOf(off.rows, off.autofocus),
+    };
+    assert.deepEqual(offTriple,
+      { autofocus_enabled: false, camera_source: 'none', focus_reason: 'selection-suppressed-autofocus' },
+      'AC-4 的「按选择不施加」必须与「本来没候选」用**不同** reason 区分');
+
+    // 对照臂：同一候选、autofocus 开 ⇒ 真的按 AABB 施加（证明上一条不是恒真）
+    const on = { autofocus: probe.setAutoObservationFocus(true).enabled, rows: readFocusRows(probe) };
+    assert.deepEqual(
+      { autofocus_enabled: on.autofocus, camera_source: cameraSourceOf(on.rows), focus_reason: focusReasonOf(on.rows, on.autofocus) },
+      { autofocus_enabled: true, camera_source: 'aabb', focus_reason: 'autofocus-evaluated' });
+  } finally {
+    fixture.restore();
+  }
+
+  // ── MUST-4 ②：无候选 + autofocus 开 ⇒ reason='no-registered-real-glb-candidate'
+  const bare = newProbe();
+  snap(bare, [npcEntity('npc-001', 0)], 0); // `npc-001` 无在册真 GLB 绑定 ⇒ 候选面为空
+  const bareOn = { autofocus: bare.setAutoObservationFocus(true).enabled, rows: readFocusRows(bare) };
+  assert.equal(bareOn.rows?.length, 0, '无候选 ⇒ 读到了空数组（不是读不到）');
+  assert.equal(focusReasonOf(bareOn.rows, bareOn.autofocus), 'no-registered-real-glb-candidate');
+  assert.equal(cameraSourceOf(bareOn.rows), 'none', '读到了空 ⇒ 「确实没有相机源」');
+  assert.notEqual(focusReasonOf(bareOn.rows, bareOn.autofocus), offTriple.focus_reason,
+    '两个 reason 必须是**两个不同的值**（设计 §9.2）');
+
+  // ── MUST-4 ③ / MUST-1：读不到 ⇒ camera_source='unknown'（与「确实是 none」不同）
+  const broken = newProbe();
+  const patchReader = (value: unknown) => {
+    (broken as unknown as { focusViewReport: unknown }).focusViewReport = value;
+  };
+  patchReader(() => { throw new Error('probe: unreadable'); });
+  const unreadable = readFocusRows(broken);
+  assert.equal(unreadable, null, '抛错必须读成「读不到」而不是「空」');
+  assert.equal(cameraSourceOf(unreadable), 'unknown', 'MUST-1：读不到不得折叠成 none');
+  assert.notEqual(cameraSourceOf(unreadable), 'none');
+  assert.equal(focusReasonOf(unreadable, true), 'unreadable');
+  assert.equal(focusSourcesOf(unreadable), null, '三态：读不到必须给 null（不是 []）');
+  assert.equal(focusReasonsOf(unreadable), null, '三态：读不到必须给 null（不是 []）');
+  patchReader(() => ({ not: 'an array' }));
+  assert.equal(cameraSourceOf(readFocusRows(broken)), 'unknown', '返回非数组同样属「读不到」');
+  patchReader(undefined);
+  assert.equal(cameraSourceOf(readFocusRows(broken)), 'unknown', '缺方法同样属「读不到」');
+  assert.equal(cameraSourceOf(readFocusRows(null)), 'unknown', '读者缺失同样属「读不到」');
+  // 三态互不相同（不得把 null 与 [] 折成同一个输出）
+  assert.notEqual(cameraSourceOf(null), cameraSourceOf([]));
+  assert.notEqual(focusReasonOf(null, true), focusReasonOf([], true));
+  // 读到非 `aabb|none` 的取值 ⇒ 也判 'unknown'（不猜）
+  assert.equal(cameraSourceOf([{ entity_id: 'probe', applied: false, source: 'weird' } as never]), 'unknown');
+  // 正对照：读到了 aabb ⇒ 'aabb'（证明 'unknown' 不是唯一可能值）
+  assert.equal(cameraSourceOf([{ entity_id: 'probe', applied: true, source: 'aabb' } as never]), 'aabb');
+});
+
+test('req20261012_r2_cross_kind_targets_are_listed_not_silently_dropped', () => {
+  // ── MUST-2 夹具 A：`at_entity` 与某个 NPC id 同名 ⇒ 实体选项必须仍在（不得静默消失）
+  const sameName = observeOptionsFor({ anomalies: [{ at_entity: 'npc-probe-alpha' }] }, ['npc-probe-alpha']);
+  assert.deepEqual(sameName.map((option) => `${option.kind}:${option.target}`),
+    ['overview:overview', 'npc:npc-probe-alpha', 'entity:npc-probe-alpha'],
+    '跨 kind 同 target 必须**都**列出（去重键 = (kind,target) 二元组）');
+  assert.deepEqual(optionTargetCollisions(sameName), ['npc-probe-alpha'], '撞名必须**显式披露**（不静默）');
+
+  // ── MUST-2 夹具 B：`at_entity === 'overview'` ⇒ 实体选项必须仍在，且总览仍在
+  const asOverview = observeOptionsFor({ anomalies: [{ at_entity: 'overview' }] }, []);
+  assert.deepEqual(asOverview.map((option) => `${option.kind}:${option.target}`), ['overview:overview', 'entity:overview']);
+  assert.deepEqual(optionTargetCollisions(asOverview), ['overview']);
+
+  // 回归：同 kind 内的重复仍保序去重（不得因修跨 kind 而退化）
+  assert.deepEqual(
+    observeOptionsFor({ anomalies: [{ at_entity: 'room-x' }, { at_entity: 'room-x' }] }, ['npc-a', 'npc-a'])
+      .map((option) => `${option.kind}:${option.target}`),
+    ['overview:overview', 'npc:npc-a', 'entity:room-x']);
+  assert.deepEqual(optionTargetCollisions(observeOptionsFor({ anomalies: [{ at_entity: 'room-x' }] }, ['npc-a'])), []);
+
+  // ── 真 DOM：跨 kind 同名 ⇒ id 必须**唯一**且两个都可点，点击后选中正确的 kind
+  withStubDom((hud) => {
+    const picked: Array<{ kind: string; target: string }> = [];
+    const panel = new ObservePanel(hud as never, { onSelect: (next) => picked.push({ kind: next.kind, target: next.target }) });
+    panel.renderTargets(sameName, { kind: 'overview', target: 'overview' });
+    const buttons = hud.querySelector('#observe-targets')!.querySelectorAll('button');
+    const ids = buttons.map((button) => button.id);
+    assert.equal(new Set(ids).size, ids.length, `同 id 多按钮必须消除，实测 ${JSON.stringify(ids)}`);
+    // 无冲突者沿用 r1 既有 id；撞名者对**后出现**的那个改用带 kind 的限定名消歧
+    assert.deepEqual(ids, ['observe-target-overview', 'observe-target-npc-probe-alpha', 'observe-target-entity-npc-probe-alpha']);
+    const entityButton = buttons.find((button) => button.dataset.kind === 'entity');
+    const npcButton = buttons.find((button) => button.dataset.kind === 'npc');
+    assert.ok(entityButton && npcButton, '同名 NPC 与实体都必须有按钮');
+    entityButton.click();
+    assert.deepEqual(picked, [{ kind: 'entity', target: 'npc-probe-alpha' }], '点实体按钮必须选中 entity（不得串到 npc）');
+    npcButton.click();
+    assert.deepEqual(picked, [{ kind: 'entity', target: 'npc-probe-alpha' }, { kind: 'npc', target: 'npc-probe-alpha' }]);
+    assert.deepEqual(panel.listWriteControls(), [], '新增的按钮仍必须登记为只读视图控件');
+  });
+
+  // ── SHOULD-6 / R-4：slug 非单射（`room-101` vs `room.101`）⇒ id 必须仍唯一
+  withStubDom((hud) => {
+    const panel = new ObservePanel(hud as never);
+    panel.renderTargets([
+      { kind: 'overview', target: 'overview', label: '总览' },
+      { kind: 'entity', target: 'room-101', label: 'room-101' },
+      { kind: 'entity', target: 'room.101', label: 'room.101' },
+    ], { kind: 'overview', target: 'overview' });
+    const ids = hud.querySelector('#observe-targets')!.querySelectorAll('button').map((button) => button.id);
+    assert.deepEqual(ids,
+      ['observe-target-overview', 'observe-target-room-101', 'observe-target-entity-room-101'],
+      '同 kind slug 撞名必须消歧，且 id 里带 kind 可自辨');
+    assert.equal(new Set(ids).size, ids.length);
+    // `targetButtonId` 是这条规则的唯一实现点（避免"测试替实现"）
+    assert.equal(targetButtonId({ kind: 'entity', target: 'room-101', label: '' },
+      new Set<string>(['observe-target-room-101'])), 'observe-target-entity-room-101');
+    assert.equal(targetButtonId({ kind: 'npc', target: 'room-101', label: '' },
+      new Set<string>(['observe-target-room-101', 'observe-target-entity-room-101'])),
+    'observe-target-npc-room-101');
+    assert.equal(targetButtonId({ kind: 'npc', target: 'room-101', label: '' },
+      new Set<string>(['observe-target-room-101', 'observe-target-npc-room-101'])), 'observe-target-npc-room-101-2');
+    assert.equal(targetButtonId({ kind: 'overview', target: 'overview', label: '总览' }, new Set<string>()),
+      'observe-target-overview');
+  });
+});
+
+test('req20261012_r2_scan_covers_shadow_root_iframe_and_design_mode_without_false_positives', () => {
+  withStubDom((hud) => {
+    const panel = new ObservePanel(hud as never);
+    assert.deepEqual(panel.listWriteControls(), [], '基线仍必须为空（面板自身零写控件）');
+
+    // ── ① 开放 shadow root（挂在 `#hud` 内）：Raven B5
+    const host = stubElement('div');
+    host.id = 'r2-shadow-host';
+    hud.append(host);
+    const shadow = host.attachShadow({ mode: 'open' });
+    const shadowButton = stubElement('button');
+    shadowButton.id = 'r2-shadow-write';
+    shadowButton.type = 'button';
+    shadow.append(shadowButton);
+    assert.ok(panel.listWriteControls().some((hit) => hit.includes('r2-shadow-write')),
+      `开放 shadow root 内的 button 必须命中，实测 ${JSON.stringify(panel.listWriteControls())}`);
+    shadowButton.remove();
+    assert.deepEqual(panel.listWriteControls(), [], '清理后必须复原为空');
+    // 负对照：shadow 内只有普通 div ⇒ 不得命中（不得为了变红而误判）
+    const plainInShadow = stubElement('div');
+    plainInShadow.textContent = 'not a write control';
+    shadow.append(plainInShadow);
+    assert.deepEqual(panel.listWriteControls(), [], 'shadow 内普通节点不得被判红');
+    host.remove();
+
+    // ── ② 同源 iframe（`contentDocument` 内 form + input）：Raven B6
+    const frame = stubElement('iframe');
+    frame.id = 'r2-frame';
+    hud.append(frame);
+    const subDocument = stubElement('#document');
+    const subBody = stubElement('body');
+    subDocument.append(subBody);
+    frame.contentDocument = subDocument;
+    const subInput = stubElement('input');
+    subInput.setAttribute('type', 'text');
+    subBody.append(subInput);
+    const iframeHits = panel.listWriteControls();
+    assert.ok(iframeHits.includes('input'), `同源 iframe 内的 input 必须命中，实测 ${JSON.stringify(iframeHits)}`);
+    subInput.remove();
+    assert.equal(panel.listWriteControls().includes('input'), false, '清理后不得残留');
+    // 负对照：iframe 内只有普通 div ⇒ 不得命中
+    const plainInFrame = stubElement('div');
+    plainInFrame.textContent = 'x';
+    subBody.append(plainInFrame);
+    assert.deepEqual(panel.listWriteControls(), [], 'iframe 内普通节点不得被判红');
+    frame.remove();
+
+    // ── ③ `document.designMode = 'on'`（整页可编辑、零 `contenteditable` 属性）：Raven B7
+    (globalThis.document as unknown as { designMode?: string }).designMode = 'on';
+    const designHits = panel.listWriteControls();
+    assert.ok(designHits.includes('document:designMode=on'),
+      `designMode='on' 必须判红并给出显式原因，实测 ${JSON.stringify(designHits)}`);
+    (globalThis.document as unknown as { designMode?: string }).designMode = 'off';
+    assert.deepEqual(panel.listWriteControls(), [], "designMode 复位后必须回到空");
+
+    // ── 负对照：普通 div 不得命中（判据只加枚举深度，不放宽放行）
+    const plain = stubElement('div');
+    plain.id = 'r2-plain';
+    plain.textContent = 'x';
+    hud.append(plain);
+    assert.deepEqual(panel.listWriteControls(), [], '普通 div 不得命中');
+    plain.remove();
+
+    // ── r1 已关闭项回归（M-3 / M-11 判据不得退化）
+    const duplicate = stubElement('button');
+    duplicate.id = 'toggle-mode';
+    duplicate.type = 'button';
+    hud.append(duplicate);
+    assert.ok(panel.listWriteControls().includes('button#toggle-mode'), 'M-3：复制白名单 id 仍必须命中');
+    duplicate.remove();
+    const editable = stubElement('div');
+    editable.setAttribute('contenteditable', '');
+    hud.append(editable);
+    assert.ok(panel.listWriteControls().includes('[contenteditable]'), 'M-11：contenteditable="" 仍必须命中');
+    editable.remove();
+    assert.deepEqual(panel.listWriteControls(), [], '全部清理后必须复原为空');
+  });
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// r3 收口轮新增判据（R3-1 / R3-2）
+//
+// 追加式：只**新增**用例；对 r1 段落的那一处改写见 `03` 的 r3 节「被改写的断言」清单。
+// ═════════════════════════════════════════════════════════════════════════════
+
+test('req20261012_r3_scope_root_own_shadow_root_is_scanned', () => {
+  withStubDom((hud) => {
+    const panel = new ObservePanel(hud as never);
+    assert.deepEqual(panel.listWriteControls(), [], '基线仍必须为空');
+
+    // 作用域根 `#hud` **自身**挂 open shadow root（Raven R2-1 / §16.4.3-N1 的形态）
+    const shadow = hud.attachShadow({ mode: 'open' });
+    assert.notEqual(hud.shadowRoot, null, 'shadow root 必须可读（open）');
+
+    // ① shadow 内 button ⇒ 必须命中
+    const button = stubElement('button');
+    button.id = 'r3-root-shadow-button';
+    button.type = 'button';
+    shadow.append(button);
+    assert.ok(panel.listWriteControls().some((hit) => hit.includes('r3-root-shadow-button')),
+      `作用域根自身 shadow root 内的 button 必须命中，实测 ${JSON.stringify(panel.listWriteControls())}`);
+    button.remove();
+    assert.deepEqual(panel.listWriteControls(), [], '清理后必须复原为空');
+
+    // ② shadow 内 input / contenteditable ⇒ 同样命中
+    const input = stubElement('input');
+    input.setAttribute('type', 'text');
+    shadow.append(input);
+    assert.ok(panel.listWriteControls().includes('input'), 'root shadow 内的 input 必须命中');
+    input.remove();
+    const editable = stubElement('div');
+    editable.setAttribute('contenteditable', '');
+    shadow.append(editable);
+    assert.ok(panel.listWriteControls().includes('[contenteditable]'), 'root shadow 内的 contenteditable 必须命中');
+    editable.remove();
+
+    // ③ 负对照 A：shadow 内只有普通 div ⇒ 不得命中（不得为了变红而误判）
+    const plain = stubElement('div');
+    plain.id = 'r3-root-shadow-plain';
+    plain.textContent = 'not a write control';
+    shadow.append(plain);
+    assert.deepEqual(panel.listWriteControls(), [], 'root shadow 内普通节点不得被判红');
+    plain.remove();
+
+    // ④ 负对照 B：普通链接 / role=button / tabindex 节点 ⇒ 不得命中
+    const link = stubElement('a');
+    link.setAttribute('href', '#x');
+    const roleButton = stubElement('span');
+    roleButton.setAttribute('role', 'button');
+    const focusable = stubElement('div');
+    focusable.setAttribute('tabindex', '0');
+    shadow.append(link, roleButton, focusable);
+    assert.deepEqual(panel.listWriteControls(), [], '非写形状节点不得被判红');
+    link.remove(); roleButton.remove(); focusable.remove();
+
+    // ⑤ 嵌套：shadow ⊆ iframe ⊆ shadow（root shadow 内 iframe 的子文档里再挂 shadow）
+    const frame = stubElement('iframe');
+    frame.id = 'r3-root-shadow-frame';
+    shadow.append(frame);
+    const subDocument = stubElement('#document');
+    const subBody = stubElement('body');
+    subDocument.append(subBody);
+    frame.contentDocument = subDocument;
+    const nestedHost = stubElement('div');
+    subBody.append(nestedHost);
+    const nestedShadow = nestedHost.attachShadow({ mode: 'open' });
+    const nestedButton = stubElement('button');
+    nestedButton.id = 'r3-nested-shadow-button';
+    nestedButton.type = 'button';
+    nestedShadow.append(nestedButton);
+    assert.ok(panel.listWriteControls().some((hit) => hit.includes('r3-nested-shadow-button')),
+      `嵌套 shadow ⊆ iframe ⊆ shadow 内的 button 必须命中，实测 ${JSON.stringify(panel.listWriteControls())}`);
+    nestedButton.remove();
+    assert.deepEqual(panel.listWriteControls(), [], '嵌套清理后必须复原为空');
+    frame.remove();
+
+    // ⑥ 回归：`#hud` 的 light DOM 注入仍命中（证明下钻只加深度、没换判据）
+    const lightWrite = stubElement('button');
+    lightWrite.id = 'r3-hud-light-write';
+    lightWrite.type = 'button';
+    hud.append(lightWrite);
+    assert.ok(panel.listWriteControls().includes('button#r3-hud-light-write'), 'light DOM 注入仍必须命中');
+    lightWrite.remove();
+    assert.deepEqual(panel.listWriteControls(), [], '最终必须复原为空');
+  });
+});
+
+test('req20261012_r3_event_stream_empty_text_is_neutral_reason_is_machine_readable', () => {
+  withStubDom((hud) => {
+    const panel = new ObservePanel(hud as never);
+    const stream = hud.querySelector('#event-stream')!;
+    const textOf = () => stream.querySelectorAll('li').map((item) => String(item.textContent)).join('\n');
+
+    // ① 零事件 ⇒ 可见文本中性（**不得**断言因果）+ 原因在 dataset
+    panel.setEventFilter({ entity: 'room-probe-01' });
+    assert.equal(textOf(), '暂无事件', '可见文本必须为中性表述');
+    assert.equal(/事件通道|未下发|event 记录/.test(textOf()), false, '可见文本不得断言缺失原因');
+    assert.equal(stream.dataset.emptyReason, 'no-event-records-received', '原因必须可从机器可读字段取出');
+
+    // ② 有事件但无匹配 ⇒ 另一个语义不同的空态（原因值也不同）
+    panel.renderEventStream([
+      { seq: 1, tick: 10, type: 'npc.action', actor: 'npc-probe-1', payload: { action: 'move', target_entity: 'room-probe-01' } },
+    ] as never);
+    panel.setEventFilter({ entity: 'room-probe-99' });
+    assert.equal(stream.dataset.emptyReason, 'no-event-matches-entity-filter');
+    assert.notEqual(stream.dataset.emptyReason, 'no-event-records-received', '两种空态的 reason 必须可区分');
+
+    // ③ 有匹配 ⇒ 不再有空态，`emptyReason` 必须被清掉（不留误导性残留）
+    panel.setEventFilter({ entity: 'room-probe-01' });
+    assert.equal(stream.dataset.emptyReason, undefined, '有匹配时不得残留 emptyReason');
+    assert.equal(textOf(), 't10 npc.action');
+
+    // ④ 清空过滤后仍有事件 ⇒ 仍无空态
+    panel.setEventFilter(null);
+    assert.equal(stream.dataset.emptyReason, undefined);
+  });
 });
