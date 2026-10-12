@@ -59,6 +59,12 @@
   `status="measured"`，且 `null_injection_fired is False`，此时该字段在退化下为 `null` ⇒ 合取必假）。
   退化构造读数落盘：`03_artisan_self_test.log` §11-F2、`evidence/artisan/r2/degraded_probe.{json,stdout.txt}`。
 
+  **r1 口径补记（`xuqin-gate-harden-20261011` T3）**：齐备性谓词由「只挡 `None`」收紧为
+  `is True or is False` ⇒ `0` / `""` / `[]` / `1` / `"true"` 等**非布尔**值一律**不齐备**
+  （`status="degraded"`、`fired=false`、`missing_criteria_keys` 列出该键；**字段名不变**）。
+  **口径变化**：改前 `actual=0 ∧ expected=False` ⇒ `fired=True`（算打响），改后 ⇒ `degraded`/`fired=False`（真实读数不触发）。
+  `missing_keys`/`measured`/`fired` 三行除齐备性谓词外**逐字不变**；对照用例见 `kernel/tests/test_ac10_probe_arm_eval.py`。
+
   **iter2 r2.1 登记（Raven M-1；**architect 决定不修**，只登记）**：门禁层（`verify_specs.sh` 的
   `selfproof` → `probe_json` 分支）**只消费 `probe_ok`**，既不消费 `back_to_baseline`（仅被打印进
   OK 文案），**也不消费本工具退出码** ⇒ 「注入泄漏进交付树（`back_to_baseline=false`）」这条路径
@@ -68,6 +74,7 @@
   **树侧异常**会以「自证失败」的形式出现，正好丢掉 `verify_specs` 自己在 r2.6 建立起来的
   **维度归因**能力（「自证失效」vs「树红」分开报）。**两条候选修法**（均需 PM 授权改**禁改面**）：
   ① 门禁侧把 `back_to_baseline` 列为**独立维度**（单独一行 PASS/FAIL）；② 门禁侧消费被调工具的**退出码**。
+  **r1 落地（`xuqin-gate-harden-20261011`）**：①② **均已获 PM 授权并已落地**（`RULING-20261011-016-b-final` §5 差异表第 3 行 + §3-⑤；`verify_specs.sh` 的 `selfproof` 现为三维度）⇒ 上面「在门禁层不可见」为该轮**历史读数**；**仍未**并入 `probe_ok`。
 
 退出码：**0** = 全部探针按预期变红且交付树未变；**1** = 有探针**没**变红（判据无牙）；
         **3** = 注入锚点缺失 / 注入后复核失败（**注入失败与判据无牙必须分开**）。
@@ -218,7 +225,8 @@ def _probe_case(workdir: Path, name: str, edits: list[tuple[str, str, str]],
                "10a_share", "10b_share", "10d1_outdoor_share", "10d2_npcs_at_or_above_20pct")}
     # **判据键齐备性前置（iter2 r2.1 / Raven M-5）**：读数缺失 ⇒ 该臂**不得**判「打响」。
     # 原实现在 `detail` 全 `null` 时 `bool(None) is bool(False)` ⇒ `fired=true`（零证据也算打响）。
-    missing_keys = [key for key in CRITERIA_KEYS if document.get(key) is None]
+    missing_keys = [key for key in CRITERIA_KEYS
+                    if not (document.get(key) is True or document.get(key) is False)]
     measured = document.get("status") == "measured" and not missing_keys
     fired = bool(measured) and all(bool(document.get(key)) is bool(expected)
                                    for key, expected in expectations)

@@ -79,24 +79,36 @@ skip() { SKIP=$((SKIP + 1)); say "SKIP  $*"; }
 #   归因误导）。用**显式模板**（带 6 个 X）两边都能跑。
 tmpfile() { local d="${TMPDIR:-/tmp}"; mktemp "${d%/}/$1.XXXXXX"; }
 
-# ---------- 自证项统一判据（M5.1 r2.6 · PM m5-08 §三） ----------
-# 缺陷：自证项此前读**工具退出码**，而退出码把「真实树读数」与「探针读数」合成了一个
-#   （例：`fidelity_lint.py` 末行 `return 0 if (rc == 0 and prc == 0) else 1`）⇒
-#   ① 树脏时自证项报「自证失败」（归因误导，且正好发生在修树窗口里，最容易把人带偏）；
-#   ② 树脏时探针真失效会被同一个红**掩盖** ⇒ 自证项在该窗口内不携带独立信息。
-# 契约（逐条落地）：
-#   1) 判据读工具 JSON 的**判定字段**（probe_ok / self_proof_ok），**不读退出码**；
-#   2) fail-closed：字段缺失 / JSON 不可解析 / 字段非布尔 ⇒ FAIL（不得因「没读到」转绿）；
-#   3) PASS 行必须打印探针计数 `cases=N fired=N back_to_baseline=...`（否则不可复核）；
+# ---------- 自证项统一判据（M5.1 r2.6 · PM m5-08 §三；r1 扩为三维度） ----------
+# 沿革（保留）：最初读**工具退出码**，而退出码把「真实树读数」与「探针读数」合成了一个（例：
+#   `fidelity_lint.py` 末行 `return 0 if (rc == 0 and prc == 0) else 1`）⇒ ① 树脏时自证项报「自证失败」
+#   （归因误导，恰发生在修树窗口里最易带偏）；② 探针真失效被同一个红**掩盖**，自证项不携带独立信息。
+#   ⇒ r2.6 起判据读**判定字段**（下述 1）；**退出码并未弃用**，见下述 2（r1 补消费）。
+# 契约（r1：对**同一次**调用输出**最多三行**，每行只承载一个维度）：
+#   1) 判定字段维度：读工具 JSON 的 `probe_ok` / `self_proof_ok`；fail-closed：字段缺失 / JSON 不可解析 /
+#      非布尔 ⇒ FAIL（不得因「没读到」转绿）；PASS 行打 `cases=N fired=N back_to_baseline=...` + `exit=<rc>`。
+#   2) 退出码维度（r1 新增）：`rc != 0` ⇒ FAIL `tool process failed (exit_code=<rc>)`；`rc == 0` **不新增**
+#      PASS 行。位置纪律（致命点）：`rc=$?` 必须是 `out="$(...)"` 之后**第一条**语句 —— 错放到
+#      `raw=$(… | grep … | tail -1)` 之后只会拿到 `tail` 的 0，该维度**静默恒 0**（不报错、悄悄没牙）。
+#   3) `back_to_baseline` 维度（r1 新增，**独立**）：取自**同一次**调用的 JSON（**不重跑工具**）；
+#      `true` ⇒ PASS、`false` ⇒ FAIL、**缺失 / 非布尔 ⇒ fail-closed FAIL**。粒度 = **调用点**，不是 `kind`：
+#      `probe_json` 一支覆盖 4 个工具，其中 3 个契约**本身无**该字段 ⇒ 这 4 点（L500 / L799 / L812 / L826）
+#      以 `--no-b2b` **显式**标注，出**中性行** `back_to_baseline=n/a (...)`，**不记 PASS/FAIL**；白名单外一律 FAIL。
+#      **禁止**按 label / 按 `kind` 猜白名单；**禁止**为取 b2b 重复调用工具；**不得**把 b2b 并入 `probe_ok`
+#      （树侧异常会伪装成「自证失败」，丢掉归因能力）；红线负对照只由**假工具**用例承担（真工具的 b2b
+#      折在它自己的退出码里 ⇒ 真树同红同绿）。
 #   4) 探针在**隔离临时树**上跑（工具 `--probe-only`：只跑探针、**不扫真实树**）——
-#      判据的输入与被测树解耦（PM §8.4：判据 / 自证的输入不得取自被测对象）；
-#   5) FAIL 文案**指名维度**（`probe_ok=false` / `field_unreadable`），不再出现「自证失败」
-#      而实际是树红 —— 树红由对应的**树项**单独承担。
-# 用法：selfproof "<维度标签>" <工具种类> <命令...>
+#      判据的输入与被测树解耦（PM §8.4：判据 / 自证的输入不得取自被测对象）。
+#   5) FAIL 文案**指名维度**（`probe_ok=false` / `exit_code=N` / `back_to_baseline=...` /
+#      `field_unreadable`），不再出现「自证失败」而实际是树红 —— 树红由对应**树项**单独承担。
+# 用法：selfproof [--no-b2b] "<维度标签>" <工具种类> <命令...>
 selfproof() {
+  local no_b2b=0
+  if [ "${1:-}" = "--no-b2b" ]; then no_b2b=1; shift; fi
   local label="$1" kind="$2"; shift 2
-  local out raw norm
+  local out raw norm rc b2b
   out="$("$@" 2>/dev/null)"
+  rc=$?                                     # ← 必须是 out= 之后**第一条**语句（见上方契约 2）
   raw="$(printf '%s\n' "$out" | grep -E '^\{' | tail -1)"
   case "$kind" in
     fidelity_lint)
@@ -152,11 +164,43 @@ selfproof() {
       norm="MISSING unknown_tool_kind"
       ;;
   esac
+  # 维度 1/3：判定字段（语义不变；附注保留，末尾追加本次调用退出码）
   case "$norm" in
-    OK\ *)    ok "$label self-proof holds (${norm#OK })" ;;
+    OK\ *)    ok "$label self-proof holds (${norm#OK } exit=$rc)" ;;
     FALSE\ *) bad "$label self-proof failed (${norm#FALSE }=false)" ;;
     "")       bad "$label self-proof failed (field_unreadable: empty_output)" ;;
     *)        bad "$label self-proof failed (field_unreadable: ${norm#MISSING })" ;;
+  esac
+  # 维度 2/3：被调工具**进程退出码**（fail-closed；rc==0 **不新增** PASS 行）
+  if [ "$rc" -ne 0 ]; then
+    bad "$label tool process failed (exit_code=$rc)"
+  fi
+  # 维度 3/3：`back_to_baseline`（独立维度；与维度 1 **同源** —— 都取自本次调用的 $raw）
+  if [ "$no_b2b" -eq 1 ]; then
+    say "      $label: back_to_baseline=n/a (tool contract has no such field; call-site whitelist)"
+    return 0
+  fi
+  case "$kind" in
+    redline_scan)
+      # 派生式（沿用既有口径，未发明新语义）：.probe[] | select(.case == "back_to_baseline")
+      b2b="$(printf '%s' "$raw" | jq -r '(.probe // []) | map(select(.case == "back_to_baseline")) | if length == 0 then "n/a" elif .[0].hits == .[0].baseline then "true" else "false" end' 2>/dev/null)"
+      ;;
+    scan_ip_boundary)
+      # 派生式（沿用既有口径）：.self_proof.removed_restores_baseline
+      b2b="$(printf '%s' "$raw" | jq -r '(.self_proof // {}) | .removed_restores_baseline | if type == "boolean" then tostring else "n/a" end' 2>/dev/null)"
+      ;;
+    fidelity_lint|scan_fidelity_terms|probe_json)
+      # 顶层字段（沿用既有口径）：.back_to_baseline
+      b2b="$(printf '%s' "$raw" | jq -r 'if type == "object" then (.back_to_baseline | if type == "boolean" then tostring else "n/a" end) else "n/a" end' 2>/dev/null)"
+      ;;
+    *)
+      b2b=""
+      ;;
+  esac
+  case "$b2b" in
+    true)  ok "$label back_to_baseline=true (delivery tree unchanged by probe)" ;;
+    false) bad "$label back_to_baseline=false (probe mutated the delivery tree)" ;;
+    *)     bad "$label back_to_baseline field_unreadable (fail-closed)" ;;
   esac
 }
 
@@ -494,10 +538,10 @@ else
   bad "capability manifest JSON-Schema validation failed"
 fi
 # r2.6（PM m5-08 §7.1 + §三.1）：自证项读**机器可读判定字段** `self_proof_ok`（工具新增 `--json`），
-#   **不读退出码**；且自证**基线来源与被测树解耦** —— 合法基线是工具**内嵌夹具**（实现 ③），
+#   **判定字段独立**（r1 起 `selfproof` 另消费被调工具退出码，见上方契约 2）；且自证**基线来源与被测树解耦** —— 合法基线是工具**内嵌夹具**（实现 ③），
 #   与被测树零交集 ⇒ 改坏 cap_dir 下**任何一个** manifest（含实测 `bases[0] = embed.text@1.0.0`）
 #   都不会把自证染红（PM §8.3 的 6 次逐个注入判据）。
-selfproof "schema validator (valid baseline green + 4 invalid red + sampling-legal green)" \
+selfproof --no-b2b "schema validator (valid baseline green + 4 invalid red + sampling-legal green)" \
   validate_capability_schema python3 v0_skeleton/tools/validate_capability_schema.py \
   --schema capability.schema.json --cap-dir v0_skeleton/capabilities --selftest --json
 
@@ -647,7 +691,7 @@ selfproof "IP boundary scanner per-pattern (jump_scare + verbatim_body_paragraph
 #   ④ 两套 tools 单测（AC-1 侧 fidelity/tools/tests、AC-2 侧 v0_skeleton/tools/tests）
 # 复跑纪律：pytest 一律 PYTHONDONTWRITEBYTECODE=1 + -p no:cacheprovider（不在交付树留残渣）。
 # r2.6：本节的自证项一律改走 `selfproof`（读 JSON 判定字段 `probe_ok` + 工具 `--probe-only`
-#   隔离临时树），**不读退出码** ⇒ 树红不再把自证项一起染红（PM m5-08 §三）。
+#   隔离临时树），**判定字段独立** ⇒ 树红不再把自证项一起染红（PM m5-08 §三；r1 起另消费退出码，见契约 2）。
 if python3 v0_skeleton/tools/scan_fidelity_terms.py --root . --face register >/dev/null; then
   ok "fidelity terms (register face) met: every pinned term has >=1 fact-line hit"
 else
@@ -740,7 +784,7 @@ else
   fi
   say "      per-npc outdoor share (REQ hard requirement): ${AC10_PER_NPC}"
 fi
-selfproof "AC-10 criteria (revert C1 => single-branch dominance; revert C2+C3 => outdoor collapse)" \
+selfproof "AC-10 criteria (revert C1 => single-branch dominance; joint revert W1+C2+C3 => outdoor collapse; W1 absence = enabling condition)" \
   probe_json python3 v0_skeleton/tools/ac10_probe.py
 
 # ---------- 16) AC-4 对照场景（M5.2 r1 / Raven M-14） ----------
@@ -796,7 +840,7 @@ if [ -d "$AC6_MIRROR" ]; then
 else
   skip "AC-6 identity continuity: fixture pack missing at $AC6_MIRROR => SKIP (NOT PASS)"
 fi
-selfproof "AC-6 identity continuity (positive/negative cases)" \
+selfproof --no-b2b "AC-6 identity continuity (positive/negative cases)" \
   probe_json python3 v0_skeleton/tools/check_identity_continuity.py \
   --pack-a "$PACK_DIR_3" --npc-a npc-006 --pack-b "$AC6_MIRROR" --npc-b npc-006 \
   --positive-pack "$PACK_DIR_3" --negative-pack "$PACK_DIR_2" --probe-only
@@ -809,7 +853,7 @@ if [ "$(printf '%s' "$AC7_OUT" | jq -r '.gate_ok' 2>/dev/null)" = "true" ] \
 else
   bad "AC-7 NPC admission gate failed (gate_ok=$(printf '%s' "$AC7_OUT" | jq -r '.gate_ok' 2>/dev/null), probe_ok=$(printf '%s' "$AC7_OUT" | jq -r '.probe_ok' 2>/dev/null))"
 fi
-selfproof "AC-7 admission gate (extra npc / npc without source_facts)" \
+selfproof --no-b2b "AC-7 admission gate (extra npc / npc without source_facts)" \
   probe_json python3 v0_skeleton/tools/check_npc_admission_gate.py \
   --main-pack "$PACK_DIR" --proposal-pack "$PACK_DIR_3" --probe-only
 # M-17：CHR 出处可复算（每条设定 → CHR 编号，且编号在事实册内存在且非 UNVERIFIED）+ 负例
@@ -823,7 +867,7 @@ if [ -f "$CHR_DOSSIERS" ]; then
   else
     bad "CHR provenance failed (provenance_ok=$(printf '%s' "$CHR_OUT" | jq -r '.provenance_ok' 2>/dev/null), probe_ok=$(printf '%s' "$CHR_OUT" | jq -r '.probe_ok' 2>/dev/null))"
   fi
-  selfproof "CHR provenance (forged id / UNVERIFIED id)" \
+  selfproof --no-b2b "CHR provenance (forged id / UNVERIFIED id)" \
     probe_json python3 v0_skeleton/tools/check_chr_provenance.py \
     --dossiers "$CHR_DOSSIERS" --npc "$PACK_DIR_3/npcs/npc-006.json" --probe-only
 else
